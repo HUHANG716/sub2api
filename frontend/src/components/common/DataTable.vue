@@ -725,7 +725,7 @@ defineExpose({
 }
 
 .dark .table-wrapper .table-header {
-  background-color: rgb(31 41 55);
+  background-color: rgb(23 23 23);
 }
 
 /* 表体保持在表头下方 */
@@ -743,7 +743,7 @@ defineExpose({
 }
 
 .dark .sticky-header-cell {
-  background-color: rgb(31 41 55);
+  background-color: rgb(23 23 23);
 }
 
 /* Sticky 列基础样式 */
@@ -783,7 +783,7 @@ tbody .sticky-col {
 }
 
 .dark tbody .sticky-col {
-  background-color: rgb(17 24 39);
+  background-color: rgb(17 17 17);
 }
 
 /* hover 状态保持 */
@@ -792,7 +792,7 @@ tbody tr:hover .sticky-col {
 }
 
 .dark tbody tr:hover .sticky-col {
-  background-color: rgb(31 41 55);
+  background-color: rgb(23 23 23);
 }
 
 /* 阴影只在可滚动时显示 */
@@ -805,7 +805,8 @@ tbody tr:hover .sticky-col {
   bottom: 0;
   width: 10px;
   transform: translateX(100%);
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.08), transparent);
+  background: none;
+  box-shadow: 10px 0 14px rgba(0, 0, 0, 0.08);
   pointer-events: none;
 }
 
@@ -818,7 +819,8 @@ tbody tr:hover .sticky-col {
   bottom: 0;
   width: 10px;
   transform: translateX(100%);
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.08), transparent);
+  background: none;
+  box-shadow: 10px 0 14px rgba(0, 0, 0, 0.08);
   pointer-events: none;
 }
 
@@ -831,18 +833,21 @@ tbody tr:hover .sticky-col {
   bottom: 0;
   width: 10px;
   transform: translateX(-100%);
-  background: linear-gradient(to left, rgba(0, 0, 0, 0.08), transparent);
+  background: none;
+  box-shadow: -10px 0 14px rgba(0, 0, 0, 0.08);
   pointer-events: none;
 }
 
 /* 暗色模式阴影 */
 .dark .is-scrollable .sticky-col-left::after,
 .dark .is-scrollable .sticky-col-left-second::after {
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.2), transparent);
+  background: none;
+  box-shadow: 10px 0 14px rgba(0, 0, 0, 0.35);
 }
 
 .dark .is-scrollable .sticky-col-right::before {
-  background: linear-gradient(to left, rgba(0, 0, 0, 0.2), transparent);
+  background: none;
+  box-shadow: -10px 0 14px rgba(0, 0, 0, 0.35);
 }
 </style>
 
