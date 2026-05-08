@@ -12,7 +12,7 @@ export default {
     goToDashboard: 'Go to Dashboard',
     // User-focused value proposition
     heroSubtitle: 'One Key, All AI Models',
-    heroDescription: 'No need to manage multiple subscriptions. Access Claude, GPT, Gemini and more with a single API key',
+    heroDescription: 'No need to manage multiple subscriptions. Access multiple AI capability classes with a single API key',
     tags: {
       subscriptionToApi: 'Subscription to API',
       stickySession: 'Session Persistence',
@@ -90,14 +90,153 @@ export default {
       }
     },
     providers: {
-      title: 'Supported AI Models',
-      description: 'One API, Multiple Choices',
+      title: 'Supported AI Capabilities',
+      description: 'One API, multiple capability classes',
       supported: 'Supported',
       soon: 'Soon',
-      claude: 'Claude',
-      gemini: 'Gemini',
-      antigravity: 'Antigravity',
       more: 'More'
+    },
+    landing: {
+      navTagline: 'One key for everyday AI calls',
+      subtitle: 'An API entry point for makers and small teams',
+      home: 'Home',
+      pricing: 'Pricing',
+      kicker: 'One-stop AI API access',
+      title: 'Bring AI engineering into your everyday workflow.',
+      description: 'Connect Claude Code, Codex, Gemini CLI, and other development tools through one API entry point. Spend less time on accounts, keys, and switching services, and more time validating ideas, generating code, and shipping products.',
+      badges: {
+        oneKey: 'One-stop',
+        compatible: 'Multi-model API'
+      },
+      stats: {
+        key: 'Unified API key',
+        capabilities: 'Core capability scenes',
+        interface: 'Steps to connect'
+      },
+      preview: {
+        kicker: 'User console',
+        title: 'What you need before your first call',
+        badge: 'User view',
+        keyLabel: 'API key',
+        keyValue: '1 key',
+        keyCaption: 'One place to manage access',
+        modelLabel: 'AI capabilities',
+        modelValue: 'Many',
+        modelCaption: 'Choose by task',
+        usageLabel: 'Usage',
+        usageValue: 'Clear',
+        usageCaption: 'Balance and details visible',
+        keyStatus: 'Ready',
+        chipChat: 'Chat',
+        chipCode: 'Code',
+        chipDocs: 'Doc summaries',
+        chipVision: 'Image understanding',
+        quickStartKicker: 'Quick start',
+        quickStartTitle: 'Create a key and plug it into your app',
+        quickStartDesc: 'Use the key with common OpenAI-compatible clients and start with minimal code changes.',
+        quickStartBadge: 'Key',
+        modelChoiceKicker: 'Model choice',
+        modelChoiceTitle: 'Pick text, long-context, or multimodal capabilities',
+        modelChoiceDesc: 'Use one access point for chat, coding, summaries, image understanding, and automation tasks.',
+        modelChoiceBadge: 'Models',
+        costKicker: 'Cost visibility',
+        costTitle: 'Track balance, quotas, and usage details',
+        costDesc: 'See what was used, what remains, and which keys are driving consumption.',
+        costBadge: 'Usage'
+      },
+      ops: {
+        kicker: 'How it works',
+        title: 'A short path from signup to first request.',
+        description: 'Complex provider setup stays out of sight, so users can focus on products, scripts, and workflows.'
+      },
+      benefits: {
+        signup: 'Start',
+        signupValue: 'Sign up and use',
+        integration: 'Integration',
+        integrationValue: 'Works with common SDKs',
+        usage: 'Spend history',
+        usageValue: 'Detailed records',
+        control: 'Budget',
+        controlValue: 'Quota controls'
+      },
+      steps: {
+        step: 'Step',
+        action: 'Action',
+        result: 'Result',
+        createKeyTitle: 'Create an API key',
+        createKeyDesc: 'Generate a key in the console and organize it by project or use case.',
+        createKeyResult: 'Ready',
+        callApiTitle: 'Connect your existing client',
+        callApiDesc: 'Use one endpoint to call the AI capability your task needs.',
+        callApiResult: 'Small change',
+        trackUsageTitle: 'Track usage and balance',
+        trackUsageDesc: 'Review spend, quotas, and usage details by key.',
+        trackUsageResult: 'Controlled'
+      },
+      compat: {
+        title: 'In the AI engineering era, keep your focus on turning ideas into working products.',
+        worksWith: 'Works with',
+        platforms: 'Try it easily on these platforms'
+      },
+      cards: {
+        dashboard: {
+          kicker: 'Dashboard',
+          title: 'A clearer workspace',
+          description: 'Keep requests, balance, subscriptions, and key updates in one place for everyday use.'
+        },
+        api: {
+          kicker: 'API',
+          title: 'One API integration flow',
+          description: 'Create and manage API keys, view endpoints and capability coverage, and connect with less setup overhead.'
+        },
+        wallet: {
+          kicker: 'Wallet',
+          title: 'Simpler billing and subscriptions',
+          description: 'Handle top-ups, plans, orders, and payment status from one entry point with a more direct workflow.'
+        }
+      },
+      cta: {
+        kicker: 'Get started',
+        title: 'Connect in minutes and start using AI coding tools.',
+        description: 'Choose a plan, configure your API key from the docs, and use one gateway across Claude Code, Codex, Gemini CLI, and more.',
+        button: 'View pricing'
+      },
+      footer: {
+        product: {
+          title: 'Product',
+          pricing: 'Pricing',
+          login: 'Login'
+        },
+        models: {
+          title: 'Model support',
+          claude: 'Claude series',
+          gpt: 'GPT series',
+          gemini: 'Gemini series'
+        },
+        commitment: {
+          title: 'Service promise',
+          pricing: 'Transparent pricing',
+          privacy: 'Privacy protection',
+          security: 'Security compliance'
+        },
+        solutions: {
+          title: 'Solutions',
+          coding: 'AI coding assistant',
+          generation: 'Code generation',
+          support: 'Technical support'
+        },
+        about: {
+          title: 'About',
+          contact: 'Contact us'
+        }
+      },
+      providers: {
+        ready: 'Common capability coverage',
+        text: 'Text generation',
+        longContext: 'Long context',
+        multimodal: 'Multimodal',
+        automation: 'Automation'
+      }
     },
     // CTA section
     cta: {

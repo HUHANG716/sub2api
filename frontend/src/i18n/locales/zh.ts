@@ -12,7 +12,7 @@ export default {
     goToDashboard: '进入控制台',
     // 新增：面向用户的价值主张
     heroSubtitle: '一个密钥，畅用多个 AI 模型',
-    heroDescription: '无需管理多个订阅账号，一站式接入 Claude、GPT、Gemini 等主流 AI 服务',
+    heroDescription: '无需管理多个订阅账号，一站式接入多类 AI 能力',
     tags: {
       subscriptionToApi: '订阅转 API',
       stickySession: '会话保持',
@@ -46,12 +46,12 @@ export default {
       subtitle: '简单三步，开始省心使用 AI'
     },
     features: {
-      unifiedGateway: '一键接入',
-      unifiedGatewayDesc: '获取一个 API 密钥，即可调用所有已接入的 AI 模型，无需分别申请。',
-      multiAccount: '稳定可靠',
-      multiAccountDesc: '智能调度多个上游账号，自动切换和负载均衡，告别频繁报错。',
-      balanceQuota: '用多少付多少',
-      balanceQuotaDesc: '按实际使用量计费，支持设置配额上限，团队用量一目了然。'
+      unifiedGateway: '少折腾 Key',
+      unifiedGatewayDesc: '一个 API Key 接到现有工具里，聊天、代码、总结等请求都能走同一套调用。',
+      multiAccount: '不用反复换服务',
+      multiAccountDesc: '常用模型能力放在一个地方，按任务切换，不用在多个平台之间来回配置。',
+      balanceQuota: '花多少看得见',
+      balanceQuotaDesc: '余额、用量和密钥明细都在控制台里，个人和团队都更容易控预算。'
     },
     // 优势对比
     comparison: {
@@ -90,14 +90,153 @@ export default {
       }
     },
     providers: {
-      title: '已支持的 AI 模型',
-      description: '一个 API，多种选择',
+      title: '常用场景基本都覆盖',
+      description: '文本、长上下文、多模态和自动化调用，按需要选择即可',
       supported: '已支持',
       soon: '即将推出',
-      claude: 'Claude',
-      gemini: 'Gemini',
-      antigravity: 'Antigravity',
       more: '更多'
+    },
+    landing: {
+      navTagline: '一个 Key，常用 AI 都能调',
+      subtitle: '给个人开发者和小团队用的 API 入口',
+      home: '首页',
+      pricing: '价格',
+      kicker: '给开发者和团队用的 AI API',
+      title: '把 AI 工程能力，接进你的日常工作流。',
+      description: '用一个 API 入口连接 Claude Code、Codex、Gemini CLI 等常用开发工具。少处理账号、密钥和服务切换，把时间留给想法验证、代码生成和产品交付。',
+      badges: {
+        oneKey: 'One-stop',
+        compatible: '多模型 API'
+      },
+      stats: {
+        key: '统一 API Key',
+        capabilities: '核心能力场景',
+        interface: '步骤完成接入'
+      },
+      preview: {
+        kicker: '控制台预览',
+        title: '日常会看的，就是这几件事',
+        badge: '用户端',
+        keyLabel: '密钥',
+        keyValue: '1 个主 Key',
+        keyCaption: '复制到项目里就能用',
+        modelLabel: '场景',
+        modelValue: '4 类',
+        modelCaption: '按任务切换',
+        usageLabel: '余额',
+        usageValue: '可追踪',
+        usageCaption: '谁在用、用了多少都清楚',
+        keyStatus: '可用',
+        chipChat: '聊天',
+        chipCode: '代码',
+        chipDocs: '文档总结',
+        chipVision: '图片理解',
+        quickStartKicker: '接入',
+        quickStartTitle: '复制 Key，填进现有客户端',
+        quickStartDesc: '兼容常见 OpenAI 调用方式，已有项目通常只需要改地址和密钥。',
+        quickStartBadge: '开始',
+        modelChoiceKicker: '选择',
+        modelChoiceTitle: '按任务选能力，不用先想服务商',
+        modelChoiceDesc: '写代码、长文总结、图片理解、自动化脚本，都能在同一个控制台里管理。',
+        modelChoiceBadge: '模型',
+        costKicker: '用量',
+        costTitle: '余额、额度、明细放在一起看',
+        costDesc: '不用翻日志猜成本，也不用等账单出来才知道哪里用多了。',
+        costBadge: '用量'
+      },
+      ops: {
+        kicker: '怎么开始',
+        title: '从注册到第一次调用，不绕弯。',
+        description: '把复杂的服务配置收起来，留给你一个更好接入、也更好管理的 API 使用体验。'
+      },
+      benefits: {
+        signup: '开始',
+        signupValue: '注册后直接建 Key',
+        integration: '接入',
+        integrationValue: '兼容常用 SDK',
+        usage: '用量',
+        usageValue: '按 Key 看明细',
+        control: '预算',
+        controlValue: '额度自己设'
+      },
+      steps: {
+        step: '步骤',
+        action: '操作',
+        result: '结果',
+        createKeyTitle: '先建一个 Key',
+        createKeyDesc: '按项目或用途命名，后面查用量也方便。',
+        createKeyResult: '1 分钟',
+        callApiTitle: '接到你的应用里',
+        callApiDesc: '改 base URL 和密钥，继续用熟悉的调用方式。',
+        callApiResult: '少改代码',
+        trackUsageTitle: '边用边看余额',
+        trackUsageDesc: '请求、费用、额度都能按 Key 查到。',
+        trackUsageResult: '心里有数'
+      },
+      compat: {
+        title: 'AI 工程时代，把精力放在想法落地上。',
+        worksWith: 'Works with',
+        platforms: '轻松跑在这些平台'
+      },
+      cards: {
+        dashboard: {
+          kicker: 'Dashboard',
+          title: '更清楚的工作台',
+          description: '请求、余额、订阅和密钥更新集中在一个入口，日常使用时不用在多个页面之间反复找。'
+        },
+        api: {
+          kicker: 'API',
+          title: '一套 API 接入流程',
+          description: '创建和管理 API Key，查看可用端点和能力范围，把现有客户端用更少配置接起来。'
+        },
+        wallet: {
+          kicker: 'Wallet',
+          title: '更直接的余额和套餐',
+          description: '充值、套餐、订单和支付状态放在一起，个人使用和小团队共享都更容易对账。'
+        }
+      },
+      cta: {
+        kicker: 'Get started',
+        title: '几分钟接入，然后开始使用 AI 编程工具。',
+        description: '选择套餐，按照文档配置 API Key，就可以在 Claude Code、Codex、Gemini CLI 和更多工具里使用同一个入口。',
+        button: '查看价格'
+      },
+      footer: {
+        product: {
+          title: '产品',
+          pricing: '价格方案',
+          login: '登录'
+        },
+        models: {
+          title: '模型支持',
+          claude: 'Claude 系列',
+          gpt: 'GPT 系列',
+          gemini: 'Gemini 系列'
+        },
+        commitment: {
+          title: '服务承诺',
+          pricing: '透明定价',
+          privacy: '隐私保护',
+          security: '安全合规'
+        },
+        solutions: {
+          title: '解决方案',
+          coding: 'AI 编程助手',
+          generation: '代码生成',
+          support: '技术支持'
+        },
+        about: {
+          title: '关于',
+          contact: '联系我们'
+        }
+      },
+      providers: {
+        ready: '常用场景覆盖',
+        text: '文本生成',
+        longContext: '长上下文',
+        multimodal: '多模态',
+        automation: '自动化'
+      }
     },
     // CTA 区块
     cta: {
