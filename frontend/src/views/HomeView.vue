@@ -13,20 +13,20 @@
     <header class="landing-header">
       <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-6 lg:px-8">
         <router-link to="/home" class="brand-lockup">
-          <span class="brand-mark">
-            <img :src="siteLogo || '/logo.png'" :alt="siteName" />
-          </span>
-          <span class="min-w-0">
-            <span class="block truncate text-base font-semibold tracking-tight">{{ siteName }}</span>
-            <span class="block truncate text-xs text-slate-400">AI 开发者工作台</span>
+            <span class="brand-mark">
+              <img :src="siteLogo || '/logo.png'" :alt="siteName" />
+            </span>
+            <span class="min-w-0">
+              <span class="block truncate text-base font-semibold tracking-tight">{{ siteName }}</span>
+            <span class="block truncate text-xs text-slate-400">{{ t('home.modern.navTagline') }}</span>
           </span>
         </router-link>
 
         <div class="landing-nav-links hidden items-center gap-8 text-sm font-medium text-slate-300 md:flex">
-          <a href="#features" class="transition hover:text-white">能力</a>
-          <a href="#testimonials" class="transition hover:text-white">用户评价</a>
-          <a href="#faq" class="transition hover:text-white">常见问题</a>
-          <a href="#contact" class="transition hover:text-white">联系我们</a>
+          <a href="#features" class="transition hover:text-white">{{ t('home.modern.nav.features') }}</a>
+          <a href="#testimonials" class="transition hover:text-white">{{ t('home.modern.nav.testimonials') }}</a>
+          <a href="#faq" class="transition hover:text-white">{{ t('home.modern.nav.faq') }}</a>
+          <a href="#contact" class="transition hover:text-white">{{ t('home.modern.nav.contact') }}</a>
         </div>
 
         <div class="flex items-center gap-2">
@@ -45,7 +45,7 @@
             :to="isAuthenticated ? dashboardPath : '/login'"
             class="primary-action"
           >
-            {{ isAuthenticated ? t('home.dashboard') : '登录' }}
+            {{ isAuthenticated ? t('home.dashboard') : t('home.login') }}
           </router-link>
         </div>
       </nav>
@@ -56,29 +56,29 @@
         <div class="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div class="hero-copy">
             <span class="object-accent command" :style="assetSpriteStyle(objectSprite, '0% 0%')" aria-hidden="true"></span>
-            <p class="eyebrow">AI Code Workspace</p>
+            <p class="eyebrow">{{ t('home.modern.hero.eyebrow') }}</p>
             <h1>
               <span class="hero-brand-title">{{ siteName }}</span>
-              <span>重构您的</span>
-              <span>AI 编程体验</span>
+              <span>{{ t('home.modern.hero.line1') }}</span>
+              <span>{{ t('home.modern.hero.line2') }}</span>
             </h1>
             <p class="hero-lede">
               {{ siteSubtitle }}
-              <span>把 AI 编程、使用管理与团队协作整合到一个软件平台，让团队专注产品本身。</span>
+              <span>{{ t('home.modern.hero.description') }}</span>
             </p>
 
             <div class="mt-8 flex flex-col gap-3 sm:flex-row">
               <router-link :to="isAuthenticated ? dashboardPath : '/login'" class="hero-button">
-                {{ isAuthenticated ? '进入工作台' : '立即体验' }}
+                {{ isAuthenticated ? t('home.goToDashboard') : t('home.getStarted') }}
                 <Icon name="arrowRight" size="sm" />
               </router-link>
               <a v-if="docUrl" :href="docUrl" target="_blank" rel="noopener noreferrer" class="hero-button secondary">
-                查看文档
+                {{ t('home.viewDocs') }}
                 <Icon name="externalLink" size="sm" />
               </a>
             </div>
 
-            <div class="hero-points" aria-label="服务亮点">
+            <div class="hero-points" :aria-label="t('home.modern.hero.pointsLabel')">
               <div v-for="item in heroPoints" :key="item.title">
                 <span>{{ item.title }}</span>
                 <strong>{{ item.text }}</strong>
@@ -86,7 +86,7 @@
             </div>
           </div>
 
-          <div class="hero-console" aria-label="AI 开发者工作台预览">
+          <div class="hero-console" :aria-label="t('home.modern.console.previewLabel')">
             <span class="object-accent key" :style="assetSpriteStyle(objectSprite, '100% 0%')" aria-hidden="true"></span>
             <div class="console-topbar">
               <span></span>
@@ -102,14 +102,14 @@
                 </div>
               </div>
               <div class="metric-panel">
-                <span>今日任务</span>
+                <span>{{ t('home.modern.console.tasksLabel') }}</span>
                 <strong>24,819</strong>
-                <em>稳定处理中</em>
+                <em>{{ t('home.modern.console.tasksCaption') }}</em>
               </div>
               <div class="metric-panel accent">
-                <span>响应状态</span>
+                <span>{{ t('home.modern.console.statusLabel') }}</span>
                 <strong>99.9%</strong>
-                <em>服务可用</em>
+                <em>{{ t('home.modern.console.statusCaption') }}</em>
               </div>
               <div class="route-panel">
                 <div v-for="route in routingRows" :key="route.name">
@@ -134,8 +134,8 @@
       <section id="features" class="section-pad px-5 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-7xl">
           <div class="section-heading">
-            <p>Developer Platform</p>
-            <h2>一个入口，组织起日常 AI 研发工作</h2>
+            <p>{{ t('home.modern.features.eyebrow') }}</p>
+            <h2>{{ t('home.modern.features.title') }}</h2>
           </div>
           <div class="feature-layout">
             <article v-for="feature in featureCards" :key="feature.title" class="feature-card">
@@ -156,12 +156,12 @@
       <section id="testimonials" class="testimonial-section px-5 py-20 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-7xl">
           <div class="section-heading centered">
-            <p>用户评价</p>
-            <h2>用户怎么说</h2>
-            <span>来自开发者、架构师和研发负责人的真实使用反馈。</span>
+            <p>{{ t('home.modern.testimonials.eyebrow') }}</p>
+            <h2>{{ t('home.modern.testimonials.title') }}</h2>
+            <span>{{ t('home.modern.testimonials.description') }}</span>
           </div>
 
-          <div class="testimonial-marquee" aria-label="用户评价列表">
+          <div class="testimonial-marquee" :aria-label="t('home.modern.testimonials.listLabel')">
             <div class="testimonial-track">
               <article v-for="review in testimonials" :key="review.name" class="testimonial-card">
                 <p>{{ review.quote }}</p>
@@ -202,8 +202,8 @@
         <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.75fr_1.25fr]">
           <div class="section-heading sticky-heading">
             <p>FAQ</p>
-            <h2>有疑问？我们来解答</h2>
-            <span>围绕接入、稳定性、团队管理和上手体验整理了最常见的问题。</span>
+            <h2>{{ t('home.modern.faq.title') }}</h2>
+            <span>{{ t('home.modern.faq.description') }}</span>
           </div>
           <div class="faq-list">
             <article v-for="item in faqItems" :key="item.question" class="faq-item">
@@ -225,11 +225,11 @@
               </span>
               <span>
                 <span class="block text-base font-semibold">{{ siteName }}</span>
-                <span class="block text-xs text-slate-400">面向开发者的 AI 编程工作台</span>
+                <span class="block text-xs text-slate-400">{{ t('home.modern.footer.tagline') }}</span>
               </span>
             </div>
             <p class="mt-5 max-w-md text-sm leading-7 text-slate-400">
-              为个人开发者和团队提供统一的 AI 开发入口、使用管理、稳定保障与技术支持。
+              {{ t('home.modern.footer.description') }}
             </p>
           </div>
 
@@ -249,7 +249,7 @@
 
         <div class="footer-bottom">
           <span>&copy; {{ currentYear }} {{ siteName }}. {{ t('home.footer.allRightsReserved') }}</span>
-          <span>Operated for AI developer workflows</span>
+          <span>{{ t('home.modern.footer.operator') }}</span>
         </div>
       </div>
     </footer>
@@ -287,9 +287,9 @@ function isFooterLinkItem(item: FooterItem): item is FooterItem & { href: string
 const authStore = useAuthStore()
 const appStore = useAppStore()
 
-const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'Sub2API')
+const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'Hahacode')
 const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
-const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || '稳定、清晰、适合团队协作的 AI 编程平台。')
+const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || t('home.modern.hero.subtitle'))
 const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
 const homeContent = computed(() => appStore.cachedPublicSettings?.home_content || '')
 
@@ -303,175 +303,175 @@ const isAdmin = computed(() => authStore.isAdmin)
 const dashboardPath = computed(() => (isAdmin.value ? '/admin/dashboard' : '/dashboard'))
 const currentYear = computed(() => new Date().getFullYear())
 
-const heroPoints = [
-  { title: '高效工作台', text: '统一管理 AI 编码任务、密钥与使用体验' },
-  { title: '稳定体验', text: '流畅响应、可靠交付，适合日常开发协作' },
-  { title: '专业服务', text: '工程师支持与方案建议，问题有人接住' }
-]
+const heroPoints = computed(() => [
+  { title: t('home.modern.hero.points.workspace.title'), text: t('home.modern.hero.points.workspace.text') },
+  { title: t('home.modern.hero.points.reliability.title'), text: t('home.modern.hero.points.reliability.text') },
+  { title: t('home.modern.hero.points.support.title'), text: t('home.modern.hero.points.support.text') }
+])
 
-const consoleLines = [
-  'connected: claude-code / codex / gemini-cli',
-  'workspace policy synced',
-  'routing requests through healthy channels',
-  'usage report generated in 312ms'
-]
+const consoleLines = computed(() => [
+  t('home.modern.console.lines.connected'),
+  t('home.modern.console.lines.policy'),
+  t('home.modern.console.lines.routing'),
+  t('home.modern.console.lines.report')
+])
 
-const routingRows = [
-  { name: 'Code Assist', status: 'active' },
-  { name: 'Team Keys', status: 'synced' },
-  { name: 'Usage Guard', status: 'online' }
-]
+const routingRows = computed(() => [
+  { name: t('home.modern.console.routes.codeAssist'), status: t('home.modern.console.status.active') },
+  { name: t('home.modern.console.routes.teamKeys'), status: t('home.modern.console.status.synced') },
+  { name: t('home.modern.console.routes.usageGuard'), status: t('home.modern.console.status.online') }
+])
 
-const trustStats = [
-  { value: '10,000+', label: '开发者用户' },
-  { value: '99.9%', label: '服务稳定性' },
-  { value: '500 万+', label: '任务处理次数' },
-  { value: '1v1', label: '专属技术支持' }
-]
+const trustStats = computed(() => [
+  { value: '10,000+', label: t('home.modern.stats.developers') },
+  { value: '99.9%', label: t('home.modern.stats.uptime') },
+  { value: t('home.modern.stats.taskValue'), label: t('home.modern.stats.tasks') },
+  { value: '1v1', label: t('home.modern.stats.support') }
+])
 
 const testimonialAvatarSprite = '/testimonial-avatar-sprite.png'
 const iconSprite = '/landing-assets/icon-sprite.png'
 const featureVisualSprite = '/landing-assets/feature-visual-sprite.png'
 const objectSprite = '/landing-assets/object-sprite.png'
 
-const featureCards: Array<{
+const featureCards = computed<Array<{
   iconPosition: string
   visualPosition: string
   index: string
   title: string
   description: string
-}> = [
+}>>(() => [
   {
     iconPosition: '0% 0%',
     visualPosition: '0% 0%',
     index: '01',
-    title: '统一接入开发工具',
-    description: '把常用 AI 编程工具接到一个入口，减少账号、密钥和配置在团队间散落。'
+    title: t('home.modern.featureCards.tools.title'),
+    description: t('home.modern.featureCards.tools.description')
   },
   {
     iconPosition: '33.333% 0%',
     visualPosition: '100% 0%',
     index: '02',
-    title: '团队协作更清晰',
-    description: '围绕成员、权限、分组和使用记录建立共享视图，协作时少一点猜测。'
+    title: t('home.modern.featureCards.team.title'),
+    description: t('home.modern.featureCards.team.description')
   },
   {
     iconPosition: '66.666% 0%',
     visualPosition: '0% 100%',
     index: '03',
-    title: '稳定性优先',
-    description: '通过通道监控、失败切换和用量保护，让高频开发场景更稳。'
+    title: t('home.modern.featureCards.reliability.title'),
+    description: t('home.modern.featureCards.reliability.description')
   },
   {
     iconPosition: '100% 33.333%',
     visualPosition: '100% 100%',
     index: '04',
-    title: '用量透明可追踪',
-    description: '关键消耗、调用状态与趋势沉淀为可读报表，方便复盘和管理。'
+    title: t('home.modern.featureCards.usage.title'),
+    description: t('home.modern.featureCards.usage.description')
   }
-]
+])
 
-const testimonials = [
+const testimonials = computed(() => [
   {
-    quote: '接入之后，团队里的 AI 编程流程终于统一了。大家不用反复问密钥和通道配置，开发节奏明显顺了。',
-    name: '周予',
+    quote: t('home.modern.reviews.one.quote'),
+    name: t('home.modern.reviews.one.name'),
     avatarPosition: '0% 0%',
-    role: '研发团队负责人 @ SaaS 公司'
+    role: t('home.modern.reviews.one.role')
   },
   {
-    quote: '我最喜欢的是稳定性和可观测性。出问题时能快速定位，日常使用也不会因为工具切换打断思路。',
-    name: 'Mia Chen',
+    quote: t('home.modern.reviews.two.quote'),
+    name: t('home.modern.reviews.two.name'),
     avatarPosition: '33.333% 0%',
-    role: '全栈工程师 @ 出海团队'
+    role: t('home.modern.reviews.two.role')
   },
   {
-    quote: '对独立开发者很友好。配置简单，文档清楚，把更多精力留给产品本身，而不是维护一堆零散工具。',
-    name: '林川',
+    quote: t('home.modern.reviews.three.quote'),
+    name: t('home.modern.reviews.three.name'),
     avatarPosition: '66.666% 0%',
-    role: '独立开发者'
+    role: t('home.modern.reviews.three.role')
   },
   {
-    quote: '团队成员的使用情况变得可见，权限边界也更清楚。对研发管理来说，这是很踏实的基础设施。',
-    name: 'Eva Liu',
+    quote: t('home.modern.reviews.four.quote'),
+    name: t('home.modern.reviews.four.name'),
     avatarPosition: '100% 0%',
-    role: 'AI 产品经理 @ 科技公司'
+    role: t('home.modern.reviews.four.role')
   },
   {
-    quote: '客服和技术支持响应很快，遇到接入细节可以直接沟通。上线前后都有人帮忙兜住关键问题。',
-    name: '何工',
+    quote: t('home.modern.reviews.five.quote'),
+    name: t('home.modern.reviews.five.name'),
     avatarPosition: '0% 100%',
-    role: '前端架构师 @ 本地生活平台'
+    role: t('home.modern.reviews.five.role')
   },
   {
-    quote: '我们把多个开发工具的调用收敛到这里后，团队协作成本下降很多，财务和技术侧都更容易对齐。',
-    name: 'Kevin Zhao',
+    quote: t('home.modern.reviews.six.quote'),
+    name: t('home.modern.reviews.six.name'),
     avatarPosition: '33.333% 100%',
-    role: '后端工程师 @ 电商平台'
+    role: t('home.modern.reviews.six.role')
   },
   {
-    quote: '高峰期也能保持稳定，路由和监控能力很实用。它不像玩具，更像能长期放进工作流里的系统。',
-    name: '吴可',
+    quote: t('home.modern.reviews.seven.quote'),
+    name: t('home.modern.reviews.seven.name'),
     avatarPosition: '66.666% 100%',
-    role: '研发总监 @ 金融科技公司'
+    role: t('home.modern.reviews.seven.role')
   },
   {
-    quote: '新同事上手速度快了很多。我们只维护一套入口和说明，团队里的 AI 编程习惯也更一致。',
-    name: 'Sarah Lin',
+    quote: t('home.modern.reviews.eight.quote'),
+    name: t('home.modern.reviews.eight.name'),
     avatarPosition: '100% 100%',
-    role: '移动端负责人 @ 创业公司'
+    role: t('home.modern.reviews.eight.role')
   }
-]
+])
 
-const faqItems = [
+const faqItems = computed(() => [
   {
-    question: `${siteName.value} 适合什么团队？`,
-    answer: '适合已经在日常研发中使用 AI 编程工具，希望统一入口、权限、使用记录和稳定性保障的个人开发者或团队。'
+    question: t('home.modern.faq.items.fit.question', { siteName: siteName.value }),
+    answer: t('home.modern.faq.items.fit.answer')
   },
   {
-    question: '为什么不直接让每个人各自配置工具？',
-    answer: '个人配置在小规模时很快，但团队协作会遇到密钥分散、权限不清、消耗不可见和排障困难等问题。统一入口能降低这些长期成本。'
+    question: t('home.modern.faq.items.individual.question'),
+    answer: t('home.modern.faq.items.individual.answer')
   },
   {
-    question: '服务稳定性如何保障？',
-    answer: '平台围绕通道状态、请求路由、失败处理和用量记录做持续监控，让高频调用场景更可控。'
+    question: t('home.modern.faq.items.stability.question'),
+    answer: t('home.modern.faq.items.stability.answer')
   },
   {
-    question: '如何开始使用？',
-    answer: '登录后进入工作台，按文档完成基础配置即可开始接入。团队场景可以先整理成员、分组和常用开发工具。'
+    question: t('home.modern.faq.items.start.question'),
+    answer: t('home.modern.faq.items.start.answer')
   }
-]
+])
 
 const footerGroups = computed<FooterGroup[]>(() => [
   {
-    title: '产品',
+    title: t('home.modern.footer.groups.product'),
     items: [
-      { label: '能力', href: '#features' },
-      { label: '用户评价', href: '#testimonials' },
-      ...(docUrl.value ? [{ label: '文档', href: docUrl.value }] : [])
+      { label: t('home.modern.nav.features'), href: '#features' },
+      { label: t('home.modern.nav.testimonials'), href: '#testimonials' },
+      ...(docUrl.value ? [{ label: t('home.docs'), href: docUrl.value }] : [])
     ]
   },
   {
-    title: '支持',
+    title: t('home.modern.footer.groups.support'),
     items: [
-      { label: '常见问题', href: '#faq' },
-      { label: '登录工作台', to: '/login' },
-      { label: '联系我们', href: '#contact' }
+      { label: t('home.modern.nav.faq'), href: '#faq' },
+      { label: t('home.modern.footer.loginWorkspace'), to: '/login' },
+      { label: t('home.modern.nav.contact'), href: '#contact' }
     ]
   },
   {
-    title: '场景',
+    title: t('home.modern.footer.groups.scenes'),
     items: [
-      { label: 'AI 编程协作' },
-      { label: '团队用量管理' },
-      { label: '开发工具接入' }
+      { label: t('home.modern.footer.scenes.coding') },
+      { label: t('home.modern.footer.scenes.usage') },
+      { label: t('home.modern.footer.scenes.tools') }
     ]
   },
   {
-    title: '法律',
+    title: t('home.modern.footer.groups.legal'),
     items: [
-      { label: '隐私政策', to: '/legal/privacy' },
-      { label: '服务条款', to: '/legal/terms' },
-      { label: '退款政策', to: '/legal/refund' }
+      { label: t('home.modern.footer.legal.privacy'), to: '/legal/privacy' },
+      { label: t('home.modern.footer.legal.terms'), to: '/legal/terms' },
+      { label: t('home.modern.footer.legal.refund'), to: '/legal/refund' }
     ]
   }
 ])
@@ -501,9 +501,14 @@ onMounted(() => {
 
 <style scoped>
 .landing-shell {
-  background:
-    radial-gradient(circle at 14% 8%, rgba(249, 115, 22, 0.14), transparent 24rem),
-    linear-gradient(180deg, #172033 0%, #111827 46%, #162033 100%);
+  --landing-bg: #14161a;
+  --landing-bg-soft: #1d2026;
+  --landing-surface: #1d2026;
+  --landing-surface-muted: #252931;
+  --landing-border: rgba(148, 163, 184, 0.16);
+  --landing-text: #f5f5f5;
+  --landing-muted: #a7adb7;
+  background: linear-gradient(180deg, #1d2026 0%, #14161a 46%, #0f1115 100%);
 }
 
 .landing-header {
@@ -511,7 +516,7 @@ onMounted(() => {
   top: 0;
   z-index: 30;
   border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(17, 24, 39, 0.86);
+  background: rgba(20, 22, 26, 0.86);
   backdrop-filter: blur(18px);
 }
 
@@ -532,7 +537,7 @@ onMounted(() => {
   overflow: hidden;
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 0.75rem;
-  background: #1f2937;
+  background: #252931;
 }
 
 .brand-mark img {
@@ -560,7 +565,7 @@ onMounted(() => {
   width: 2.5rem;
   border: 1px solid rgba(148, 163, 184, 0.2);
   color: #a3a3a3;
-  background: rgba(31, 41, 55, 0.72);
+  background: rgba(37, 41, 49, 0.74);
 }
 
 .icon-action:hover {
@@ -582,7 +587,6 @@ onMounted(() => {
   color: #ffffff;
   font-size: 0.875rem;
   font-weight: 700;
-  box-shadow: 0 8px 24px rgba(249, 115, 22, 0.24);
 }
 
 .hero-section {
@@ -596,8 +600,7 @@ onMounted(() => {
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(90deg, rgba(17, 24, 39, 0.2) 0%, rgba(17, 24, 39, 0.18) 42%, rgba(17, 24, 39, 0.5) 100%),
-    url('/landing-assets/hero-texture.png') center / cover no-repeat;
+    linear-gradient(90deg, rgba(20, 22, 26, 0.2) 0%, rgba(20, 22, 26, 0.18) 42%, rgba(20, 22, 26, 0.5) 100%);
   opacity: 0.44;
   pointer-events: none;
 }
@@ -653,14 +656,12 @@ onMounted(() => {
   padding: 0 1.5rem;
   color: #ffffff;
   font-weight: 800;
-  box-shadow: 0 16px 34px rgba(249, 115, 22, 0.26);
 }
 
 .hero-button.secondary {
   border: 1px solid rgba(148, 163, 184, 0.2);
-  background: #1f2937;
+  background: #252931;
   color: #f5f5f5;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
 .hero-points {
@@ -693,8 +694,7 @@ onMounted(() => {
   position: relative;
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 0.75rem;
-  background: #172033;
-  box-shadow: 0 24px 70px rgba(17, 24, 39, 0.28);
+  background: #1d2026;
   overflow: visible;
 }
 
@@ -706,7 +706,6 @@ onMounted(() => {
   background-size: 300% 200%;
   opacity: 0.78;
   pointer-events: none;
-  filter: drop-shadow(0 18px 26px rgba(15, 23, 42, 0.32));
 }
 
 .object-accent.command {
@@ -765,14 +764,14 @@ onMounted(() => {
 .route-panel {
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 0.5rem;
-  background: #1f2937;
+  background: #252931;
 }
 
 .command-panel {
   grid-column: span 2;
   min-height: 18rem;
   padding: 1.25rem;
-  background: #111827;
+  background: #14161a;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
@@ -849,7 +848,7 @@ onMounted(() => {
   border-bottom: 1px solid rgba(148, 163, 184, 0.16);
   background:
     linear-gradient(90deg, rgba(249, 115, 22, 0.08), transparent 24%),
-    rgba(23, 32, 51, 0.74);
+    rgba(29, 32, 38, 0.74);
 }
 
 .trust-strip {
@@ -858,10 +857,8 @@ onMounted(() => {
   border-radius: 0.5rem;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.045), transparent),
-    rgba(31, 41, 55, 0.46);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 18px 46px rgba(15, 23, 42, 0.2);
+    rgba(37, 41, 49, 0.46);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .trust-card {
@@ -962,40 +959,11 @@ onMounted(() => {
   overflow: hidden;
   border-radius: 0.5rem;
   padding: 1.5rem;
-  background:
-    radial-gradient(circle at 14% 16%, rgba(249, 115, 22, 0.22), transparent 14rem),
-    linear-gradient(135deg, rgba(31, 41, 55, 0.95), rgba(23, 32, 51, 0.72));
+  border: 1px solid var(--landing-border);
+  background: var(--landing-surface);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
-    0 22px 52px rgba(15, 23, 42, 0.22);
-}
-
-.feature-panel::after {
-  content: '';
-  position: absolute;
-  inset: auto -18% -42% 44%;
-  height: 12rem;
-  border-radius: 999px;
-  background: rgba(249, 115, 22, 0.12);
-  filter: blur(28px);
-}
-
-.feature-card:nth-child(2) .feature-panel {
-  background:
-    radial-gradient(circle at 82% 12%, rgba(56, 189, 248, 0.18), transparent 13rem),
-    linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(31, 41, 55, 0.8));
-}
-
-.feature-card:nth-child(3) .feature-panel {
-  background:
-    radial-gradient(circle at 12% 84%, rgba(52, 211, 153, 0.16), transparent 13rem),
-    linear-gradient(140deg, rgba(22, 32, 51, 0.96), rgba(30, 41, 59, 0.78));
-}
-
-.feature-card:nth-child(4) .feature-panel {
-  background:
-    radial-gradient(circle at 80% 76%, rgba(251, 191, 36, 0.16), transparent 13rem),
-    linear-gradient(135deg, rgba(31, 41, 55, 0.93), rgba(17, 24, 39, 0.78));
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 18px 42px rgba(2, 6, 23, 0.16);
 }
 
 .feature-index {
@@ -1018,7 +986,6 @@ onMounted(() => {
   border-radius: 0.5rem;
   background-repeat: no-repeat;
   background-size: 400% 300%;
-  filter: drop-shadow(0 14px 24px rgba(15, 23, 42, 0.24));
 }
 
 .feature-copy {
@@ -1055,19 +1022,17 @@ onMounted(() => {
   background-repeat: no-repeat;
   background-size: 200% 200%;
   opacity: 0.68;
-  filter: drop-shadow(0 28px 40px rgba(15, 23, 42, 0.3));
 }
 
 .testimonial-section {
   position: relative;
   isolation: isolate;
-  border-top: 1px solid rgba(148, 163, 184, 0.16);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  border-top: 1px solid var(--landing-border);
+  border-bottom: 1px solid var(--landing-border);
   background:
-    linear-gradient(180deg, rgba(24, 34, 53, 0.82), rgba(24, 34, 53, 0.9)),
-    url('/landing-assets/testimonial-texture.png') center / cover no-repeat,
-    #182235;
-  color: #f5f5f5;
+    linear-gradient(180deg, rgba(20, 22, 26, 0.96), rgba(29, 32, 38, 0.92) 54%, rgba(20, 22, 26, 0.98)),
+    var(--landing-bg);
+  color: var(--landing-text);
 }
 
 .testimonial-section .section-heading h2 {
@@ -1075,7 +1040,7 @@ onMounted(() => {
 }
 
 .testimonial-section .section-heading span {
-  color: #a3a3a3;
+  color: var(--landing-muted);
 }
 
 .testimonial-marquee {
@@ -1100,12 +1065,12 @@ onMounted(() => {
 
 .testimonial-marquee::before {
   left: 0;
-  background: linear-gradient(90deg, rgba(24, 34, 53, 0.96) 0%, rgba(24, 34, 53, 0) 100%);
+  background: linear-gradient(90deg, rgba(20, 22, 26, 0.98) 0%, rgba(20, 22, 26, 0) 100%);
 }
 
 .testimonial-marquee::after {
   right: 0;
-  background: linear-gradient(270deg, rgba(24, 34, 53, 0.96) 0%, rgba(24, 34, 53, 0) 100%);
+  background: linear-gradient(270deg, rgba(20, 22, 26, 0.98) 0%, rgba(20, 22, 26, 0) 100%);
 }
 
 .testimonial-track {
@@ -1131,38 +1096,31 @@ onMounted(() => {
   justify-content: space-between;
   flex: 0 0 auto;
   padding: 1.4rem;
-  color: #f5f5f5;
+  color: var(--landing-text);
+  border: 1px solid var(--landing-border);
   border-radius: 0.5rem;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 38%),
-    rgba(31, 41, 55, 0.68);
+  background: var(--landing-surface);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 18px 42px rgba(15, 23, 42, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 18px 42px rgba(2, 6, 23, 0.2);
 }
 
 .testimonial-card:nth-child(4n + 2) {
   width: min(24rem, calc(100vw - 3rem));
   min-height: 18rem;
-  background:
-    radial-gradient(circle at 12% 18%, rgba(249, 115, 22, 0.16), transparent 12rem),
-    rgba(23, 32, 51, 0.76);
+  background: var(--landing-surface);
 }
 
 .testimonial-card:nth-child(4n + 3) {
   transform: translateY(1.25rem);
-  background:
-    linear-gradient(180deg, rgba(15, 23, 42, 0.26), transparent),
-    rgba(30, 41, 59, 0.62);
+  background: var(--landing-surface);
 }
 
 .testimonial-card:nth-child(4n) {
   width: min(20rem, calc(100vw - 3rem));
   min-height: 15rem;
   transform: translateY(-0.9rem);
-  background:
-    radial-gradient(circle at 88% 78%, rgba(56, 189, 248, 0.13), transparent 11rem),
-    rgba(31, 41, 55, 0.62);
+  background: var(--landing-surface);
 }
 
 .testimonial-card::before {
@@ -1237,7 +1195,7 @@ onMounted(() => {
 }
 
 .reviewer em {
-  color: #a3a3a3;
+  color: var(--landing-muted);
   font-size: 0.8rem;
   font-style: normal;
 }
@@ -1284,18 +1242,12 @@ onMounted(() => {
   isolation: isolate;
   border-top: 1px solid rgba(148, 163, 184, 0.16);
   background:
-    linear-gradient(180deg, rgba(17, 24, 39, 0.86), rgba(17, 24, 39, 0.96)),
-    url('/landing-assets/footer-texture.png') center / cover no-repeat,
-    #111827;
+    linear-gradient(180deg, rgba(20, 22, 26, 0.86), rgba(20, 22, 26, 0.96)),
+    #14161a;
 }
 
 .landing-footer::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: radial-gradient(circle at 16% 20%, rgba(249, 115, 22, 0.12), transparent 20rem);
-  pointer-events: none;
+  content: none;
 }
 
 .footer-top {

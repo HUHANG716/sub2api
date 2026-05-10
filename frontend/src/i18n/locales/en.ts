@@ -1,4 +1,19 @@
 export default {
+  locale: {
+    label: 'Language',
+    switchTo: 'Switch language',
+    current: 'Current language',
+    loading: 'Changing language...',
+    en: {
+      nativeName: 'English',
+      description: 'English interface'
+    },
+    zh: {
+      nativeName: '简体中文',
+      description: '中文界面'
+    }
+  },
+
   // Home Page
   home: {
     viewOnGithub: 'View on GitHub',
@@ -10,6 +25,181 @@ export default {
     login: 'Login',
     getStarted: 'Get Started',
     goToDashboard: 'Go to Dashboard',
+    modern: {
+      navTagline: 'AI developer workspace',
+      nav: {
+        features: 'Capabilities',
+        testimonials: 'Customer stories',
+        faq: 'FAQ',
+        contact: 'Contact'
+      },
+      hero: {
+        eyebrow: 'AI Code Workspace',
+        line1: 'Rebuild your',
+        line2: 'AI coding workflow',
+        subtitle: 'A stable, clear AI coding platform built for team collaboration.',
+        description: 'Bring AI coding, usage management, and team collaboration into one software platform so your team can stay focused on the product.',
+        pointsLabel: 'Service highlights',
+        points: {
+          workspace: {
+            title: 'Efficient workspace',
+            text: 'Manage AI coding tasks, keys, and usage in one place'
+          },
+          reliability: {
+            title: 'Stable experience',
+            text: 'Responsive, reliable, and ready for daily development'
+          },
+          support: {
+            title: 'Professional service',
+            text: 'Engineering support and practical solution guidance'
+          }
+        }
+      },
+      console: {
+        previewLabel: 'AI developer workspace preview',
+        tasksLabel: 'Tasks today',
+        tasksCaption: 'Processing steadily',
+        statusLabel: 'Response status',
+        statusCaption: 'Service available',
+        lines: {
+          connected: 'connected: claude-code / codex / gemini-cli',
+          policy: 'workspace policy synced',
+          routing: 'routing requests through healthy channels',
+          report: 'usage report generated in 312ms'
+        },
+        routes: {
+          codeAssist: 'Code Assist',
+          teamKeys: 'Team Keys',
+          usageGuard: 'Usage Guard'
+        },
+        status: {
+          active: 'active',
+          synced: 'synced',
+          online: 'online'
+        }
+      },
+      stats: {
+        developers: 'developers',
+        uptime: 'service uptime',
+        taskValue: '5M+',
+        tasks: 'tasks processed',
+        support: 'dedicated technical support'
+      },
+      features: {
+        eyebrow: 'Developer Platform',
+        title: 'One entry point for everyday AI engineering'
+      },
+      featureCards: {
+        tools: {
+          title: 'Unified tool access',
+          description: 'Connect common AI coding tools through one entry point, reducing scattered accounts, keys, and team configuration.'
+        },
+        team: {
+          title: 'Clearer team collaboration',
+          description: 'Build a shared view around members, permissions, groups, and usage records so collaboration involves less guesswork.'
+        },
+        reliability: {
+          title: 'Reliability first',
+          description: 'Channel monitoring, failover, and usage protection help keep high-frequency development workflows steady.'
+        },
+        usage: {
+          title: 'Transparent usage tracking',
+          description: 'Turn key usage, request status, and trends into readable reports for review and management.'
+        }
+      },
+      testimonials: {
+        eyebrow: 'Customer stories',
+        title: 'What users say',
+        description: 'Real feedback from developers, architects, and engineering leads.',
+        listLabel: 'Customer story list'
+      },
+      reviews: {
+        one: {
+          quote: 'After adopting it, our AI coding workflow finally became consistent. People stopped asking for keys and channel config, and development moved much more smoothly.',
+          name: 'Zhou Yu',
+          role: 'Engineering Lead at a SaaS company'
+        },
+        two: {
+          quote: 'What I like most is the stability and observability. We can locate issues faster, and daily work is not interrupted by switching between tools.',
+          name: 'Mia Chen',
+          role: 'Full-stack Engineer at a global product team'
+        },
+        three: {
+          quote: 'It is very friendly to independent developers. Setup is simple, the docs are clear, and I can spend more time on the product instead of maintaining scattered tools.',
+          name: 'Lin Chuan',
+          role: 'Independent Developer'
+        },
+        four: {
+          quote: 'Team usage is visible and permission boundaries are clearer. For engineering management, this is a solid piece of infrastructure.',
+          name: 'Eva Liu',
+          role: 'AI Product Manager at a tech company'
+        },
+        five: {
+          quote: 'Customer service and technical support respond quickly. When integration details come up, we can talk directly and keep key launch issues covered.',
+          name: 'He',
+          role: 'Frontend Architect at a local services platform'
+        },
+        six: {
+          quote: 'After routing calls from multiple development tools here, collaboration costs dropped a lot and finance and engineering became easier to align.',
+          name: 'Kevin Zhao',
+          role: 'Backend Engineer at an ecommerce platform'
+        },
+        seven: {
+          quote: 'It stayed stable during peak periods, and the routing and monitoring features are practical. It feels like a system we can keep in the workflow long term.',
+          name: 'Wu Ke',
+          role: 'Engineering Director at a fintech company'
+        },
+        eight: {
+          quote: 'New teammates ramp up much faster. We maintain one entry point and one guide, and our AI coding habits are more consistent across the team.',
+          name: 'Sarah Lin',
+          role: 'Mobile Lead at a startup'
+        }
+      },
+      faq: {
+        title: 'Questions? We have answers',
+        description: 'Common questions about integration, stability, team management, and getting started.',
+        items: {
+          fit: {
+            question: 'What teams is {siteName} best for?',
+            answer: 'It is built for individual developers or teams already using AI coding tools and looking for unified access, permissions, usage records, and reliability controls.'
+          },
+          individual: {
+            question: 'Why not let everyone configure tools on their own?',
+            answer: 'Individual configuration can be fast at small scale, but team collaboration often brings scattered keys, unclear permissions, invisible usage, and difficult troubleshooting. A unified entry point lowers that long-term cost.'
+          },
+          stability: {
+            question: 'How is service reliability protected?',
+            answer: 'The platform continuously monitors channel status, request routing, failure handling, and usage records to make high-frequency calling scenarios more controllable.'
+          },
+          start: {
+            question: 'How do I get started?',
+            answer: 'Log in to the workspace and follow the docs to complete the basic setup. For teams, start by organizing members, groups, and common development tools.'
+          }
+        }
+      },
+      footer: {
+        tagline: 'AI coding workspace for developers',
+        description: 'A unified AI development entry point for individual developers and teams.',
+        operator: 'Operated for AI development workflows',
+        loginWorkspace: 'Log in to workspace',
+        groups: {
+          product: 'Product',
+          support: 'Support',
+          scenes: 'Use cases',
+          legal: 'Legal'
+        },
+        scenes: {
+          coding: 'AI coding collaboration',
+          usage: 'Team usage management',
+          tools: 'Development tool access'
+        },
+        legal: {
+          privacy: 'Privacy Policy',
+          terms: 'Terms of Service',
+          refund: 'Refund Policy'
+        }
+      }
+    },
     // User-focused value proposition
     heroSubtitle: 'One Key, All AI Models',
     heroDescription: 'No need to manage multiple subscriptions. Access multiple AI capability classes with a single API key',
@@ -321,8 +511,8 @@ export default {
 
   // Setup Wizard
   setup: {
-    title: 'Sub2API Setup',
-    description: 'Configure your Sub2API instance',
+    title: 'Hahacode Setup',
+    description: 'Configure your Hahacode instance',
     database: {
       title: 'Database Configuration',
       description: 'Connect to your PostgreSQL database',
@@ -1588,7 +1778,7 @@ export default {
         step1: {
           title: 'Create an R2 Bucket',
           line1: 'Log in to the Cloudflare Dashboard (dash.cloudflare.com), select "R2 Object Storage" from the sidebar',
-          line2: 'Click "Create bucket", enter a name (e.g. sub2api-backups), choose a region',
+          line2: 'Click "Create bucket", enter a name (e.g. hahacode-backups), choose a region',
           line3: 'Click create to finish'
         },
         step2: {
@@ -3359,7 +3549,7 @@ export default {
       poolMode: 'Pool Mode',
       poolModeHint: 'Enable when upstream is an account pool; errors won\'t mark local account status',
       poolModeInfo:
-        'When enabled, upstream 429/403/401 errors will auto-retry without marking the account as rate-limited or errored. Suitable for upstream pointing to another sub2api instance.',
+        'When enabled, upstream 429/403/401 errors will auto-retry without marking the account as rate-limited or errored. Suitable for upstream pointing to another Hahacode instance.',
       poolModeRetryCount: 'Same-Account Retries',
       poolModeRetryCountHint:
         'Only applies in pool mode. Use 0 to disable in-place retry. Default {default}, maximum {max}.',
@@ -5340,7 +5530,7 @@ export default {
         secretKeyConfiguredHint: 'Secret key configured. Leave empty to keep the current value.'      },
       linuxdo: {
         title: 'LinuxDo Connect Login',
-        description: 'Configure LinuxDo Connect OAuth for Sub2API end-user login',
+        description: 'Configure LinuxDo Connect OAuth for Hahacode end-user login',
         enable: 'Enable LinuxDo Login',
         enableHint: 'Show LinuxDo login on the login/register pages',
         clientId: 'Client ID',
@@ -5501,7 +5691,7 @@ export default {
         backendModeDescription:
           'Disables user registration, public site, and self-service features. Only admin can log in and manage the platform.',
         siteName: 'Site Name',
-        siteNamePlaceholder: 'Sub2API',
+        siteNamePlaceholder: 'Hahacode',
         siteNameHint: 'Displayed in emails and page titles',
         siteSubtitle: 'Site Subtitle',
         siteSubtitlePlaceholder: 'Subscription to API Conversion Platform',
@@ -5770,7 +5960,7 @@ export default {
         fromEmail: 'From Email',
         fromEmailPlaceholder: "noreply{'@'}example.com",
         fromName: 'From Name',
-        fromNamePlaceholder: 'Sub2API',
+        fromNamePlaceholder: 'Hahacode',
         useTls: 'Use TLS',
         useTlsHint: 'Enable TLS encryption for SMTP connection'
       },
@@ -6378,14 +6568,14 @@ export default {
     // Admin tour steps
     admin: {
       welcome: {
-        title: '👋 Welcome to Sub2API',
-        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Sub2API is a powerful AI service gateway platform that helps you easily manage and distribute AI services.</p><p style="margin-bottom: 12px;"><b>🎯 Core Features:</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>📦 <b>Group Management</b> - Create service tiers (VIP, Free Trial, etc.)</li><li>🔗 <b>Account Pool</b> - Connect multiple upstream AI service accounts</li><li>🔑 <b>Key Distribution</b> - Generate independent API Keys for users</li><li>💰 <b>Billing Control</b> - Flexible rate and quota management</li></ul><p style="color: #10b981; font-weight: 600;">Let\'s complete the initial setup in 3 minutes →</p></div>',
+        title: '👋 Welcome to Hahacode',
+        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Hahacode is a powerful AI service gateway platform that helps you easily manage and distribute AI services.</p><p style="margin-bottom: 12px;"><b>🎯 Core Features:</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>📦 <b>Group Management</b> - Create service tiers (VIP, Free Trial, etc.)</li><li>🔗 <b>Account Pool</b> - Connect multiple upstream AI service accounts</li><li>🔑 <b>Key Distribution</b> - Generate independent API Keys for users</li><li>💰 <b>Billing Control</b> - Flexible rate and quota management</li></ul><p style="color: #10b981; font-weight: 600;">Let\'s complete the initial setup in 3 minutes →</p></div>',
         nextBtn: 'Start Setup 🚀',
         prevBtn: 'Skip'
       },
       groupManage: {
         title: '📦 Step 1: Group Management',
-        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;"><b>What is a Group?</b></p><p style="margin-bottom: 12px;">Groups are the core concept of Sub2API, like a "service package":</p><ul style="margin-left: 20px; margin-bottom: 12px; font-size: 13px;"><li>🎯 Each group can contain multiple upstream accounts</li><li>💰 Each group has independent billing multiplier</li><li>👥 Can be set as public or exclusive</li></ul><p style="margin-top: 12px; padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 Example:</b> You can create "VIP Premium" (high rate) and "Free Trial" (low rate) groups</p><p style="margin-top: 16px; color: #10b981; font-weight: 600;">👉 Click "Group Management" on the left sidebar</p></div>'
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;"><b>What is a Group?</b></p><p style="margin-bottom: 12px;">Groups are the core concept of Hahacode, like a "service package":</p><ul style="margin-left: 20px; margin-bottom: 12px; font-size: 13px;"><li>🎯 Each group can contain multiple upstream accounts</li><li>💰 Each group has independent billing multiplier</li><li>👥 Can be set as public or exclusive</li></ul><p style="margin-top: 12px; padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 Example:</b> You can create "VIP Premium" (high rate) and "Free Trial" (low rate) groups</p><p style="margin-top: 16px; color: #10b981; font-weight: 600;">👉 Click "Group Management" on the left sidebar</p></div>'
       },
       createGroup: {
         title: '➕ Create New Group',
@@ -6478,8 +6668,8 @@ export default {
     // User tour steps
     user: {
       welcome: {
-        title: '👋 Welcome to Sub2API',
-        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Hello! Welcome to the Sub2API AI service platform.</p><p style="margin-bottom: 12px;"><b>🎯 Quick Start:</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>🔑 Create API Key</li><li>📋 Copy key to your application</li><li>🚀 Start using AI services</li></ul><p style="color: #10b981; font-weight: 600;">Just 1 minute, let\'s get started →</p></div>',
+        title: '👋 Welcome to Hahacode',
+        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Hello! Welcome to the Hahacode AI service platform.</p><p style="margin-bottom: 12px;"><b>🎯 Quick Start:</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>🔑 Create API Key</li><li>📋 Copy key to your application</li><li>🚀 Start using AI services</li></ul><p style="color: #10b981; font-weight: 600;">Just 1 minute, let\'s get started →</p></div>',
         nextBtn: 'Start 🚀',
         prevBtn: 'Skip'
       },

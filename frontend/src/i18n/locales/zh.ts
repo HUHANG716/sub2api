@@ -1,4 +1,19 @@
 export default {
+  locale: {
+    label: '语言',
+    switchTo: '切换语言',
+    current: '当前语言',
+    loading: '正在切换语言...',
+    en: {
+      nativeName: 'English',
+      description: '英文界面'
+    },
+    zh: {
+      nativeName: '简体中文',
+      description: '中文界面'
+    }
+  },
+
   // Home Page
   home: {
     viewOnGithub: '在 GitHub 上查看',
@@ -10,6 +25,181 @@ export default {
     login: '登录',
     getStarted: '立即开始',
     goToDashboard: '进入控制台',
+    modern: {
+      navTagline: 'AI 开发者工作台',
+      nav: {
+        features: '能力',
+        testimonials: '用户评价',
+        faq: '常见问题',
+        contact: '联系我们'
+      },
+      hero: {
+        eyebrow: 'AI Code Workspace',
+        line1: '重构您的',
+        line2: 'AI 编程体验',
+        subtitle: '稳定、清晰、适合团队协作的 AI 编程平台。',
+        description: '把 AI 编程、使用管理与团队协作整合到一个软件平台，让团队专注产品本身。',
+        pointsLabel: '服务亮点',
+        points: {
+          workspace: {
+            title: '高效工作台',
+            text: '统一管理 AI 编码任务、密钥与使用体验'
+          },
+          reliability: {
+            title: '稳定体验',
+            text: '流畅响应、可靠交付，适合日常开发协作'
+          },
+          support: {
+            title: '专业服务',
+            text: '工程师支持与方案建议，问题有人接住'
+          }
+        }
+      },
+      console: {
+        previewLabel: 'AI 开发者工作台预览',
+        tasksLabel: '今日任务',
+        tasksCaption: '稳定处理中',
+        statusLabel: '响应状态',
+        statusCaption: '服务可用',
+        lines: {
+          connected: '已连接：claude-code / codex / gemini-cli',
+          policy: '工作区策略已同步',
+          routing: '请求正在通过健康通道路由',
+          report: '用量报告已在 312ms 内生成'
+        },
+        routes: {
+          codeAssist: '代码辅助',
+          teamKeys: '团队密钥',
+          usageGuard: '用量保护'
+        },
+        status: {
+          active: '运行中',
+          synced: '已同步',
+          online: '在线'
+        }
+      },
+      stats: {
+        developers: '开发者用户',
+        uptime: '服务稳定性',
+        taskValue: '500 万+',
+        tasks: '任务处理次数',
+        support: '专属技术支持'
+      },
+      features: {
+        eyebrow: 'Developer Platform',
+        title: '一个入口，组织起日常 AI 研发工作'
+      },
+      featureCards: {
+        tools: {
+          title: '统一接入开发工具',
+          description: '把常用 AI 编程工具接到一个入口，减少账号、密钥和配置在团队间散落。'
+        },
+        team: {
+          title: '团队协作更清晰',
+          description: '围绕成员、权限、分组和使用记录建立共享视图，协作时少一点猜测。'
+        },
+        reliability: {
+          title: '稳定性优先',
+          description: '通过通道监控、失败切换和用量保护，让高频开发场景更稳。'
+        },
+        usage: {
+          title: '用量透明可追踪',
+          description: '关键消耗、调用状态与趋势沉淀为可读报表，方便复盘和管理。'
+        }
+      },
+      testimonials: {
+        eyebrow: '用户评价',
+        title: '用户怎么说',
+        description: '来自开发者、架构师和研发负责人的真实使用反馈。',
+        listLabel: '用户评价列表'
+      },
+      reviews: {
+        one: {
+          quote: '接入之后，团队里的 AI 编程流程终于统一了。大家不用反复问密钥和通道配置，开发节奏明显顺了。',
+          name: '周予',
+          role: '研发团队负责人 @ SaaS 公司'
+        },
+        two: {
+          quote: '我最喜欢的是稳定性和可观测性。出问题时能快速定位，日常使用也不会因为工具切换打断思路。',
+          name: 'Mia Chen',
+          role: '全栈工程师 @ 出海团队'
+        },
+        three: {
+          quote: '对独立开发者很友好。配置简单，文档清楚，把更多精力留给产品本身，而不是维护一堆零散工具。',
+          name: '林川',
+          role: '独立开发者'
+        },
+        four: {
+          quote: '团队成员的使用情况变得可见，权限边界也更清楚。对研发管理来说，这是很踏实的基础设施。',
+          name: 'Eva Liu',
+          role: 'AI 产品经理 @ 科技公司'
+        },
+        five: {
+          quote: '客服和技术支持响应很快，遇到接入细节可以直接沟通。上线前后都有人帮忙兜住关键问题。',
+          name: '何工',
+          role: '前端架构师 @ 本地生活平台'
+        },
+        six: {
+          quote: '我们把多个开发工具的调用收敛到这里后，团队协作成本下降很多，财务和技术侧都更容易对齐。',
+          name: 'Kevin Zhao',
+          role: '后端工程师 @ 电商平台'
+        },
+        seven: {
+          quote: '高峰期也能保持稳定，路由和监控能力很实用。它不像玩具，更像能长期放进工作流里的系统。',
+          name: '吴可',
+          role: '研发总监 @ 金融科技公司'
+        },
+        eight: {
+          quote: '新同事上手速度快了很多。我们只维护一套入口和说明，团队里的 AI 编程习惯也更一致。',
+          name: 'Sarah Lin',
+          role: '移动端负责人 @ 创业公司'
+        }
+      },
+      faq: {
+        title: '有疑问？我们来解答',
+        description: '围绕接入、稳定性、团队管理和上手体验整理了最常见的问题。',
+        items: {
+          fit: {
+            question: '{siteName} 适合什么团队？',
+            answer: '适合已经在日常研发中使用 AI 编程工具，希望统一入口、权限、使用记录和稳定性保障的个人开发者或团队。'
+          },
+          individual: {
+            question: '为什么不直接让每个人各自配置工具？',
+            answer: '个人配置在小规模时很快，但团队协作会遇到密钥分散、权限不清、消耗不可见和排障困难等问题。统一入口能降低这些长期成本。'
+          },
+          stability: {
+            question: '服务稳定性如何保障？',
+            answer: '平台围绕通道状态、请求路由、失败处理和用量记录做持续监控，让高频调用场景更可控。'
+          },
+          start: {
+            question: '如何开始使用？',
+            answer: '登录后进入工作台，按文档完成基础配置即可开始接入。团队场景可以先整理成员、分组和常用开发工具。'
+          }
+        }
+      },
+      footer: {
+        tagline: '面向开发者的 AI 编程工作台',
+        description: '为个人开发者和团队提供统一的 AI 开发入口。',
+        operator: '为 AI 开发工作流而运营',
+        loginWorkspace: '登录工作台',
+        groups: {
+          product: '产品',
+          support: '支持',
+          scenes: '场景',
+          legal: '法律'
+        },
+        scenes: {
+          coding: 'AI 编程协作',
+          usage: '团队用量管理',
+          tools: '开发工具接入'
+        },
+        legal: {
+          privacy: '隐私政策',
+          terms: '服务条款',
+          refund: '退款政策'
+        }
+      }
+    },
     // 新增：面向用户的价值主张
     heroSubtitle: '一个密钥，畅用多个 AI 模型',
     heroDescription: '无需管理多个订阅账号，一站式接入多类 AI 能力',
@@ -321,8 +511,8 @@ export default {
 
   // Setup Wizard
   setup: {
-    title: 'Sub2API 安装向导',
-    description: '配置您的 Sub2API 实例',
+    title: 'Hahacode 安装向导',
+    description: '配置您的 Hahacode 实例',
     database: {
       title: '数据库配置',
       description: '连接到您的 PostgreSQL 数据库',
@@ -1609,7 +1799,7 @@ export default {
         step1: {
           title: '创建 R2 存储桶',
           line1: '登录 Cloudflare Dashboard (dash.cloudflare.com)，左侧菜单选择「R2 对象存储」',
-          line2: '点击「创建存储桶」，输入名称（如 sub2api-backups），选择区域',
+          line2: '点击「创建存储桶」，输入名称（如 hahacode-backups），选择区域',
           line3: '点击创建完成'
         },
         step2: {
@@ -3503,7 +3693,7 @@ export default {
       poolMode: '池模式',
       poolModeHint: '上游为账号池时启用，错误不标记本地账号状态',
       poolModeInfo:
-        '启用后，上游 429/403/401 错误将自动重试而不标记账号限流或错误，适用于上游指向另一个 sub2api 实例的场景。',
+        '启用后，上游 429/403/401 错误将自动重试而不标记账号限流或错误，适用于上游指向另一个 Hahacode 实例的场景。',
       poolModeRetryCount: '同账号重试次数',
       poolModeRetryCountHint: '仅在池模式下生效。0 表示不原地重试；默认 {default}，最大 {max}。',
       customErrorCodes: '自定义错误码',
@@ -5504,7 +5694,7 @@ export default {
       },
       linuxdo: {
         title: 'LinuxDo Connect 登录',
-        description: '配置 LinuxDo Connect OAuth，用于 Sub2API 用户登录',
+        description: '配置 LinuxDo Connect OAuth，用于 Hahacode 用户登录',
         enable: '启用 LinuxDo 登录',
         enableHint: '在登录/注册页面显示 LinuxDo 登录入口',
         clientId: 'Client ID',
@@ -5661,7 +5851,7 @@ export default {
           '禁用用户注册、公开页面和自助服务功能。仅管理员可以登录和管理平台。',
         siteName: '站点名称',
         siteNameHint: '显示在邮件和页面标题中',
-        siteNamePlaceholder: 'Sub2API',
+        siteNamePlaceholder: 'Hahacode',
         siteSubtitle: '站点副标题',
         siteSubtitleHint: '显示在登录和注册页面',
         siteSubtitlePlaceholder: '订阅转 API 转换平台',
@@ -5931,7 +6121,7 @@ export default {
         fromEmail: '发件人邮箱',
         fromEmailPlaceholder: "noreply{'@'}example.com",
         fromName: '发件人名称',
-        fromNamePlaceholder: 'Sub2API',
+        fromNamePlaceholder: 'Hahacode',
         useTls: '使用 TLS',
         useTlsHint: '为 SMTP 连接启用 TLS 加密'
       },
@@ -6536,16 +6726,16 @@ export default {
     // Admin tour steps
     admin: {
       welcome: {
-        title: '👋 欢迎使用 Sub2API',
+        title: '👋 欢迎使用 Hahacode',
         description:
-          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Sub2API 是一个强大的 AI 服务中转平台，让您轻松管理和分发 AI 服务。</p><p style="margin-bottom: 12px;"><b>🎯 核心功能：</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>📦 <b>分组管理</b> - 创建不同的服务套餐（VIP、免费试用等）</li><li>🔗 <b>账号池</b> - 连接多个上游 AI 服务商账号</li><li>🔑 <b>密钥分发</b> - 为用户生成独立的 API Key</li><li>💰 <b>计费管理</b> - 灵活的费率和配额控制</li></ul><p style="color: #10b981; font-weight: 600;">接下来，我们将用 3 分钟带您完成首次配置 →</p></div>',
+          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Hahacode 是一个强大的 AI 服务中转平台，让您轻松管理和分发 AI 服务。</p><p style="margin-bottom: 12px;"><b>🎯 核心功能：</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>📦 <b>分组管理</b> - 创建不同的服务套餐（VIP、免费试用等）</li><li>🔗 <b>账号池</b> - 连接多个上游 AI 服务商账号</li><li>🔑 <b>密钥分发</b> - 为用户生成独立的 API Key</li><li>💰 <b>计费管理</b> - 灵活的费率和配额控制</li></ul><p style="color: #10b981; font-weight: 600;">接下来，我们将用 3 分钟带您完成首次配置 →</p></div>',
         nextBtn: '开始配置 🚀',
         prevBtn: '跳过'
       },
       groupManage: {
         title: '📦 第一步：分组管理',
         description:
-          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;"><b>什么是分组？</b></p><p style="margin-bottom: 12px;">分组是 Sub2API 的核心概念，它就像一个"服务套餐"：</p><ul style="margin-left: 20px; margin-bottom: 12px; font-size: 13px;"><li>🎯 每个分组可以包含多个上游账号</li><li>💰 每个分组有独立的计费倍率</li><li>👥 可以设置为公开或专属分组</li></ul><p style="margin-top: 12px; padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 示例：</b>您可以创建"VIP专线"（高倍率）和"免费试用"（低倍率）两个分组</p><p style="margin-top: 16px; color: #10b981; font-weight: 600;">👉 点击左侧的"分组管理"开始</p></div>'
+          '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;"><b>什么是分组？</b></p><p style="margin-bottom: 12px;">分组是 Hahacode 的核心概念，它就像一个"服务套餐"：</p><ul style="margin-left: 20px; margin-bottom: 12px; font-size: 13px;"><li>🎯 每个分组可以包含多个上游账号</li><li>💰 每个分组有独立的计费倍率</li><li>👥 可以设置为公开或专属分组</li></ul><p style="margin-top: 12px; padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 示例：</b>您可以创建"VIP专线"（高倍率）和"免费试用"（低倍率）两个分组</p><p style="margin-top: 16px; color: #10b981; font-weight: 600;">👉 点击左侧的"分组管理"开始</p></div>'
       },
       createGroup: {
         title: '➕ 创建新分组',
@@ -6657,9 +6847,9 @@ export default {
     // User tour steps
     user: {
       welcome: {
-        title: '👋 欢迎使用 Sub2API',
+        title: '👋 欢迎使用 Hahacode',
         description:
-          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">您好！欢迎来到 Sub2API AI 服务平台。</p><p style="margin-bottom: 12px;"><b>🎯 快速开始：</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>🔑 创建 API 密钥</li><li>📋 复制密钥到您的应用</li><li>🚀 开始使用 AI 服务</li></ul><p style="color: #10b981; font-weight: 600;">只需 1 分钟，让我们开始吧 →</p></div>',
+          '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">您好！欢迎来到 Hahacode AI 服务平台。</p><p style="margin-bottom: 12px;"><b>🎯 快速开始：</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>🔑 创建 API 密钥</li><li>📋 复制密钥到您的应用</li><li>🚀 开始使用 AI 服务</li></ul><p style="color: #10b981; font-weight: 600;">只需 1 分钟，让我们开始吧 →</p></div>',
         nextBtn: '开始 🚀',
         prevBtn: '跳过'
       },

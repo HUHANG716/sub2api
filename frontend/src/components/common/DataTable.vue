@@ -1,7 +1,7 @@
 <template>
   <div v-if="!isDesktopViewport" class="space-y-3">
     <template v-if="loading">
-      <div v-for="i in 5" :key="i" class="rounded-lg border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-900">
+      <div v-for="i in 5" :key="i" class="theme-panel rounded-lg p-4">
         <div class="space-y-3">
           <div v-for="column in dataColumns" :key="column.key" class="flex justify-between">
             <div class="h-4 w-20 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
@@ -15,7 +15,7 @@
     </template>
 
     <template v-else-if="!data || data.length === 0">
-      <div class="rounded-lg border border-gray-200 bg-white p-12 text-center dark:border-dark-700 dark:bg-dark-900">
+      <div class="theme-panel rounded-lg p-12 text-center">
         <slot name="empty">
           <div class="flex flex-col items-center">
             <Icon
@@ -35,7 +35,7 @@
       <div
         v-for="(row, index) in sortedData"
         :key="resolveRowKey(row, index)"
-        class="rounded-lg border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-900"
+        class="theme-panel rounded-lg p-4"
       >
         <div class="space-y-3">
           <div
@@ -69,8 +69,8 @@
       'is-scrollable': isScrollable
     }"
   >
-    <table class="w-full min-w-max divide-y divide-gray-200 dark:divide-dark-700">
-      <thead class="table-header bg-gray-50 dark:bg-dark-800">
+    <table class="w-full min-w-max">
+      <thead class="table-header">
         <tr>
           <th
             v-for="(column, index) in columns"
@@ -79,7 +79,7 @@
             :class="[
               'sticky-header-cell py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400',
               getAdaptivePaddingClass(),
-              { 'cursor-pointer hover:bg-gray-100 dark:hover:bg-dark-700': column.sortable },
+              { 'cursor-pointer table-sortable-header': column.sortable },
               getStickyColumnClass(column, index),
               column.class
             ]"
@@ -118,7 +118,7 @@
           </th>
         </tr>
       </thead>
-      <tbody class="table-body divide-y divide-gray-200 bg-white dark:divide-dark-700 dark:bg-dark-900">
+      <tbody class="table-body">
         <!-- Loading skeleton -->
         <tr v-if="loading" v-for="i in 5" :key="i">
           <td v-for="column in columns" :key="column.key" :class="['whitespace-nowrap py-4', getAdaptivePaddingClass()]">
@@ -162,7 +162,7 @@
             :data-row-id="resolveRowKey(sortedData[virtualRow.index], virtualRow.index)"
             :data-index="virtualRow.index"
             :ref="measureElement"
-            class="hover:bg-gray-50 dark:hover:bg-dark-800"
+            class="data-row"
           >
             <td
               v-for="(column, colIndex) in columns"
@@ -708,12 +708,28 @@ defineExpose({
 /* 表格横向滚动 */
 .table-wrapper {
   --select-col-width: 52px; /* 勾选列宽度：px-6 (24px*2) + checkbox (16px) */
+  --table-bg: var(--theme-surface);
+  --table-header-bg: var(--theme-surface);
+  --table-row-bg: var(--theme-surface);
+  --table-sticky-bg: var(--theme-surface);
+  --table-row-hover-bg: #fff7ed;
+  --table-border: rgba(148, 163, 184, 0.22);
   position: relative;
   overflow-x: auto;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
   isolation: isolate;
+  background: var(--table-bg);
+}
+
+.dark .table-wrapper {
+  --table-bg: var(--theme-surface);
+  --table-header-bg: var(--theme-surface);
+  --table-row-bg: var(--theme-surface);
+  --table-sticky-bg: var(--theme-surface);
+  --table-row-hover-bg: #252931;
+  --table-border: rgba(148, 163, 184, 0.13);
 }
 
 /* 表头容器，确保在滚动时覆盖表体内容 */
@@ -721,17 +737,31 @@ defineExpose({
   position: sticky;
   top: 0;
   z-index: 200;
-  background-color: rgb(249 250 251);
+  background: var(--table-header-bg);
 }
 
 .dark .table-wrapper .table-header {
-  background-color: rgb(23 23 23);
+  background: var(--table-header-bg);
 }
 
 /* 表体保持在表头下方 */
 .table-body {
   position: relative;
   z-index: 0;
+  background: var(--table-bg);
+}
+
+.table-body tr {
+  background: var(--table-row-bg);
+  border-bottom: 1px solid var(--table-border);
+}
+
+.table-body tr:last-child {
+  border-bottom: 0;
+}
+
+.data-row:hover {
+  background: var(--table-row-hover-bg);
 }
 
 /* 所有表头单元格固定在顶部 */
@@ -739,11 +769,16 @@ defineExpose({
   position: sticky;
   top: 0;
   z-index: 210; /* 必须高于所有表体内容 */
-  background-color: rgb(249 250 251);
+  background: var(--table-header-bg);
+  border-bottom: 1px solid var(--table-border);
 }
 
 .dark .sticky-header-cell {
-  background-color: rgb(23 23 23);
+  background: var(--table-header-bg);
+}
+
+.table-sortable-header:hover {
+  background: var(--table-row-hover-bg);
 }
 
 /* Sticky 列基础样式 */
@@ -779,20 +814,20 @@ defineExpose({
 
 /* 表体 sticky 列背景 */
 tbody .sticky-col {
-  background-color: white;
+  background: var(--table-sticky-bg);
 }
 
 .dark tbody .sticky-col {
-  background-color: rgb(17 17 17);
+  background: var(--table-sticky-bg);
 }
 
 /* hover 状态保持 */
 tbody tr:hover .sticky-col {
-  background-color: rgb(249 250 251);
+  background: var(--table-row-hover-bg);
 }
 
 .dark tbody tr:hover .sticky-col {
-  background-color: rgb(23 23 23);
+  background: var(--table-row-hover-bg);
 }
 
 /* 阴影只在可滚动时显示 */
@@ -806,7 +841,7 @@ tbody tr:hover .sticky-col {
   width: 10px;
   transform: translateX(100%);
   background: none;
-  box-shadow: 10px 0 14px rgba(0, 0, 0, 0.08);
+  box-shadow: 10px 0 18px rgba(15, 23, 42, 0.1);
   pointer-events: none;
 }
 
@@ -820,7 +855,7 @@ tbody tr:hover .sticky-col {
   width: 10px;
   transform: translateX(100%);
   background: none;
-  box-shadow: 10px 0 14px rgba(0, 0, 0, 0.08);
+  box-shadow: 10px 0 18px rgba(15, 23, 42, 0.1);
   pointer-events: none;
 }
 
@@ -834,7 +869,7 @@ tbody tr:hover .sticky-col {
   width: 10px;
   transform: translateX(-100%);
   background: none;
-  box-shadow: -10px 0 14px rgba(0, 0, 0, 0.08);
+  box-shadow: -10px 0 18px rgba(15, 23, 42, 0.1);
   pointer-events: none;
 }
 
@@ -842,70 +877,11 @@ tbody tr:hover .sticky-col {
 .dark .is-scrollable .sticky-col-left::after,
 .dark .is-scrollable .sticky-col-left-second::after {
   background: none;
-  box-shadow: 10px 0 14px rgba(0, 0, 0, 0.35);
+  box-shadow: 10px 0 18px rgba(2, 6, 23, 0.32);
 }
 
 .dark .is-scrollable .sticky-col-right::before {
   background: none;
-  box-shadow: -10px 0 14px rgba(0, 0, 0, 0.35);
-}
-</style>
-
-<style>
-/* ==========================================================================
-   终极悬浮滚动条防丢器 (Sledgehammer Override)
-   绕过 style.css 中 `* { scrollbar-color: transparent }` 的全局悬停隐身诅咒！
-   ========================================================================== */
-
-/* 1. 废除全局针对所有元素的 scrollbar-width 设定，拿回 Chrome/Safari 下 Webkit 滚动条规则的控制权！ */
-.table-wrapper {
-  scrollbar-width: auto !important; /* 阻止 Chrome 121 退化到原生 Mac 闪隐滚动条 */
-}
-
-/* 2. 重写 Webkit 滚动层，全部加上 !important 强制覆盖透明悬停陷阱 */
-.table-wrapper::-webkit-scrollbar {
-  height: 12px !important;
-  width: 12px !important;
-  display: block !important;
-  background-color: transparent !important;
-}
-
-.table-wrapper::-webkit-scrollbar-track {
-  background-color: rgba(0, 0, 0, 0.03) !important;
-  border-radius: 6px !important;
-  margin: 0 4px !important;
-}
-.dark .table-wrapper::-webkit-scrollbar-track {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-}
-
-/* 常驻、不透明的滑块，无视鼠标是否 hover 都在那！ */
-.table-wrapper::-webkit-scrollbar-thumb {
-  background-color: rgba(107, 114, 128, 0.75) !important; 
-  border-radius: 6px !important;
-  border: 2px solid transparent !important;
-  background-clip: padding-box !important;
-  -webkit-appearance: none !important;
-}
-.table-wrapper::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(75, 85, 99, 0.9) !important;
-}
-
-.dark .table-wrapper::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.75) !important;
-}
-.dark .table-wrapper::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(209, 213, 219, 0.9) !important;
-}
-
-/* 3. 仅给真正的 Firefox 留的后路 */
-@supports (-moz-appearance:none) {
-  .table-wrapper {
-    scrollbar-width: thin !important;
-    scrollbar-color: rgba(156, 163, 175, 0.5) rgba(0, 0, 0, 0.03) !important;
-  }
-  .dark .table-wrapper {
-    scrollbar-color: rgba(75, 85, 99, 0.5) rgba(255, 255, 255, 0.05) !important;
-  }
+  box-shadow: -10px 0 18px rgba(2, 6, 23, 0.32);
 }
 </style>
