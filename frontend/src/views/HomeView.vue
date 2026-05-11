@@ -257,7 +257,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore, useAuthStore } from '@/stores'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
@@ -497,9 +497,36 @@ onMounted(() => {
     appStore.fetchPublicSettings()
   }
 })
+
+watchEffect(() => {
+  const useLandingCanvas = !homeContent.value
+  document.documentElement.classList.toggle('landing-page-active', useLandingCanvas)
+  document.body.classList.toggle('landing-page-active', useLandingCanvas)
+})
+
+onUnmounted(() => {
+  document.documentElement.classList.remove('landing-page-active')
+  document.body.classList.remove('landing-page-active')
+})
 </script>
 
 <style scoped>
+:global(html.landing-page-active),
+:global(body.landing-page-active) {
+  background: linear-gradient(180deg, #1d2026 0%, #14161a 46%, #0f1115 100%);
+}
+
+:global(html.landing-page-active),
+:global(body.landing-page-active) {
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
+
+:global(html.landing-page-active #app) {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #1d2026 0%, #14161a 46%, #0f1115 100%);
+}
+
 .landing-shell {
   --landing-bg: #14161a;
   --landing-bg-soft: #1d2026;
@@ -508,6 +535,9 @@ onMounted(() => {
   --landing-border: rgba(148, 163, 184, 0.16);
   --landing-text: #f5f5f5;
   --landing-muted: #a7adb7;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: clip;
   background: linear-gradient(180deg, #1d2026 0%, #14161a 46%, #0f1115 100%);
 }
 
@@ -515,6 +545,8 @@ onMounted(() => {
   position: sticky;
   top: 0;
   z-index: 30;
+  max-width: 100vw;
+  overflow-x: clip;
   border-bottom: 1px solid rgba(148, 163, 184, 0.16);
   background: rgba(20, 22, 26, 0.86);
   backdrop-filter: blur(18px);
@@ -592,6 +624,8 @@ onMounted(() => {
 .hero-section {
   position: relative;
   isolation: isolate;
+  max-width: 100vw;
+  overflow-x: clip;
 }
 
 .hero-section::before {
@@ -1342,7 +1376,11 @@ onMounted(() => {
   }
 
   .hero-copy h1 {
-    font-size: 2.75rem;
+    font-size: clamp(2.25rem, 10vw, 2.75rem);
+  }
+
+  .hero-copy h1 span {
+    white-space: normal;
   }
 }
 </style>

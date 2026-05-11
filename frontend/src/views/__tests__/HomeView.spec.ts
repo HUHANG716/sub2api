@@ -173,6 +173,8 @@ describe('HomeView', () => {
       }))
     })
     document.documentElement.classList.remove('dark')
+    document.documentElement.classList.remove('landing-page-active')
+    document.body.classList.remove('landing-page-active')
     localStorage.clear()
   })
 
@@ -214,6 +216,29 @@ describe('HomeView', () => {
     expect(wrapper.html()).toContain('/landing-assets/feature-visual-sprite.png')
   })
 
+  it('uses the dark landing canvas on html and body while the default home page is mounted', () => {
+    const wrapper = mount(HomeView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a><slot /></a>'
+          },
+          LocaleSwitcher: true,
+          Icon: true
+        }
+      }
+    })
+
+    expect(document.documentElement.classList.contains('landing-page-active')).toBe(true)
+    expect(document.body.classList.contains('landing-page-active')).toBe(true)
+
+    wrapper.unmount()
+
+    expect(document.documentElement.classList.contains('landing-page-active')).toBe(false)
+    expect(document.body.classList.contains('landing-page-active')).toBe(false)
+  })
+
   it('keeps the fixed dark landing theme softer than pure black', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
 
@@ -250,5 +275,11 @@ describe('HomeView', () => {
     expect(source).not.toContain('统一接入开发工具')
     expect(source).not.toContain('适合已经在日常研发中使用 AI 编程工具')
     expect(source).not.toContain('面向开发者的 AI 编程工作台')
+  })
+
+  it('allows the hero title to wrap on narrow screens to avoid horizontal page overflow', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+
+    expect(source).toMatch(/@media \(max-width: 640px\)[\s\S]*?\.hero-copy h1 span\s*\{[\s\S]*?white-space:\s*normal;/)
   })
 })
