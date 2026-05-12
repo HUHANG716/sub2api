@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import HomeView from '@/views/HomeView.vue'
 
 const homeViewSourcePath = path.resolve(process.cwd(), 'src/views/HomeView.vue')
+const globalStyleSourcePath = path.resolve(process.cwd(), 'src/style.css')
 
 const { authState, appState } = vi.hoisted(() => ({
   authState: {
@@ -239,6 +240,17 @@ describe('HomeView', () => {
     expect(document.body.classList.contains('landing-page-active')).toBe(false)
   })
 
+  it('themes scrollbars through theme variables so the gutter follows the active canvas', () => {
+    const homeSource = readFileSync(homeViewSourcePath, 'utf-8')
+    const globalStyleSource = readFileSync(globalStyleSourcePath, 'utf-8')
+
+    expect(globalStyleSource).toContain('--theme-scrollbar-track')
+    expect(globalStyleSource).toContain('scrollbar-color: var(--theme-scrollbar-thumb) var(--theme-scrollbar-track)')
+    expect(globalStyleSource).toContain('background: var(--theme-scrollbar-track)')
+    expect(homeSource).toContain('--theme-scrollbar-track: #14161a')
+    expect(homeSource).toContain('--theme-scrollbar-thumb: rgba(148, 163, 184, 0.34)')
+  })
+
   it('keeps the fixed dark landing theme softer than pure black', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
 
@@ -266,6 +278,16 @@ describe('HomeView', () => {
     expect(source).not.toContain('/landing-assets/testimonial-texture.png')
     expect(source).not.toContain('/landing-assets/footer-texture.png')
     expect(source).toContain('/landing-assets/object-sprite.png')
+  })
+
+  it('shows the home page logo without a framed brand mark', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const brandMarkBlock = source.match(/\.brand-mark\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const brandMarkImageBlock = source.match(/\.brand-mark img\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(brandMarkBlock).not.toMatch(/\bborder:/)
+    expect(brandMarkBlock).not.toMatch(/\bbackground:/)
+    expect(brandMarkImageBlock).not.toMatch(/\bpadding:/)
   })
 
   it('keeps landing marketing copy in locale files instead of hardcoding Chinese text in the component', () => {

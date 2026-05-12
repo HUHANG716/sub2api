@@ -513,6 +513,9 @@ onUnmounted(() => {
 <style scoped>
 :global(html.landing-page-active),
 :global(body.landing-page-active) {
+  --theme-scrollbar-track: #14161a;
+  --theme-scrollbar-thumb: rgba(148, 163, 184, 0.34);
+  --theme-scrollbar-thumb-hover: rgba(148, 163, 184, 0.56);
   background: linear-gradient(180deg, #1d2026 0%, #14161a 46%, #0f1115 100%);
 }
 
@@ -567,16 +570,12 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 0.75rem;
-  background: #252931;
 }
 
 .brand-mark img {
   height: 100%;
   width: 100%;
   object-fit: contain;
-  padding: 0.25rem;
 }
 
 .icon-action,

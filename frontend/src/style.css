@@ -16,6 +16,9 @@
     --theme-text-muted: #64748b;
     --theme-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
     --theme-shadow-hover: 0 1px 0 rgba(15, 23, 42, 0.08);
+    --theme-scrollbar-track: #f8fafc;
+    --theme-scrollbar-thumb: rgba(100, 116, 139, 0.28);
+    --theme-scrollbar-thumb-hover: rgba(100, 116, 139, 0.46);
   }
 
   .dark {
@@ -31,6 +34,9 @@
     --theme-text-muted: #a7adb7;
     --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
     --theme-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.07);
+    --theme-scrollbar-track: #14161a;
+    --theme-scrollbar-thumb: rgba(148, 163, 184, 0.3);
+    --theme-scrollbar-thumb-hover: rgba(148, 163, 184, 0.48);
   }
 
   * {
@@ -39,6 +45,8 @@
 
   html {
     @apply scroll-smooth antialiased;
+    scrollbar-color: var(--theme-scrollbar-thumb) var(--theme-scrollbar-track);
+    scrollbar-width: thin;
   }
 
   body {
@@ -51,21 +59,11 @@
     background: linear-gradient(180deg, #1d2026 0%, #14161a 46%, #0f1115 100%);
   }
 
-  /* 自定义滚动条 - 仅针对 Firefox，避免 Chrome 取消 webkit 的全局定制 */
+  /* 自定义滚动条 - 主题化轨道，避免默认滚动槽漏出亮色 */
   @supports (-moz-appearance:none) {
     * {
       scrollbar-width: thin;
-      scrollbar-color: transparent transparent;
-    }
-
-    *:hover,
-    *:focus-within {
-      scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
-    }
-
-    .dark *:hover,
-    .dark *:focus-within {
-      scrollbar-color: rgba(75, 85, 99, 0.5) transparent;
+      scrollbar-color: var(--theme-scrollbar-thumb) var(--theme-scrollbar-track);
     }
   }
 
@@ -74,20 +72,22 @@
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-transparent;
+    background: var(--theme-scrollbar-track);
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-transparent;
+    border: 2px solid var(--theme-scrollbar-track);
+    border-radius: 999px;
+    background: var(--theme-scrollbar-thumb);
     transition: background-color 0.2s ease;
   }
 
   *:hover::-webkit-scrollbar-thumb {
-    @apply bg-gray-300/50 dark:bg-dark-600/50;
+    background: var(--theme-scrollbar-thumb);
   }
 
   *:hover::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-400 dark:bg-dark-500;
+    background: var(--theme-scrollbar-thumb-hover);
   }
 
   /* 选中文本样式 */
