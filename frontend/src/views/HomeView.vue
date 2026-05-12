@@ -550,9 +550,10 @@ onUnmounted(() => {
   z-index: 30;
   max-width: 100vw;
   overflow-x: clip;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(20, 22, 26, 0.86);
+  background:
+    linear-gradient(180deg, rgba(20, 22, 26, 0.9) 0%, rgba(20, 22, 26, 0.84) 72%, rgba(20, 22, 26, 0.64) 100%);
   backdrop-filter: blur(18px);
+  box-shadow: 0 1px 0 rgba(148, 163, 184, 0.05);
 }
 
 .brand-lockup {
@@ -877,9 +878,8 @@ onUnmounted(() => {
 }
 
 .trust-band {
-  border-top: 1px solid rgba(148, 163, 184, 0.16);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
   background:
+    linear-gradient(180deg, transparent 0%, rgba(148, 163, 184, 0.045) 14%, rgba(148, 163, 184, 0.035) 84%, transparent 100%),
     linear-gradient(90deg, rgba(249, 115, 22, 0.08), transparent 24%),
     rgba(29, 32, 38, 0.74);
 }
@@ -1060,9 +1060,8 @@ onUnmounted(() => {
 .testimonial-section {
   position: relative;
   isolation: isolate;
-  border-top: 1px solid var(--landing-border);
-  border-bottom: 1px solid var(--landing-border);
   background:
+    linear-gradient(180deg, transparent 0%, rgba(148, 163, 184, 0.04) 10%, transparent 24%, transparent 78%, rgba(148, 163, 184, 0.035) 92%, transparent 100%),
     linear-gradient(180deg, rgba(20, 22, 26, 0.96), rgba(29, 32, 38, 0.92) 54%, rgba(20, 22, 26, 0.98)),
     var(--landing-bg);
   color: var(--landing-text);
@@ -1273,8 +1272,8 @@ onUnmounted(() => {
 .landing-footer {
   position: relative;
   isolation: isolate;
-  border-top: 1px solid rgba(148, 163, 184, 0.16);
   background:
+    linear-gradient(180deg, transparent 0%, rgba(148, 163, 184, 0.05) 10%, transparent 24%),
     linear-gradient(180deg, rgba(20, 22, 26, 0.86), rgba(20, 22, 26, 0.96)),
     #14161a;
 }

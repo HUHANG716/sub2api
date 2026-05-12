@@ -290,6 +290,22 @@ describe('HomeView', () => {
     expect(brandMarkImageBlock).not.toMatch(/\bpadding:/)
   })
 
+  it('softens obvious horizontal seams between landing sections', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const headerBlock = source.match(/\.landing-header\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const trustBandBlock = source.match(/\.trust-band\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const testimonialBlock = source.match(/\.testimonial-section\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const footerBlock = source.match(/\.landing-footer\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(headerBlock).not.toMatch(/\bborder-bottom:/)
+    expect(trustBandBlock).not.toMatch(/\bborder-(top|bottom):/)
+    expect(testimonialBlock).not.toMatch(/\bborder-(top|bottom):/)
+    expect(footerBlock).not.toMatch(/\bborder-top:/)
+    expect(trustBandBlock).toContain('linear-gradient(180deg, transparent')
+    expect(testimonialBlock).toContain('linear-gradient(180deg, transparent')
+    expect(footerBlock).toContain('linear-gradient(180deg, transparent')
+  })
+
   it('keeps landing marketing copy in locale files instead of hardcoding Chinese text in the component', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
 
