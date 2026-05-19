@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import HomeView from '@/views/HomeView.vue'
 
 const homeViewSourcePath = path.resolve(process.cwd(), 'src/views/HomeView.vue')
@@ -71,10 +72,10 @@ vi.mock('vue-i18n', async (importOriginal) => {
           'home.modern.console.tasksCaption': '稳定处理中',
           'home.modern.console.statusLabel': '响应状态',
           'home.modern.console.statusCaption': '服务可用',
-          'home.modern.console.lines.connected': '已连接：claude-code / codex / gemini-cli',
-          'home.modern.console.lines.policy': '工作区策略已同步',
-          'home.modern.console.lines.routing': '请求正在通过健康通道路由',
-          'home.modern.console.lines.report': '用量报告已在 312ms 内生成',
+          'home.modern.console.lines.connected': '# Routing to upstream...',
+          'home.modern.console.lines.policy': '200 OK',
+          'home.modern.console.lines.routing': '',
+          'home.modern.console.lines.report': '{ "content": "Hello!" }',
           'home.modern.console.routes.codeAssist': '代码辅助',
           'home.modern.console.routes.teamKeys': '团队密钥',
           'home.modern.console.routes.usageGuard': '用量保护',
@@ -176,6 +177,11 @@ describe('HomeView', () => {
     document.documentElement.classList.remove('dark')
     document.documentElement.classList.remove('landing-page-active')
     document.body.classList.remove('landing-page-active')
+    Object.defineProperty(window, 'scrollY', {
+      configurable: true,
+      writable: true,
+      value: 0
+    })
     localStorage.clear()
   })
 
@@ -200,9 +206,11 @@ describe('HomeView', () => {
     expect(text).toContain('©')
     expect(text).not.toContain('套餐订阅')
     expect(text).not.toContain('灵活额度')
-    expect(wrapper.get('.landing-shell').classes()).toContain('text-white')
-    expect(wrapper.get('.landing-nav-links').classes()).toContain('text-slate-300')
-    expect(wrapper.get('.landing-footer').classes()).toContain('text-slate-300')
+    expect(wrapper.get('.landing-shell').classes()).not.toContain('text-white')
+    expect(wrapper.get('.landing-nav-links').classes()).not.toContain('text-slate-300')
+    expect(wrapper.get('.landing-footer').classes()).not.toContain('text-slate-300')
+    expect(wrapper.findAll('.brand-tagline')).toHaveLength(2)
+    expect(wrapper.find('.footer-description').exists()).toBe(true)
     expect(wrapper.html()).not.toContain('home.switchToDark')
     expect(wrapper.html()).not.toContain('home.switchToLight')
     expect(wrapper.html()).not.toContain('text-gray-900')
@@ -215,6 +223,64 @@ describe('HomeView', () => {
     expect(wrapper.findAll('.feature-visual-sprite')).toHaveLength(4)
     expect(wrapper.html()).toContain('/landing-assets/icon-sprite.png')
     expect(wrapper.html()).toContain('/landing-assets/feature-visual-sprite.png')
+  })
+
+  it('keeps the hero terminal preview simple without dashboard metric panels', () => {
+    const wrapper = mount(HomeView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a><slot /></a>'
+          },
+          LocaleSwitcher: true,
+          Icon: true
+        }
+      }
+    })
+
+    expect(wrapper.find('.hero-console').exists()).toBe(true)
+    expect(wrapper.find('.command-panel').exists()).toBe(true)
+    expect(wrapper.get('.console-topbar strong').text()).toBe('terminal')
+    expect(wrapper.get('.terminal-prompt').text()).toBe('$')
+    expect(wrapper.get('.terminal-curl').text()).toBe('curl')
+    expect(wrapper.get('.terminal-flag').text()).toBe('-X POST')
+    expect(wrapper.get('.terminal-path').text()).toBe('/v1/messages')
+    expect(wrapper.get('.terminal-comment').text()).toBe('# Routing to upstream...')
+    expect(wrapper.get('.terminal-status-badge').text()).toBe('200 OK')
+    expect(wrapper.get('.terminal-json').text()).toBe('{ "content": "Hello!" }')
+    expect(wrapper.find('.terminal-cursor').exists()).toBe(true)
+    expect(wrapper.findAll('.terminal-line')).toHaveLength(4)
+    expect(wrapper.find('.code-lines').exists()).toBe(false)
+    expect(wrapper.find('.metric-panel').exists()).toBe(false)
+    expect(wrapper.find('.route-panel').exists()).toBe(false)
+  })
+
+  it('keeps the terminal preview typewriter animation available', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf8')
+
+    expect(source).toContain('@keyframes terminal-type')
+    expect(source).toContain('animation: terminal-type')
+    expect(source).toContain('@keyframes terminal-cursor-blink')
+    expect(source).toContain('.terminal-cursor')
+  })
+
+  it('keeps the hero copy lean without a stacked points list', () => {
+    const wrapper = mount(HomeView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a><slot /></a>'
+          },
+          LocaleSwitcher: true,
+          Icon: true
+        }
+      }
+    })
+
+    expect(wrapper.find('.hero-copy').exists()).toBe(true)
+    expect(wrapper.find('.hero-points').exists()).toBe(false)
   })
 
   it('uses the dark landing canvas on html and body while the default home page is mounted', () => {
@@ -238,6 +304,70 @@ describe('HomeView', () => {
 
     expect(document.documentElement.classList.contains('landing-page-active')).toBe(false)
     expect(document.body.classList.contains('landing-page-active')).toBe(false)
+  })
+
+  it('tightens the landing header after the user scrolls down', async () => {
+    const wrapper = mount(HomeView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a><slot /></a>'
+          },
+          LocaleSwitcher: true,
+          Icon: true
+        }
+      }
+    })
+
+    expect(wrapper.get('.landing-header').classes()).not.toContain('landing-header-scrolled')
+
+    window.scrollY = 48
+    window.dispatchEvent(new Event('scroll'))
+    await nextTick()
+
+    expect(wrapper.get('.landing-header').classes()).toContain('landing-header-scrolled')
+
+    window.scrollY = 0
+    window.dispatchEvent(new Event('scroll'))
+    await nextTick()
+
+    expect(wrapper.get('.landing-header').classes()).not.toContain('landing-header-scrolled')
+  })
+
+  it('isolates the landing page from the global light theme by forcing dark theme variables', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const landingActiveBlock = source.match(/:global\(html\.landing-page-active\),\n:global\(body\.landing-page-active\) \{[\s\S]*?\n\}/)?.[0] ?? ''
+    const landingShellBlock = source.match(/\.landing-shell\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(landingActiveBlock).toContain('color-scheme: dark')
+    expect(landingActiveBlock).toContain('--theme-bg: #14161a')
+    expect(landingActiveBlock).toContain('--theme-surface-strong: #1d2026')
+    expect(landingActiveBlock).toContain('--theme-text-muted: #a7adb7')
+    expect(landingShellBlock).toContain('color-scheme: dark')
+    expect(source).toContain('::selection')
+    expect(source).toContain('landing-page-active')
+  })
+
+  it('keeps the landing locale switcher readable without the global dark class', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const localeSwitcherBlock = source.match(/\.landing-shell :deep\(\.locale-switcher\)\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(localeSwitcherBlock).toContain('--locale-text: #e2e8f0')
+    expect(localeSwitcherBlock).toContain('--locale-text-strong: var(--landing-text-strong)')
+    expect(localeSwitcherBlock).toContain('--locale-active-text: #fed7aa')
+  })
+
+  it('uses landing color tokens instead of template-level Tailwind color utilities', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+
+    expect(source).not.toContain('text-white')
+    expect(source).not.toContain('text-slate-300')
+    expect(source).not.toContain('text-slate-400')
+    expect(source).toContain('--landing-accent: #f97316')
+    expect(source).toContain('--landing-text-soft: #d4d4d4')
+    expect(source).toContain('color: var(--landing-text-soft)')
+    expect(source).toContain('color: var(--landing-accent-soft)')
   })
 
   it('themes scrollbars through theme variables so the gutter follows the active canvas', () => {
@@ -290,7 +420,7 @@ describe('HomeView', () => {
     expect(brandMarkImageBlock).not.toMatch(/\bpadding:/)
   })
 
-  it('softens obvious horizontal seams between landing sections', () => {
+  it('keeps landing sections flat without visible gradient washes', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
     const headerBlock = source.match(/\.landing-header\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const trustBandBlock = source.match(/\.trust-band\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
@@ -301,9 +431,13 @@ describe('HomeView', () => {
     expect(trustBandBlock).not.toMatch(/\bborder-(top|bottom):/)
     expect(testimonialBlock).not.toMatch(/\bborder-(top|bottom):/)
     expect(footerBlock).not.toMatch(/\bborder-top:/)
-    expect(trustBandBlock).toContain('linear-gradient(180deg, transparent')
-    expect(testimonialBlock).toContain('linear-gradient(180deg, transparent')
-    expect(footerBlock).toContain('linear-gradient(180deg, transparent')
+    expect(source).not.toContain('linear-gradient')
+    expect(source).not.toContain('radial-gradient')
+    expect(headerBlock).toContain('background: rgba(20, 22, 26, 0.92)')
+    expect(source).toContain('.landing-header-scrolled')
+    expect(trustBandBlock).toContain('background: rgba(29, 32, 38, 0.74)')
+    expect(testimonialBlock).toContain('background: var(--landing-bg)')
+    expect(footerBlock).toContain('background: var(--landing-bg)')
   })
 
   it('keeps landing marketing copy in locale files instead of hardcoding Chinese text in the component', () => {

@@ -9,8 +9,8 @@
     <div v-else v-html="homeContent"></div>
   </div>
 
-  <div v-else class="landing-shell min-h-screen text-white">
-    <header class="landing-header">
+  <div v-else class="landing-shell min-h-screen">
+    <header class="landing-header" :class="{ 'landing-header-scrolled': isHeaderCompact }">
       <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-6 lg:px-8">
         <router-link to="/home" class="brand-lockup">
             <span class="brand-mark">
@@ -18,15 +18,15 @@
             </span>
             <span class="min-w-0">
               <span class="block truncate text-base font-semibold tracking-tight">{{ siteName }}</span>
-            <span class="block truncate text-xs text-slate-400">{{ t('home.modern.navTagline') }}</span>
+            <span class="brand-tagline block truncate text-xs">{{ t('home.modern.navTagline') }}</span>
           </span>
         </router-link>
 
-        <div class="landing-nav-links hidden items-center gap-8 text-sm font-medium text-slate-300 md:flex">
-          <a href="#features" class="transition hover:text-white">{{ t('home.modern.nav.features') }}</a>
-          <a href="#testimonials" class="transition hover:text-white">{{ t('home.modern.nav.testimonials') }}</a>
-          <a href="#faq" class="transition hover:text-white">{{ t('home.modern.nav.faq') }}</a>
-          <a href="#contact" class="transition hover:text-white">{{ t('home.modern.nav.contact') }}</a>
+        <div class="landing-nav-links hidden items-center gap-8 text-sm font-medium md:flex">
+          <a href="#features" class="transition">{{ t('home.modern.nav.features') }}</a>
+          <a href="#testimonials" class="transition">{{ t('home.modern.nav.testimonials') }}</a>
+          <a href="#faq" class="transition">{{ t('home.modern.nav.faq') }}</a>
+          <a href="#contact" class="transition">{{ t('home.modern.nav.contact') }}</a>
         </div>
 
         <div class="flex items-center gap-2">
@@ -55,7 +55,6 @@
       <section class="hero-section px-5 pb-16 pt-14 sm:px-6 sm:pb-20 sm:pt-20 lg:px-8">
         <div class="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div class="hero-copy">
-            <span class="object-accent command" :style="assetSpriteStyle(objectSprite, '0% 0%')" aria-hidden="true"></span>
             <p class="eyebrow">{{ t('home.modern.hero.eyebrow') }}</p>
             <h1>
               <span class="hero-brand-title">{{ siteName }}</span>
@@ -77,13 +76,6 @@
                 <Icon name="externalLink" size="sm" />
               </a>
             </div>
-
-            <div class="hero-points" :aria-label="t('home.modern.hero.pointsLabel')">
-              <div v-for="item in heroPoints" :key="item.title">
-                <span>{{ item.title }}</span>
-                <strong>{{ item.text }}</strong>
-              </div>
-            </div>
           </div>
 
           <div class="hero-console" :aria-label="t('home.modern.console.previewLabel')">
@@ -92,30 +84,27 @@
               <span></span>
               <span></span>
               <span></span>
-              <strong>{{ siteName }} Console</strong>
+              <strong>terminal</strong>
             </div>
             <div class="console-grid">
               <div class="command-panel">
-                <p class="prompt">$ deploy-ai-workflow --team product</p>
-                <div class="code-lines">
-                  <span v-for="line in consoleLines" :key="line">{{ line }}</span>
-                </div>
-              </div>
-              <div class="metric-panel">
-                <span>{{ t('home.modern.console.tasksLabel') }}</span>
-                <strong>24,819</strong>
-                <em>{{ t('home.modern.console.tasksCaption') }}</em>
-              </div>
-              <div class="metric-panel accent">
-                <span>{{ t('home.modern.console.statusLabel') }}</span>
-                <strong>99.9%</strong>
-                <em>{{ t('home.modern.console.statusCaption') }}</em>
-              </div>
-              <div class="route-panel">
-                <div v-for="route in routingRows" :key="route.name">
-                  <span>{{ route.name }}</span>
-                  <strong>{{ route.status }}</strong>
-                </div>
+                <p class="terminal-line terminal-command" style="--terminal-steps: 28; --terminal-delay: 80ms">
+                  <span class="terminal-prompt">$</span>
+                  <span class="terminal-curl">curl</span>
+                  <span class="terminal-flag">-X POST</span>
+                  <span class="terminal-path">/v1/messages</span>
+                </p>
+                <p class="terminal-line terminal-comment" style="--terminal-steps: 24; --terminal-delay: 920ms">
+                  {{ terminalComment }}
+                </p>
+                <p class="terminal-line terminal-response" style="--terminal-steps: 34; --terminal-delay: 1640ms">
+                  <span class="terminal-status-badge">{{ terminalStatus }}</span>
+                  <span class="terminal-json">{{ terminalResponse }}</span>
+                </p>
+                <p class="terminal-line terminal-final-prompt" style="--terminal-steps: 2; --terminal-delay: 2460ms">
+                  <span class="terminal-prompt">$</span>
+                  <span class="terminal-cursor" aria-hidden="true"></span>
+                </p>
               </div>
             </div>
           </div>
@@ -215,7 +204,7 @@
       </section>
     </main>
 
-    <footer id="contact" class="landing-footer px-5 py-12 text-slate-300 sm:px-6 lg:px-8">
+    <footer id="contact" class="landing-footer px-5 py-12 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-7xl">
         <div class="footer-top">
           <div>
@@ -225,10 +214,10 @@
               </span>
               <span>
                 <span class="block text-base font-semibold">{{ siteName }}</span>
-                <span class="block text-xs text-slate-400">{{ t('home.modern.footer.tagline') }}</span>
+                <span class="brand-tagline block text-xs">{{ t('home.modern.footer.tagline') }}</span>
               </span>
             </div>
-            <p class="mt-5 max-w-md text-sm leading-7 text-slate-400">
+            <p class="footer-description mt-5 max-w-md text-sm leading-7">
               {{ t('home.modern.footer.description') }}
             </p>
           </div>
@@ -257,7 +246,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, watchEffect } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore, useAuthStore } from '@/stores'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
@@ -302,25 +291,11 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
 const dashboardPath = computed(() => (isAdmin.value ? '/admin/dashboard' : '/dashboard'))
 const currentYear = computed(() => new Date().getFullYear())
+const isHeaderCompact = ref(false)
 
-const heroPoints = computed(() => [
-  { title: t('home.modern.hero.points.workspace.title'), text: t('home.modern.hero.points.workspace.text') },
-  { title: t('home.modern.hero.points.reliability.title'), text: t('home.modern.hero.points.reliability.text') },
-  { title: t('home.modern.hero.points.support.title'), text: t('home.modern.hero.points.support.text') }
-])
-
-const consoleLines = computed(() => [
-  t('home.modern.console.lines.connected'),
-  t('home.modern.console.lines.policy'),
-  t('home.modern.console.lines.routing'),
-  t('home.modern.console.lines.report')
-])
-
-const routingRows = computed(() => [
-  { name: t('home.modern.console.routes.codeAssist'), status: t('home.modern.console.status.active') },
-  { name: t('home.modern.console.routes.teamKeys'), status: t('home.modern.console.status.synced') },
-  { name: t('home.modern.console.routes.usageGuard'), status: t('home.modern.console.status.online') }
-])
+const terminalComment = computed(() => t('home.modern.console.lines.connected'))
+const terminalStatus = computed(() => t('home.modern.console.lines.policy'))
+const terminalResponse = computed(() => t('home.modern.console.lines.report'))
 
 const trustStats = computed(() => [
   { value: '10,000+', label: t('home.modern.stats.developers') },
@@ -490,12 +465,19 @@ function assetSpriteStyle(backgroundImage: string, backgroundPosition: string) {
   }
 }
 
+function syncHeaderScrollState() {
+  isHeaderCompact.value = window.scrollY > 18
+}
+
 onMounted(() => {
   authStore.checkAuth()
 
   if (!appStore.publicSettingsLoaded) {
     appStore.fetchPublicSettings()
   }
+
+  syncHeaderScrollState()
+  window.addEventListener('scroll', syncHeaderScrollState, { passive: true })
 })
 
 watchEffect(() => {
@@ -505,6 +487,7 @@ watchEffect(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('scroll', syncHeaderScrollState)
   document.documentElement.classList.remove('landing-page-active')
   document.body.classList.remove('landing-page-active')
 })
@@ -513,10 +496,28 @@ onUnmounted(() => {
 <style scoped>
 :global(html.landing-page-active),
 :global(body.landing-page-active) {
+  --theme-bg: #14161a;
+  --theme-bg-soft: #1d2026;
+  --theme-bg-deep: #0f1115;
+  --theme-surface: rgba(29, 32, 38, 0.88);
+  --theme-surface-strong: #1d2026;
+  --theme-surface-muted: rgba(37, 41, 49, 0.74);
+  --theme-main-surface: #252931;
+  --theme-border: rgba(148, 163, 184, 0.16);
+  --theme-border-strong: rgba(148, 163, 184, 0.22);
+  --theme-text-muted: #a7adb7;
+  --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
+  --theme-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.07);
   --theme-scrollbar-track: #14161a;
   --theme-scrollbar-thumb: rgba(148, 163, 184, 0.34);
   --theme-scrollbar-thumb-hover: rgba(148, 163, 184, 0.56);
-  background: linear-gradient(180deg, #1d2026 0%, #14161a 46%, #0f1115 100%);
+  color-scheme: dark;
+  background: #14161a;
+}
+
+:global(.landing-page-active ::selection) {
+  background: var(--landing-accent-selection, rgba(249, 115, 22, 0.28));
+  color: var(--landing-text-inverse, #ffffff);
 }
 
 :global(html.landing-page-active),
@@ -527,7 +528,7 @@ onUnmounted(() => {
 
 :global(html.landing-page-active #app) {
   min-height: 100vh;
-  background: linear-gradient(180deg, #1d2026 0%, #14161a 46%, #0f1115 100%);
+  background: #14161a;
 }
 
 .landing-shell {
@@ -535,13 +536,49 @@ onUnmounted(() => {
   --landing-bg-soft: #1d2026;
   --landing-surface: #1d2026;
   --landing-surface-muted: #252931;
+  --landing-surface-subtle: rgba(37, 41, 49, 0.74);
   --landing-border: rgba(148, 163, 184, 0.16);
+  --landing-border-strong: rgba(148, 163, 184, 0.22);
   --landing-text: #f5f5f5;
+  --landing-text-strong: #ffffff;
+  --landing-text-soft: #d4d4d4;
   --landing-muted: #a7adb7;
+  --landing-subtle: #94a3b8;
+  --landing-dim: #64748b;
+  --landing-accent: #f97316;
+  --landing-accent-hover: #fb923c;
+  --landing-accent-soft: #fdba74;
+  --landing-accent-tint: rgba(249, 115, 22, 0.16);
+  --landing-accent-border: rgba(249, 115, 22, 0.38);
+  --landing-accent-selection: rgba(249, 115, 22, 0.28);
+  --landing-text-inverse: #ffffff;
+  --theme-bg: #14161a;
+  --theme-bg-soft: #1d2026;
+  --theme-bg-deep: #0f1115;
+  --theme-surface: rgba(29, 32, 38, 0.88);
+  --theme-surface-strong: #1d2026;
+  --theme-surface-muted: rgba(37, 41, 49, 0.74);
+  --theme-main-surface: #252931;
+  --theme-border: rgba(148, 163, 184, 0.16);
+  --theme-border-strong: rgba(148, 163, 184, 0.22);
+  --theme-text-muted: #a7adb7;
+  --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
+  --theme-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.07);
+  color-scheme: dark;
   width: 100%;
   max-width: 100vw;
   overflow-x: clip;
-  background: linear-gradient(180deg, #1d2026 0%, #14161a 46%, #0f1115 100%);
+  color: var(--landing-text);
+  background: var(--landing-bg);
+}
+
+.landing-shell :deep(.locale-switcher) {
+  --locale-text: #e2e8f0;
+  --locale-text-strong: var(--landing-text-strong);
+  --locale-code-bg: rgba(148, 163, 184, 0.14);
+  --locale-hover-bg: rgba(37, 41, 49, 0.92);
+  --locale-active-bg: var(--landing-accent-tint);
+  --locale-active-text: #fed7aa;
 }
 
 .landing-header {
@@ -550,10 +587,32 @@ onUnmounted(() => {
   z-index: 30;
   max-width: 100vw;
   overflow-x: clip;
-  background:
-    linear-gradient(180deg, rgba(20, 22, 26, 0.9) 0%, rgba(20, 22, 26, 0.84) 72%, rgba(20, 22, 26, 0.64) 100%);
+  background: rgba(20, 22, 26, 0.92);
   backdrop-filter: blur(18px);
   box-shadow: 0 1px 0 rgba(148, 163, 184, 0.05);
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.landing-header nav,
+.brand-mark {
+  transition:
+    padding 180ms ease,
+    height 180ms ease,
+    width 180ms ease;
+}
+
+.landing-header-scrolled {
+  background: rgba(20, 22, 26, 0.98);
+  box-shadow:
+    0 1px 0 rgba(148, 163, 184, 0.14),
+    0 12px 28px rgba(2, 6, 23, 0.2);
+}
+
+.landing-header-scrolled nav {
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
 }
 
 .brand-lockup {
@@ -561,6 +620,11 @@ onUnmounted(() => {
   min-width: 0;
   align-items: center;
   gap: 0.75rem;
+  color: var(--landing-text);
+}
+
+.brand-tagline {
+  color: var(--landing-subtle);
 }
 
 .brand-mark {
@@ -579,6 +643,19 @@ onUnmounted(() => {
   object-fit: contain;
 }
 
+.landing-header-scrolled .brand-mark {
+  height: 2.4rem;
+  width: 2.4rem;
+}
+
+.landing-nav-links {
+  color: var(--landing-text-soft);
+}
+
+.landing-nav-links a:hover {
+  color: var(--landing-text-strong);
+}
+
 .icon-action,
 .primary-action,
 .hero-button {
@@ -595,15 +672,15 @@ onUnmounted(() => {
 .icon-action {
   height: 2.5rem;
   width: 2.5rem;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  color: #a3a3a3;
-  background: rgba(37, 41, 49, 0.74);
+  border: 1px solid var(--landing-border-strong);
+  color: var(--landing-muted);
+  background: var(--landing-surface-subtle);
 }
 
 .icon-action:hover {
-  border-color: rgba(249, 115, 22, 0.38);
-  color: #fb923c;
-  background: rgba(124, 45, 18, 0.18);
+  border-color: var(--landing-accent-border);
+  color: var(--landing-accent-hover);
+  background: var(--landing-accent-tint);
 }
 
 .icon-action:hover,
@@ -614,9 +691,9 @@ onUnmounted(() => {
 
 .primary-action {
   min-height: 2.5rem;
-  background: #f97316;
+  background: var(--landing-accent);
   padding: 0 1rem;
-  color: #ffffff;
+  color: var(--landing-text-inverse);
   font-size: 0.875rem;
   font-weight: 700;
 }
@@ -633,8 +710,7 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background:
-    linear-gradient(90deg, rgba(20, 22, 26, 0.2) 0%, rgba(20, 22, 26, 0.18) 42%, rgba(20, 22, 26, 0.5) 100%);
+  background: rgba(20, 22, 26, 0.2);
   opacity: 0.44;
   pointer-events: none;
 }
@@ -644,10 +720,10 @@ onUnmounted(() => {
 }
 
 .hero-copy h1 {
-  margin-top: 1rem;
-  max-width: 48rem;
-  color: #ffffff;
-  font-size: clamp(3rem, 7vw, 5.7rem);
+  margin-top: 0.9rem;
+  max-width: 42rem;
+  color: var(--landing-text-strong);
+  font-size: clamp(2.65rem, 5.6vw, 4.8rem);
   font-weight: 900;
   letter-spacing: 0;
   line-height: 1;
@@ -664,7 +740,7 @@ onUnmounted(() => {
 
 .eyebrow,
 .section-heading p {
-  color: #f97316;
+  color: var(--landing-accent);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -672,11 +748,11 @@ onUnmounted(() => {
 }
 
 .hero-lede {
-  margin-top: 1.5rem;
-  max-width: 42rem;
-  color: #d4d4d4;
-  font-size: 1.08rem;
-  line-height: 1.9;
+  margin-top: 1.25rem;
+  max-width: 36rem;
+  color: var(--landing-text-soft);
+  font-size: 1rem;
+  line-height: 1.75;
 }
 
 .hero-lede span {
@@ -686,49 +762,29 @@ onUnmounted(() => {
 .hero-button {
   min-height: 3.5rem;
   gap: 0.625rem;
-  background: #f97316;
+  background: var(--landing-accent);
   padding: 0 1.5rem;
-  color: #ffffff;
+  color: var(--landing-text-inverse);
   font-weight: 800;
 }
 
 .hero-button.secondary {
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: #252931;
-  color: #f5f5f5;
+  border: 1px solid var(--landing-border-strong);
+  background: var(--landing-surface-muted);
+  color: var(--landing-text);
 }
 
-.hero-points {
-  margin-top: 2.25rem;
-  display: grid;
-  gap: 0.75rem;
-}
-
-.hero-points div {
-  border-left: 2px solid #f97316;
-  padding-left: 1rem;
-}
-
-.hero-points span,
-.trust-card span,
-.metric-panel span {
+.trust-card span {
   display: block;
-  color: #a3a3a3;
+  color: var(--landing-muted);
   font-size: 0.8rem;
-}
-
-.hero-points strong {
-  margin-top: 0.2rem;
-  display: block;
-  color: #f5f5f5;
-  font-size: 0.95rem;
 }
 
 .hero-console {
   position: relative;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid var(--landing-border-strong);
   border-radius: 0.75rem;
-  background: #1d2026;
+  background: var(--landing-surface);
   overflow: visible;
 }
 
@@ -761,7 +817,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  border-bottom: 1px solid var(--landing-border);
   padding: 1rem;
 }
 
@@ -769,128 +825,122 @@ onUnmounted(() => {
   height: 0.7rem;
   width: 0.7rem;
   border-radius: 999px;
-  background: #fb7185;
+  background: var(--landing-accent);
 }
 
 .console-topbar span:nth-child(2) {
-  background: #fbbf24;
+  background: var(--landing-subtle);
 }
 
 .console-topbar span:nth-child(3) {
-  background: #34d399;
+  background: var(--landing-dim);
 }
 
 .console-topbar strong {
   margin-left: 0.5rem;
-  color: #64748b;
+  color: var(--landing-dim);
   font-size: 0.75rem;
 }
 
 .console-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-  padding: 1rem;
-}
-
-.command-panel,
-.metric-panel,
-.route-panel {
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 0.5rem;
-  background: #252931;
+  padding: 1.35rem 1.45rem 1.55rem;
 }
 
 .command-panel {
-  grid-column: span 2;
-  min-height: 18rem;
-  padding: 1.25rem;
-  background: #14161a;
+  min-height: 15.4rem;
+  padding: 1.4rem 1.45rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: clamp(0.96rem, 1.7vw, 1.15rem);
+  line-height: 1.7;
 }
 
-.prompt {
-  color: #fdba74;
-  font-size: 0.85rem;
+.terminal-line {
+  margin: 0;
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(0 100% 0 0);
+  animation: terminal-type 720ms steps(var(--terminal-steps, 24), end) var(--terminal-delay, 0ms) forwards;
+  will-change: clip-path;
 }
 
-.code-lines {
-  margin-top: 1.2rem;
-  display: grid;
-  gap: 0.8rem;
+.terminal-line + .terminal-line {
+  margin-top: 0.8rem;
 }
 
-.code-lines span {
-  display: block;
-  border-left: 2px solid rgba(249, 115, 22, 0.52);
-  padding-left: 0.8rem;
-  color: #cbd5e1;
-  font-size: 0.85rem;
+.terminal-prompt {
+  color: var(--landing-accent-soft);
+  font-weight: 800;
 }
 
-.metric-panel {
-  padding: 1rem;
+.terminal-command {
+  display: flex;
+  align-items: baseline;
+  gap: 0.72rem;
 }
 
-.metric-panel strong {
-  margin-top: 0.45rem;
-  display: block;
-  color: #ffffff;
-  font-size: 2rem;
+.terminal-curl {
+  color: var(--landing-text);
 }
 
-.metric-panel em {
-  display: block;
-  color: #f97316;
-  font-size: 0.78rem;
-  font-style: normal;
+.terminal-flag {
+  color: var(--landing-muted);
 }
 
-.metric-panel.accent strong {
-  color: #f97316;
+.terminal-path {
+  color: var(--landing-accent-soft);
 }
 
-.route-panel {
-  grid-column: span 2;
-  padding: 1rem;
+.terminal-comment {
+  color: var(--landing-dim);
+  font-style: italic;
 }
 
-.route-panel div {
+.terminal-response {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
-  padding: 0.7rem 0;
 }
 
-.route-panel div + div {
-  border-top: 1px solid rgba(148, 163, 184, 0.12);
+.terminal-status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0.28rem;
+  background: var(--landing-accent-tint);
+  padding: 0.28rem 0.55rem;
+  color: var(--landing-accent-soft);
+  font-weight: 800;
 }
 
-.route-panel span {
-  color: #d4d4d4;
+.terminal-json {
+  color: var(--landing-text-soft);
 }
 
-.route-panel strong {
-  color: #f97316;
-  font-size: 0.8rem;
-  text-transform: uppercase;
+.terminal-final-prompt {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.terminal-cursor {
+  display: inline-block;
+  height: 1.15em;
+  width: 0.48em;
+  background: var(--landing-accent-soft);
+  transform: translateY(0.16em);
+  animation: terminal-cursor-blink 960ms steps(2, end) infinite;
 }
 
 .trust-band {
-  background:
-    linear-gradient(180deg, transparent 0%, rgba(148, 163, 184, 0.045) 14%, rgba(148, 163, 184, 0.035) 84%, transparent 100%),
-    linear-gradient(90deg, rgba(249, 115, 22, 0.08), transparent 24%),
-    rgba(29, 32, 38, 0.74);
+  background: rgba(29, 32, 38, 0.74);
 }
 
 .trust-strip {
   display: grid;
   overflow: hidden;
   border-radius: 0.5rem;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.045), transparent),
-    rgba(37, 41, 49, 0.46);
+  background: rgba(37, 41, 49, 0.46);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
@@ -907,12 +957,12 @@ onUnmounted(() => {
   left: 0;
   top: 1.25rem;
   width: 1px;
-  background: linear-gradient(180deg, transparent, rgba(148, 163, 184, 0.24), transparent);
+  background: var(--landing-border-strong);
 }
 
 .trust-card strong {
   display: block;
-  color: #ffffff;
+  color: var(--landing-text-strong);
   font-size: clamp(2rem, 4vw, 3rem);
   letter-spacing: 0;
 }
@@ -943,7 +993,7 @@ onUnmounted(() => {
 
 .section-heading h2 {
   margin-top: 0.8rem;
-  color: #ffffff;
+  color: var(--landing-text-strong);
   font-size: clamp(2.2rem, 5vw, 4.3rem);
   font-weight: 900;
   letter-spacing: 0;
@@ -953,7 +1003,7 @@ onUnmounted(() => {
 .section-heading span {
   margin-top: 1rem;
   display: block;
-  color: #a3a3a3;
+  color: var(--landing-muted);
   font-size: 1rem;
   line-height: 1.8;
 }
@@ -1031,7 +1081,7 @@ onUnmounted(() => {
   position: relative;
   z-index: 1;
   margin-top: 1.2rem;
-  color: #ffffff;
+  color: var(--landing-text-strong);
   font-size: 1.2rem;
   font-weight: 800;
 }
@@ -1040,7 +1090,7 @@ onUnmounted(() => {
   position: relative;
   z-index: 1;
   margin-top: 0.8rem;
-  color: #d4d4d4;
+  color: var(--landing-text-soft);
   font-size: 0.94rem;
   line-height: 1.8;
 }
@@ -1060,15 +1110,12 @@ onUnmounted(() => {
 .testimonial-section {
   position: relative;
   isolation: isolate;
-  background:
-    linear-gradient(180deg, transparent 0%, rgba(148, 163, 184, 0.04) 10%, transparent 24%, transparent 78%, rgba(148, 163, 184, 0.035) 92%, transparent 100%),
-    linear-gradient(180deg, rgba(20, 22, 26, 0.96), rgba(29, 32, 38, 0.92) 54%, rgba(20, 22, 26, 0.98)),
-    var(--landing-bg);
+  background: var(--landing-bg);
   color: var(--landing-text);
 }
 
 .testimonial-section .section-heading h2 {
-  color: #ffffff;
+  color: var(--landing-text-strong);
 }
 
 .testimonial-section .section-heading span {
@@ -1096,13 +1143,11 @@ onUnmounted(() => {
 }
 
 .testimonial-marquee::before {
-  left: 0;
-  background: linear-gradient(90deg, rgba(20, 22, 26, 0.98) 0%, rgba(20, 22, 26, 0) 100%);
+  content: none;
 }
 
 .testimonial-marquee::after {
-  right: 0;
-  background: linear-gradient(270deg, rgba(20, 22, 26, 0.98) 0%, rgba(20, 22, 26, 0) 100%);
+  content: none;
 }
 
 .testimonial-track {
@@ -1160,7 +1205,7 @@ onUnmounted(() => {
   position: absolute;
   right: 1rem;
   top: -0.55rem;
-  color: rgba(249, 115, 22, 0.18);
+  color: var(--landing-accent-tint);
   font-family: Georgia, serif;
   font-size: 5rem;
   line-height: 1;
@@ -1169,7 +1214,7 @@ onUnmounted(() => {
 .testimonial-card p {
   position: relative;
   z-index: 1;
-  color: #d4d4d4;
+  color: var(--landing-text-soft);
   font-size: 0.95rem;
   line-height: 1.85;
 }
@@ -1184,6 +1229,24 @@ onUnmounted(() => {
   }
 }
 
+@keyframes terminal-type {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes terminal-cursor-blink {
+  0%,
+  42% {
+    opacity: 1;
+  }
+
+  43%,
+  100% {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .testimonial-marquee {
     overflow-x: auto;
@@ -1191,6 +1254,21 @@ onUnmounted(() => {
 
   .testimonial-track {
     animation: none;
+  }
+
+  .terminal-line {
+    animation: none;
+    clip-path: inset(0 0 0 0);
+  }
+
+  .terminal-cursor {
+    animation: none;
+  }
+
+  .landing-header,
+  .landing-header nav,
+  .brand-mark {
+    transition: none;
   }
 }
 
@@ -1250,32 +1328,30 @@ onUnmounted(() => {
 
 .faq-item {
   padding: 1.45rem 0;
-  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  border-top: 1px solid var(--landing-border-strong);
 }
 
 .faq-item:last-child {
-  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  border-bottom: 1px solid var(--landing-border-strong);
 }
 
 .faq-item h3 {
-  color: #ffffff;
+  color: var(--landing-text-strong);
   font-size: 1.1rem;
   font-weight: 800;
 }
 
 .faq-item p {
   margin-top: 0.75rem;
-  color: #d4d4d4;
+  color: var(--landing-text-soft);
   line-height: 1.8;
 }
 
 .landing-footer {
   position: relative;
   isolation: isolate;
-  background:
-    linear-gradient(180deg, transparent 0%, rgba(148, 163, 184, 0.05) 10%, transparent 24%),
-    linear-gradient(180deg, rgba(20, 22, 26, 0.86), rgba(20, 22, 26, 0.96)),
-    #14161a;
+  color: var(--landing-text-soft);
+  background: var(--landing-bg);
 }
 
 .landing-footer::before {
@@ -1285,6 +1361,10 @@ onUnmounted(() => {
 .footer-top {
   display: grid;
   gap: 3rem;
+}
+
+.footer-description {
+  color: var(--landing-subtle);
 }
 
 @media (min-width: 900px) {
@@ -1307,7 +1387,7 @@ onUnmounted(() => {
 
 .footer-links h3 {
   margin-bottom: 0.9rem;
-  color: #f8fafc;
+  color: var(--landing-text);
   font-size: 0.9rem;
   font-weight: 800;
 }
@@ -1316,12 +1396,12 @@ onUnmounted(() => {
 .footer-links span {
   margin-top: 0.7rem;
   display: block;
-  color: #94a3b8;
+  color: var(--landing-subtle);
   font-size: 0.88rem;
 }
 
 .footer-links a:hover {
-  color: #f8fafc;
+  color: var(--landing-text);
 }
 
 .footer-bottom {
@@ -1329,9 +1409,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  border-top: 1px solid var(--landing-border);
   padding-top: 1.5rem;
-  color: #64748b;
+  color: var(--landing-dim);
   font-size: 0.85rem;
 }
 
@@ -1366,11 +1446,6 @@ onUnmounted(() => {
     bottom: -2.4rem;
     right: -5.5rem;
     opacity: 0.42;
-  }
-
-  .command-panel,
-  .route-panel {
-    grid-column: span 1;
   }
 
   .hero-copy h1 {

@@ -62,10 +62,10 @@ export default {
         statusLabel: 'Response status',
         statusCaption: 'Service available',
         lines: {
-          connected: 'connected: claude-code / codex / gemini-cli',
-          policy: 'workspace policy synced',
-          routing: 'routing requests through healthy channels',
-          report: 'usage report generated in 312ms'
+          connected: '# Routing to upstream...',
+          policy: '200 OK',
+          routing: '',
+          report: '{ "content": "Hello!" }'
         },
         routes: {
           codeAssist: 'Code Assist',

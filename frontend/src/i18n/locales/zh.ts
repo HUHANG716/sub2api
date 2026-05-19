@@ -62,10 +62,10 @@ export default {
         statusLabel: '响应状态',
         statusCaption: '服务可用',
         lines: {
-          connected: '已连接：claude-code / codex / gemini-cli',
-          policy: '工作区策略已同步',
-          routing: '请求正在通过健康通道路由',
-          report: '用量报告已在 312ms 内生成'
+          connected: '# Routing to upstream...',
+          policy: '200 OK',
+          routing: '',
+          report: '{ "content": "Hello!" }'
         },
         routes: {
           codeAssist: '代码辅助',
