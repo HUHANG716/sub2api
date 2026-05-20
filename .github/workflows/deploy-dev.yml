@@ -1,0 +1,71 @@
+name: Deploy Dev
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    branches:
+      - dev
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to code.hahacode.work
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: dev
+      url: https://code.hahacode.work
+    steps:
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.BAOLEYUN_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "${{ secrets.BAOLEYUN_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy on server
+        env:
+          DEPLOY_HOST: ${{ vars.BAOLEYUN_HOST }}
+          DEPLOY_USER: ${{ vars.BAOLEYUN_USER }}
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          ssh -i ~/.ssh/id_ed25519 "${DEPLOY_USER}@${DEPLOY_HOST}" "DEPLOY_SHA=${DEPLOY_SHA} bash -se" <<'REMOTE'
+          set -euo pipefail
+
+          SHORT_SHA="${DEPLOY_SHA:0:12}"
+          REPO_DIR="/opt/sub2api/repo"
+          RUNTIME_DIR="/opt/sub2api/runtime"
+          IMAGE="local/sub2api:dev-${SHORT_SHA}"
+
+          cd "$REPO_DIR"
+          git fetch origin dev
+          git checkout --detach "$DEPLOY_SHA"
+          git status --short
+
+          docker build \
+            --build-arg COMMIT="$DEPLOY_SHA" \
+            --build-arg DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -t "$IMAGE" .
+
+          cd "$RUNTIME_DIR"
+          cp docker-compose.yml "docker-compose.yml.bak-dev-${SHORT_SHA}-$(date +%Y%m%d%H%M%S)"
+          sed -i "s#image: local/sub2api:.*#image: ${IMAGE}#" docker-compose.yml
+
+          docker compose up -d sub2api
+          sleep 20
+          docker compose ps
+
+          curl -fsS http://127.0.0.1:8080/health
+          curl -fsS https://code.hahacode.work/health
+          REMOTE
