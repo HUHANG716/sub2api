@@ -65,7 +65,7 @@ export default {
           connected: '# Routing to upstream...',
           policy: '200 OK',
           routing: '',
-          report: '{ "content": "Hello!" }'
+          report: '{\'{\'} "content": "Hello!" {\'}\'}'
         },
         routes: {
           codeAssist: 'Code Assist',

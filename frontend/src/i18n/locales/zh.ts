@@ -65,7 +65,7 @@ export default {
           connected: '# Routing to upstream...',
           policy: '200 OK',
           routing: '',
-          report: '{ "content": "Hello!" }'
+          report: '{\'{\'} "content": "Hello!" {\'}\'}'
         },
         routes: {
           codeAssist: '代码辅助',
@@ -117,12 +117,12 @@ export default {
         one: {
           quote: '接入之后，团队里的 AI 编程流程终于统一了。大家不用反复问密钥和通道配置，开发节奏明显顺了。',
           name: '周予',
-          role: '研发团队负责人 @ SaaS 公司'
+          role: "研发团队负责人 {'@'} SaaS 公司"
         },
         two: {
           quote: '我最喜欢的是稳定性和可观测性。出问题时能快速定位，日常使用也不会因为工具切换打断思路。',
           name: 'Mia Chen',
-          role: '全栈工程师 @ 出海团队'
+          role: "全栈工程师 {'@'} 出海团队"
         },
         three: {
           quote: '对独立开发者很友好。配置简单，文档清楚，把更多精力留给产品本身，而不是维护一堆零散工具。',
@@ -132,27 +132,27 @@ export default {
         four: {
           quote: '团队成员的使用情况变得可见，权限边界也更清楚。对研发管理来说，这是很踏实的基础设施。',
           name: 'Eva Liu',
-          role: 'AI 产品经理 @ 科技公司'
+          role: "AI 产品经理 {'@'} 科技公司"
         },
         five: {
           quote: '客服和技术支持响应很快，遇到接入细节可以直接沟通。上线前后都有人帮忙兜住关键问题。',
           name: '何工',
-          role: '前端架构师 @ 本地生活平台'
+          role: "前端架构师 {'@'} 本地生活平台"
         },
         six: {
           quote: '我们把多个开发工具的调用收敛到这里后，团队协作成本下降很多，财务和技术侧都更容易对齐。',
           name: 'Kevin Zhao',
-          role: '后端工程师 @ 电商平台'
+          role: "后端工程师 {'@'} 电商平台"
         },
         seven: {
           quote: '高峰期也能保持稳定，路由和监控能力很实用。它不像玩具，更像能长期放进工作流里的系统。',
           name: '吴可',
-          role: '研发总监 @ 金融科技公司'
+          role: "研发总监 {'@'} 金融科技公司"
         },
         eight: {
           quote: '新同事上手速度快了很多。我们只维护一套入口和说明，团队里的 AI 编程习惯也更一致。',
           name: 'Sarah Lin',
-          role: '移动端负责人 @ 创业公司'
+          role: "移动端负责人 {'@'} 创业公司"
         }
       },
       faq: {
