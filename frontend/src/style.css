@@ -1,3 +1,5 @@
+@import '@fontsource-variable/noto-sans-sc';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,14 +13,14 @@
     --theme-surface-strong: #ffffff;
     --theme-surface-muted: #f8fafc;
     --theme-main-surface: #f8fafc;
-    --theme-border: rgba(148, 163, 184, 0.24);
-    --theme-border-strong: rgba(100, 116, 139, 0.32);
+    --theme-border: rgba(148, 163, 184, 0.12);
+    --theme-border-strong: rgba(100, 116, 139, 0.2);
     --theme-text-muted: #64748b;
     --theme-primary: #f97316;
     --theme-primary-hover: #ea580c;
     --theme-primary-soft: rgba(249, 115, 22, 0.12);
-    --theme-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
-    --theme-shadow-hover: 0 1px 0 rgba(15, 23, 42, 0.08);
+    --theme-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+    --theme-shadow-hover: 0 1px 0 rgba(15, 23, 42, 0.06);
     --theme-scrollbar-track: #f8fafc;
     --theme-scrollbar-thumb: rgba(100, 116, 139, 0.28);
     --theme-scrollbar-thumb-hover: rgba(100, 116, 139, 0.46);
@@ -32,14 +34,14 @@
     --theme-surface-strong: #1d2026;
     --theme-surface-muted: rgba(37, 41, 49, 0.74);
     --theme-main-surface: #252931;
-    --theme-border: rgba(148, 163, 184, 0.16);
-    --theme-border-strong: rgba(148, 163, 184, 0.22);
+    --theme-border: rgba(148, 163, 184, 0.08);
+    --theme-border-strong: rgba(148, 163, 184, 0.14);
     --theme-text-muted: #a7adb7;
     --theme-primary: #f97316;
     --theme-primary-hover: #fb923c;
     --theme-primary-soft: rgba(249, 115, 22, 0.18);
-    --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
-    --theme-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.07);
+    --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.025);
+    --theme-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.05);
     --theme-scrollbar-track: #14161a;
     --theme-scrollbar-thumb: rgba(148, 163, 184, 0.3);
     --theme-scrollbar-thumb-hover: rgba(148, 163, 184, 0.48);
@@ -182,7 +184,7 @@
   }
 
   .icon-action-themed {
-    @apply inline-flex items-center justify-center rounded-xl transition-all duration-200;
+    @apply inline-flex items-center justify-center rounded-lg transition-all duration-200;
     border: 1px solid var(--theme-border);
     background: var(--theme-surface-muted);
     color: var(--theme-text-muted);
@@ -198,7 +200,7 @@
   /* ============ 按钮样式 ============ */
   .btn {
     @apply inline-flex items-center justify-center gap-2;
-    @apply rounded-xl px-4 py-2.5 text-sm font-medium;
+    @apply rounded-lg px-3.5 py-2 text-sm font-medium;
     @apply transition-all duration-200 ease-out;
     @apply focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2;
     @apply disabled:transform-none disabled:cursor-not-allowed disabled:opacity-50;
@@ -280,30 +282,31 @@
   }
 
   .btn-sm {
-    @apply rounded-lg px-3 py-1.5 text-xs;
+    @apply rounded-md px-2.5 py-1 text-xs;
   }
 
   .btn-md {
-    @apply rounded-xl px-4 py-2 text-sm;
+    @apply rounded-lg px-3.5 py-1.5 text-sm;
   }
 
   .btn-lg {
-    @apply rounded-2xl px-6 py-3 text-base;
+    @apply rounded-xl px-5 py-2.5 text-sm;
   }
 
   .btn-icon {
-    @apply rounded-xl p-2.5;
+    @apply rounded-lg p-2;
   }
 
   /* ============ 输入框样式 ============ */
   .input {
     @apply w-full rounded-xl px-4 py-2.5 text-sm;
     background: var(--theme-surface);
-    border: 1px solid var(--theme-border);
+    border: 1px solid transparent;
+    box-shadow: inset 0 0 0 1px var(--theme-border);
     @apply text-gray-900 dark:text-white;
     @apply placeholder:text-gray-400 dark:placeholder:text-dark-400;
     @apply transition-all duration-200;
-    @apply focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/30;
     @apply disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-dark-900;
   }
 
@@ -350,7 +353,7 @@
   /* ============ 卡片样式 ============ */
   .card {
     background: var(--theme-surface);
-    border: 1px solid var(--theme-border);
+    border: 1px solid transparent;
     box-shadow: var(--theme-shadow);
     @apply rounded-2xl backdrop-blur-xl transition-all duration-300;
   }
@@ -366,7 +369,7 @@
 
   .card-glass {
     background: var(--theme-surface);
-    border: 1px solid var(--theme-border);
+    border: 1px solid transparent;
     box-shadow: var(--theme-shadow);
     @apply backdrop-blur-xl;
   }
@@ -436,7 +439,7 @@
   /* ============ 表格样式 ============ */
   .table-container {
     @apply overflow-x-auto rounded-xl;
-    border: 1px solid var(--theme-border);
+    border: 1px solid transparent;
   }
 
   .table {
@@ -539,7 +542,7 @@
     @apply max-h-[95vh] sm:max-h-[90vh];
     background: var(--theme-surface-strong);
     @apply rounded-2xl shadow-2xl;
-    border: 1px solid var(--theme-border);
+    border: 1px solid transparent;
     @apply flex flex-col;
   }
 
@@ -548,6 +551,7 @@
     @apply sm:px-6 sm:py-4;
     @apply flex items-center justify-between;
     @apply flex-shrink-0;
+    background: var(--theme-surface-strong);
   }
 
   .modal-title {
@@ -719,7 +723,6 @@
   .sidebar-link-active {
     @apply text-primary-600 dark:text-primary-400;
     background: rgba(249, 115, 22, 0.1);
-    border: 1px solid rgba(249, 115, 22, 0.18);
   }
 
   .sidebar-section {
@@ -754,6 +757,25 @@
   .empty-state-icon {
     @apply mb-4 h-16 w-16;
     @apply text-gray-300 dark:text-dark-400;
+  }
+
+  .empty-state-icon-frame {
+    border: 1px solid var(--theme-border);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.18));
+    color: var(--theme-text-muted);
+  }
+
+  .dark .empty-state-icon-frame {
+    border-color: rgba(148, 163, 184, 0.16);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.01));
+    color: rgba(167, 173, 183, 0.78);
+  }
+
+  .empty-state-icon-frame .empty-state-icon {
+    @apply mb-0 h-10 w-10;
+    color: currentColor;
   }
 
   .empty-state-title {

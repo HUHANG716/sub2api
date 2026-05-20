@@ -33,7 +33,7 @@ vi.mock('@/i18n', () => ({
 }))
 
 describe('LocaleSwitcher', () => {
-  it('renders a polished accessible trigger and locale menu', async () => {
+  it('renders a compact accessible trigger and locale menu', async () => {
     const wrapper = mount(LocaleSwitcher, {
       global: {
         stubs: {
@@ -45,17 +45,18 @@ describe('LocaleSwitcher', () => {
     const trigger = wrapper.get('[data-testid="locale-switcher-trigger"]')
     expect(trigger.attributes('aria-label')).toBe('Switch language')
     expect(trigger.attributes('aria-haspopup')).toBe('menu')
-    expect(trigger.text()).toContain('Language')
     expect(trigger.text()).toContain('English')
 
     await trigger.trigger('click')
 
     const menu = wrapper.get('[data-testid="locale-switcher-menu"]')
     expect(menu.attributes('role')).toBe('menu')
-    expect(menu.text()).toContain('Current language')
-    expect(menu.text()).toContain('English interface')
+    expect(menu.text()).not.toContain('Current language')
+    expect(menu.text()).not.toContain('English interface')
+    expect(menu.text()).not.toContain('中文界面')
     expect(menu.text()).toContain('简体中文')
     expect(wrapper.findAll('[role="menuitemradio"]')).toHaveLength(2)
+    expect(wrapper.findAll('.locale-option-code')).toHaveLength(0)
   })
 
   it('selects a locale and delegates persistence to i18n', async () => {

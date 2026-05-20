@@ -433,17 +433,18 @@ onUnmounted(() => {
 .select-trigger {
   @apply flex w-full items-center justify-between gap-2;
   @apply rounded-xl px-4 py-2.5 text-sm;
-  @apply bg-white dark:bg-dark-800;
-  @apply border border-gray-200 dark:border-dark-600;
+  background: var(--theme-surface);
+  border: 1px solid transparent;
+  box-shadow: inset 0 0 0 1px var(--theme-border);
   @apply text-gray-900 dark:text-gray-100;
   @apply transition-all duration-200;
-  @apply focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30;
-  @apply hover:border-gray-300 dark:hover:border-dark-500;
+  @apply focus:outline-none focus:ring-2 focus:ring-primary-500/30;
   @apply cursor-pointer;
 }
 
 .select-trigger-open {
-  @apply border-primary-500 ring-2 ring-primary-500/30;
+  @apply ring-2 ring-primary-500/30;
+  box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.55);
 }
 
 .select-trigger-error {

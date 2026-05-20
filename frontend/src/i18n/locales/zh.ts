@@ -1003,6 +1003,7 @@ export default {
     allGroups: '全部分组',
     allStatus: '全部状态',
     createKey: '创建密钥',
+    defaultName: '我的 API 密钥',
     editKey: '编辑密钥',
     deleteKey: '删除密钥',
     deleteConfirmMessage: "确定要删除 '{name}' 吗？此操作无法撤销。",

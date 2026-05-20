@@ -1,6 +1,53 @@
 <template>
-  <div class="app-auth-shell">
+  <div v-if="layoutVariant === 'split'" class="auth-split-shell">
+    <section class="auth-split-form">
+      <div class="auth-split-form-inner">
+        <div class="mb-8 text-left">
+          <template v-if="settingsLoaded">
+            <div
+              class="brand-surface mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl shadow-lg shadow-primary-500/10"
+            >
+              <img :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain" />
+            </div>
+            <h1 class="text-gradient mb-2 text-3xl font-bold">
+              {{ siteName }}
+            </h1>
+            <p class="max-w-sm text-sm text-gray-400">
+              {{ siteSubtitle }}
+            </p>
+          </template>
+        </div>
 
+        <div class="auth-split-content">
+          <slot />
+        </div>
+
+        <div class="mt-6 text-left text-sm">
+          <slot name="footer" />
+        </div>
+      </div>
+    </section>
+
+    <div class="auth-split-divider" aria-hidden="true"></div>
+
+    <aside class="auth-split-visual" aria-hidden="true">
+      <slot name="visual">
+        <div class="auth-brand-visual">
+          <div class="auth-brand-visual__mark">
+            <img :src="siteLogo || '/logo.png'" alt="" />
+          </div>
+          <div>
+            <div class="auth-brand-visual__name">
+              <span class="auth-brand-visual__typed">{{ siteName }}</span>
+            </div>
+            <p class="auth-brand-visual__subtitle">{{ siteSubtitle }}</p>
+          </div>
+        </div>
+      </slot>
+    </aside>
+  </div>
+
+  <div v-else class="app-auth-shell">
     <!-- Content Container -->
     <div class="relative z-10 w-full max-w-md">
       <!-- Logo/Brand -->
@@ -44,12 +91,19 @@ import { computed, onMounted } from 'vue'
 import { useAppStore } from '@/stores'
 import { sanitizeUrl } from '@/utils/url'
 
+const props = withDefaults(defineProps<{
+  variant?: 'centered' | 'split'
+}>(), {
+  variant: 'split'
+})
+
 const appStore = useAppStore()
 
 const siteName = computed(() => appStore.siteName || 'Hahacode')
 const siteLogo = computed(() => sanitizeUrl(appStore.siteLogo || '', { allowRelative: true, allowDataUrl: true }))
 const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || 'Subscription to API Conversion Platform')
 const settingsLoaded = computed(() => appStore.publicSettingsLoaded)
+const layoutVariant = computed(() => props.variant)
 
 const currentYear = computed(() => new Date().getFullYear())
 
@@ -63,5 +117,190 @@ onMounted(() => {
   @apply text-primary-600 dark:text-primary-400;
   background-image: none;
   -webkit-text-fill-color: currentColor;
+}
+
+.auth-split-shell {
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(249, 115, 22, 0.16), transparent 26rem),
+    linear-gradient(180deg, #1d2026 0%, #101216 100%);
+  color: #ffffff;
+}
+
+.auth-split-form {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2.75rem;
+}
+
+.auth-split-form-inner {
+  margin-inline: auto;
+  width: min(100%, 28rem);
+}
+
+.auth-split-content {
+  width: 100%;
+}
+
+.auth-split-content :deep(.input) {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.auth-split-content :deep(.input::placeholder) {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.auth-split-content :deep(.input:focus) {
+  border-color: rgba(249, 115, 22, 0.46);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.14);
+}
+
+.auth-split-divider {
+  position: absolute;
+  bottom: 0;
+  left: 40%;
+  top: 0;
+  z-index: 2;
+  display: none;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.auth-split-visual {
+  position: relative;
+  display: none;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(5.5rem, 16vh, 7.2rem) clamp(4rem, 7vw, 7rem) 3rem;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 42%),
+    linear-gradient(160deg, rgba(15, 23, 42, 0.2), rgba(249, 115, 22, 0.12));
+}
+
+.auth-split-visual::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: linear-gradient(120deg, rgba(0, 0, 0, 0.9), transparent 72%);
+}
+
+.auth-brand-visual {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: clamp(1.25rem, 2vw, 2rem);
+}
+
+.auth-brand-visual__mark {
+  display: flex;
+  height: clamp(5.5rem, 9vw, 8rem);
+  width: clamp(5.5rem, 9vw, 8rem);
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-brand-visual__mark img {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}
+
+.auth-brand-visual__name {
+  color: #ffffff;
+  font-size: clamp(3rem, 7vw, 6.5rem);
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.auth-brand-visual__typed {
+  display: inline-block;
+  max-width: max-content;
+  overflow: hidden;
+  border-right: 0.08em solid rgba(249, 115, 22, 0.92);
+  animation:
+    auth-brand-type 1.45s steps(12, end) 0.25s forwards,
+    auth-brand-caret 0.9s step-end infinite;
+  vertical-align: bottom;
+  white-space: nowrap;
+  width: 0;
+}
+
+.auth-brand-visual__subtitle {
+  margin-top: 1rem;
+  max-width: 32rem;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+@keyframes auth-brand-type {
+  from {
+    width: 0;
+  }
+
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes auth-brand-caret {
+  0%,
+  100% {
+    border-color: transparent;
+  }
+
+  50% {
+    border-color: rgba(249, 115, 22, 0.92);
+  }
+}
+
+@media (min-width: 1024px) {
+  .auth-split-shell {
+    grid-template-columns: 40% minmax(0, 1fr);
+  }
+
+  .auth-split-visual {
+    display: flex;
+  }
+
+  .auth-split-divider {
+    display: block;
+  }
+}
+
+@media (max-width: 1023px) {
+  .auth-split-form {
+    justify-content: center;
+    padding: 4rem 2rem 3rem;
+  }
+
+  .auth-split-form-inner {
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-split-form {
+    min-height: 100vh;
+    padding: 4.5rem 1.5rem 2.5rem;
+  }
 }
 </style>

@@ -1004,6 +1004,7 @@ export default {
     allGroups: 'All Groups',
     allStatus: 'All Status',
     createKey: 'Create API Key',
+    defaultName: 'My API Key',
     editKey: 'Edit API Key',
     deleteKey: 'Delete API Key',
     deleteConfirmMessage: "Are you sure you want to delete '{name}'? This action cannot be undone.",

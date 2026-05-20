@@ -14,10 +14,7 @@
       <span class="locale-trigger-icon" aria-hidden="true">
         <Icon name="globe" size="sm" />
       </span>
-      <span class="locale-trigger-copy">
-        <span class="locale-trigger-label">{{ t('locale.label') }}</span>
-        <span class="locale-trigger-value">{{ currentLocaleLabel }}</span>
-      </span>
+      <span class="locale-trigger-value">{{ currentLocaleLabel }}</span>
       <Icon
         v-if="!switching"
         name="chevronDown"
@@ -36,10 +33,6 @@
         role="menu"
         :aria-label="t('locale.switchTo')"
       >
-        <div class="locale-menu-header">
-          <span>{{ t('locale.current') }}</span>
-          <strong>{{ currentLocaleLabel }}</strong>
-        </div>
         <button
           v-for="locale in availableLocales"
           :key="locale.code"
@@ -52,11 +45,7 @@
           role="menuitemradio"
           :aria-checked="locale.code === currentLocaleCode"
         >
-          <span class="locale-option-code">{{ locale.code.toUpperCase() }}</span>
-          <span class="locale-option-copy">
-            <strong>{{ getLocaleLabel(locale.code) }}</strong>
-            <em>{{ getLocaleDescription(locale.code) }}</em>
-          </span>
+          <span class="locale-option-label">{{ getLocaleLabel(locale.code) }}</span>
           <Icon v-if="locale.code === currentLocaleCode" name="check" size="sm" class="locale-option-check" />
         </button>
       </div>
@@ -82,10 +71,6 @@ const currentLocaleLabel = computed(() => getLocaleLabel(currentLocale.value?.co
 
 function getLocaleLabel(code: string) {
   return t(`locale.${code}.nativeName`)
-}
-
-function getLocaleDescription(code: string) {
-  return t(`locale.${code}.description`)
 }
 
 function toggleDropdown() {
@@ -153,13 +138,13 @@ onBeforeUnmount(() => {
 
 .locale-trigger {
   display: inline-flex;
-  min-height: 2.4rem;
+  min-height: 2.25rem;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.42rem;
   border: 1px solid var(--theme-border);
   border-radius: 999px;
   background: var(--theme-surface-muted);
-  padding: 0.22rem 0.38rem 0.22rem 0.28rem;
+  padding: 0.28rem 0.58rem;
   color: var(--locale-text);
   transition:
     border-color 180ms ease,
@@ -186,42 +171,21 @@ onBeforeUnmount(() => {
 
 .locale-trigger-icon {
   display: inline-flex;
-  height: 1.85rem;
-  width: 1.85rem;
+  height: 1rem;
+  width: 1rem;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  background: #f97316;
-  color: #ffffff;
-}
-
-.locale-trigger-copy {
-  display: none;
-  min-width: 0;
-  text-align: left;
-}
-
-.locale-trigger-label,
-.locale-trigger-value {
-  display: block;
-  line-height: 1.05;
-}
-
-.locale-trigger-label {
-  color: var(--theme-text-muted);
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0;
+  color: #f97316;
 }
 
 .locale-trigger-value {
-  margin-top: 0.05rem;
   max-width: 4.6rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.76rem;
-  font-weight: 800;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .locale-chevron {
@@ -243,38 +207,22 @@ onBeforeUnmount(() => {
   right: 0;
   z-index: 50;
   margin-top: 0.45rem;
-  width: 14.5rem;
+  width: 10.5rem;
   overflow: hidden;
   border: 1px solid var(--theme-border);
-  border-radius: 0.75rem;
+  border-radius: 0.7rem;
   background: var(--theme-surface);
   box-shadow: var(--theme-shadow-hover);
   backdrop-filter: blur(16px);
 }
 
-.locale-menu-header {
+.locale-option {
   display: flex;
+  min-height: 2.5rem;
+  width: 100%;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  border-bottom: 1px solid var(--theme-border);
-  padding: 0.62rem 0.75rem;
-  color: var(--theme-text-muted);
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.locale-menu-header strong {
-  color: var(--locale-text-strong);
-  font-size: 0.74rem;
-}
-
-.locale-option {
-  display: flex;
-  min-height: 3.35rem;
-  width: 100%;
-  align-items: center;
-  gap: 0.58rem;
   padding: 0.55rem 0.72rem;
   color: var(--locale-text);
   text-align: left;
@@ -297,66 +245,24 @@ onBeforeUnmount(() => {
   color: var(--locale-active-text);
 }
 
-.locale-option-code {
-  display: inline-flex;
-  height: 1.95rem;
-  width: 1.95rem;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.55rem;
-  background: var(--locale-code-bg);
-  color: var(--locale-text-strong);
-  font-size: 0.66rem;
-  font-weight: 900;
-  letter-spacing: 0;
-}
-
-.locale-option.is-active .locale-option-code {
-  background: #f97316;
-  color: #ffffff;
-}
-
-.locale-option-copy {
+.locale-option-label {
   min-width: 0;
   flex: 1;
-}
-
-.locale-option-copy strong,
-.locale-option-copy em {
-  display: block;
-}
-
-.locale-option-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 0.84rem;
-  font-weight: 850;
-}
-
-.locale-option-copy em {
-  margin-top: 0.08rem;
-  color: var(--theme-text-muted);
-  font-size: 0.7rem;
-  font-style: normal;
-  line-height: 1.25;
+  font-weight: 700;
 }
 
 .locale-option-check {
+  flex: 0 0 auto;
   color: #f97316;
 }
 
 .dark .locale-trigger:hover,
 .dark .locale-trigger[aria-expanded='true'] {
   border-color: rgba(249, 115, 22, 0.58);
-}
-
-@media (min-width: 640px) {
-  .locale-trigger {
-    padding-right: 0.58rem;
-  }
-
-  .locale-trigger-copy {
-    display: block;
-  }
 }
 
 @keyframes locale-spin {

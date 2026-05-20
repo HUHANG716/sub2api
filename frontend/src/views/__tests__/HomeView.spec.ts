@@ -17,13 +17,13 @@ const { authState, appState } = vi.hoisted(() => ({
   },
   appState: {
     cachedPublicSettings: {
-      site_name: 'hahacode',
+      site_name: 'Hahacode',
       site_logo: '',
       site_subtitle: 'AI 编程开发工作台',
       doc_url: 'https://docs.example.com',
       home_content: ''
     },
-    siteName: 'hahacode',
+    siteName: 'Hahacode',
     siteLogo: '',
     docUrl: 'https://docs.example.com',
     publicSettingsLoaded: true,
@@ -127,7 +127,7 @@ vi.mock('vue-i18n', async (importOriginal) => {
           'home.modern.reviews.eight.role': '移动端负责人 @ 创业公司',
           'home.modern.faq.title': '有疑问？我们来解答',
           'home.modern.faq.description': '围绕接入、稳定性、团队管理和上手体验整理了最常见的问题。',
-          'home.modern.faq.items.fit.question': `${params?.siteName ?? 'hahacode'} 适合什么团队？`,
+          'home.modern.faq.items.fit.question': `${params?.siteName ?? 'Hahacode'} 适合什么团队？`,
           'home.modern.faq.items.fit.answer': '适合已经在日常研发中使用 AI 编程工具的团队。',
           'home.modern.faq.items.individual.question': '为什么不直接让每个人各自配置工具？',
           'home.modern.faq.items.individual.answer': '统一入口能降低长期成本。',

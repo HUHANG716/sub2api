@@ -1,5 +1,5 @@
 <template>
-  <AuthLayout>
+  <AuthLayout variant="split">
     <div class="space-y-6">
       <!-- Title -->
       <div class="text-center">
@@ -563,4 +563,5 @@ function handle2FACancel(): void {
   opacity: 0;
   transform: translateY(-8px);
 }
+
 </style>

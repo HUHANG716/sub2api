@@ -4,11 +4,11 @@
       <div v-for="i in 5" :key="i" class="theme-panel rounded-lg p-4">
         <div class="space-y-3">
           <div v-for="column in dataColumns" :key="column.key" class="flex justify-between">
-            <div class="h-4 w-20 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
-            <div class="h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
+            <div class="table-skeleton-line h-3.5 w-20"></div>
+            <div class="table-skeleton-line h-3.5 w-32"></div>
           </div>
           <div v-if="hasActionsColumn" class="border-t border-gray-200 pt-3 dark:border-dark-700">
-            <div class="h-8 w-full animate-pulse rounded bg-gray-200 dark:bg-dark-700"></div>
+            <div class="table-skeleton-line h-8 w-full"></div>
           </div>
         </div>
       </div>
@@ -122,8 +122,8 @@
         <!-- Loading skeleton -->
         <tr v-if="loading" v-for="i in 5" :key="i">
           <td v-for="column in columns" :key="column.key" :class="['whitespace-nowrap py-4', getAdaptivePaddingClass()]">
-            <div class="animate-pulse">
-              <div class="h-4 w-3/4 rounded bg-gray-200 dark:bg-dark-700"></div>
+            <div class="table-skeleton-wrap">
+              <div class="table-skeleton-line h-3.5 w-3/4"></div>
             </div>
           </td>
         </tr>
@@ -883,5 +883,56 @@ tbody tr:hover .sticky-col {
 .dark .is-scrollable .sticky-col-right::before {
   background: none;
   box-shadow: -10px 0 18px rgba(2, 6, 23, 0.32);
+}
+
+.table-skeleton-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
+.table-skeleton-line {
+  position: relative;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.13);
+}
+
+.table-skeleton-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.42),
+    transparent
+  );
+  animation: table-skeleton-shimmer 1.45s ease-in-out infinite;
+}
+
+.dark .table-skeleton-line {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.dark .table-skeleton-line::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+}
+
+@keyframes table-skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table-skeleton-line::after {
+    animation: none;
+  }
 }
 </style>

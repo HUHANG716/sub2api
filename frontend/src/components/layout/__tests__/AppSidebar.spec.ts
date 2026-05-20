@@ -30,3 +30,22 @@ describe('AppSidebar header styles', () => {
     expect(sidebarBrandBlockMatch?.[0]).not.toContain('overflow: hidden;')
   })
 })
+
+describe('AppSidebar active state styles', () => {
+  it('does not draw a bordered active item', () => {
+    const sidebarActiveBlockMatch = styleSource.match(/\.sidebar-link-active\s*\{[\s\S]*?\n {2}\}/)
+
+    expect(sidebarActiveBlockMatch).not.toBeNull()
+    expect(sidebarActiveBlockMatch?.[0]).not.toMatch(/\bborder\s*:/)
+  })
+})
+
+describe('Modal header styles', () => {
+  it('uses the neutral modal surface instead of a tinted header background', () => {
+    const modalHeaderBlockMatch = styleSource.match(/\.modal-header\s*\{[\s\S]*?\n {2}\}/)
+
+    expect(modalHeaderBlockMatch).not.toBeNull()
+    expect(modalHeaderBlockMatch?.[0]).toContain('background: var(--theme-surface-strong);')
+    expect(modalHeaderBlockMatch?.[0]).not.toMatch(/rgba\(124,\s*45,\s*18/)
+  })
+})
