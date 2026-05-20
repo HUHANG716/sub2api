@@ -9412,7 +9412,7 @@ watch(
 }
 
 .settings-tab-active {
-  border-color: var(--theme-primary);
+  border-color: transparent;
   background: var(--theme-primary-soft);
   color: var(--theme-primary);
   box-shadow: var(--theme-shadow-hover);

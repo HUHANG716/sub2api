@@ -114,20 +114,82 @@ onMounted(() => {
 
 <style scoped>
 .text-gradient {
-  @apply text-primary-600 dark:text-primary-400;
+  color: var(--auth-primary);
   background-image: none;
   -webkit-text-fill-color: currentColor;
 }
 
 .auth-split-shell {
+  --auth-bg: #0d1117;
+  --auth-bg-soft: #111820;
+  --auth-bg-deep: #070a0f;
+  --auth-surface: rgba(19, 25, 33, 0.92);
+  --auth-surface-muted: rgba(30, 39, 50, 0.78);
+  --auth-border: rgba(148, 163, 184, 0.14);
+  --auth-primary: #f97316;
+  --auth-primary-hover: #fb923c;
+  --auth-primary-soft: rgba(249, 115, 22, 0.18);
+  --auth-accent: #22d3ee;
+  --auth-accent-soft: rgba(34, 211, 238, 0.12);
+  --theme-bg: var(--auth-bg);
+  --theme-bg-soft: var(--auth-bg-soft);
+  --theme-bg-deep: var(--auth-bg-deep);
+  --theme-surface: var(--auth-surface);
+  --theme-surface-strong: #171f29;
+  --theme-surface-muted: var(--auth-surface-muted);
+  --theme-main-surface: #151b23;
+  --theme-border: var(--auth-border);
+  --theme-border-strong: rgba(148, 163, 184, 0.24);
+  --theme-text-muted: #9aa7b5;
+  --theme-primary: var(--auth-primary);
+  --theme-primary-hover: var(--auth-primary-hover);
+  --theme-primary-soft: var(--auth-primary-soft);
+  --theme-accent: var(--auth-accent);
+  --theme-accent-soft: var(--auth-accent-soft);
   position: relative;
   display: grid;
   min-height: 100vh;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at 16% 18%, rgba(249, 115, 22, 0.16), transparent 26rem),
-    linear-gradient(180deg, #1d2026 0%, #101216 100%);
+    radial-gradient(circle at 16% 18%, rgba(34, 211, 238, 0.08), transparent 25rem),
+    radial-gradient(circle at 84% 74%, rgba(249, 115, 22, 0.08), transparent 26rem),
+    linear-gradient(180deg, var(--auth-bg-soft) 0%, var(--auth-bg-deep) 100%);
+  color-scheme: dark;
   color: #ffffff;
+}
+
+.app-auth-shell {
+  --auth-bg: #0d1117;
+  --auth-bg-soft: #111820;
+  --auth-bg-deep: #070a0f;
+  --auth-surface: rgba(19, 25, 33, 0.92);
+  --auth-surface-muted: rgba(30, 39, 50, 0.78);
+  --auth-border: rgba(148, 163, 184, 0.14);
+  --auth-primary: #f97316;
+  --auth-primary-hover: #fb923c;
+  --auth-primary-soft: rgba(249, 115, 22, 0.18);
+  --auth-accent: #22d3ee;
+  --auth-accent-soft: rgba(34, 211, 238, 0.12);
+  --theme-bg: var(--auth-bg);
+  --theme-bg-soft: var(--auth-bg-soft);
+  --theme-bg-deep: var(--auth-bg-deep);
+  --theme-surface: var(--auth-surface);
+  --theme-surface-strong: #171f29;
+  --theme-surface-muted: var(--auth-surface-muted);
+  --theme-main-surface: #151b23;
+  --theme-border: var(--auth-border);
+  --theme-border-strong: rgba(148, 163, 184, 0.24);
+  --theme-text-muted: #9aa7b5;
+  --theme-primary: var(--auth-primary);
+  --theme-primary-hover: var(--auth-primary-hover);
+  --theme-primary-soft: var(--auth-primary-soft);
+  --theme-accent: var(--auth-accent);
+  --theme-accent-soft: var(--auth-accent-soft);
+  color-scheme: dark;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(34, 211, 238, 0.08), transparent 25rem),
+    radial-gradient(circle at 84% 74%, rgba(249, 115, 22, 0.08), transparent 26rem),
+    linear-gradient(180deg, var(--auth-bg-soft) 0%, var(--auth-bg-deep) 100%);
 }
 
 .auth-split-form {
@@ -149,6 +211,39 @@ onMounted(() => {
   width: 100%;
 }
 
+.auth-split-content :deep(h2),
+.app-auth-shell :deep(h2),
+.auth-split-shell :deep(.text-gray-900),
+.app-auth-shell :deep(.text-gray-900) {
+  color: #ffffff;
+}
+
+.auth-split-content :deep(.text-gray-500),
+.app-auth-shell :deep(.text-gray-500),
+.auth-split-content :deep(.text-gray-400),
+.app-auth-shell :deep(.text-gray-400),
+.auth-split-content :deep(.input-hint),
+.app-auth-shell :deep(.input-hint) {
+  color: #9aa7b5;
+}
+
+.auth-split-content :deep(.input-label),
+.app-auth-shell :deep(.input-label) {
+  color: #d4d4d4;
+}
+
+.auth-split-shell :deep(.text-primary-600),
+.auth-split-shell :deep(.hover\:text-primary-500:hover),
+.app-auth-shell :deep(.text-primary-600),
+.app-auth-shell :deep(.hover\:text-primary-500:hover) {
+  color: var(--auth-primary);
+}
+
+.auth-split-shell :deep(.bg-gray-200),
+.app-auth-shell :deep(.bg-gray-200) {
+  background: rgba(148, 163, 184, 0.14);
+}
+
 .auth-split-content :deep(.input) {
   border-color: transparent;
   background: rgba(255, 255, 255, 0.08);
@@ -160,9 +255,9 @@ onMounted(() => {
 }
 
 .auth-split-content :deep(.input:focus) {
-  border-color: rgba(249, 115, 22, 0.46);
+  border-color: color-mix(in srgb, var(--auth-accent) 46%, transparent);
   background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.14);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--auth-accent) 16%, transparent);
 }
 
 .auth-split-divider {
@@ -185,7 +280,7 @@ onMounted(() => {
   padding: clamp(5.5rem, 16vh, 7.2rem) clamp(4rem, 7vw, 7rem) 3rem;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 42%),
-    linear-gradient(160deg, rgba(15, 23, 42, 0.2), rgba(249, 115, 22, 0.12));
+    linear-gradient(160deg, rgba(15, 23, 42, 0.28), rgba(34, 211, 238, 0.07));
 }
 
 .auth-split-visual::before {
@@ -234,7 +329,7 @@ onMounted(() => {
   display: inline-block;
   max-width: max-content;
   overflow: hidden;
-  border-right: 0.08em solid rgba(249, 115, 22, 0.92);
+  border-right: 0.08em solid var(--auth-primary);
   animation:
     auth-brand-type 1.45s steps(12, end) 0.25s forwards,
     auth-brand-caret 0.9s step-end infinite;
@@ -268,7 +363,7 @@ onMounted(() => {
   }
 
   50% {
-    border-color: rgba(249, 115, 22, 0.92);
+    border-color: var(--auth-primary);
   }
 }
 

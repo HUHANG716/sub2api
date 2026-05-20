@@ -15,7 +15,11 @@
               :alt="displayName"
               class="h-full w-full object-cover"
             >
-            <span v-else>{{ avatarInitial }}</span>
+            <DefaultHashAvatar
+              v-else
+              :seed="avatarSeed"
+              :label="displayName"
+            />
           </div>
 
           <div class="min-w-0 flex-1 space-y-5">
@@ -182,11 +186,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import DefaultHashAvatar from '@/components/common/DefaultHashAvatar.vue'
 import Icon from '@/components/icons/Icon.vue'
 import ProfileAvatarCard from '@/components/user/profile/ProfileAvatarCard.vue'
 import ProfileEditForm from '@/components/user/profile/ProfileEditForm.vue'
 import ProfileIdentityBindingsSection from '@/components/user/profile/ProfileIdentityBindingsSection.vue'
 import type { User, UserAuthBindingStatus, UserAuthProvider, UserProfileSourceContext } from '@/types'
+import { defaultAvatarSeed } from '@/utils/defaultAvatar'
 
 const props = withDefaults(defineProps<{
   user: User | null
@@ -234,6 +240,7 @@ function isEmailBound(user: User | null | undefined): boolean {
 
 const avatarUrl = computed(() => props.user?.avatar_url?.trim() || '')
 const displayName = computed(() => props.user?.username?.trim() || props.user?.email?.trim() || t('profile.user'))
+const avatarSeed = computed(() => defaultAvatarSeed(props.user))
 const primaryEmailDisplay = computed(() => {
   const email = props.user?.email?.trim() || ''
   if (!email) {
@@ -244,7 +251,6 @@ const primaryEmailDisplay = computed(() => {
   }
   return email
 })
-const avatarInitial = computed(() => displayName.value.charAt(0).toUpperCase() || 'U')
 const memberSinceLabel = computed(() => {
   const raw = props.user?.created_at?.trim()
   if (!raw) {

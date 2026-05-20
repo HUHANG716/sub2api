@@ -335,6 +335,35 @@ describe('HomeView', () => {
     expect(wrapper.get('.landing-header').classes()).not.toContain('landing-header-scrolled')
   })
 
+  it('narrows the landing nav width when the scrolled header state is active', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const headerNavBlock = source.match(/\.landing-header nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const scrolledNavBlock = source.match(/\.landing-header-scrolled nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(headerNavBlock).toContain('max-width: 80rem')
+    expect(headerNavBlock).toMatch(/transition:[\s\S]*max-width 180ms ease/)
+    expect(scrolledNavBlock).toContain('max-width: min(68rem, calc(100vw - 1.5rem))')
+  })
+
+  it('keeps the visible landing nav shell on the narrowing nav instead of the full-width header', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const headerBlock = source.match(/\.landing-header\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const headerNavBlock = source.match(/\.landing-header nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const scrolledHeaderBlock = source.match(/\.landing-header-scrolled\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const scrolledNavBlock = source.match(/\.landing-header-scrolled nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(headerBlock).not.toMatch(/\bbackground:/)
+    expect(headerBlock).not.toMatch(/\bbackdrop-filter:/)
+    expect(headerBlock).not.toMatch(/\bbox-shadow:/)
+    expect(headerNavBlock).toMatch(/\bbackground:/)
+    expect(headerNavBlock).toMatch(/\bbackdrop-filter:/)
+    expect(headerNavBlock).toMatch(/\bbox-shadow:/)
+    expect(scrolledHeaderBlock).not.toMatch(/\bbackground:/)
+    expect(scrolledHeaderBlock).not.toMatch(/\bbox-shadow:/)
+    expect(scrolledNavBlock).toMatch(/\bbackground:/)
+    expect(scrolledNavBlock).toMatch(/\bbox-shadow:/)
+  })
+
   it('isolates the landing page from the global light theme by forcing dark theme variables', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
     const landingActiveBlock = source.match(/:global\(html\.landing-page-active\),\n:global\(body\.landing-page-active\) \{[\s\S]*?\n\}/)?.[0] ?? ''

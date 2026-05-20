@@ -21,7 +21,7 @@
         </div>
       </div>
 
-      <!-- Right: Announcements + Docs + Language + Subscriptions + Balance + User Dropdown -->
+      <!-- Right: Announcements + Docs + Language + Theme + Subscriptions + Balance + User Dropdown -->
       <div class="flex items-center gap-3">
         <!-- Announcement Bell -->
         <AnnouncementBell v-if="user" />
@@ -41,13 +41,16 @@
         <!-- Language Switcher -->
         <LocaleSwitcher />
 
+        <!-- Theme Switch -->
+        <ThemeSwitch />
+
         <!-- Subscription Progress (for users with active subscriptions) -->
         <SubscriptionProgressMini v-if="user" />
 
         <!-- Balance Display -->
         <div
           v-if="user"
-          class="hidden items-center gap-2 rounded-xl border border-primary-500/15 bg-primary-500/10 px-3 py-1.5 sm:flex"
+          class="hidden items-center gap-2 rounded-xl bg-primary-500/10 px-3 py-1.5 sm:flex"
         >
           <svg
             class="h-4 w-4 text-primary-600 dark:text-primary-400"
@@ -81,7 +84,11 @@
                 :alt="displayName"
                 class="h-full w-full object-cover"
               >
-              <span v-else>{{ userInitials }}</span>
+              <DefaultHashAvatar
+                v-else
+                :seed="avatarSeed"
+                :label="displayName"
+              />
             </div>
             <div class="hidden text-left md:block">
               <div class="text-sm font-medium text-gray-900 dark:text-white">
@@ -221,7 +228,10 @@ import { useAdminSettingsStore } from '@/stores/adminSettings'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMini.vue'
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
+import DefaultHashAvatar from '@/components/common/DefaultHashAvatar.vue'
+import ThemeSwitch from '@/components/common/ThemeSwitch.vue'
 import Icon from '@/components/icons/Icon.vue'
+import { defaultAvatarSeed } from '@/utils/defaultAvatar'
 
 const router = useRouter()
 const route = useRoute()
@@ -237,24 +247,11 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const contactInfo = computed(() => appStore.contactInfo)
 const docUrl = computed(() => appStore.docUrl)
 const avatarUrl = computed(() => user.value?.avatar_url?.trim() || '')
+const avatarSeed = computed(() => defaultAvatarSeed(user.value))
 
 // 只在标准模式的管理员下显示新手引导按钮
 const showOnboardingButton = computed(() => {
   return !authStore.isSimpleMode && user.value?.role === 'admin'
-})
-
-const userInitials = computed(() => {
-  if (!user.value) return ''
-  // Prefer username, fallback to email
-  if (user.value.username) {
-    return user.value.username.substring(0, 2).toUpperCase()
-  }
-  if (user.value.email) {
-    // Get the part before @ and take first 2 chars
-    const localPart = user.value.email.split('@')[0]
-    return localPart.substring(0, 2).toUpperCase()
-  }
-  return ''
 })
 
 const displayName = computed(() => {

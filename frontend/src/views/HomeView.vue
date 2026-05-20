@@ -84,7 +84,6 @@
               <span></span>
               <span></span>
               <span></span>
-              <strong>terminal</strong>
             </div>
             <div class="console-grid">
               <div class="command-panel">
@@ -496,23 +495,28 @@ onUnmounted(() => {
 <style scoped>
 :global(html.landing-page-active),
 :global(body.landing-page-active) {
-  --theme-bg: #14161a;
-  --theme-bg-soft: #1d2026;
-  --theme-bg-deep: #0f1115;
-  --theme-surface: rgba(29, 32, 38, 0.88);
-  --theme-surface-strong: #1d2026;
-  --theme-surface-muted: rgba(37, 41, 49, 0.74);
-  --theme-main-surface: #252931;
-  --theme-border: rgba(148, 163, 184, 0.16);
+  --theme-bg: #0d1117;
+  --theme-bg-soft: #111820;
+  --theme-bg-deep: #070a0f;
+  --theme-surface: rgba(19, 25, 33, 0.92);
+  --theme-surface-strong: #171f29;
+  --theme-surface-muted: rgba(30, 39, 50, 0.78);
+  --theme-main-surface: #151b23;
+  --theme-border: rgba(148, 163, 184, 0.12);
   --theme-border-strong: rgba(148, 163, 184, 0.22);
-  --theme-text-muted: #a7adb7;
-  --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
-  --theme-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.07);
-  --theme-scrollbar-track: #14161a;
+  --theme-text-muted: #9aa7b5;
+  --theme-primary: #f97316;
+  --theme-primary-hover: #fb923c;
+  --theme-primary-soft: rgba(249, 115, 22, 0.18);
+  --theme-accent: #22d3ee;
+  --theme-accent-soft: rgba(34, 211, 238, 0.1);
+  --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.035);
+  --theme-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.22);
+  --theme-scrollbar-track: #0d1117;
   --theme-scrollbar-thumb: rgba(148, 163, 184, 0.34);
   --theme-scrollbar-thumb-hover: rgba(148, 163, 184, 0.56);
   color-scheme: dark;
-  background: #14161a;
+  background: #0d1117;
 }
 
 :global(.landing-page-active ::selection) {
@@ -528,42 +532,57 @@ onUnmounted(() => {
 
 :global(html.landing-page-active #app) {
   min-height: 100vh;
-  background: #14161a;
+  background: #0d1117;
 }
 
 .landing-shell {
-  --landing-bg: #14161a;
-  --landing-bg-soft: #1d2026;
-  --landing-surface: #1d2026;
-  --landing-surface-muted: #252931;
-  --landing-surface-subtle: rgba(37, 41, 49, 0.74);
-  --landing-border: rgba(148, 163, 184, 0.16);
+  --landing-bg: #0d1117;
+  --landing-bg-soft: #111820;
+  --landing-surface: #171f29;
+  --landing-surface-muted: #1e2732;
+  --landing-surface-subtle: rgba(30, 39, 50, 0.78);
+  --landing-border: rgba(148, 163, 184, 0.12);
   --landing-border-strong: rgba(148, 163, 184, 0.22);
   --landing-text: #f5f5f5;
   --landing-text-strong: #ffffff;
   --landing-text-soft: #d4d4d4;
-  --landing-muted: #a7adb7;
+  --landing-muted: #9aa7b5;
   --landing-subtle: #94a3b8;
   --landing-dim: #64748b;
   --landing-accent: #f97316;
   --landing-accent-hover: #fb923c;
-  --landing-accent-soft: #fdba74;
-  --landing-accent-tint: rgba(249, 115, 22, 0.16);
+  --landing-accent-soft: #fed7aa;
+  --landing-accent-tint: rgba(249, 115, 22, 0.18);
   --landing-accent-border: rgba(249, 115, 22, 0.38);
   --landing-accent-selection: rgba(249, 115, 22, 0.28);
+  --landing-support: #22d3ee;
+  --landing-support-soft: rgba(34, 211, 238, 0.1);
+  --landing-control-radius: 0.375rem;
+  --landing-nav-control-height: 2.25rem;
+  --landing-nav-control-radius: 0.375rem;
+  --landing-control-border: rgba(148, 163, 184, 0.18);
+  --landing-control-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 10px 24px rgba(2, 6, 23, 0.2);
+  --landing-control-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 14px 30px rgba(2, 6, 23, 0.28);
+  --landing-button-bg: var(--landing-accent);
+  --landing-button-bg-hover: var(--landing-accent-hover);
   --landing-text-inverse: #ffffff;
-  --theme-bg: #14161a;
-  --theme-bg-soft: #1d2026;
-  --theme-bg-deep: #0f1115;
-  --theme-surface: rgba(29, 32, 38, 0.88);
-  --theme-surface-strong: #1d2026;
-  --theme-surface-muted: rgba(37, 41, 49, 0.74);
-  --theme-main-surface: #252931;
-  --theme-border: rgba(148, 163, 184, 0.16);
+  --theme-bg: #0d1117;
+  --theme-bg-soft: #111820;
+  --theme-bg-deep: #070a0f;
+  --theme-surface: rgba(19, 25, 33, 0.92);
+  --theme-surface-strong: #171f29;
+  --theme-surface-muted: rgba(30, 39, 50, 0.78);
+  --theme-main-surface: #151b23;
+  --theme-border: rgba(148, 163, 184, 0.12);
   --theme-border-strong: rgba(148, 163, 184, 0.22);
-  --theme-text-muted: #a7adb7;
-  --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
-  --theme-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.07);
+  --theme-text-muted: #9aa7b5;
+  --theme-primary: #f97316;
+  --theme-primary-hover: #fb923c;
+  --theme-primary-soft: rgba(249, 115, 22, 0.18);
+  --theme-accent: #22d3ee;
+  --theme-accent-soft: rgba(34, 211, 238, 0.1);
+  --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.035);
+  --theme-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.22);
   color-scheme: dark;
   width: 100%;
   max-width: 100vw;
@@ -576,9 +595,26 @@ onUnmounted(() => {
   --locale-text: #e2e8f0;
   --locale-text-strong: var(--landing-text-strong);
   --locale-code-bg: rgba(148, 163, 184, 0.14);
-  --locale-hover-bg: rgba(37, 41, 49, 0.92);
+  --locale-hover-bg: rgba(30, 39, 50, 0.92);
   --locale-active-bg: var(--landing-accent-tint);
   --locale-active-text: #fed7aa;
+}
+
+.landing-shell :deep(.locale-trigger) {
+  min-height: var(--landing-nav-control-height);
+  border-color: var(--landing-control-border);
+  border-radius: var(--landing-nav-control-radius);
+  background: rgba(30, 39, 50, 0.92);
+  padding: 0 0.55rem;
+  box-shadow: var(--landing-control-shadow);
+}
+
+.landing-shell :deep(.locale-trigger-value) {
+  font-size: 0.78rem;
+}
+
+.landing-shell :deep(.locale-trigger-icon) {
+  color: var(--landing-support);
 }
 
 .landing-header {
@@ -587,15 +623,29 @@ onUnmounted(() => {
   z-index: 30;
   max-width: 100vw;
   overflow-x: clip;
-  background: rgba(20, 22, 26, 0.92);
+  padding-top: 0.5rem;
+}
+
+.landing-header nav {
+  width: 100%;
+  max-width: 80rem;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 0.9rem;
+  background: rgba(23, 31, 41, 0.97);
   backdrop-filter: blur(18px);
-  box-shadow: 0 1px 0 rgba(148, 163, 184, 0.05);
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 14px 32px rgba(2, 6, 23, 0.24);
   transition:
+    padding 180ms ease,
+    max-width 180ms ease,
+    border-color 180ms ease,
     background-color 180ms ease,
     box-shadow 180ms ease;
 }
 
-.landing-header nav,
 .brand-mark {
   transition:
     padding 180ms ease,
@@ -604,15 +654,19 @@ onUnmounted(() => {
 }
 
 .landing-header-scrolled {
-  background: rgba(20, 22, 26, 0.98);
-  box-shadow:
-    0 1px 0 rgba(148, 163, 184, 0.14),
-    0 12px 28px rgba(2, 6, 23, 0.2);
+  pointer-events: none;
 }
 
 .landing-header-scrolled nav {
-  padding-top: 0.65rem;
-  padding-bottom: 0.65rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  max-width: min(68rem, calc(100vw - 1.5rem));
+  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(23, 31, 41, 0.99);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 16px 34px rgba(2, 6, 23, 0.3);
+  pointer-events: auto;
 }
 
 .brand-lockup {
@@ -629,8 +683,8 @@ onUnmounted(() => {
 
 .brand-mark {
   display: inline-flex;
-  height: 2.75rem;
-  width: 2.75rem;
+  height: 2.4rem;
+  width: 2.4rem;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
@@ -644,8 +698,8 @@ onUnmounted(() => {
 }
 
 .landing-header-scrolled .brand-mark {
-  height: 2.4rem;
-  width: 2.4rem;
+  height: 2.2rem;
+  width: 2.2rem;
 }
 
 .landing-nav-links {
@@ -662,25 +716,42 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.75rem;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--landing-control-radius);
+  box-shadow: var(--landing-control-shadow);
   transition:
     transform 160ms ease,
     border-color 160ms ease,
-    background 160ms ease;
+    background 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
+}
+
+.icon-action:focus-visible,
+.primary-action:focus-visible,
+.hero-button:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--landing-support) 60%, transparent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--landing-support) 18%, transparent),
+    var(--landing-control-shadow-hover);
 }
 
 .icon-action {
-  height: 2.5rem;
-  width: 2.5rem;
-  border: 1px solid var(--landing-border-strong);
+  height: var(--landing-nav-control-height);
+  width: var(--landing-nav-control-height);
+  border-radius: var(--landing-nav-control-radius);
+  border: 1px solid var(--landing-control-border);
   color: var(--landing-muted);
-  background: var(--landing-surface-subtle);
+  background: rgba(30, 39, 50, 0.94);
 }
 
 .icon-action:hover {
-  border-color: var(--landing-accent-border);
-  color: var(--landing-accent-hover);
-  background: var(--landing-accent-tint);
+  border-color: color-mix(in srgb, var(--landing-support) 42%, transparent);
+  color: var(--landing-support);
+  background: rgba(30, 39, 50, 0.96);
+  box-shadow: var(--landing-control-shadow-hover);
 }
 
 .icon-action:hover,
@@ -690,12 +761,20 @@ onUnmounted(() => {
 }
 
 .primary-action {
-  min-height: 2.5rem;
-  background: var(--landing-accent);
-  padding: 0 1rem;
+  min-height: var(--landing-nav-control-height);
+  border-radius: var(--landing-nav-control-radius);
+  border: 1px solid var(--landing-accent-border);
+  background: var(--landing-button-bg);
+  padding: 0 0.8rem;
   color: var(--landing-text-inverse);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 700;
+}
+
+.primary-action:hover {
+  border-color: color-mix(in srgb, var(--landing-accent-hover) 58%, transparent);
+  background: var(--landing-button-bg-hover);
+  box-shadow: var(--landing-control-shadow-hover);
 }
 
 .hero-section {
@@ -710,7 +789,7 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: rgba(20, 22, 26, 0.2);
+  background: rgba(13, 17, 23, 0.16);
   opacity: 0.44;
   pointer-events: none;
 }
@@ -760,18 +839,33 @@ onUnmounted(() => {
 }
 
 .hero-button {
-  min-height: 3.5rem;
+  min-height: 3.125rem;
   gap: 0.625rem;
-  background: var(--landing-accent);
-  padding: 0 1.5rem;
+  border: 1px solid var(--landing-accent-border);
+  border-radius: calc(var(--landing-control-radius) + 0.125rem);
+  background: var(--landing-button-bg);
+  padding: 0 1.25rem;
   color: var(--landing-text-inverse);
+  font-size: 0.9375rem;
   font-weight: 800;
 }
 
+.hero-button:hover {
+  border-color: color-mix(in srgb, var(--landing-accent-hover) 58%, transparent);
+  background: var(--landing-button-bg-hover);
+  box-shadow: var(--landing-control-shadow-hover);
+}
+
 .hero-button.secondary {
-  border: 1px solid var(--landing-border-strong);
-  background: var(--landing-surface-muted);
-  color: var(--landing-text);
+  border: 1px solid var(--landing-control-border);
+  background: rgba(30, 39, 50, 0.92);
+  color: var(--landing-text-soft);
+}
+
+.hero-button.secondary:hover {
+  border-color: color-mix(in srgb, var(--landing-support) 42%, transparent);
+  background: rgba(30, 39, 50, 0.96);
+  color: var(--landing-support);
 }
 
 .trust-card span {
@@ -782,9 +876,9 @@ onUnmounted(() => {
 
 .hero-console {
   position: relative;
-  border: 1px solid var(--landing-border-strong);
   border-radius: 0.75rem;
   background: var(--landing-surface);
+  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.18);
   overflow: visible;
 }
 
@@ -825,21 +919,16 @@ onUnmounted(() => {
   height: 0.7rem;
   width: 0.7rem;
   border-radius: 999px;
-  background: var(--landing-accent);
+  background: #ff5f57;
+  box-shadow: inset 0 0 0 1px rgba(2, 6, 23, 0.16);
 }
 
 .console-topbar span:nth-child(2) {
-  background: var(--landing-subtle);
+  background: #ffbd2e;
 }
 
 .console-topbar span:nth-child(3) {
-  background: var(--landing-dim);
-}
-
-.console-topbar strong {
-  margin-left: 0.5rem;
-  color: var(--landing-dim);
-  font-size: 0.75rem;
+  background: #28c840;
 }
 
 .console-grid {
@@ -933,15 +1022,15 @@ onUnmounted(() => {
 }
 
 .trust-band {
-  background: rgba(29, 32, 38, 0.74);
+  background: var(--landing-bg);
 }
 
 .trust-strip {
   display: grid;
   overflow: hidden;
   border-radius: 0.5rem;
-  background: rgba(37, 41, 49, 0.46);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: rgba(30, 39, 50, 0.46);
+  box-shadow: none;
 }
 
 .trust-card {
@@ -951,13 +1040,7 @@ onUnmounted(() => {
 }
 
 .trust-card + .trust-card::before {
-  content: '';
-  position: absolute;
-  bottom: 1.25rem;
-  left: 0;
-  top: 1.25rem;
-  width: 1px;
-  background: var(--landing-border-strong);
+  content: none;
 }
 
 .trust-card strong {
@@ -1042,11 +1125,8 @@ onUnmounted(() => {
   overflow: hidden;
   border-radius: 0.5rem;
   padding: 1.5rem;
-  border: 1px solid var(--landing-border);
   background: var(--landing-surface);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 18px 42px rgba(2, 6, 23, 0.16);
+  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.16);
 }
 
 .feature-index {
@@ -1174,12 +1254,9 @@ onUnmounted(() => {
   flex: 0 0 auto;
   padding: 1.4rem;
   color: var(--landing-text);
-  border: 1px solid var(--landing-border);
   border-radius: 0.5rem;
   background: var(--landing-surface);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 18px 42px rgba(2, 6, 23, 0.2);
+  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.2);
 }
 
 .testimonial-card:nth-child(4n + 2) {

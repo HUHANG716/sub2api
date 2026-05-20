@@ -6,45 +6,51 @@
 
 @layer base {
   :root {
-    --theme-bg: #f8fafc;
-    --theme-bg-soft: #fff7ed;
-    --theme-bg-deep: #172033;
+    --theme-bg: #f7f9fb;
+    --theme-bg-soft: #eef4f6;
+    --theme-bg-deep: #17202a;
     --theme-surface: rgba(255, 255, 255, 0.92);
     --theme-surface-strong: #ffffff;
-    --theme-surface-muted: #f8fafc;
-    --theme-main-surface: #f8fafc;
+    --theme-surface-muted: #f3f7f8;
+    --theme-main-surface: #f7f9fb;
     --theme-border: rgba(148, 163, 184, 0.12);
     --theme-border-strong: rgba(100, 116, 139, 0.2);
     --theme-text-muted: #64748b;
     --theme-primary: #f97316;
     --theme-primary-hover: #ea580c;
     --theme-primary-soft: rgba(249, 115, 22, 0.12);
+    --theme-accent: #14b8a6;
+    --theme-accent-soft: rgba(20, 184, 166, 0.12);
     --theme-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
     --theme-shadow-hover: 0 1px 0 rgba(15, 23, 42, 0.06);
-    --theme-scrollbar-track: #f8fafc;
+    --theme-scrollbar-track: #f7f9fb;
     --theme-scrollbar-thumb: rgba(100, 116, 139, 0.28);
     --theme-scrollbar-thumb-hover: rgba(100, 116, 139, 0.46);
   }
 
   .dark {
-    --theme-bg: #14161a;
-    --theme-bg-soft: #1d2026;
-    --theme-bg-deep: #0f1115;
-    --theme-surface: rgba(29, 32, 38, 0.88);
-    --theme-surface-strong: #1d2026;
-    --theme-surface-muted: rgba(37, 41, 49, 0.74);
-    --theme-main-surface: #252931;
-    --theme-border: rgba(148, 163, 184, 0.08);
-    --theme-border-strong: rgba(148, 163, 184, 0.14);
-    --theme-text-muted: #a7adb7;
+    --theme-bg: #080b10;
+    --theme-bg-soft: #0b1118;
+    --theme-bg-deep: #05070b;
+    --theme-surface: rgba(17, 25, 35, 0.94);
+    --theme-surface-strong: #151f2a;
+    --theme-surface-muted: rgba(21, 31, 42, 0.82);
+    --theme-main-surface: #0e141c;
+    --theme-border: rgba(148, 163, 184, 0.14);
+    --theme-border-strong: rgba(148, 163, 184, 0.26);
+    --theme-text-muted: #a8b3c2;
     --theme-primary: #f97316;
     --theme-primary-hover: #fb923c;
-    --theme-primary-soft: rgba(249, 115, 22, 0.18);
-    --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.025);
-    --theme-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.05);
-    --theme-scrollbar-track: #14161a;
-    --theme-scrollbar-thumb: rgba(148, 163, 184, 0.3);
-    --theme-scrollbar-thumb-hover: rgba(148, 163, 184, 0.48);
+    --theme-primary-soft: rgba(249, 115, 22, 0.12);
+    --theme-accent: #38bdf8;
+    --theme-accent-soft: rgba(56, 189, 248, 0.1);
+    --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.035);
+    --theme-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.28);
+    --theme-scrollbar-track: #080b10;
+    --theme-scrollbar-thumb: rgba(148, 163, 184, 0.34);
+    --theme-scrollbar-thumb-hover: rgba(148, 163, 184, 0.56);
+    --theme-skeleton: #172230;
+    --theme-skeleton-highlight: #223044;
   }
 
   * {
@@ -64,7 +70,7 @@
   }
 
   .dark body {
-    background: linear-gradient(180deg, #1d2026 0%, #14161a 46%, #0f1115 100%);
+    background: linear-gradient(180deg, #101722 0%, #080b10 52%, #05070b 100%);
   }
 
   /* 自定义滚动条 - 主题化轨道，避免默认滚动槽漏出亮色 */
@@ -114,7 +120,7 @@
 
   .dark .app-shell,
   .app-shell-dark {
-    background: linear-gradient(180deg, #1d2026 0%, #14161a 46%, #0f1115 100%);
+    background: linear-gradient(180deg, #101722 0%, #080b10 52%, #05070b 100%);
   }
 
   .app-shell::before,
@@ -124,19 +130,19 @@
     inset: 0;
     pointer-events: none;
     background:
-      linear-gradient(90deg, rgba(20, 22, 26, 0.04) 0%, rgba(20, 22, 26, 0.02) 48%, rgba(20, 22, 26, 0.08) 100%);
-    opacity: 0.22;
+      linear-gradient(90deg, rgba(56, 189, 248, 0.035) 0%, rgba(15, 23, 42, 0.02) 48%, rgba(249, 115, 22, 0.025) 100%);
+    opacity: 0.18;
   }
 
   .dark .app-shell::before,
   .app-shell-dark::before,
   .app-auth-shell::before {
-    opacity: 0.34;
+    opacity: 0.3;
   }
 
   .app-auth-shell {
     @apply relative flex min-h-screen items-center justify-center overflow-hidden p-4 text-white;
-    background: linear-gradient(180deg, #1d2026 0%, #14161a 46%, #0f1115 100%);
+    background: linear-gradient(180deg, #101722 0%, #080b10 52%, #05070b 100%);
   }
 
   .app-main-panel {
@@ -172,9 +178,9 @@
   }
 
   .ops-compact-button:hover {
-    border-color: rgba(249, 115, 22, 0.38);
-    background: rgba(249, 115, 22, 0.08);
-    color: #f97316;
+    border-color: color-mix(in srgb, var(--theme-accent) 45%, transparent);
+    background: var(--theme-accent-soft);
+    color: var(--theme-accent);
   }
 
   .brand-surface {
@@ -191,9 +197,9 @@
   }
 
   .icon-action-themed:hover {
-    border-color: rgba(249, 115, 22, 0.38);
-    background: rgba(124, 45, 18, 0.12);
-    color: #f97316;
+    border-color: color-mix(in srgb, var(--theme-accent) 45%, transparent);
+    background: var(--theme-accent-soft);
+    color: var(--theme-accent);
     transform: translateY(-1px);
   }
 
@@ -208,8 +214,14 @@
   }
 
   .btn-primary {
-    @apply bg-primary-500 text-white;
-    @apply hover:bg-primary-600;
+    background: var(--theme-primary);
+    @apply text-white;
+    box-shadow: 0 10px 24px rgba(249, 115, 22, 0.2);
+  }
+
+  .btn-primary:hover {
+    background: var(--theme-primary-hover);
+    box-shadow: 0 12px 28px rgba(249, 115, 22, 0.28);
   }
 
   .btn-secondary {
@@ -306,7 +318,9 @@
     @apply text-gray-900 dark:text-white;
     @apply placeholder:text-gray-400 dark:placeholder:text-dark-400;
     @apply transition-all duration-200;
-    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/30;
+    @apply focus:outline-none;
+    --tw-ring-color: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    @apply focus:ring-2;
     @apply disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-dark-900;
   }
 
@@ -449,7 +463,7 @@
   .table th {
     @apply px-4 py-3 text-left font-medium;
     @apply text-gray-600 dark:text-gray-200;
-    background: var(--theme-surface);
+    background: color-mix(in srgb, var(--theme-surface) 88%, var(--theme-bg-deep));
     border-bottom: 1px solid var(--theme-border);
   }
 
@@ -474,7 +488,7 @@
   }
 
   .table tbody tr:hover {
-    background: var(--theme-surface-muted);
+    background: color-mix(in srgb, var(--theme-surface-muted) 82%, var(--theme-accent-soft));
   }
 
   /* ============ 徽章样式 ============ */
@@ -685,7 +699,7 @@
   .sidebar {
     @apply fixed inset-y-0 left-0 z-40;
     @apply w-64;
-    background: var(--theme-surface);
+    background: color-mix(in srgb, var(--theme-surface) 86%, var(--theme-bg-deep));
     border-right: 1px solid var(--theme-border);
     @apply flex flex-col;
     @apply transition-transform duration-300;
@@ -717,12 +731,34 @@
   }
 
   .sidebar-link:hover {
-    background: var(--theme-surface-muted);
+    background: color-mix(in srgb, var(--theme-surface-muted) 82%, var(--theme-accent-soft));
+    color: var(--theme-accent);
   }
 
   .sidebar-link-active {
-    @apply text-primary-600 dark:text-primary-400;
-    background: rgba(249, 115, 22, 0.1);
+    color: var(--theme-primary);
+    background:
+      linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(56, 189, 248, 0.08));
+    box-shadow: inset 3px 0 0 var(--theme-primary);
+  }
+
+  .sidebar-link-active:hover {
+    color: var(--theme-primary);
+    background:
+      linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(56, 189, 248, 0.08));
+  }
+
+  .dark .sidebar-link-active {
+    color: #e5edf6;
+    background:
+      linear-gradient(90deg, rgba(56, 189, 248, 0.12), rgba(56, 189, 248, 0.035));
+    box-shadow: inset 3px 0 0 rgba(249, 115, 22, 0.78);
+  }
+
+  .dark .sidebar-link-active:hover {
+    color: #f8fafc;
+    background:
+      linear-gradient(90deg, rgba(56, 189, 248, 0.14), rgba(56, 189, 248, 0.045));
   }
 
   .sidebar-section {
@@ -793,7 +829,13 @@
   }
 
   .skeleton {
-    @apply animate-pulse rounded bg-gray-200 dark:bg-dark-700;
+    @apply animate-pulse rounded bg-gray-200;
+  }
+
+  .dark .skeleton {
+    background:
+      linear-gradient(90deg, var(--theme-skeleton) 0%, var(--theme-skeleton-highlight) 50%, var(--theme-skeleton) 100%);
+    background-size: 200% 100%;
   }
 
   /* ============ 分隔线 ============ */
