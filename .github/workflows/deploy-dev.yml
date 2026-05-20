@@ -98,9 +98,9 @@ jobs:
           fi
           docker pull "$IMAGE"
 
-          docker compose up -d postgres redis
+          docker compose up -d postgres redis < /dev/null
           for i in $(seq 1 30); do
-            if docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" >/dev/null 2>&1; then
+            if docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" < /dev/null >/dev/null 2>&1; then
               break
             fi
             sleep 2
@@ -109,9 +109,9 @@ jobs:
               exit 1
             fi
           done
-          if [ "$(docker compose exec -T postgres psql -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" -Atc "SELECT to_regclass('public.schema_migrations') IS NOT NULL")" = "t" ]; then
+          if [ "$(docker compose exec -T postgres psql -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" -Atc "SELECT to_regclass('public.schema_migrations') IS NOT NULL" < /dev/null)" = "t" ]; then
             docker compose exec -T postgres psql -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" -Atc \
-              "SELECT filename FROM schema_migrations ORDER BY filename" > /tmp/sub2api-dev-migrations.applied
+              "SELECT filename FROM schema_migrations ORDER BY filename" < /dev/null > /tmp/sub2api-dev-migrations.applied
           else
             : > /tmp/sub2api-dev-migrations.applied
           fi
@@ -129,7 +129,7 @@ jobs:
             exit 1
           fi
 
-          docker compose up -d --no-build --force-recreate sub2api
+          docker compose up -d --no-build --force-recreate sub2api < /dev/null
           sleep 20
           docker compose ps
 
