@@ -9,9 +9,15 @@ on:
     types:
       - completed
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to deploy
+        required: false
+        default: dev
 
 permissions:
   contents: read
+  packages: read
 
 concurrency:
   group: deploy-dev
@@ -20,7 +26,7 @@ concurrency:
 jobs:
   deploy:
     name: Deploy to code.hahacode.work
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && !contains(github.event.workflow_run.head_commit.message, '[skip deploy]')) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'dev' && !contains(github.event.workflow_run.head_commit.message, '[skip deploy]')) }}
     runs-on: ubuntu-latest
     environment:
       name: dev
@@ -38,28 +44,60 @@ jobs:
         env:
           DEPLOY_HOST: ${{ vars.BAOLEYUN_HOST }}
           DEPLOY_USER: ${{ vars.BAOLEYUN_USER }}
-          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          DEPLOY_REF: ${{ github.event.workflow_run.head_branch || inputs.ref || 'dev' }}
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || '' }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ github.token }}
         run: |
-          ssh -i ~/.ssh/id_ed25519 "${DEPLOY_USER}@${DEPLOY_HOST}" "DEPLOY_SHA=${DEPLOY_SHA} bash -se" <<'REMOTE'
+          case "$DEPLOY_REF" in
+            ''|*[!A-Za-z0-9._/-]*)
+              echo "Invalid DEPLOY_REF: $DEPLOY_REF" >&2
+              exit 1
+              ;;
+          esac
+          case "$DEPLOY_SHA" in
+            ''|[0-9a-fA-F]*)
+              ;;
+            *)
+              echo "Invalid DEPLOY_SHA: $DEPLOY_SHA" >&2
+              exit 1
+              ;;
+          esac
+
+          owner="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          deploy_image_name="ghcr.io/${owner}/sub2api"
+
+          printf -v DEPLOY_REF_Q '%q' "$DEPLOY_REF"
+          printf -v DEPLOY_SHA_Q '%q' "$DEPLOY_SHA"
+          printf -v DEPLOY_IMAGE_NAME_Q '%q' "$deploy_image_name"
+          printf -v GHCR_USERNAME_Q '%q' "$GHCR_USERNAME"
+          {
+            printf '%s\n' "$GHCR_TOKEN"
+            cat <<'REMOTE'
           set -euo pipefail
 
-          SHORT_SHA="${DEPLOY_SHA:0:12}"
           REPO_DIR="/opt/sub2api/repo"
           RUNTIME_DIR="/opt/sub2api/runtime"
-          IMAGE="local/sub2api:dev-${SHORT_SHA}"
 
           cd "$REPO_DIR"
-          git fetch origin dev
-          git checkout --detach "$DEPLOY_SHA"
+          git fetch origin "$DEPLOY_REF"
+          if [ -n "$DEPLOY_SHA" ]; then
+            git checkout --detach "$DEPLOY_SHA"
+          else
+            git checkout --detach FETCH_HEAD
+          fi
           git status --short
+          DEPLOY_SHA="$(git rev-parse HEAD)"
+          SHORT_SHA="${DEPLOY_SHA:0:12}"
+          IMAGE="${DEPLOY_IMAGE_NAME}:dev-${SHORT_SHA}"
           find backend/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort > /tmp/sub2api-dev-migrations.expected
 
-          docker build \
-            --build-arg COMMIT="$DEPLOY_SHA" \
-            --build-arg DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            -t "$IMAGE" .
-
           cd "$RUNTIME_DIR"
+          if [ -n "${GHCR_USERNAME:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then
+            printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin >/dev/null
+          fi
+          docker pull "$IMAGE"
+
           docker compose up -d postgres redis
           for i in $(seq 1 30); do
             if docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" >/dev/null 2>&1; then
@@ -85,12 +123,17 @@ jobs:
           fi
 
           cp docker-compose.yml "docker-compose.yml.bak-dev-${SHORT_SHA}-$(date +%Y%m%d%H%M%S)"
-          sed -i "s#image: local/sub2api:.*#image: ${IMAGE}#" docker-compose.yml
+          sed -i "/^[[:space:]]*sub2api:/,/^[[:space:]]*[A-Za-z0-9_-][A-Za-z0-9_-]*:/ s#^\([[:space:]]*image:[[:space:]]*\).*#\1${IMAGE}#" docker-compose.yml
+          if ! sed -n "/^[[:space:]]*sub2api:/,/^[[:space:]]*[A-Za-z0-9_-][A-Za-z0-9_-]*:/p" docker-compose.yml | grep -F "image: ${IMAGE}"; then
+            echo "Failed to update sub2api image in docker-compose.yml" >&2
+            exit 1
+          fi
 
-          docker compose up -d sub2api
+          docker compose up -d --no-build --force-recreate sub2api
           sleep 20
           docker compose ps
 
           curl -fsS http://127.0.0.1:8080/health
           curl -fsS https://code.hahacode.work/health
           REMOTE
+          } | ssh -i ~/.ssh/id_ed25519 "${DEPLOY_USER}@${DEPLOY_HOST}" "env DEPLOY_REF=${DEPLOY_REF_Q} DEPLOY_SHA=${DEPLOY_SHA_Q} DEPLOY_IMAGE_NAME=${DEPLOY_IMAGE_NAME_Q} GHCR_USERNAME=${GHCR_USERNAME_Q} sh -c 'IFS= read -r GHCR_TOKEN; export GHCR_TOKEN; bash -se'"
