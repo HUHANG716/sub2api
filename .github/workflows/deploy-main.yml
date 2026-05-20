@@ -1,0 +1,126 @@
+name: Deploy Main
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    branches:
+      - main
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to deploy
+        required: false
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Baoleyun prod
+    if: ${{ (github.event_name == 'workflow_dispatch' && (inputs.ref == '' || inputs.ref == 'main')) || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' && !contains(github.event.workflow_run.head_commit.message, '[skip deploy]')) }}
+    runs-on: ubuntu-latest
+    environment:
+      name: prod
+      url: https://code.hahacode.top
+    steps:
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.BAOLEYUN_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "${{ secrets.BAOLEYUN_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy on server
+        env:
+          DEPLOY_HOST: ${{ vars.BAOLEYUN_HOST }}
+          DEPLOY_USER: ${{ vars.BAOLEYUN_USER }}
+          DEPLOY_REF: ${{ github.event.workflow_run.head_branch || inputs.ref || 'main' }}
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || '' }}
+        run: |
+          case "$DEPLOY_REF" in
+            ''|*[!A-Za-z0-9._/-]*)
+              echo "Invalid DEPLOY_REF: $DEPLOY_REF" >&2
+              exit 1
+              ;;
+          esac
+          case "$DEPLOY_SHA" in
+            ''|[0-9a-fA-F]*)
+              ;;
+            *)
+              echo "Invalid DEPLOY_SHA: $DEPLOY_SHA" >&2
+              exit 1
+              ;;
+          esac
+
+          printf -v DEPLOY_REF_Q '%q' "$DEPLOY_REF"
+          printf -v DEPLOY_SHA_Q '%q' "$DEPLOY_SHA"
+          ssh -i ~/.ssh/id_deploy "${DEPLOY_USER}@${DEPLOY_HOST}" "env DEPLOY_REF=${DEPLOY_REF_Q} DEPLOY_SHA=${DEPLOY_SHA_Q} bash -se" <<'REMOTE'
+          set -euo pipefail
+
+          REPO_DIR="/opt/sub2api/repo"
+          RUNTIME_DIR="/opt/sub2api/runtime"
+
+          cd "$REPO_DIR"
+          git fetch origin "$DEPLOY_REF"
+          if [ -n "$DEPLOY_SHA" ]; then
+            git switch --detach "$DEPLOY_SHA"
+          else
+            git switch --detach FETCH_HEAD
+          fi
+          git status --short
+          DEPLOY_SHA="$(git rev-parse HEAD)"
+          SHORT_SHA="${DEPLOY_SHA:0:12}"
+          IMAGE="local/sub2api:main-${SHORT_SHA}"
+
+          find backend/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort > /tmp/sub2api-main-migrations.expected
+
+          docker build \
+            --build-arg COMMIT="$DEPLOY_SHA" \
+            --build-arg DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -t "$IMAGE" .
+
+          cd "$RUNTIME_DIR"
+          docker compose up -d postgres redis
+          for i in $(seq 1 30); do
+            if docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" >/dev/null 2>&1; then
+              break
+            fi
+            sleep 2
+            if [ "$i" -eq 30 ]; then
+              echo "Postgres did not become ready before deployment" >&2
+              exit 1
+            fi
+          done
+
+          if [ "$(docker compose exec -T postgres psql -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" -Atc "SELECT to_regclass('public.schema_migrations') IS NOT NULL")" = "t" ]; then
+            docker compose exec -T postgres psql -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" -Atc \
+              "SELECT filename FROM schema_migrations ORDER BY filename" > /tmp/sub2api-main-migrations.applied
+          else
+            : > /tmp/sub2api-main-migrations.applied
+          fi
+          if comm -23 /tmp/sub2api-main-migrations.applied /tmp/sub2api-main-migrations.expected | grep -q .; then
+            echo "Database has migrations that are not present in the main commit being deployed:" >&2
+            comm -23 /tmp/sub2api-main-migrations.applied /tmp/sub2api-main-migrations.expected >&2
+            echo "Refusing to deploy to avoid running main code against a schema from another branch." >&2
+            exit 1
+          fi
+
+          cp docker-compose.yml "docker-compose.yml.bak-main-${SHORT_SHA}-$(date +%Y%m%d%H%M%S)"
+          sed -i "s#image: local/sub2api:.*#image: ${IMAGE}#" docker-compose.yml
+
+          docker compose up -d sub2api
+          sleep 20
+          docker compose ps
+
+          curl -fsS http://127.0.0.1:8080/health
+          curl -fsS https://code.hahacode.top/health
+          REMOTE
