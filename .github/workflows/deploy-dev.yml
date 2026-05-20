@@ -52,6 +52,7 @@ jobs:
           git fetch origin dev
           git checkout --detach "$DEPLOY_SHA"
           git status --short
+          find backend/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort > /tmp/sub2api-dev-migrations.expected
 
           docker build \
             --build-arg COMMIT="$DEPLOY_SHA" \
@@ -59,6 +60,30 @@ jobs:
             -t "$IMAGE" .
 
           cd "$RUNTIME_DIR"
+          docker compose up -d postgres redis
+          for i in $(seq 1 30); do
+            if docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" >/dev/null 2>&1; then
+              break
+            fi
+            sleep 2
+            if [ "$i" -eq 30 ]; then
+              echo "Postgres did not become ready before deployment" >&2
+              exit 1
+            fi
+          done
+          if [ "$(docker compose exec -T postgres psql -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" -Atc "SELECT to_regclass('public.schema_migrations') IS NOT NULL")" = "t" ]; then
+            docker compose exec -T postgres psql -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" -Atc \
+              "SELECT filename FROM schema_migrations ORDER BY filename" > /tmp/sub2api-dev-migrations.applied
+          else
+            : > /tmp/sub2api-dev-migrations.applied
+          fi
+          if comm -23 /tmp/sub2api-dev-migrations.applied /tmp/sub2api-dev-migrations.expected | grep -q .; then
+            echo "Database has migrations that are not present in the dev commit being deployed:" >&2
+            comm -23 /tmp/sub2api-dev-migrations.applied /tmp/sub2api-dev-migrations.expected >&2
+            echo "Refusing to deploy to avoid running dev code against a schema from another branch." >&2
+            exit 1
+          fi
+
           cp docker-compose.yml "docker-compose.yml.bak-dev-${SHORT_SHA}-$(date +%Y%m%d%H%M%S)"
           sed -i "s#image: local/sub2api:.*#image: ${IMAGE}#" docker-compose.yml
 
