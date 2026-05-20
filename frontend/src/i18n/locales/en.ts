@@ -5652,7 +5652,7 @@ export default {
       },
       dingtalk: {
         title: 'DingTalk Login',
-        description: 'Configure DingTalk OAuth for Sub2API end-user login',
+        description: 'Configure DingTalk OAuth for Hahacode end-user login',
         enable: 'Enable DingTalk Login (Internal Corporate App)',
         enableHint: 'Show DingTalk login on the login/register pages',
         clientId: 'Client ID (AppKey)',
