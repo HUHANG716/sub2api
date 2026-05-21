@@ -88,8 +88,8 @@ jobs:
             cat <<'REMOTE'
           set -euo pipefail
 
-          REPO_DIR="/opt/sub2api/repo"
-          RUNTIME_DIR="/opt/sub2api/runtime"
+          REPO_DIR="/opt/sub2api-dev/repo"
+          RUNTIME_DIR="/opt/sub2api-dev/runtime"
 
           cd "$REPO_DIR"
           git fetch origin "$DEPLOY_REF"
