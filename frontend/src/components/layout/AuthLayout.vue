@@ -140,7 +140,10 @@ onMounted(() => {
   --theme-main-surface: #1b2028;
   --theme-border: var(--auth-border);
   --theme-border-strong: rgba(148, 163, 184, 0.24);
-  --theme-text-muted: #9aa7b5;
+  --theme-text: #f8fafc;
+  --theme-text-soft: #dfe6ef;
+  --theme-text-muted: #c4cfdc;
+  --theme-text-subtle: #aeb9c8;
   --theme-primary: var(--auth-primary);
   --theme-primary-hover: var(--auth-primary-hover);
   --theme-primary-soft: var(--auth-primary-soft);
@@ -179,7 +182,10 @@ onMounted(() => {
   --theme-main-surface: #1b2028;
   --theme-border: var(--auth-border);
   --theme-border-strong: rgba(148, 163, 184, 0.24);
-  --theme-text-muted: #9aa7b5;
+  --theme-text: #f8fafc;
+  --theme-text-soft: #dfe6ef;
+  --theme-text-muted: #c4cfdc;
+  --theme-text-subtle: #aeb9c8;
   --theme-primary: var(--auth-primary);
   --theme-primary-hover: var(--auth-primary-hover);
   --theme-primary-soft: var(--auth-primary-soft);
@@ -224,12 +230,12 @@ onMounted(() => {
 .app-auth-shell :deep(.text-gray-400),
 .auth-split-content :deep(.input-hint),
 .app-auth-shell :deep(.input-hint) {
-  color: #9aa7b5;
+  color: var(--theme-text-muted);
 }
 
 .auth-split-content :deep(.input-label),
 .app-auth-shell :deep(.input-label) {
-  color: #d4d4d4;
+  color: var(--theme-text-soft);
 }
 
 .auth-split-shell :deep(.text-primary-600),
@@ -251,7 +257,7 @@ onMounted(() => {
 }
 
 .auth-split-content :deep(.input::placeholder) {
-  color: rgba(255, 255, 255, 0.42);
+  color: rgba(248, 250, 252, 0.56);
 }
 
 .auth-split-content :deep(.input:focus) {
@@ -341,7 +347,7 @@ onMounted(() => {
 .auth-brand-visual__subtitle {
   margin-top: 1rem;
   max-width: 32rem;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--theme-text-muted);
   font-size: 1rem;
   line-height: 1.7;
 }

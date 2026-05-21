@@ -11,6 +11,10 @@ describe('dark theme tokens', () => {
     const combinedThemeSource = `${styleSource}\n${homeSource}\n${authLayoutSource}`
 
     expect(combinedThemeSource).toContain('--theme-bg: #12151b')
+    expect(combinedThemeSource).toContain('--theme-text: #f8fafc')
+    expect(combinedThemeSource).toContain('--theme-text-muted: #c4cfdc')
+    expect(combinedThemeSource).toContain('--landing-muted: #c4cfdc')
+    expect(combinedThemeSource).toContain('color: var(--theme-text-muted);')
     expect(combinedThemeSource).toContain('--theme-main-surface: #1b2028')
     expect(combinedThemeSource).toContain('--theme-accent: #f97316')
     expect(combinedThemeSource).toContain('--auth-bg: #12151b')

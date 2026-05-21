@@ -109,7 +109,7 @@
       <div class="max-h-48 flex-1 overflow-y-auto">
         <table class="w-full text-xs">
           <thead>
-            <tr class="text-gray-500 dark:text-gray-400">
+            <tr class="text-gray-600 dark:text-gray-300">
               <th class="pb-2 text-left">{{ t('admin.dashboard.model') }}</th>
               <th class="pb-2 text-right">{{ t('admin.dashboard.requests') }}</th>
               <th class="pb-2 text-right">{{ t('admin.dashboard.tokens') }}</th>
@@ -134,10 +134,10 @@
                     {{ model.model }}
                   </span>
                 </td>
-                <td class="py-1.5 text-right text-gray-600 dark:text-gray-400">
+                <td class="py-1.5 text-right text-gray-700 dark:text-gray-300">
                   {{ formatNumber(model.requests) }}
                 </td>
-                <td class="py-1.5 text-right text-gray-600 dark:text-gray-400">
+                <td class="py-1.5 text-right text-gray-700 dark:text-gray-300">
                   {{ formatTokens(model.total_tokens) }}
                 </td>
                 <td class="py-1.5 text-right text-green-600 dark:text-green-400">
@@ -146,7 +146,7 @@
                 <td class="py-1.5 text-right text-orange-500 dark:text-orange-400">
                   ${{ formatCost(model.account_cost) }}
                 </td>
-                <td class="py-1.5 text-right text-gray-400 dark:text-gray-500">
+                <td class="py-1.5 text-right text-gray-500 dark:text-gray-300">
                   ${{ formatCost(model.cost) }}
                 </td>
               </tr>
@@ -165,7 +165,7 @@
     </div>
     <div
       v-else-if="activeView === 'model_distribution'"
-      class="flex h-48 items-center justify-center text-sm text-gray-500 dark:text-gray-400"
+      class="flex h-48 items-center justify-center text-sm text-gray-600 dark:text-gray-300"
     >
       {{ t('admin.dashboard.noDataAvailable') }}
     </div>
@@ -175,7 +175,7 @@
     </div>
     <div
       v-else-if="rankingError"
-      class="flex h-48 items-center justify-center text-sm text-gray-500 dark:text-gray-400"
+      class="flex h-48 items-center justify-center text-sm text-gray-600 dark:text-gray-300"
     >
       {{ t('admin.dashboard.failedToLoad') }}
     </div>
@@ -186,7 +186,7 @@
       <div class="max-h-48 flex-1 overflow-y-auto">
         <table class="w-full text-xs">
           <thead>
-            <tr class="text-gray-500 dark:text-gray-400">
+            <tr class="text-gray-600 dark:text-gray-300">
               <th class="pb-2 text-left">{{ t('admin.dashboard.spendingRankingUser') }}</th>
               <th class="pb-2 text-right">{{ t('admin.dashboard.spendingRankingRequests') }}</th>
               <th class="pb-2 text-right">{{ t('admin.dashboard.spendingRankingTokens') }}</th>
@@ -205,7 +205,7 @@
             >
               <td class="py-1.5">
                 <div class="flex min-w-0 items-center gap-2">
-                  <span class="shrink-0 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                  <span class="shrink-0 text-[11px] font-semibold text-gray-600 dark:text-gray-300">
                     {{ item.isOther ? 'Σ' : `#${index + 1}` }}
                   </span>
                   <span
@@ -216,10 +216,10 @@
                   </span>
                 </div>
               </td>
-              <td class="py-1.5 text-right text-gray-600 dark:text-gray-400">
+              <td class="py-1.5 text-right text-gray-700 dark:text-gray-300">
                 {{ formatNumber(item.requests) }}
               </td>
-              <td class="py-1.5 text-right text-gray-600 dark:text-gray-400">
+              <td class="py-1.5 text-right text-gray-700 dark:text-gray-300">
                 {{ formatTokens(item.tokens) }}
               </td>
               <td class="py-1.5 text-right text-green-600 dark:text-green-400">
@@ -232,7 +232,7 @@
     </div>
     <div
       v-else
-      class="flex h-48 items-center justify-center text-sm text-gray-500 dark:text-gray-400"
+      class="flex h-48 items-center justify-center text-sm text-gray-600 dark:text-gray-300"
     >
       {{ t('admin.dashboard.noDataAvailable') }}
     </div>
