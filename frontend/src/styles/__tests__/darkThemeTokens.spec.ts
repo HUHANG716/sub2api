@@ -10,12 +10,18 @@ describe('dark theme tokens', () => {
   it('uses a softened graphite palette without cyan theme accents', () => {
     const combinedThemeSource = `${styleSource}\n${homeSource}\n${authLayoutSource}`
 
-    expect(combinedThemeSource).toContain('--theme-bg: #12151b')
+    expect(combinedThemeSource).toContain('--theme-bg: #0f1218')
+    expect(combinedThemeSource).toContain('--theme-bg-soft: #12151b')
+    expect(combinedThemeSource).toContain('--theme-bg-deep: #0b0e13')
     expect(combinedThemeSource).toContain('--theme-text: #f8fafc')
     expect(combinedThemeSource).toContain('--theme-text-muted: #c4cfdc')
     expect(combinedThemeSource).toContain('--landing-muted: #c4cfdc')
     expect(combinedThemeSource).toContain('color: var(--theme-text-muted);')
-    expect(combinedThemeSource).toContain('--theme-main-surface: #1b2028')
+    expect(combinedThemeSource).toContain('--theme-surface: rgba(34, 40, 50, 0.96)')
+    expect(combinedThemeSource).toContain('--theme-surface-strong: #252c38')
+    expect(combinedThemeSource).toContain('--theme-surface-muted: rgba(23, 28, 37, 0.9)')
+    expect(combinedThemeSource).toContain('--theme-main-surface: #161a22')
+    expect(combinedThemeSource).toContain('--theme-border: rgba(170, 181, 198, 0.18)')
     expect(combinedThemeSource).toContain('--theme-accent: #f97316')
     expect(combinedThemeSource).toContain('--auth-bg: #12151b')
     expect(combinedThemeSource).toContain('--landing-bg: #12151b')

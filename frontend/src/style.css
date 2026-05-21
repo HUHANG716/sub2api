@@ -32,14 +32,14 @@
   }
 
   .dark {
-    --theme-bg: #12151b;
-    --theme-bg-soft: #171b22;
-    --theme-bg-deep: #0f1218;
-    --theme-surface: rgba(30, 35, 43, 0.94);
-    --theme-surface-strong: #232936;
-    --theme-surface-muted: rgba(35, 41, 52, 0.82);
-    --theme-main-surface: #1b2028;
-    --theme-border: rgba(170, 181, 198, 0.14);
+    --theme-bg: #0f1218;
+    --theme-bg-soft: #12151b;
+    --theme-bg-deep: #0b0e13;
+    --theme-surface: rgba(34, 40, 50, 0.96);
+    --theme-surface-strong: #252c38;
+    --theme-surface-muted: rgba(23, 28, 37, 0.9);
+    --theme-main-surface: #161a22;
+    --theme-border: rgba(170, 181, 198, 0.18);
     --theme-border-strong: rgba(170, 181, 198, 0.26);
     --theme-text: #f8fafc;
     --theme-text-soft: #dfe6ef;
@@ -50,9 +50,9 @@
     --theme-primary-soft: rgba(249, 115, 22, 0.12);
     --theme-accent: #f97316;
     --theme-accent-soft: rgba(249, 115, 22, 0.1);
-    --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.035);
+    --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.045), 0 12px 30px rgba(0, 0, 0, 0.12);
     --theme-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.28);
-    --theme-scrollbar-track: #12151b;
+    --theme-scrollbar-track: #0f1218;
     --theme-scrollbar-thumb: rgba(148, 163, 184, 0.34);
     --theme-scrollbar-thumb-hover: rgba(148, 163, 184, 0.56);
     --theme-skeleton: #232936;
@@ -77,7 +77,7 @@
   }
 
   .dark body {
-    background: linear-gradient(180deg, #1b2028 0%, #12151b 52%, #0f1218 100%);
+    background: linear-gradient(180deg, var(--theme-bg-soft) 0%, var(--theme-bg) 52%, var(--theme-bg-deep) 100%);
   }
 
   /* 自定义滚动条 - 主题化轨道，避免默认滚动槽漏出亮色 */
@@ -128,7 +128,7 @@
 
   .dark .app-shell,
   .app-shell-dark {
-    background: linear-gradient(180deg, #1b2028 0%, #12151b 52%, #0f1218 100%);
+    background: linear-gradient(180deg, var(--theme-bg-soft) 0%, var(--theme-bg) 52%, var(--theme-bg-deep) 100%);
   }
 
   .app-shell::before,
