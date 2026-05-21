@@ -5723,6 +5723,83 @@
                       }}
                     </p>
                   </div>
+                  <div class="lg:col-span-2">
+                    <div
+                      class="rounded-lg border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-800"
+                    >
+                      <div
+                        class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+                      >
+                        <div>
+                          <label class="input-label">{{
+                            t("admin.settings.payment.balanceBonusTiers")
+                          }}</label>
+                          <p class="mt-0.5 text-xs text-gray-400">
+                            {{
+                              t(
+                                "admin.settings.payment.balanceBonusTiersHint",
+                              )
+                            }}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          class="btn btn-secondary btn-sm shrink-0"
+                          @click="addBalanceBonusTier"
+                        >
+                          <Icon name="plus" size="sm" />
+                          {{ t("admin.settings.payment.addBonusTier") }}
+                        </button>
+                      </div>
+
+                      <div
+                        v-if="form.payment_balance_bonus_tiers.length > 0"
+                        class="mt-4 space-y-3"
+                      >
+                        <div
+                          v-for="(tier, index) in form.payment_balance_bonus_tiers"
+                          :key="index"
+                          class="grid gap-3 rounded-md border border-gray-100 bg-gray-50 p-3 dark:border-dark-700 dark:bg-dark-900 sm:grid-cols-[1fr_1fr_auto]"
+                        >
+                          <div>
+                            <label class="input-label">{{
+                              t("admin.settings.payment.bonusTierMinAmount")
+                            }}</label>
+                            <input
+                              v-model.number="tier.min_amount"
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              class="input"
+                            />
+                          </div>
+                          <div>
+                            <label class="input-label">{{
+                              t("admin.settings.payment.bonusTierBonusAmount")
+                            }}</label>
+                            <input
+                              v-model.number="tier.bonus_amount"
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              class="input"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            class="btn btn-ghost btn-sm self-end text-red-600 hover:text-red-700 dark:text-red-400"
+                            @click="removeBalanceBonusTier(index)"
+                          >
+                            <Icon name="trash" size="sm" />
+                            {{ t("common.delete") }}
+                          </button>
+                        </div>
+                      </div>
+                      <p v-else class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                        {{ t("admin.settings.payment.noBonusTiers") }}
+                      </p>
+                    </div>
+                  </div>
                   <div>
                     <label class="input-label">{{
                       t("admin.settings.payment.rechargeFeeRate")
@@ -6558,7 +6635,7 @@ import type {
   NotifyEmailEntry,
   Proxy,
 } from "@/types";
-import type { ProviderInstance } from "@/types/payment";
+import type { BalanceRechargeBonusTier, ProviderInstance } from "@/types/payment";
 import AppLayout from "@/components/layout/AppLayout.vue";
 import Icon from "@/components/icons/Icon.vue";
 import Select from "@/components/common/Select.vue";
@@ -6882,6 +6959,10 @@ const form = reactive<SettingsForm>({
   payment_order_timeout_minutes: 30,
   payment_balance_disabled: false,
   payment_balance_recharge_multiplier: 1,
+  payment_balance_bonus_tiers: [] as Array<{
+    min_amount: number;
+    bonus_amount: number;
+  }>,
   payment_recharge_fee_rate: 0,
   payment_enabled_types: [],
   payment_help_image_url: "",
@@ -7053,6 +7134,47 @@ const form = reactive<SettingsForm>({
 const authSourceDefaults = reactive<AuthSourceDefaultsState>(
   buildAuthSourceDefaultsState({}),
 );
+
+const normalizeBalanceBonusTiers = (
+  tiers: BalanceRechargeBonusTier[] = [],
+): BalanceRechargeBonusTier[] => {
+  return tiers
+    .map((tier) => ({
+      min_amount: Math.round((Number(tier.min_amount) || 0) * 100) / 100,
+      bonus_amount: Math.round((Number(tier.bonus_amount) || 0) * 100) / 100,
+    }))
+    .sort((a, b) => a.min_amount - b.min_amount);
+};
+
+const validateBalanceBonusTiers = (
+  tiers: BalanceRechargeBonusTier[] = [],
+): string | null => {
+  const seen = new Set<number>();
+  for (const tier of normalizeBalanceBonusTiers(tiers)) {
+    if (tier.min_amount <= 0 || tier.bonus_amount <= 0) {
+      return localText(
+        "充值赠送阶梯的金额和赠送额度都必须大于 0。",
+        "Recharge bonus tier amount and bonus must both be greater than 0.",
+      );
+    }
+    if (seen.has(tier.min_amount)) {
+      return localText(
+        `充值赠送阶梯不能重复配置满 ${tier.min_amount.toFixed(2)} CNY。`,
+        `Recharge bonus tiers cannot repeat ${tier.min_amount.toFixed(2)} CNY.`,
+      );
+    }
+    seen.add(tier.min_amount);
+  }
+  return null;
+};
+
+const addBalanceBonusTier = () => {
+  form.payment_balance_bonus_tiers.push({ min_amount: 100, bonus_amount: 10 });
+};
+
+const removeBalanceBonusTier = (index: number) => {
+  form.payment_balance_bonus_tiers.splice(index, 1);
+};
 
 const authSourceDefaultsMeta = computed(() => [
   {
@@ -7949,6 +8071,17 @@ async function saveSettings() {
       }
     }
 
+    const balanceBonusTierError = validateBalanceBonusTiers(
+      form.payment_balance_bonus_tiers,
+    );
+    if (balanceBonusTierError) {
+      appStore.showError(balanceBonusTierError);
+      return;
+    }
+    form.payment_balance_bonus_tiers = normalizeBalanceBonusTiers(
+      form.payment_balance_bonus_tiers,
+    );
+
     if (form.wechat_connect_mp_enabled && form.wechat_connect_mobile_enabled) {
       appStore.showError(
         localText(
@@ -8150,6 +8283,9 @@ async function saveSettings() {
       payment_balance_disabled: form.payment_balance_disabled,
       payment_balance_recharge_multiplier:
         Number(form.payment_balance_recharge_multiplier) || 1,
+      payment_balance_bonus_tiers: normalizeBalanceBonusTiers(
+        form.payment_balance_bonus_tiers,
+      ),
       payment_recharge_fee_rate: Number(form.payment_recharge_fee_rate) || 0,
       payment_enabled_types: form.payment_enabled_types,
       payment_load_balance_strategy: form.payment_load_balance_strategy,

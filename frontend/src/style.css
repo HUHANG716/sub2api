@@ -32,15 +32,15 @@
   }
 
   .dark {
-    --theme-bg: #0f1218;
-    --theme-bg-soft: #12151b;
-    --theme-bg-deep: #0b0e13;
-    --theme-surface: rgba(34, 40, 50, 0.96);
-    --theme-surface-strong: #252c38;
-    --theme-surface-muted: rgba(23, 28, 37, 0.9);
-    --theme-main-surface: #161a22;
-    --theme-border: rgba(170, 181, 198, 0.18);
-    --theme-border-strong: rgba(170, 181, 198, 0.26);
+    --theme-bg: #171717;
+    --theme-bg-soft: #1c1c1c;
+    --theme-bg-deep: #0f0f0f;
+    --theme-surface: rgba(31, 31, 31, 0.96);
+    --theme-surface-strong: #242424;
+    --theme-surface-muted: rgba(38, 38, 38, 0.92);
+    --theme-main-surface: #171717;
+    --theme-border: rgba(255, 255, 255, 0.08);
+    --theme-border-strong: rgba(255, 255, 255, 0.14);
     --theme-text: #f8fafc;
     --theme-text-soft: #dfe6ef;
     --theme-text-muted: #c4cfdc;
@@ -52,11 +52,11 @@
     --theme-accent-soft: rgba(249, 115, 22, 0.1);
     --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.045), 0 12px 30px rgba(0, 0, 0, 0.12);
     --theme-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.28);
-    --theme-scrollbar-track: #0f1218;
+    --theme-scrollbar-track: #171717;
     --theme-scrollbar-thumb: rgba(148, 163, 184, 0.34);
     --theme-scrollbar-thumb-hover: rgba(148, 163, 184, 0.56);
-    --theme-skeleton: #232936;
-    --theme-skeleton-highlight: #2d3543;
+    --theme-skeleton: #242424;
+    --theme-skeleton-highlight: #2e2e2e;
   }
 
   * {
@@ -150,7 +150,7 @@
 
   .app-auth-shell {
     @apply relative flex min-h-screen items-center justify-center overflow-hidden p-4 text-white;
-    background: linear-gradient(180deg, #1b2028 0%, #12151b 52%, #0f1218 100%);
+    background: linear-gradient(180deg, #1c1c1c 0%, #171717 52%, #0f0f0f 100%);
   }
 
   .app-main-panel {
@@ -375,7 +375,7 @@
   /* ============ 卡片样式 ============ */
   .card {
     background: var(--theme-surface);
-    border: 1px solid transparent;
+    border: 1px solid var(--theme-border);
     box-shadow: var(--theme-shadow);
     @apply rounded-2xl backdrop-blur-xl transition-all duration-300;
   }
@@ -391,7 +391,7 @@
 
   .card-glass {
     background: var(--theme-surface);
-    border: 1px solid transparent;
+    border: 1px solid var(--theme-border);
     box-shadow: var(--theme-shadow);
     @apply backdrop-blur-xl;
   }
@@ -755,14 +755,14 @@
   }
 
   .dark .sidebar-link-active {
-    color: #e5edf6;
-    background: rgba(35, 40, 49, 0.92);
-    box-shadow: inset 3px 0 0 rgba(249, 115, 22, 0.78);
+    color: var(--theme-text-soft);
+    background: var(--theme-surface-muted);
+    box-shadow: inset 3px 0 0 var(--theme-primary);
   }
 
   .dark .sidebar-link-active:hover {
-    color: #f8fafc;
-    background: rgba(39, 45, 55, 0.96);
+    color: var(--theme-text);
+    background: var(--theme-surface-strong);
   }
 
   .sidebar-section {

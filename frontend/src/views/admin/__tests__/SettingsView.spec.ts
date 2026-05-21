@@ -381,6 +381,7 @@ const baseSettingsResponse = {
   payment_enabled_types: [],
   payment_balance_disabled: false,
   payment_balance_recharge_multiplier: 1,
+  payment_balance_bonus_tiers: [],
   payment_recharge_fee_rate: 0,
   payment_load_balance_strategy: "round-robin",
   payment_product_name_prefix: "",
@@ -583,6 +584,45 @@ describe("admin SettingsView payment visible method controls", () => {
     expect(payload).not.toHaveProperty("payment_visible_method_wxpay_source");
     expect(payload).not.toHaveProperty("payment_visible_method_alipay_enabled");
     expect(payload).not.toHaveProperty("payment_visible_method_wxpay_enabled");
+  });
+
+  it("rejects duplicate recharge bonus thresholds instead of silently dropping them", async () => {
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      payment_balance_bonus_tiers: [
+        { min_amount: 100, bonus_amount: 10 },
+        { min_amount: 100, bonus_amount: 20 },
+      ],
+    });
+
+    const wrapper = mountView();
+
+    await flushPromises();
+    await openPaymentTab(wrapper);
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateSettings).not.toHaveBeenCalled();
+    expect(showError).toHaveBeenCalledWith("充值赠送阶梯不能重复配置满 100.00 CNY。");
+  });
+
+  it("rejects invalid recharge bonus tier amounts instead of silently filtering them", async () => {
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      payment_balance_bonus_tiers: [
+        { min_amount: 100, bonus_amount: 0 },
+      ],
+    });
+
+    const wrapper = mountView();
+
+    await flushPromises();
+    await openPaymentTab(wrapper);
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateSettings).not.toHaveBeenCalled();
+    expect(showError).toHaveBeenCalledWith("充值赠送阶梯的金额和赠送额度都必须大于 0。");
   });
 
   it("submits Anthropic cache TTL injection gateway setting", async () => {

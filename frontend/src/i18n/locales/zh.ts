@@ -85,27 +85,12 @@ export default {
         tasks: '任务处理次数',
         support: '专属技术支持'
       },
-      features: {
-        eyebrow: 'Developer Platform',
-        title: '一个入口，组织起日常 AI 研发工作'
-      },
-      featureCards: {
-        tools: {
-          title: '统一接入开发工具',
-          description: '把常用 AI 编程工具接到一个入口，减少账号、密钥和配置在团队间散落。'
-        },
-        team: {
-          title: '团队协作更清晰',
-          description: '围绕成员、权限、分组和使用记录建立共享视图，协作时少一点猜测。'
-        },
-        reliability: {
-          title: '稳定性优先',
-          description: '通过通道监控、失败切换和用量保护，让高频开发场景更稳。'
-        },
-        usage: {
-          title: '用量透明可追踪',
-          description: '关键消耗、调用状态与趋势沉淀为可读报表，方便复盘和管理。'
-        }
+      supportShowcase: {
+        titlePrefix: '智能时代的',
+        titleCore: 'Harness Engineering',
+        titleAccent: '聚焦创意的实现',
+        supports: '同时支持',
+        platformIntro: '一键轻松在以下平台体验：'
       },
       testimonials: {
         eyebrow: '用户评价',
@@ -6127,6 +6112,12 @@ export default {
         balanceRechargeMultiplier: '余额充值倍率',
         balanceRechargeMultiplierHint: '用户每支付 1 CNY 可获得多少 USD 余额',
         balanceRechargePreview: '预览：1 CNY = {usd} USD',
+        balanceBonusTiers: '充值赠送阶梯',
+        balanceBonusTiersHint: '达到指定充值金额后，额外赠送固定 USD 余额；命中多个档位时取最高档。',
+        addBonusTier: '添加阶梯',
+        bonusTierMinAmount: '充值满 CNY',
+        bonusTierBonusAmount: '赠送 USD',
+        noBonusTiers: '暂未配置阶梯赠送，当前只按充值倍率计算到账。',
         rechargeFeeRate: '充值手续费率',
         rechargeFeeRateHint: '用户充值时额外收取的手续费百分比，0 表示不收取手续费',
         rechargeFeePreview: '预览：充值 100 元，手续费 {fee} 元',
@@ -7212,7 +7203,25 @@ export default {
     amountTooLow: '最低金额为 {min}',
     amountTooHigh: '最高金额为 {max}',
     amountNoMethod: '该金额没有可用的支付方式',
-    rechargeRatePreview: '当前倍率：1 CNY = {usd} USD',
+    rechargeRatePreview: '当前充值比例：1 CNY = {usd} USD',
+    rechargeBonusPreview: '本次额外赠送 ${bonus}，预计到账 ${total}',
+    rechargeBonus: '充值赠送',
+    baseCredit: '基础到账',
+    estimatedCredit: '预计到账总额',
+    creditComposition: '到账构成',
+    creditSummaryBaseOnly: '按当前充值比例计算',
+    creditSummaryWithBonus: '含额外赠送 ${bonus}',
+    rechargeBonusActive: '已享受充值赠送：额外 +${bonus}',
+    rechargeBonusNext: '充值满 {amount} CNY，额外赠送 ${bonus}',
+    rechargeBonusFirst: '充值满 {amount} CNY 起，额外赠送 ${bonus}',
+    rechargeBonusRate: '当前充值比例：1 CNY = {usd} USD',
+    rechargeBonusNeedMore: '本次充值金额达到 {amount} CNY 可解锁下一档奖励',
+    rechargeBonusBannerHint: '赠送额度会在支付成功后自动计入账户余额',
+    quickAmountBonus: '额外赠送 ${bonus}',
+    quickAmountBonusSuffix: '赠送',
+    quickAmountCreditLabel: '到账总额',
+    quickAmountCredit: '到账 ${base}',
+    quickAmountCreditWithBonus: '到账 ${base}+${bonus}',
     refundReason: '退款原因',
     refundReasonPlaceholder: '请描述您的退款原因',
     stripeLoadFailed: '支付组件加载失败，请刷新页面重试',

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, shallowMount } from '@vue/test-utils'
+import { defineComponent, h } from 'vue'
 import PaymentView from '../PaymentView.vue'
 import { PAYMENT_RECOVERY_STORAGE_KEY } from '@/components/payment/paymentFlow'
 
@@ -103,6 +104,7 @@ function checkoutInfoFixture() {
       plans: [],
       balance_disabled: false,
       balance_recharge_multiplier: 1,
+      balance_recharge_bonus_tiers: [],
       recharge_fee_rate: 0,
       help_text: '',
       help_image_url: '',
@@ -414,5 +416,186 @@ describe('PaymentView WeChat JSAPI flow', () => {
     expect(showWarning).toHaveBeenCalledWith('payment.errors.mobilePaymentFallbackToQr')
     expect(showError).not.toHaveBeenCalled()
     expect(window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)).toContain('weixin://wxpay/bizpayurl?pr=fallback-native')
+  })
+})
+
+describe('PaymentView recharge bonus preview', () => {
+  beforeEach(() => {
+    routeState.path = '/purchase'
+    routeState.query = {}
+    routerReplace.mockReset().mockResolvedValue(undefined)
+    routerPush.mockReset().mockResolvedValue(undefined)
+    routerResolve.mockClear()
+    createOrder.mockReset()
+    refreshUser.mockReset()
+    fetchActiveSubscriptions.mockReset().mockResolvedValue(undefined)
+    showError.mockReset()
+    showInfo.mockReset()
+    showWarning.mockReset()
+    window.localStorage.clear()
+  })
+
+  it('selects the first available quick amount by default', async () => {
+    getCheckoutInfo.mockReset().mockResolvedValue(checkoutInfoFixture())
+
+    const wrapper = shallowMount(PaymentView, {
+      global: {
+        stubs: {
+          AppLayout: {
+            template: '<div><slot /></div>',
+          },
+          Teleport: true,
+          Transition: false,
+          AmountInput: defineComponent({
+            props: {
+              modelValue: {
+                type: Number,
+                default: null,
+              },
+            },
+            template: '<div class="amount-input-stub" :data-model-value="modelValue" />',
+          }),
+        },
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.get('.amount-input-stub').attributes('data-model-value')).toBe('10')
+    expect(wrapper.text()).toContain('$10.00')
+  })
+
+  it('uses the first quick amount allowed by payment limits as the default', async () => {
+    getCheckoutInfo.mockReset().mockResolvedValue({
+      data: {
+        ...checkoutInfoFixture().data,
+        methods: {
+          wxpay: {
+            ...checkoutInfoFixture().data.methods.wxpay,
+            single_min: 50,
+          },
+        },
+      },
+    })
+
+    const wrapper = shallowMount(PaymentView, {
+      global: {
+        stubs: {
+          AppLayout: {
+            template: '<div><slot /></div>',
+          },
+          Teleport: true,
+          Transition: false,
+          AmountInput: defineComponent({
+            props: {
+              modelValue: {
+                type: Number,
+                default: null,
+              },
+            },
+            template: '<div class="amount-input-stub" :data-model-value="modelValue" />',
+          }),
+        },
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.get('.amount-input-stub').attributes('data-model-value')).toBe('50')
+    expect(wrapper.text()).toContain('$50.00')
+  })
+
+  it('uses the highest matched recharge threshold instead of the largest bonus amount', async () => {
+    getCheckoutInfo.mockReset().mockResolvedValue({
+      data: {
+        ...checkoutInfoFixture().data,
+        balance_recharge_bonus_tiers: [
+          { min_amount: 100, bonus_amount: 100 },
+          { min_amount: 500, bonus_amount: 50 },
+        ],
+      },
+    })
+
+    const wrapper = shallowMount(PaymentView, {
+      global: {
+        stubs: {
+          AppLayout: {
+            template: '<div><slot /></div>',
+          },
+          Teleport: true,
+          Transition: false,
+          AmountInput: defineComponent({
+            props: {
+              amountBadges: {
+                type: Object,
+                default: () => ({}),
+              },
+            },
+            emits: ['update:modelValue'],
+            setup(props, { emit }) {
+              return () => h('button', {
+                class: 'amount-input-stub',
+                'data-badges': JSON.stringify(props.amountBadges),
+                onClick: () => emit('update:modelValue', 500),
+              }, 'set amount')
+            },
+          }),
+        },
+      },
+    })
+    await flushPromises()
+
+    const amountInput = wrapper.get('.amount-input-stub')
+    expect(JSON.parse(amountInput.attributes('data-badges') || '{}')).toMatchObject({
+      100: { total: '$200.00', bonus: '+ $100.00 payment.quickAmountBonusSuffix' },
+      500: { total: '$550.00', bonus: '+ $50.00 payment.quickAmountBonusSuffix' },
+    })
+    expect(JSON.parse(amountInput.attributes('data-badges') || '{}')).not.toHaveProperty('10')
+
+    await amountInput.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('$550.00')
+    expect(wrapper.text()).toContain('payment.creditSummaryWithBonus')
+    expect(wrapper.text()).toContain('payment.creditComposition')
+    expect(wrapper.text()).not.toContain('$600.00')
+  })
+
+  it('does not render duplicate bonus explanation when no bonus is applied', async () => {
+    getCheckoutInfo.mockReset().mockResolvedValue({
+      data: {
+        ...checkoutInfoFixture().data,
+        balance_recharge_multiplier: 10,
+        balance_recharge_bonus_tiers: [
+          { min_amount: 100, bonus_amount: 50 },
+        ],
+      },
+    })
+
+    const wrapper = shallowMount(PaymentView, {
+      global: {
+        stubs: {
+          AppLayout: {
+            template: '<div><slot /></div>',
+          },
+          Teleport: true,
+          Transition: false,
+          AmountInput: defineComponent({
+            emits: ['update:modelValue'],
+            setup(_, { emit }) {
+              return () => h('button', {
+                class: 'amount-input-stub',
+                onClick: () => emit('update:modelValue', 20),
+              }, 'set amount')
+            },
+          }),
+        },
+      },
+    })
+    await flushPromises()
+
+    await wrapper.get('.amount-input-stub').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.payment-credit-hint').text()).toContain('payment.creditSummaryBaseOnly')
+    expect(wrapper.text()).toContain('$200.00')
   })
 })

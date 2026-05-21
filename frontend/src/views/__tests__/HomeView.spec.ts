@@ -87,16 +87,11 @@ vi.mock('vue-i18n', async (importOriginal) => {
           'home.modern.stats.taskValue': '500 万+',
           'home.modern.stats.tasks': '任务处理次数',
           'home.modern.stats.support': '专属技术支持',
-          'home.modern.features.eyebrow': 'Developer Platform',
-          'home.modern.features.title': '一个入口，组织起日常 AI 研发工作',
-          'home.modern.featureCards.tools.title': '统一接入开发工具',
-          'home.modern.featureCards.tools.description': '把常用 AI 编程工具接到一个入口，减少账号、密钥和配置在团队间散落。',
-          'home.modern.featureCards.team.title': '团队协作更清晰',
-          'home.modern.featureCards.team.description': '围绕成员、权限、分组和使用记录建立共享视图，协作时少一点猜测。',
-          'home.modern.featureCards.reliability.title': '稳定性优先',
-          'home.modern.featureCards.reliability.description': '通过通道监控、失败切换和用量保护，让高频开发场景更稳。',
-          'home.modern.featureCards.usage.title': '用量透明可追踪',
-          'home.modern.featureCards.usage.description': '关键消耗、调用状态与趋势沉淀为可读报表，方便复盘和管理。',
+          'home.modern.supportShowcase.titlePrefix': '智能时代的',
+          'home.modern.supportShowcase.titleCore': 'Harness Engineering',
+          'home.modern.supportShowcase.titleAccent': '聚焦创意的实现',
+          'home.modern.supportShowcase.supports': '同时支持',
+          'home.modern.supportShowcase.platformIntro': '一键轻松在以下平台体验：',
           'home.modern.testimonials.eyebrow': '用户评价',
           'home.modern.testimonials.title': '用户怎么说',
           'home.modern.testimonials.description': '来自开发者、架构师和研发负责人的真实使用反馈。',
@@ -219,10 +214,23 @@ describe('HomeView', () => {
     expect(wrapper.find('[aria-hidden="true"]').exists()).toBe(true)
     expect(wrapper.findAll('.avatar-photo')).toHaveLength(16)
     expect(wrapper.html()).toContain('testimonial-avatar-sprite.png')
-    expect(wrapper.findAll('.feature-icon-sprite')).toHaveLength(4)
-    expect(wrapper.findAll('.feature-visual-sprite')).toHaveLength(4)
-    expect(wrapper.html()).toContain('/landing-assets/icon-sprite.png')
-    expect(wrapper.html()).toContain('/landing-assets/feature-visual-sprite.png')
+    expect(wrapper.html()).not.toContain('/landing-assets/icon-sprite.png')
+    expect(wrapper.html()).not.toContain('/landing-assets/feature-visual-sprite.png')
+    expect(wrapper.html()).not.toContain('/landing-assets/object-sprite.png')
+    expect(wrapper.find('.support-showcase').exists()).toBe(true)
+    expect(wrapper.get('#features').classes()).toContain('support-showcase')
+    expect(wrapper.findAll('.support-provider-chip')).toHaveLength(5)
+    expect(wrapper.findAll('.support-platform-chip')).toHaveLength(3)
+    expect(wrapper.html()).toContain('/landing-support/claude-code.svg')
+    expect(wrapper.html()).toContain('/landing-support/codex.svg')
+    expect(wrapper.html()).toContain('/landing-support/gemini-cli.svg')
+    expect(wrapper.html()).toContain('/landing-support/openclaw.svg')
+    expect(wrapper.html()).toContain('/landing-support/hermes-agent.svg')
+    expect(wrapper.html()).toContain('/landing-support/macos.svg')
+    expect(wrapper.html()).toContain('/landing-support/windows.svg')
+    expect(wrapper.html()).toContain('/landing-support/linux.svg')
+    expect(wrapper.findAll('.support-provider-chip .support-icon-frame-backed')).toHaveLength(1)
+    expect(wrapper.findAll('.support-platform-chip .support-icon-frame-backed')).toHaveLength(3)
   })
 
   it('keeps the hero terminal preview simple without dashboard metric panels', () => {
@@ -241,7 +249,7 @@ describe('HomeView', () => {
 
     expect(wrapper.find('.hero-console').exists()).toBe(true)
     expect(wrapper.find('.command-panel').exists()).toBe(true)
-    expect(wrapper.get('.console-topbar strong').text()).toBe('terminal')
+    expect(wrapper.findAll('.console-topbar span')).toHaveLength(3)
     expect(wrapper.get('.terminal-prompt').text()).toBe('$')
     expect(wrapper.get('.terminal-curl').text()).toBe('curl')
     expect(wrapper.get('.terminal-flag').text()).toBe('-X POST')
@@ -335,14 +343,22 @@ describe('HomeView', () => {
     expect(wrapper.get('.landing-header').classes()).not.toContain('landing-header-scrolled')
   })
 
-  it('narrows the landing nav width when the scrolled header state is active', () => {
+  it('narrows only the landing nav after scroll while keeping page sections unconstrained', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
     const headerNavBlock = source.match(/\.landing-header nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const scrolledHeaderBlock = source.match(/\.landing-header-scrolled\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const scrolledNavBlock = source.match(/\.landing-header-scrolled nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(headerNavBlock).toContain('max-width: 80rem')
-    expect(headerNavBlock).toMatch(/transition:[\s\S]*max-width 180ms ease/)
-    expect(scrolledNavBlock).toContain('max-width: min(68rem, calc(100vw - 1.5rem))')
+    expect(headerNavBlock).toContain('width: var(--landing-header-width)')
+    expect(headerNavBlock).toContain('background: var(--theme-surface)')
+    expect(headerNavBlock).toContain('border: 1px solid var(--theme-border)')
+    expect(headerNavBlock).toContain('border-radius: 0')
+    expect(headerNavBlock).toMatch(/transition:[\s\S]*width 240ms cubic-bezier\(0\.22, 1, 0\.36, 1\)/)
+    expect(scrolledHeaderBlock).toContain('--landing-header-width: min(72rem, calc(100vw - 1.5rem))')
+    expect(scrolledNavBlock).toContain('background: var(--theme-surface-strong)')
+    expect(scrolledNavBlock).toContain('border-color: var(--theme-border-strong)')
+    expect(scrolledNavBlock).toContain('border-radius: 0.9rem')
+    expect(source).not.toContain('max-w-7xl')
   })
 
   it('keeps the visible landing nav shell on the narrowing nav instead of the full-width header', () => {
@@ -370,9 +386,9 @@ describe('HomeView', () => {
     const landingShellBlock = source.match(/\.landing-shell\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
     expect(landingActiveBlock).toContain('color-scheme: dark')
-    expect(landingActiveBlock).toContain('--theme-bg: #12151b')
-    expect(landingActiveBlock).toContain('--theme-surface-strong: #232936')
-    expect(landingActiveBlock).toContain('--theme-text-muted: #9aa7b5')
+    expect(landingActiveBlock).toContain('--theme-bg: #171717')
+    expect(landingActiveBlock).toContain('--theme-surface-strong: #242424')
+    expect(landingActiveBlock).toContain('--theme-text-muted: #c4cfdc')
     expect(landingShellBlock).toContain('color-scheme: dark')
     expect(source).toContain('::selection')
     expect(source).toContain('landing-page-active')
@@ -384,6 +400,7 @@ describe('HomeView', () => {
 
     expect(localeSwitcherBlock).toContain('--locale-text: #e2e8f0')
     expect(localeSwitcherBlock).toContain('--locale-text-strong: var(--landing-text-strong)')
+    expect(localeSwitcherBlock).toContain('--locale-hover-bg: var(--theme-surface-muted)')
     expect(localeSwitcherBlock).toContain('--locale-active-text: #fed7aa')
   })
 
@@ -394,7 +411,7 @@ describe('HomeView', () => {
     expect(source).not.toContain('text-slate-300')
     expect(source).not.toContain('text-slate-400')
     expect(source).toContain('--landing-accent: #f97316')
-    expect(source).toContain('--landing-text-soft: #d4d4d4')
+    expect(source).toContain('--landing-text-soft: #e2e8f0')
     expect(source).toContain('color: var(--landing-text-soft)')
     expect(source).toContain('color: var(--landing-accent-soft)')
   })
@@ -406,7 +423,7 @@ describe('HomeView', () => {
     expect(globalStyleSource).toContain('--theme-scrollbar-track')
     expect(globalStyleSource).toContain('scrollbar-color: var(--theme-scrollbar-thumb) var(--theme-scrollbar-track)')
     expect(globalStyleSource).toContain('background: var(--theme-scrollbar-track)')
-    expect(homeSource).toContain('--theme-scrollbar-track: #12151b')
+    expect(homeSource).toContain('--theme-scrollbar-track: #171717')
     expect(homeSource).toContain('--theme-scrollbar-thumb: rgba(148, 163, 184, 0.34)')
   })
 
@@ -415,28 +432,60 @@ describe('HomeView', () => {
 
     expect(source).not.toContain('#0a0a0a')
     expect(source).not.toContain('#111111')
-    expect(source).not.toContain('#171717')
-    expect(source).toContain('#12151b')
-    expect(source).toContain('#232936')
+    expect(source).toContain('#171717')
+    expect(source).toContain('#242424')
   })
 
-  it('uses varied section treatments instead of one repeated bordered card pattern', () => {
+  it('removes the old staggered feature card section', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
 
+    expect(source).not.toContain('featureCards')
+    expect(source).not.toContain('.feature-layout')
+    expect(source).not.toContain('.feature-panel')
+    expect(source).not.toContain('.feature-icon')
+    expect(source).not.toContain('.feature-visual')
     expect(source).not.toContain('.feature-card,\n.testimonial-card')
     expect(source).not.toContain('.testimonial-card,\n.faq-item')
     expect(source).not.toMatch(/\.feature-card,\s*[\s\S]*?border:\s*1px solid/)
-    expect(source).toContain('feature-layout')
-    expect(source).toContain('feature-panel')
   })
 
-  it('uses generated landing assets for visual detail without texture backgrounds', () => {
+  it('uses local support icons instead of generated landing asset sprites', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
 
     expect(source).not.toContain('/landing-assets/hero-texture.png')
     expect(source).not.toContain('/landing-assets/testimonial-texture.png')
     expect(source).not.toContain('/landing-assets/footer-texture.png')
-    expect(source).toContain('/landing-assets/object-sprite.png')
+    expect(source).not.toContain('/landing-assets/icon-sprite.png')
+    expect(source).not.toContain('/landing-assets/feature-visual-sprite.png')
+    expect(source).not.toContain('/landing-assets/object-sprite.png')
+    expect(source).toContain("const supportAssetBase = '/landing-support'")
+    expect(source).toContain('hermes-agent.svg')
+  })
+
+  it('themes the support showcase through the global dark tokens', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const supportShowcaseBlock = source.match(/\.support-showcase\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const supportPanelBlock = source.match(/\.support-showcase-panel\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const supportTitleAccentBlock = source.match(/\.support-showcase-title em\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const supportPlatformBlock = source.match(/\.support-platform-chip\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const supportIconBackedBlock = source.match(/\.support-icon-frame-backed\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(supportShowcaseBlock).toContain('background: color-mix(in srgb, var(--theme-surface) 72%, var(--landing-bg))')
+    expect(supportShowcaseBlock).toContain('border-top: 1px solid var(--theme-border)')
+    expect(supportShowcaseBlock).toContain('border-bottom: 1px solid var(--theme-border)')
+    expect(supportPanelBlock).toContain('color: var(--theme-text)')
+    expect(supportPanelBlock).not.toContain('width: min(100%, 104rem)')
+    expect(supportPanelBlock).not.toMatch(/\bborder-radius:/)
+    expect(supportPanelBlock).not.toMatch(/\bbox-shadow:/)
+    expect(supportPanelBlock).not.toMatch(/\bborder:/)
+    expect(supportTitleAccentBlock).toContain('color: var(--theme-primary-hover)')
+    expect(supportPlatformBlock).toContain('background: var(--theme-surface-strong)')
+    expect(supportPlatformBlock).toContain('border: 1px solid var(--theme-border-strong)')
+    expect(supportIconBackedBlock).toContain('var(--theme-text)')
+    expect(supportIconBackedBlock).toContain('var(--theme-surface-strong)')
+    expect(source).not.toContain('background: #d5d5d5')
+    expect(source).not.toContain('background: #aca89f')
+    expect(source).not.toContain('color: #000000')
   })
 
   it('shows the home page logo without a framed brand mark', () => {
@@ -462,9 +511,9 @@ describe('HomeView', () => {
     expect(footerBlock).not.toMatch(/\bborder-top:/)
     expect(source).not.toContain('linear-gradient')
     expect(source).not.toContain('radial-gradient')
-    expect(headerBlock).toContain('background: rgba(20, 22, 26, 0.92)')
+    expect(headerBlock).not.toMatch(/\bbackground:/)
     expect(source).toContain('.landing-header-scrolled')
-    expect(trustBandBlock).toContain('background: rgba(29, 32, 38, 0.74)')
+    expect(trustBandBlock).toContain('background: var(--landing-bg)')
     expect(testimonialBlock).toContain('background: var(--landing-bg)')
     expect(footerBlock).toContain('background: var(--landing-bg)')
   })

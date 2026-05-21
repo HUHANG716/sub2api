@@ -48,6 +48,17 @@ describe('AppSidebar active state styles', () => {
       expect(block).not.toContain('radial-gradient')
     }
   })
+
+  it('uses neutral dark theme tokens for the active item surface', () => {
+    const darkActiveBlock = styleSource.match(/\.dark \.sidebar-link-active\s*\{[\s\S]*?\n {2}\}/)?.[0] ?? ''
+    const darkActiveHoverBlock = styleSource.match(/\.dark \.sidebar-link-active:hover\s*\{[\s\S]*?\n {2}\}/)?.[0] ?? ''
+
+    expect(darkActiveBlock).toContain('background: var(--theme-surface-muted);')
+    expect(darkActiveBlock).toContain('box-shadow: inset 3px 0 0 var(--theme-primary);')
+    expect(darkActiveHoverBlock).toContain('background: var(--theme-surface-strong);')
+    expect(darkActiveBlock).not.toContain('rgba(35, 40, 49')
+    expect(darkActiveHoverBlock).not.toContain('rgba(39, 45, 55')
+  })
 })
 
 describe('Modal header styles', () => {

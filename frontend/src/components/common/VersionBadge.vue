@@ -24,18 +24,16 @@
         <div
           v-if="dropdownOpen"
           ref="dropdownRef"
-          class="absolute left-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-dark-700 dark:bg-dark-800"
+          class="version-dropdown absolute left-0 z-50 mt-2 w-64 overflow-hidden rounded-xl"
         >
           <!-- Header with refresh button -->
-          <div
-            class="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-dark-700"
-          >
-            <span class="text-sm font-medium text-gray-700 dark:text-dark-300">{{
+          <div class="version-dropdown-header flex items-center justify-between px-4 py-3">
+            <span class="version-dropdown-title text-sm font-medium">{{
               t('version.currentVersion')
             }}</span>
             <button
               @click="refreshVersion(true)"
-              class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700 dark:hover:text-dark-200"
+              class="version-icon-button rounded-lg p-1.5 transition-colors"
               :disabled="loading"
               :title="t('version.refresh')"
             >
@@ -75,10 +73,10 @@
                 <div class="inline-flex items-center gap-2">
                   <span
                     v-if="currentVersion"
-                    class="text-2xl font-bold text-gray-900 dark:text-white"
+                    class="version-number text-2xl font-bold"
                     >v{{ currentVersion }}</span
                   >
-                  <span v-else class="text-2xl font-bold text-gray-400 dark:text-dark-500">--</span>
+                  <span v-else class="version-placeholder text-2xl font-bold">--</span>
                   <!-- Show check mark when up to date -->
                   <span
                     v-if="!hasUpdate"
@@ -97,7 +95,7 @@
                     </svg>
                   </span>
                 </div>
-                <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">
+                <p class="version-helper mt-1 text-xs">
                   {{
                     hasUpdate
                       ? t('version.latestVersion') + ': v' + latestVersion
@@ -336,7 +334,7 @@
                   :href="releaseInfo.html_url"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="flex items-center justify-center gap-1 text-xs text-gray-500 transition-colors hover:text-gray-700 dark:text-dark-400 dark:hover:text-dark-200"
+                  class="version-link flex items-center justify-center gap-1 text-xs transition-colors"
                 >
                   {{ t('version.viewChangelog') }}
                   <Icon name="externalLink" size="xs" :stroke-width="2" />
@@ -349,7 +347,7 @@
                 :href="releaseInfo.html_url"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="flex items-center justify-center gap-2 py-2 text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-dark-400 dark:hover:text-dark-200"
+                class="version-link flex items-center justify-center gap-2 py-2 text-sm transition-colors"
               >
                 <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                   <path
@@ -560,6 +558,36 @@ onBeforeUnmount(() => {
 
 .version-badge-placeholder {
   background: var(--theme-border-strong);
+}
+
+.version-dropdown {
+  background: var(--theme-surface-strong);
+  border: 1px solid var(--theme-border);
+  box-shadow: var(--theme-shadow-hover), 0 18px 48px rgba(0, 0, 0, 0.18);
+  color: var(--theme-text);
+}
+
+.version-dropdown-header {
+  background: var(--theme-surface-strong);
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.version-dropdown-title,
+.version-number {
+  color: var(--theme-text-soft);
+}
+
+.version-helper,
+.version-link,
+.version-icon-button,
+.version-placeholder {
+  color: var(--theme-text-subtle);
+}
+
+.version-icon-button:hover,
+.version-link:hover {
+  background: var(--theme-surface-muted);
+  color: var(--theme-text-soft);
 }
 
 .dropdown-enter-active,

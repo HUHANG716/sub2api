@@ -24,6 +24,7 @@ export interface AdminPaymentConfig {
   enabled_payment_types: string[]
   balance_disabled: boolean
   balance_recharge_multiplier: number
+  balance_recharge_bonus_tiers: Array<{ min_amount: number; bonus_amount: number }>
   load_balance_strategy: string
   product_name_prefix: string
   product_name_suffix: string
@@ -42,6 +43,7 @@ export interface UpdatePaymentConfigRequest {
   enabled_payment_types?: string[]
   balance_disabled?: boolean
   balance_recharge_multiplier?: number
+  balance_recharge_bonus_tiers?: Array<{ min_amount: number; bonus_amount: number }>
   load_balance_strategy?: string
   product_name_prefix?: string
   product_name_suffix?: string

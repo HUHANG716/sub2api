@@ -85,27 +85,12 @@ export default {
         tasks: 'tasks processed',
         support: 'dedicated technical support'
       },
-      features: {
-        eyebrow: 'Developer Platform',
-        title: 'One entry point for everyday AI engineering'
-      },
-      featureCards: {
-        tools: {
-          title: 'Unified tool access',
-          description: 'Connect common AI coding tools through one entry point, reducing scattered accounts, keys, and team configuration.'
-        },
-        team: {
-          title: 'Clearer team collaboration',
-          description: 'Build a shared view around members, permissions, groups, and usage records so collaboration involves less guesswork.'
-        },
-        reliability: {
-          title: 'Reliability first',
-          description: 'Channel monitoring, failover, and usage protection help keep high-frequency development workflows steady.'
-        },
-        usage: {
-          title: 'Transparent usage tracking',
-          description: 'Turn key usage, request status, and trends into readable reports for review and management.'
-        }
+      supportShowcase: {
+        titlePrefix: 'Harness Engineering',
+        titleCore: 'for the AI era',
+        titleAccent: 'focused on making ideas real',
+        supports: 'Works with',
+        platformIntro: 'Try it easily on these platforms:'
       },
       testimonials: {
         eyebrow: 'Customer stories',
@@ -5968,6 +5953,12 @@ export default {
         balanceRechargeMultiplier: 'Balance Recharge Multiplier',
         balanceRechargeMultiplierHint: 'How many USD balance the user receives for each 1 CNY paid',
         balanceRechargePreview: 'Preview: 1 CNY = {usd} USD',
+        balanceBonusTiers: 'Recharge Bonus Tiers',
+        balanceBonusTiersHint: 'Grant fixed USD balance when the recharge reaches a threshold. The highest matched tier is used.',
+        addBonusTier: 'Add Tier',
+        bonusTierMinAmount: 'Recharge at least CNY',
+        bonusTierBonusAmount: 'Bonus USD',
+        noBonusTiers: 'No bonus tiers configured. Balance is currently calculated by multiplier only.',
         rechargeFeeRate: 'Recharge Fee Rate',
         rechargeFeeRateHint: 'Percentage of service fee charged on top of recharge amount, 0 means no fee',
         rechargeFeePreview: 'Preview: Recharge 100, fee {fee}',
@@ -7029,7 +7020,25 @@ export default {
     amountTooLow: 'Minimum amount is {min}',
     amountTooHigh: 'Maximum amount is {max}',
     amountNoMethod: 'No payment method available for this amount',
-    rechargeRatePreview: 'Current rate: 1 CNY = {usd} USD',
+    rechargeRatePreview: 'Current recharge ratio: 1 CNY = {usd} USD',
+    rechargeBonusPreview: 'Extra bonus ${bonus}; estimated credit ${total}',
+    rechargeBonus: 'Top-up Bonus',
+    baseCredit: 'Base Credit',
+    estimatedCredit: 'Estimated Total Credit',
+    creditComposition: 'Credit Composition',
+    creditSummaryBaseOnly: 'Calculated by the current recharge ratio',
+    creditSummaryWithBonus: 'Includes extra bonus ${bonus}',
+    rechargeBonusActive: 'Top-up bonus applied: extra +${bonus}',
+    rechargeBonusNext: 'Top up {amount} CNY to get an extra ${bonus}',
+    rechargeBonusFirst: 'Top up from {amount} CNY to get an extra ${bonus}',
+    rechargeBonusRate: 'Current recharge ratio: 1 CNY = {usd} USD',
+    rechargeBonusNeedMore: 'Set this top-up to {amount} CNY to unlock the next reward tier',
+    rechargeBonusBannerHint: 'The bonus balance is added automatically after payment succeeds',
+    quickAmountBonus: 'Bonus ${bonus}',
+    quickAmountBonusSuffix: 'bonus',
+    quickAmountCreditLabel: 'Total credit',
+    quickAmountCredit: 'Credit ${base}',
+    quickAmountCreditWithBonus: 'Credit ${base}+${bonus}',
     refundReason: 'Refund Reason',
     refundReasonPlaceholder: 'Please describe your refund reason',
     stripeLoadFailed: 'Failed to load payment component. Please refresh and try again.',

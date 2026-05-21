@@ -344,6 +344,75 @@ func TestGetPaymentConfigKeepsStoredEnabledTypes(t *testing.T) {
 	}
 }
 
+func TestPaymentConfigBalanceRechargeBonusTiers(t *testing.T) {
+	repo := &paymentConfigSettingRepoStub{values: map[string]string{
+		SettingBalanceBonusTiers: `[{"min_amount":300,"bonus_amount":45},{"min_amount":100,"bonus_amount":10}]`,
+	}}
+	svc := &PaymentConfigService{settingRepo: repo}
+
+	cfg, err := svc.GetPaymentConfig(context.Background())
+	if err != nil {
+		t.Fatalf("GetPaymentConfig returned error: %v", err)
+	}
+	if len(cfg.BalanceBonusTiers) != 2 {
+		t.Fatalf("BalanceBonusTiers len = %d, want 2", len(cfg.BalanceBonusTiers))
+	}
+	if cfg.BalanceBonusTiers[0].MinAmount != 100 || cfg.BalanceBonusTiers[0].BonusAmount != 10 {
+		t.Fatalf("first tier = %+v, want min 100 bonus 10", cfg.BalanceBonusTiers[0])
+	}
+	if got := calculateCreditedBalance(300, 1, cfg.BalanceBonusTiers); got != 345 {
+		t.Fatalf("credited balance = %.2f, want 345.00", got)
+	}
+}
+
+func TestUpdatePaymentConfigPersistsBalanceRechargeBonusTiers(t *testing.T) {
+	repo := &paymentConfigSettingRepoStub{values: map[string]string{}}
+	svc := &PaymentConfigService{settingRepo: repo}
+
+	tiers := []BalanceRechargeBonusTier{
+		{MinAmount: 300, BonusAmount: 50},
+		{MinAmount: 100, BonusAmount: 10},
+	}
+	if err := svc.UpdatePaymentConfig(context.Background(), UpdatePaymentConfigRequest{BalanceBonusTiers: &tiers}); err != nil {
+		t.Fatalf("UpdatePaymentConfig returned error: %v", err)
+	}
+
+	want := `[{"min_amount":100,"bonus_amount":10},{"min_amount":300,"bonus_amount":50}]`
+	if got := repo.values[SettingBalanceBonusTiers]; got != want {
+		t.Fatalf("stored tiers = %s, want %s", got, want)
+	}
+}
+
+func TestUpdatePaymentConfigOmitsUnprovidedBalanceRechargeBonusTiers(t *testing.T) {
+	repo := &paymentConfigSettingRepoStub{values: map[string]string{
+		SettingBalanceBonusTiers: `[{"min_amount":100,"bonus_amount":10}]`,
+	}}
+	svc := &PaymentConfigService{settingRepo: repo}
+
+	enabled := true
+	if err := svc.UpdatePaymentConfig(context.Background(), UpdatePaymentConfigRequest{Enabled: &enabled}); err != nil {
+		t.Fatalf("UpdatePaymentConfig returned error: %v", err)
+	}
+
+	if _, ok := repo.updates[SettingBalanceBonusTiers]; ok {
+		t.Fatalf("unexpected bonus tiers update: %q", repo.updates[SettingBalanceBonusTiers])
+	}
+	if got := repo.values[SettingBalanceBonusTiers]; got != `[{"min_amount":100,"bonus_amount":10}]` {
+		t.Fatalf("stored tiers = %s, want unchanged", got)
+	}
+}
+
+func TestCalculateCreditedBalanceUsesHighestMatchedBonusTier(t *testing.T) {
+	tiers := []BalanceRechargeBonusTier{
+		{MinAmount: 100, BonusAmount: 100},
+		{MinAmount: 500, BonusAmount: 50},
+	}
+
+	if got := calculateCreditedBalance(500, 1, tiers); got != 550 {
+		t.Fatalf("credited balance = %.2f, want 550.00", got)
+	}
+}
+
 func newPaymentConfigServiceTestClient(t *testing.T) *dbent.Client {
 	t.Helper()
 

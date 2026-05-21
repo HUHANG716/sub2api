@@ -80,11 +80,31 @@
                 </div>
                 <AmountInput
                   v-model="amount"
-                  :amounts="[10, 20, 50, 100, 200, 500, 1000, 2000, 5000]"
+                  :amounts="quickAmountOptions"
                   :min="globalMinAmount"
                   :max="globalMaxAmount"
+                  :amount-badges="quickAmountBonusBadges"
+                  :amount-formatter="formatSelectedPaymentAmount"
+                  :input-prefix="selectedCurrencySymbol"
                 />
                 <p v-if="amountError" class="mt-3 rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-700 dark:text-amber-200">{{ amountError }}</p>
+
+                <div v-if="hasRechargeBonusCampaign" class="payment-bonus-banner">
+                  <div class="payment-bonus-icon">
+                    <Icon name="gift" size="md" />
+                  </div>
+                  <div class="payment-rate-pill">
+                    {{ rechargeRateText }}
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="payment-bonus-title">
+                      {{ activeRechargeBonusText }}
+                    </p>
+                    <p class="payment-bonus-subtitle">
+                      {{ rechargeBonusSubtitle }}
+                    </p>
+                  </div>
+                </div>
 
                 <div class="payment-section-divider" />
 
@@ -121,28 +141,33 @@
                   </div>
                 </div>
 
+                <div class="payment-credit-result">
+                  <div class="payment-wallet-label">
+                    <Icon name="wallet" size="sm" />
+                    <span>{{ t('payment.estimatedCredit') }}</span>
+                  </div>
+                  <strong>{{ validAmount > 0 ? `$${creditedAmount.toFixed(2)}` : '-' }}</strong>
+                  <p v-if="validAmount > 0" class="payment-credit-hint">{{ creditSummaryText }}</p>
+                </div>
+
                 <div class="payment-summary-list">
                   <div>
                     <span>{{ t('payment.paymentAmount') }}</span>
                     <strong>{{ validAmount > 0 ? formatSelectedPaymentAmount(validAmount) : '-' }}</strong>
                   </div>
+                  <div v-if="validAmount > 0">
+                    <span>{{ t('payment.creditComposition') }}</span>
+                    <strong>{{ creditCompositionText }}</strong>
+                  </div>
                   <div v-if="feeRate > 0">
                     <span>{{ t('payment.fee') }} ({{ feeRate }}%)</span>
                     <strong>{{ formatSelectedPaymentAmount(feeAmount) }}</strong>
-                  </div>
-                  <div v-if="balanceRechargeMultiplier !== 1">
-                    <span>{{ t('payment.creditedBalance') }}</span>
-                    <strong>${{ creditedAmount.toFixed(2) }}</strong>
                   </div>
                   <div class="payment-summary-total">
                     <span>{{ t('payment.actualPay') }}</span>
                     <strong>{{ validAmount > 0 ? formatSelectedPaymentAmount(totalAmount) : '-' }}</strong>
                   </div>
                 </div>
-
-                <p v-if="balanceRechargeMultiplier !== 1" class="payment-note">
-                  {{ t('payment.rechargeRatePreview', { usd: balanceRechargeMultiplier.toFixed(2) }) }}
-                </p>
                 <div v-if="errorMessage" class="payment-error-box">
                   <Icon name="exclamationCircle" size="sm" />
                   <span>{{ errorMessage }}</span>
@@ -153,7 +178,7 @@
                     <span class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
                     {{ t('common.processing') }}
                   </span>
-                  <span v-else>{{ t('payment.createOrder') }} {{ formatSelectedPaymentAmount(totalAmount) }}</span>
+                  <span v-else>{{ t('payment.createOrder') }}</span>
                 </button>
 
                 <div v-if="checkout.help_text || checkout.help_image_url" class="payment-help-box">
@@ -593,7 +618,7 @@ function onPaymentSettled() {
 // All checkout data from single API call
 const checkout = ref<CheckoutInfoResponse>({
   methods: {}, global_min: 0, global_max: 0,
-  plans: [], balance_disabled: false, balance_recharge_multiplier: 1, recharge_fee_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
+  plans: [], balance_disabled: false, balance_recharge_multiplier: 1, balance_recharge_bonus_tiers: [], recharge_fee_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
 })
 
 const tabs = computed(() => {
@@ -606,11 +631,106 @@ const tabs = computed(() => {
 const visibleMethods = computed(() => getVisibleMethods(checkout.value.methods))
 const enabledMethods = computed(() => Object.keys(visibleMethods.value))
 const validAmount = computed(() => amount.value ?? 0)
+const quickAmountOptions = computed(() => [10, 20, 50, 100, 200, 500, 1000, 2000, 5000])
 const balanceRechargeMultiplier = computed(() => {
   const multiplier = checkout.value.balance_recharge_multiplier
   return multiplier > 0 ? multiplier : 1
 })
-const creditedAmount = computed(() => Math.round((validAmount.value * balanceRechargeMultiplier.value) * 100) / 100)
+const selectedRechargeBonus = computed(() => {
+  return calculateRechargeBonus(validAmount.value)
+})
+const baseCreditedAmount = computed(() => calculateBaseCredit(validAmount.value))
+const creditedAmount = computed(() => Math.round((baseCreditedAmount.value + selectedRechargeBonus.value) * 100) / 100)
+const creditSummaryText = computed(() => {
+  if (selectedRechargeBonus.value > 0) {
+    return t('payment.creditSummaryWithBonus', { bonus: selectedRechargeBonus.value.toFixed(2) })
+  }
+  return t('payment.creditSummaryBaseOnly')
+})
+const creditCompositionText = computed(() => {
+  if (selectedRechargeBonus.value > 0) {
+    return `$${baseCreditedAmount.value.toFixed(2)} + $${selectedRechargeBonus.value.toFixed(2)}`
+  }
+  return `$${baseCreditedAmount.value.toFixed(2)}`
+})
+const rechargeRateText = computed(() => t('payment.rechargeRatePreview', {
+  usd: balanceRechargeMultiplier.value.toFixed(2),
+}))
+const hasRechargeBonusCampaign = computed(() => {
+  return balanceRechargeMultiplier.value !== 1 || (checkout.value.balance_recharge_bonus_tiers || []).length > 0
+})
+const sortedRechargeBonusTiers = computed(() => {
+  return [...(checkout.value.balance_recharge_bonus_tiers || [])]
+    .map((tier) => ({
+      min_amount: Number(tier.min_amount) || 0,
+      bonus_amount: Number(tier.bonus_amount) || 0,
+    }))
+    .filter((tier) => tier.min_amount > 0 && tier.bonus_amount > 0)
+    .sort((a, b) => a.min_amount - b.min_amount)
+})
+const nextRechargeBonusTier = computed(() => {
+  return sortedRechargeBonusTiers.value.find((tier) => validAmount.value < tier.min_amount) || null
+})
+const firstRechargeBonusTier = computed(() => sortedRechargeBonusTiers.value[0] || null)
+const activeRechargeBonusText = computed(() => {
+  if (selectedRechargeBonus.value > 0) {
+    return t('payment.rechargeBonusActive', {
+      bonus: selectedRechargeBonus.value.toFixed(2),
+      total: creditedAmount.value.toFixed(2),
+    })
+  }
+  if (nextRechargeBonusTier.value) {
+    return t('payment.rechargeBonusNext', {
+      amount: nextRechargeBonusTier.value.min_amount.toFixed(2),
+      bonus: nextRechargeBonusTier.value.bonus_amount.toFixed(2),
+    })
+  }
+  if (firstRechargeBonusTier.value) {
+    return t('payment.rechargeBonusFirst', {
+      amount: firstRechargeBonusTier.value.min_amount.toFixed(2),
+      bonus: firstRechargeBonusTier.value.bonus_amount.toFixed(2),
+    })
+  }
+  return rechargeRateText.value
+})
+const rechargeBonusSubtitle = computed(() => {
+  if (nextRechargeBonusTier.value && validAmount.value > 0 && selectedRechargeBonus.value === 0) {
+    return t('payment.rechargeBonusNeedMore', {
+      amount: nextRechargeBonusTier.value.min_amount.toFixed(2),
+    })
+  }
+  return t('payment.rechargeBonusBannerHint')
+})
+const quickAmountBonusBadges = computed(() => {
+  const entries = quickAmountOptions.value
+    .flatMap((quickAmount) => {
+      const bonus = calculateRechargeBonus(quickAmount)
+      if (bonus <= 0) return []
+      const baseCredit = calculateBaseCredit(quickAmount)
+      return [[quickAmount, formatQuickAmountCreditBadge(baseCredit, bonus)] as const]
+    })
+  return Object.fromEntries(entries)
+})
+
+function formatQuickAmountCreditBadge(baseCredit: number, bonus: number) {
+  const totalCredit = Math.round((baseCredit + bonus) * 100) / 100
+  return {
+    label: t('payment.quickAmountCreditLabel'),
+    total: `$${totalCredit.toFixed(2)}`,
+    bonus: `+ $${bonus.toFixed(2)} ${t('payment.quickAmountBonusSuffix')}`,
+  }
+}
+
+function calculateRechargeBonus(paymentAmount: number): number {
+  const matched = [...sortedRechargeBonusTiers.value]
+    .reverse()
+    .find((tier) => paymentAmount >= tier.min_amount)
+  return matched?.bonus_amount ?? 0
+}
+
+function calculateBaseCredit(paymentAmount: number): number {
+  return Math.round((paymentAmount * balanceRechargeMultiplier.value) * 100) / 100
+}
 
 // Adaptive grid: center single card, 2-col for 2 plans, 3-col for 3+
 const planGridClass = computed(() => {
@@ -642,6 +762,12 @@ const globalMaxAmount = computed(() => {
   if (limits.some(limit => limit.single_max <= 0)) return 0
   return Math.max(...limits.map(limit => limit.single_max))
 })
+const defaultQuickAmount = computed(() =>
+  quickAmountOptions.value.find((quickAmount) => {
+    return (globalMinAmount.value <= 0 || quickAmount >= globalMinAmount.value)
+      && (globalMaxAmount.value <= 0 || quickAmount <= globalMaxAmount.value)
+  }) ?? null
+)
 
 // Selected method's limits (for validation and error messages)
 const selectedLimit = computed(() => visibleMethods.value[selectedMethod.value])
@@ -653,6 +779,10 @@ const localeCode = computed(() => {
     return String((raw as { value?: string }).value || '')
   }
   return undefined
+})
+const selectedCurrencySymbol = computed(() => {
+  const formatted = formatSelectedPaymentAmount(0)
+  return formatted.replace(/[0\s.,]+/g, '') || selectedCurrency.value
 })
 
 function formatSelectedPaymentAmount(value: number): string {
@@ -1171,6 +1301,9 @@ onMounted(async () => {
       }
     }
     await resumeWechatPaymentFromQuery()
+    if (!hasWechatResumeQuery(route.query) && amount.value === null && defaultQuickAmount.value !== null) {
+      amount.value = defaultQuickAmount.value
+    }
     if (checkout.value.balance_disabled) {
       activeTab.value = 'subscription'
     }
@@ -1314,6 +1447,54 @@ onMounted(async () => {
 
 .payment-account-strip {
   @apply flex items-center gap-3 p-3;
+}
+
+.payment-bonus-banner {
+  @apply mt-4 flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center;
+  background: linear-gradient(135deg, color-mix(in srgb, #16a34a 12%, var(--theme-surface)), color-mix(in srgb, #0ea5e9 10%, var(--theme-surface)));
+  border-color: color-mix(in srgb, #16a34a 34%, var(--theme-border));
+}
+
+.payment-bonus-icon {
+  @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-emerald-700 dark:text-emerald-200;
+  background: color-mix(in srgb, #16a34a 16%, var(--theme-surface));
+  border: 1px solid color-mix(in srgb, #16a34a 28%, var(--theme-border));
+}
+
+.payment-rate-pill {
+  @apply rounded-md border px-2.5 py-1 text-xs font-semibold text-sky-700 dark:text-sky-200 sm:order-last;
+  background: color-mix(in srgb, #0ea5e9 10%, var(--theme-surface));
+  border-color: color-mix(in srgb, #0ea5e9 26%, var(--theme-border));
+}
+
+.payment-bonus-title {
+  @apply text-sm font-semibold text-gray-950 dark:text-white;
+}
+
+.payment-bonus-subtitle {
+  @apply mt-1 text-xs leading-5 text-gray-600 dark:text-gray-300;
+}
+
+.payment-wallet-label {
+  @apply inline-flex items-center gap-1.5;
+}
+
+.payment-credit-result {
+  @apply rounded-lg border px-4 py-4;
+  background: color-mix(in srgb, #16a34a 10%, var(--theme-surface));
+  border-color: color-mix(in srgb, #16a34a 28%, var(--theme-border));
+}
+
+.payment-credit-result .payment-wallet-label {
+  @apply text-sm font-medium text-gray-600 dark:text-gray-300;
+}
+
+.payment-credit-result strong {
+  @apply mt-1 block text-3xl font-semibold text-gray-950 dark:text-white;
+}
+
+.payment-credit-hint {
+  @apply mt-2 text-sm font-medium text-emerald-700 dark:text-emerald-200;
 }
 
 .payment-summary-list {

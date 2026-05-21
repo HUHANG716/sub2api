@@ -16,11 +16,29 @@ func normalizeBalanceRechargeMultiplier(multiplier float64) float64 {
 	return multiplier
 }
 
-func calculateCreditedBalance(paymentAmount, multiplier float64) float64 {
-	return decimal.NewFromFloat(paymentAmount).
-		Mul(decimal.NewFromFloat(normalizeBalanceRechargeMultiplier(multiplier))).
+func calculateCreditedBalance(paymentAmount, multiplier float64, bonusTiers []BalanceRechargeBonusTier) float64 {
+	credited := decimal.NewFromFloat(paymentAmount).
+		Mul(decimal.NewFromFloat(normalizeBalanceRechargeMultiplier(multiplier)))
+	if bonus := selectBalanceRechargeBonus(paymentAmount, bonusTiers); bonus > 0 {
+		credited = credited.Add(decimal.NewFromFloat(bonus))
+	}
+	return credited.
 		Round(2).
 		InexactFloat64()
+}
+
+func selectBalanceRechargeBonus(paymentAmount float64, bonusTiers []BalanceRechargeBonusTier) float64 {
+	var selected *BalanceRechargeBonusTier
+	for _, tier := range bonusTiers {
+		if paymentAmount >= tier.MinAmount && (selected == nil || tier.MinAmount > selected.MinAmount) {
+			current := tier
+			selected = &current
+		}
+	}
+	if selected == nil {
+		return 0
+	}
+	return selected.BonusAmount
 }
 
 func calculateGatewayRefundAmount(orderAmount, payAmount, refundAmount float64, currency string) float64 {

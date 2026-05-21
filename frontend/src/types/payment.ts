@@ -24,6 +24,11 @@ export type OrderType = 'balance' | 'subscription'
 
 // ==================== Configuration ====================
 
+export interface BalanceRechargeBonusTier {
+  min_amount: number
+  bonus_amount: number
+}
+
 export interface PaymentConfig {
   payment_enabled: boolean
   min_amount: number
@@ -33,6 +38,7 @@ export interface PaymentConfig {
   order_timeout_minutes: number
   balance_disabled: boolean
   balance_recharge_multiplier: number
+  balance_recharge_bonus_tiers: BalanceRechargeBonusTier[]
   enabled_payment_types: PaymentType[]
   help_image_url: string
   help_text: string
@@ -65,6 +71,7 @@ export interface CheckoutInfoResponse {
   plans: SubscriptionPlan[]
   balance_disabled: boolean
   balance_recharge_multiplier: number
+  balance_recharge_bonus_tiers: BalanceRechargeBonusTier[]
   recharge_fee_rate: number
   help_text: string
   help_image_url: string

@@ -11,7 +11,7 @@
 
   <div v-else class="landing-shell min-h-screen">
     <header class="landing-header" :class="{ 'landing-header-scrolled': isHeaderCompact }">
-      <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-6 lg:px-8">
+      <nav class="mx-auto flex items-center justify-between gap-4 px-5 py-4 sm:px-6 lg:px-8">
         <router-link to="/home" class="brand-lockup">
             <span class="brand-mark">
               <img :src="siteLogo || '/logo.png'" :alt="siteName" />
@@ -29,7 +29,7 @@
           <a href="#contact" class="transition">{{ t('home.modern.nav.contact') }}</a>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="landing-header-actions flex items-center gap-2">
           <LocaleSwitcher />
           <a
             v-if="docUrl"
@@ -53,7 +53,7 @@
 
     <main>
       <section class="hero-section px-5 pb-16 pt-14 sm:px-6 sm:pb-20 sm:pt-20 lg:px-8">
-        <div class="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+        <div class="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div class="hero-copy">
             <p class="eyebrow">{{ t('home.modern.hero.eyebrow') }}</p>
             <h1>
@@ -79,7 +79,6 @@
           </div>
 
           <div class="hero-console" :aria-label="t('home.modern.console.previewLabel')">
-            <span class="object-accent key" :style="assetSpriteStyle(objectSprite, '100% 0%')" aria-hidden="true"></span>
             <div class="console-topbar">
               <span></span>
               <span></span>
@@ -111,7 +110,7 @@
       </section>
 
       <section class="trust-band px-5 py-8 sm:px-6 lg:px-8">
-        <div class="trust-strip mx-auto max-w-7xl">
+        <div class="trust-strip">
           <div v-for="stat in trustStats" :key="stat.label" class="trust-card">
             <strong>{{ stat.value }}</strong>
             <span>{{ stat.label }}</span>
@@ -119,30 +118,46 @@
         </div>
       </section>
 
-      <section id="features" class="section-pad px-5 sm:px-6 lg:px-8">
-        <div class="mx-auto max-w-7xl">
-          <div class="section-heading">
-            <p>{{ t('home.modern.features.eyebrow') }}</p>
-            <h2>{{ t('home.modern.features.title') }}</h2>
+      <section id="features" class="support-showcase px-5 py-12 sm:px-6 lg:px-8">
+        <div class="support-showcase-panel mx-auto">
+          <h2 class="support-showcase-title">
+            <span>{{ t('home.modern.supportShowcase.titlePrefix') }}</span>
+            <strong>{{ t('home.modern.supportShowcase.titleCore') }}</strong>
+            <em>{{ t('home.modern.supportShowcase.titleAccent') }}</em>
+          </h2>
+
+          <div class="support-provider-row">
+            <p>{{ t('home.modern.supportShowcase.supports') }}</p>
+            <div
+              v-for="provider in supportProviders"
+              :key="provider.name"
+              class="support-provider-chip"
+            >
+              <span class="support-icon-frame" :class="{ 'support-icon-frame-backed': provider.needsBadge }">
+                <img :src="provider.icon" :alt="provider.name" />
+              </span>
+              <span>{{ provider.name }}</span>
+            </div>
           </div>
-          <div class="feature-layout">
-            <article v-for="feature in featureCards" :key="feature.title" class="feature-card">
-              <div class="feature-panel">
-                <span class="feature-index">{{ feature.index }}</span>
-                <span class="feature-icon-sprite" :style="assetSpriteStyle(iconSprite, feature.iconPosition)"></span>
-                <div class="feature-copy">
-                  <h3>{{ feature.title }}</h3>
-                  <p>{{ feature.description }}</p>
-                </div>
-                <span class="feature-visual-sprite" :style="assetSpriteStyle(featureVisualSprite, feature.visualPosition)"></span>
-              </div>
-            </article>
+
+          <div class="support-platform-row">
+            <p>{{ t('home.modern.supportShowcase.platformIntro') }}</p>
+            <div
+              v-for="platform in supportPlatforms"
+              :key="platform.name"
+              class="support-platform-chip"
+            >
+              <span class="support-icon-frame support-icon-frame-backed">
+                <img :src="platform.icon" :alt="platform.name" />
+              </span>
+              <span>{{ platform.name }}</span>
+            </div>
           </div>
         </div>
       </section>
 
       <section id="testimonials" class="testimonial-section px-5 py-20 sm:px-6 lg:px-8">
-        <div class="mx-auto max-w-7xl">
+        <div>
           <div class="section-heading centered">
             <p>{{ t('home.modern.testimonials.eyebrow') }}</p>
             <h2>{{ t('home.modern.testimonials.title') }}</h2>
@@ -187,7 +202,7 @@
       </section>
 
       <section id="faq" class="section-pad px-5 sm:px-6 lg:px-8">
-        <div class="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.75fr_1.25fr]">
+        <div class="grid gap-10 lg:grid-cols-[0.75fr_1.25fr]">
           <div class="section-heading sticky-heading">
             <p>FAQ</p>
             <h2>{{ t('home.modern.faq.title') }}</h2>
@@ -204,7 +219,7 @@
     </main>
 
     <footer id="contact" class="landing-footer px-5 py-12 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-7xl">
+      <div>
         <div class="footer-top">
           <div>
             <div class="brand-lockup">
@@ -304,46 +319,19 @@ const trustStats = computed(() => [
 ])
 
 const testimonialAvatarSprite = '/testimonial-avatar-sprite.png'
-const iconSprite = '/landing-assets/icon-sprite.png'
-const featureVisualSprite = '/landing-assets/feature-visual-sprite.png'
-const objectSprite = '/landing-assets/object-sprite.png'
-
-const featureCards = computed<Array<{
-  iconPosition: string
-  visualPosition: string
-  index: string
-  title: string
-  description: string
-}>>(() => [
-  {
-    iconPosition: '0% 0%',
-    visualPosition: '0% 0%',
-    index: '01',
-    title: t('home.modern.featureCards.tools.title'),
-    description: t('home.modern.featureCards.tools.description')
-  },
-  {
-    iconPosition: '33.333% 0%',
-    visualPosition: '100% 0%',
-    index: '02',
-    title: t('home.modern.featureCards.team.title'),
-    description: t('home.modern.featureCards.team.description')
-  },
-  {
-    iconPosition: '66.666% 0%',
-    visualPosition: '0% 100%',
-    index: '03',
-    title: t('home.modern.featureCards.reliability.title'),
-    description: t('home.modern.featureCards.reliability.description')
-  },
-  {
-    iconPosition: '100% 33.333%',
-    visualPosition: '100% 100%',
-    index: '04',
-    title: t('home.modern.featureCards.usage.title'),
-    description: t('home.modern.featureCards.usage.description')
-  }
-])
+const supportAssetBase = '/landing-support'
+const supportProviders = [
+  { name: 'Claude Code', icon: `${supportAssetBase}/claude-code.svg`, needsBadge: false },
+  { name: 'Codex', icon: `${supportAssetBase}/codex.svg`, needsBadge: false },
+  { name: 'Gemini CLI', icon: `${supportAssetBase}/gemini-cli.svg`, needsBadge: false },
+  { name: 'OpenClaw', icon: `${supportAssetBase}/openclaw.svg`, needsBadge: false },
+  { name: 'Hermes Agent', icon: `${supportAssetBase}/hermes-agent.svg`, needsBadge: true }
+] as const
+const supportPlatforms = [
+  { name: 'macOS', icon: `${supportAssetBase}/macos.svg` },
+  { name: 'Windows', icon: `${supportAssetBase}/windows.svg` },
+  { name: 'Linux', icon: `${supportAssetBase}/linux.svg` }
+] as const
 
 const testimonials = computed(() => [
   {
@@ -457,13 +445,6 @@ function avatarStyle(backgroundPosition: string) {
   }
 }
 
-function assetSpriteStyle(backgroundImage: string, backgroundPosition: string) {
-  return {
-    backgroundImage: `url(${backgroundImage})`,
-    backgroundPosition
-  }
-}
-
 function syncHeaderScrollState() {
   isHeaderCompact.value = window.scrollY > 18
 }
@@ -495,15 +476,15 @@ onUnmounted(() => {
 <style scoped>
 :global(html.landing-page-active),
 :global(body.landing-page-active) {
-  --theme-bg: #12151b;
-  --theme-bg-soft: #171b22;
-  --theme-bg-deep: #0f1218;
-  --theme-surface: rgba(30, 35, 43, 0.92);
-  --theme-surface-strong: #232936;
-  --theme-surface-muted: rgba(35, 41, 52, 0.78);
-  --theme-main-surface: #1b2028;
-  --theme-border: rgba(170, 181, 198, 0.12);
-  --theme-border-strong: rgba(170, 181, 198, 0.22);
+  --theme-bg: #171717;
+  --theme-bg-soft: #1c1c1c;
+  --theme-bg-deep: #0f0f0f;
+  --theme-surface: rgba(31, 31, 31, 0.94);
+  --theme-surface-strong: #242424;
+  --theme-surface-muted: rgba(38, 38, 38, 0.84);
+  --theme-main-surface: #171717;
+  --theme-border: rgba(255, 255, 255, 0.08);
+  --theme-border-strong: rgba(255, 255, 255, 0.14);
   --theme-text: #f8fafc;
   --theme-text-soft: #dfe6ef;
   --theme-text-muted: #c4cfdc;
@@ -515,11 +496,11 @@ onUnmounted(() => {
   --theme-accent-soft: rgba(249, 115, 22, 0.1);
   --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.035);
   --theme-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.22);
-  --theme-scrollbar-track: #12151b;
+  --theme-scrollbar-track: #171717;
   --theme-scrollbar-thumb: rgba(148, 163, 184, 0.34);
   --theme-scrollbar-thumb-hover: rgba(148, 163, 184, 0.56);
   color-scheme: dark;
-  background: #12151b;
+  background: #171717;
 }
 
 :global(.landing-page-active ::selection) {
@@ -535,17 +516,17 @@ onUnmounted(() => {
 
 :global(html.landing-page-active #app) {
   min-height: 100vh;
-  background: #12151b;
+  background: #171717;
 }
 
 .landing-shell {
-  --landing-bg: #12151b;
-  --landing-bg-soft: #171b22;
-  --landing-surface: #232936;
-  --landing-surface-muted: #1e2732;
-  --landing-surface-subtle: rgba(35, 41, 52, 0.78);
-  --landing-border: rgba(170, 181, 198, 0.12);
-  --landing-border-strong: rgba(170, 181, 198, 0.22);
+  --landing-bg: #171717;
+  --landing-bg-soft: #1c1c1c;
+  --landing-surface: #242424;
+  --landing-surface-muted: #262626;
+  --landing-surface-subtle: rgba(38, 38, 38, 0.84);
+  --landing-border: rgba(255, 255, 255, 0.08);
+  --landing-border-strong: rgba(255, 255, 255, 0.14);
   --landing-text: #f8fafc;
   --landing-text-strong: #ffffff;
   --landing-text-soft: #e2e8f0;
@@ -569,15 +550,15 @@ onUnmounted(() => {
   --landing-button-bg: var(--landing-accent);
   --landing-button-bg-hover: var(--landing-accent-hover);
   --landing-text-inverse: #ffffff;
-  --theme-bg: #12151b;
-  --theme-bg-soft: #171b22;
-  --theme-bg-deep: #0f1218;
-  --theme-surface: rgba(30, 35, 43, 0.92);
-  --theme-surface-strong: #232936;
-  --theme-surface-muted: rgba(35, 41, 52, 0.78);
-  --theme-main-surface: #1b2028;
-  --theme-border: rgba(170, 181, 198, 0.12);
-  --theme-border-strong: rgba(170, 181, 198, 0.22);
+  --theme-bg: #171717;
+  --theme-bg-soft: #1c1c1c;
+  --theme-bg-deep: #0f0f0f;
+  --theme-surface: rgba(31, 31, 31, 0.94);
+  --theme-surface-strong: #242424;
+  --theme-surface-muted: rgba(38, 38, 38, 0.84);
+  --theme-main-surface: #171717;
+  --theme-border: rgba(255, 255, 255, 0.08);
+  --theme-border-strong: rgba(255, 255, 255, 0.14);
   --theme-text: #f8fafc;
   --theme-text-soft: #dfe6ef;
   --theme-text-muted: #c4cfdc;
@@ -597,11 +578,17 @@ onUnmounted(() => {
   background: var(--landing-bg);
 }
 
+.landing-shell *,
+.landing-shell *::before,
+.landing-shell *::after {
+  box-sizing: border-box;
+}
+
 .landing-shell :deep(.locale-switcher) {
   --locale-text: #e2e8f0;
   --locale-text-strong: var(--landing-text-strong);
   --locale-code-bg: rgba(148, 163, 184, 0.14);
-  --locale-hover-bg: rgba(35, 41, 52, 0.92);
+  --locale-hover-bg: var(--theme-surface-muted);
   --locale-active-bg: var(--landing-accent-tint);
   --locale-active-text: #fed7aa;
 }
@@ -610,7 +597,7 @@ onUnmounted(() => {
   min-height: var(--landing-nav-control-height);
   border-color: var(--landing-control-border);
   border-radius: var(--landing-nav-control-radius);
-  background: rgba(35, 41, 52, 0.92);
+  background: var(--theme-surface-muted);
   padding: 0 0.55rem;
   box-shadow: var(--landing-control-shadow);
 }
@@ -624,20 +611,24 @@ onUnmounted(() => {
 }
 
 .landing-header {
+  --landing-header-width: 100%;
   position: sticky;
   top: 0;
   z-index: 30;
   max-width: 100vw;
   overflow-x: clip;
-  padding-top: 0.5rem;
+  padding-top: 0;
+  transition: padding 180ms ease;
 }
 
 .landing-header nav {
-  width: 100%;
-  max-width: 80rem;
-  border: 1px solid rgba(170, 181, 198, 0.16);
-  border-radius: 0.9rem;
-  background: rgba(35, 41, 52, 0.97);
+  width: var(--landing-header-width);
+  min-width: 0;
+  border: 1px solid var(--theme-border);
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  background: var(--theme-surface);
   backdrop-filter: blur(18px);
   padding-top: 0.625rem;
   padding-bottom: 0.625rem;
@@ -646,8 +637,9 @@ onUnmounted(() => {
     0 14px 32px rgba(2, 6, 23, 0.24);
   transition:
     padding 180ms ease,
-    max-width 180ms ease,
+    width 240ms cubic-bezier(0.22, 1, 0.36, 1),
     border-color 180ms ease,
+    border-radius 180ms ease,
     background-color 180ms ease,
     box-shadow 180ms ease;
 }
@@ -660,15 +652,19 @@ onUnmounted(() => {
 }
 
 .landing-header-scrolled {
+  --landing-header-width: min(72rem, calc(100vw - 1.5rem));
   pointer-events: none;
+  padding-top: 0.5rem;
 }
 
 .landing-header-scrolled nav {
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
-  max-width: min(68rem, calc(100vw - 1.5rem));
-  border-color: rgba(170, 181, 198, 0.22);
-  background: rgba(35, 41, 52, 0.99);
+  border-color: var(--theme-border-strong);
+  border-right: 1px solid var(--theme-border-strong);
+  border-left: 1px solid var(--theme-border-strong);
+  border-radius: 0.9rem;
+  background: var(--theme-surface-strong);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
     0 16px 34px rgba(2, 6, 23, 0.3);
@@ -681,6 +677,16 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.75rem;
   color: var(--landing-text);
+}
+
+.landing-header .brand-lockup {
+  flex: 1 1 auto;
+  max-width: min(20rem, 48vw);
+}
+
+.landing-header-actions {
+  min-width: 0;
+  flex: 0 0 auto;
 }
 
 .brand-tagline {
@@ -750,13 +756,13 @@ onUnmounted(() => {
   border-radius: var(--landing-nav-control-radius);
   border: 1px solid var(--landing-control-border);
   color: var(--landing-muted);
-  background: rgba(35, 41, 52, 0.94);
+  background: var(--theme-surface-muted);
 }
 
 .icon-action:hover {
   border-color: color-mix(in srgb, var(--landing-support) 42%, transparent);
   color: var(--landing-support);
-  background: rgba(35, 41, 52, 0.96);
+  background: var(--theme-surface-strong);
   box-shadow: var(--landing-control-shadow-hover);
 }
 
@@ -768,6 +774,7 @@ onUnmounted(() => {
 
 .primary-action {
   min-height: var(--landing-nav-control-height);
+  min-width: 0;
   border-radius: var(--landing-nav-control-radius);
   border: 1px solid var(--landing-accent-border);
   background: var(--landing-button-bg);
@@ -775,6 +782,9 @@ onUnmounted(() => {
   color: var(--landing-text-inverse);
   font-size: 0.8125rem;
   font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .primary-action:hover {
@@ -790,6 +800,10 @@ onUnmounted(() => {
   overflow-x: clip;
 }
 
+.hero-section > div {
+  min-width: 0;
+}
+
 .hero-section::before {
   content: '';
   position: absolute;
@@ -802,6 +816,7 @@ onUnmounted(() => {
 
 .hero-copy {
   position: relative;
+  min-width: 0;
 }
 
 .hero-copy h1 {
@@ -846,6 +861,7 @@ onUnmounted(() => {
 
 .hero-button {
   min-height: 3.125rem;
+  min-width: 0;
   gap: 0.625rem;
   border: 1px solid var(--landing-accent-border);
   border-radius: calc(var(--landing-control-radius) + 0.125rem);
@@ -854,6 +870,8 @@ onUnmounted(() => {
   color: var(--landing-text-inverse);
   font-size: 0.9375rem;
   font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
 }
 
 .hero-button:hover {
@@ -864,13 +882,13 @@ onUnmounted(() => {
 
 .hero-button.secondary {
   border: 1px solid var(--landing-control-border);
-  background: rgba(35, 41, 52, 0.92);
+  background: var(--theme-surface-muted);
   color: var(--landing-text-soft);
 }
 
 .hero-button.secondary:hover {
   border-color: color-mix(in srgb, var(--landing-support) 42%, transparent);
-  background: rgba(35, 41, 52, 0.96);
+  background: var(--theme-surface-strong);
   color: var(--landing-support);
 }
 
@@ -882,35 +900,11 @@ onUnmounted(() => {
 
 .hero-console {
   position: relative;
+  min-width: 0;
   border-radius: 0.75rem;
   background: var(--landing-surface);
   box-shadow: 0 18px 42px rgba(2, 6, 23, 0.18);
   overflow: visible;
-}
-
-.object-accent {
-  position: absolute;
-  z-index: 3;
-  display: block;
-  background-repeat: no-repeat;
-  background-size: 300% 200%;
-  opacity: 0.78;
-  pointer-events: none;
-}
-
-.object-accent.command {
-  bottom: 1.4rem;
-  right: 2.4rem;
-  height: 4.2rem;
-  width: 5.8rem;
-  opacity: 0.42;
-}
-
-.object-accent.key {
-  right: -2rem;
-  top: -2.2rem;
-  height: 5.6rem;
-  width: 5.6rem;
 }
 
 .console-topbar {
@@ -938,14 +932,16 @@ onUnmounted(() => {
 }
 
 .console-grid {
-  padding: 1.35rem 1.45rem 1.55rem;
+  min-width: 0;
+  padding: clamp(0.85rem, 4vw, 1.45rem);
 }
 
 .command-panel {
-  min-height: 15.4rem;
-  padding: 1.4rem 1.45rem;
+  min-width: 0;
+  min-height: clamp(12.75rem, 44vw, 15.4rem);
+  padding: clamp(0.85rem, 4vw, 1.45rem);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: clamp(0.96rem, 1.7vw, 1.15rem);
+  font-size: clamp(0.78rem, 2.8vw, 1.15rem);
   line-height: 1.7;
 }
 
@@ -971,8 +967,10 @@ onUnmounted(() => {
 
 .terminal-command {
   display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.72rem;
+  gap: 0.3rem 0.72rem;
 }
 
 .terminal-curl {
@@ -994,8 +992,10 @@ onUnmounted(() => {
 
 .terminal-response {
   display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem 1rem;
 }
 
 .terminal-status-badge {
@@ -1010,6 +1010,7 @@ onUnmounted(() => {
 
 .terminal-json {
   color: var(--landing-text-soft);
+  min-width: 0;
 }
 
 .terminal-final-prompt {
@@ -1033,14 +1034,16 @@ onUnmounted(() => {
 
 .trust-strip {
   display: grid;
+  min-width: 0;
   overflow: hidden;
   border-radius: 0.5rem;
-  background: rgba(35, 41, 52, 0.46);
+  background: color-mix(in srgb, var(--theme-surface-muted) 46%, transparent);
   box-shadow: none;
 }
 
 .trust-card {
   min-height: 7.5rem;
+  min-width: 0;
   padding: 1.35rem 1.5rem;
   position: relative;
 }
@@ -1066,6 +1069,130 @@ onUnmounted(() => {
   }
 }
 
+.support-showcase {
+  border-top: 1px solid var(--theme-border);
+  border-bottom: 1px solid var(--theme-border);
+  background: color-mix(in srgb, var(--theme-surface) 72%, var(--landing-bg));
+}
+
+.support-showcase-panel {
+  padding: clamp(1.25rem, 3.2vw, 2.4rem) 0;
+  color: var(--theme-text);
+}
+
+.support-showcase-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.35em;
+  margin: 0;
+  text-align: center;
+  font-size: clamp(2rem, 5vw, 4rem);
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.15;
+}
+
+.support-showcase-title strong {
+  font-weight: 900;
+}
+
+.support-showcase-title em {
+  color: var(--theme-primary-hover);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.support-provider-row,
+.support-platform-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+
+.support-provider-row {
+  gap: 1rem 1.45rem;
+  margin-top: clamp(2rem, 5vw, 3.8rem);
+}
+
+.support-provider-row p {
+  margin: 0;
+  color: var(--theme-text);
+  font-size: clamp(1.25rem, 2.5vw, 2rem);
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.support-provider-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--theme-text-soft);
+  font-size: clamp(1rem, 1.7vw, 1.35rem);
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.support-icon-frame {
+  display: inline-flex;
+  height: clamp(2.05rem, 3vw, 2.75rem);
+  width: clamp(2.05rem, 3vw, 2.75rem);
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.45rem;
+}
+
+.support-icon-frame-backed {
+  border: 1px solid color-mix(in srgb, var(--theme-text) 18%, transparent);
+  background: color-mix(in srgb, var(--theme-text) 88%, var(--theme-surface-strong));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--theme-text) 24%, transparent) inset,
+    0 10px 22px rgba(2, 6, 23, 0.16);
+}
+
+.support-icon-frame img {
+  height: 78%;
+  width: 78%;
+  object-fit: contain;
+}
+
+.support-platform-row {
+  gap: 0.85rem 1rem;
+  margin-top: clamp(2.4rem, 5vw, 4rem);
+}
+
+.support-platform-row p {
+  margin: 0 0.6rem 0 0;
+  color: var(--theme-text-muted);
+  font-size: clamp(0.9rem, 1.7vw, 1.2rem);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.support-platform-chip {
+  display: inline-flex;
+  min-height: 4rem;
+  min-width: min(13.4rem, 100%);
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  border: 1px solid var(--theme-border-strong);
+  border-radius: 0.5rem;
+  background: var(--theme-surface-strong);
+  padding: 0.8rem 1.5rem;
+  color: var(--theme-text-soft);
+  font-size: clamp(1rem, 1.7vw, 1.4rem);
+  font-weight: 800;
+}
+
+.support-platform-chip .support-icon-frame {
+  height: 2.35rem;
+  width: 2.35rem;
+}
+
 .section-pad {
   padding-top: 5rem;
   padding-bottom: 5rem;
@@ -1087,6 +1214,7 @@ onUnmounted(() => {
   font-weight: 900;
   letter-spacing: 0;
   line-height: 1.04;
+  overflow-wrap: anywhere;
 }
 
 .section-heading span {
@@ -1095,102 +1223,6 @@ onUnmounted(() => {
   color: var(--landing-muted);
   font-size: 1rem;
   line-height: 1.8;
-}
-
-.feature-layout {
-  margin-top: 3rem;
-  display: grid;
-  gap: 1.15rem;
-}
-
-@media (min-width: 768px) {
-  .feature-layout {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    align-items: start;
-  }
-}
-
-.feature-card {
-  min-width: 0;
-}
-
-@media (min-width: 768px) {
-  .feature-card {
-    grid-column: span 3;
-  }
-
-  .feature-card:nth-child(2),
-  .feature-card:nth-child(4) {
-    transform: translateY(2rem);
-  }
-}
-
-.feature-panel {
-  position: relative;
-  min-height: 18rem;
-  overflow: hidden;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  background: var(--landing-surface);
-  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.16);
-}
-
-.feature-index {
-  position: absolute;
-  right: 1rem;
-  top: 0.35rem;
-  color: rgba(255, 255, 255, 0.06);
-  font-size: 4.5rem;
-  font-weight: 900;
-  letter-spacing: 0;
-  line-height: 1;
-}
-
-.feature-icon-sprite {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  height: 4.25rem;
-  width: 4.25rem;
-  border-radius: 0.5rem;
-  background-repeat: no-repeat;
-  background-size: 400% 300%;
-}
-
-.feature-copy {
-  position: relative;
-  z-index: 2;
-  max-width: 22rem;
-}
-
-.feature-card h3 {
-  position: relative;
-  z-index: 1;
-  margin-top: 1.2rem;
-  color: var(--landing-text-strong);
-  font-size: 1.2rem;
-  font-weight: 800;
-}
-
-.feature-card p {
-  position: relative;
-  z-index: 1;
-  margin-top: 0.8rem;
-  color: var(--landing-text-soft);
-  font-size: 0.94rem;
-  line-height: 1.8;
-}
-
-.feature-visual-sprite {
-  position: absolute;
-  bottom: -3rem;
-  right: -3.2rem;
-  z-index: 0;
-  height: 13rem;
-  width: 17rem;
-  background-repeat: no-repeat;
-  background-size: 200% 200%;
-  opacity: 0.68;
 }
 
 .testimonial-section {
@@ -1253,7 +1285,8 @@ onUnmounted(() => {
 .testimonial-card {
   position: relative;
   display: flex;
-  width: min(22rem, calc(100vw - 3rem));
+  width: min(22rem, calc(100vw - 2.5rem));
+  min-width: 0;
   min-height: 16rem;
   flex-direction: column;
   justify-content: space-between;
@@ -1266,7 +1299,7 @@ onUnmounted(() => {
 }
 
 .testimonial-card:nth-child(4n + 2) {
-  width: min(24rem, calc(100vw - 3rem));
+  width: min(24rem, calc(100vw - 2.5rem));
   min-height: 18rem;
   background: var(--landing-surface);
 }
@@ -1277,7 +1310,7 @@ onUnmounted(() => {
 }
 
 .testimonial-card:nth-child(4n) {
-  width: min(20rem, calc(100vw - 3rem));
+  width: min(20rem, calc(100vw - 2.5rem));
   min-height: 15rem;
   transform: translateY(-0.9rem);
   background: var(--landing-surface);
@@ -1362,6 +1395,7 @@ onUnmounted(() => {
   gap: 0.75rem;
   position: relative;
   z-index: 1;
+  min-width: 0;
 }
 
 .avatar-photo {
@@ -1381,6 +1415,7 @@ onUnmounted(() => {
 .reviewer strong,
 .reviewer em {
   display: block;
+  overflow-wrap: anywhere;
 }
 
 .reviewer strong {
@@ -1443,6 +1478,7 @@ onUnmounted(() => {
 
 .footer-top {
   display: grid;
+  min-width: 0;
   gap: 3rem;
 }
 
@@ -1458,6 +1494,7 @@ onUnmounted(() => {
 
 .footer-links {
   display: grid;
+  min-width: 0;
   gap: 2rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1506,14 +1543,70 @@ onUnmounted(() => {
 }
 
 @media (max-width: 640px) {
+  .landing-header nav {
+    gap: 0.6rem;
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
+  }
+
+  .landing-header .brand-lockup {
+    max-width: none;
+  }
+
+  .brand-lockup {
+    gap: 0.55rem;
+  }
+
+  .brand-mark,
+  .landing-header-scrolled .brand-mark {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  .landing-header .brand-tagline {
+    display: none;
+  }
+
+  .landing-header-actions {
+    gap: 0.4rem;
+  }
+
+  .landing-shell :deep(.locale-trigger) {
+    padding: 0 0.48rem;
+  }
+
+  .primary-action {
+    max-width: 5.75rem;
+    padding: 0 0.62rem;
+    white-space: normal;
+  }
+
+  .hero-button {
+    width: 100%;
+    padding: 0.8rem 1rem;
+  }
+
+  .hero-console {
+    overflow: hidden;
+  }
+
   .console-grid {
     grid-template-columns: 1fr;
+  }
+
+  .console-topbar {
+    padding: 0.78rem;
+  }
+
+  .terminal-line {
+    width: 100%;
+    white-space: normal;
   }
 
   .testimonial-card,
   .testimonial-card:nth-child(4n + 2),
   .testimonial-card:nth-child(4n) {
-    width: min(20rem, calc(100vw - 3rem));
+    width: min(20rem, calc(100vw - 2rem));
   }
 
   .testimonial-card:nth-child(4n + 3),
@@ -1521,22 +1614,87 @@ onUnmounted(() => {
     transform: none;
   }
 
-  .object-accent {
-    display: none;
+  .support-showcase-panel {
+    padding-right: 1.1rem;
+    padding-left: 1.1rem;
   }
 
-  .feature-visual-sprite {
-    bottom: -2.4rem;
-    right: -5.5rem;
-    opacity: 0.42;
+  .support-provider-row,
+  .support-platform-row {
+    align-items: stretch;
+  }
+
+  .support-provider-row p,
+  .support-platform-row p {
+    width: 100%;
+    text-align: center;
+  }
+
+  .support-provider-chip,
+  .support-platform-chip {
+    flex: 1 1 100%;
   }
 
   .hero-copy h1 {
-    font-size: clamp(2.25rem, 10vw, 2.75rem);
+    font-size: clamp(2rem, 10vw, 2.75rem);
+    line-height: 1.04;
+    overflow-wrap: anywhere;
   }
 
   .hero-copy h1 span {
     white-space: normal;
   }
+
+  .section-pad {
+    padding-top: 3.75rem;
+    padding-bottom: 3.75rem;
+  }
+
+  .section-heading h2 {
+    font-size: clamp(1.9rem, 9vw, 2.75rem);
+  }
+
+  .footer-links {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 380px) {
+  .landing-header nav {
+    padding-right: 0.55rem;
+    padding-left: 0.55rem;
+  }
+
+  .landing-shell :deep(.locale-trigger-value),
+  .landing-shell :deep(.locale-chevron) {
+    display: none;
+  }
+
+  .icon-action {
+    display: none;
+  }
+
+  .primary-action {
+    max-width: 4.8rem;
+    font-size: 0.76rem;
+  }
+
+  .hero-section {
+    padding-top: 2.5rem;
+  }
+
+  .command-panel {
+    line-height: 1.6;
+  }
+
+  .terminal-status-badge {
+    padding: 0.22rem 0.42rem;
+  }
+
+  .trust-card {
+    min-height: 6.4rem;
+    padding: 1.1rem 1.15rem;
+  }
+
 }
 </style>

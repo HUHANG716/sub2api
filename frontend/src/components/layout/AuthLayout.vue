@@ -120,12 +120,12 @@ onMounted(() => {
 }
 
 .auth-split-shell {
-  --auth-bg: #12151b;
-  --auth-bg-soft: #171b22;
-  --auth-bg-deep: #0f1218;
-  --auth-surface: rgba(30, 35, 43, 0.92);
-  --auth-surface-muted: rgba(35, 41, 52, 0.78);
-  --auth-border: rgba(170, 181, 198, 0.14);
+  --auth-bg: #171717;
+  --auth-bg-soft: #1c1c1c;
+  --auth-bg-deep: #0f0f0f;
+  --auth-surface: rgba(31, 31, 31, 0.94);
+  --auth-surface-muted: rgba(38, 38, 38, 0.84);
+  --auth-border: rgba(255, 255, 255, 0.1);
   --auth-primary: #f97316;
   --auth-primary-hover: #fb923c;
   --auth-primary-soft: rgba(249, 115, 22, 0.18);
@@ -135,11 +135,11 @@ onMounted(() => {
   --theme-bg-soft: var(--auth-bg-soft);
   --theme-bg-deep: var(--auth-bg-deep);
   --theme-surface: var(--auth-surface);
-  --theme-surface-strong: #232936;
+  --theme-surface-strong: #242424;
   --theme-surface-muted: var(--auth-surface-muted);
-  --theme-main-surface: #1b2028;
+  --theme-main-surface: #171717;
   --theme-border: var(--auth-border);
-  --theme-border-strong: rgba(148, 163, 184, 0.24);
+  --theme-border-strong: rgba(255, 255, 255, 0.16);
   --theme-text: #f8fafc;
   --theme-text-soft: #dfe6ef;
   --theme-text-muted: #c4cfdc;
@@ -162,12 +162,12 @@ onMounted(() => {
 }
 
 .app-auth-shell {
-  --auth-bg: #12151b;
-  --auth-bg-soft: #171b22;
-  --auth-bg-deep: #0f1218;
-  --auth-surface: rgba(30, 35, 43, 0.92);
-  --auth-surface-muted: rgba(35, 41, 52, 0.78);
-  --auth-border: rgba(170, 181, 198, 0.14);
+  --auth-bg: #171717;
+  --auth-bg-soft: #1c1c1c;
+  --auth-bg-deep: #0f0f0f;
+  --auth-surface: rgba(31, 31, 31, 0.94);
+  --auth-surface-muted: rgba(38, 38, 38, 0.84);
+  --auth-border: rgba(255, 255, 255, 0.1);
   --auth-primary: #f97316;
   --auth-primary-hover: #fb923c;
   --auth-primary-soft: rgba(249, 115, 22, 0.18);
@@ -177,11 +177,11 @@ onMounted(() => {
   --theme-bg-soft: var(--auth-bg-soft);
   --theme-bg-deep: var(--auth-bg-deep);
   --theme-surface: var(--auth-surface);
-  --theme-surface-strong: #232936;
+  --theme-surface-strong: #242424;
   --theme-surface-muted: var(--auth-surface-muted);
-  --theme-main-surface: #1b2028;
+  --theme-main-surface: #171717;
   --theme-border: var(--auth-border);
-  --theme-border-strong: rgba(148, 163, 184, 0.24);
+  --theme-border-strong: rgba(255, 255, 255, 0.16);
   --theme-text: #f8fafc;
   --theme-text-soft: #dfe6ef;
   --theme-text-muted: #c4cfdc;
