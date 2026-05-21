@@ -153,7 +153,7 @@ jobs:
             echo "Failed to update sub2api image in docker-compose.yml" >&2
             exit 1
           fi
-          if ! $compose_cmd config | sed -n "/^[[:space:]]*sub2api:/,/^[[:space:]]*[A-Za-z0-9_-][A-Za-z0-9_-]*:/p" | grep -F "image: ${IMAGE}"; then
+          if ! $compose_cmd config | grep -F "image: ${IMAGE}"; then
             echo "Compose resolved sub2api image is not ${IMAGE}" >&2
             exit 1
           fi
