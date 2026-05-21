@@ -89,6 +89,22 @@ const DataTableStub = {
   `
 }
 
+const SelectStub = {
+  props: ['modelValue', 'options'],
+  emits: ['update:modelValue', 'change'],
+  template: `
+    <select
+      data-test="mobile-user-sort-select"
+      :value="modelValue"
+      @change="$emit('change', $event.target.value)"
+    >
+      <option v-for="option in options" :key="option.value" :value="option.value">
+        {{ option.label }}
+      </option>
+    </select>
+  `
+}
+
 describe('admin UsersView', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -125,7 +141,7 @@ describe('admin UsersView', () => {
           ConfirmDialog: true,
           EmptyState: true,
           GroupBadge: true,
-          Select: true,
+          Select: SelectStub,
           UserAttributesConfigModal: true,
           UserConcurrencyCell: true,
           UserCreateModal: true,
@@ -149,6 +165,52 @@ describe('admin UsersView', () => {
     expect(visibleColumns).not.toContain('last_login_at')
 
     await wrapper.get('[data-test="sort-last-used"]').trigger('click')
+    await flushPromises()
+
+    expect(listUsers).toHaveBeenLastCalledWith(
+      1,
+      20,
+      expect.objectContaining({
+        sort_by: 'last_used_at',
+        sort_order: 'desc'
+      }),
+      expect.any(Object)
+    )
+  })
+
+  it('lets mobile users sort by last used time through the filter toolbar', async () => {
+    const wrapper = mount(UsersView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          TablePageLayout: {
+            template: '<div><slot name="filters" /><slot name="table" /><slot name="pagination" /></div>'
+          },
+          DataTable: DataTableStub,
+          Pagination: true,
+          ConfirmDialog: true,
+          EmptyState: true,
+          GroupBadge: true,
+          Select: SelectStub,
+          UserAttributesConfigModal: true,
+          UserConcurrencyCell: true,
+          UserCreateModal: true,
+          UserEditModal: true,
+          UserApiKeysModal: true,
+          UserAllowedGroupsModal: true,
+          UserBalanceModal: true,
+          UserBalanceHistoryModal: true,
+          GroupReplaceModal: true,
+          Icon: true,
+          Teleport: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    const mobileSortSelect = wrapper.get('[data-test="mobile-user-sort-select"]')
+    await mobileSortSelect.setValue('last_used_at:desc')
     await flushPromises()
 
     expect(listUsers).toHaveBeenLastCalledWith(

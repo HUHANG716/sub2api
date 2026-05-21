@@ -22,6 +22,15 @@
               />
             </div>
 
+            <!-- Mobile Sort -->
+            <div class="w-full sm:w-48 md:hidden">
+              <Select
+                :model-value="mobileSortValue"
+                :options="mobileSortOptions"
+                @change="handleMobileSortChange"
+              />
+            </div>
+
             <!-- Role Filter (visible when enabled) -->
             <div v-if="visibleFilters.has('role')" class="w-full sm:w-32">
               <Select
@@ -953,15 +962,26 @@ const users = ref<AdminUser[]>([])
 const loading = ref(false)
 const searchQuery = ref('')
 const USER_SORT_STORAGE_KEY = 'admin-users-table-sort'
+const SERVER_SORTABLE_USER_KEYS = new Set([
+  'email',
+  'id',
+  'username',
+  'role',
+  'balance',
+  'concurrency',
+  'status',
+  'last_used_at',
+  'last_active_at',
+  'created_at'
+])
 const loadInitialSortState = (): { sort_by: string; sort_order: 'asc' | 'desc' } => {
   const fallback = { sort_by: 'created_at', sort_order: 'desc' as 'asc' | 'desc' }
-  const sortable = new Set(['email', 'id', 'username', 'role', 'balance', 'concurrency', 'status', 'last_used_at', 'last_active_at', 'created_at'])
   try {
     const raw = localStorage.getItem(USER_SORT_STORAGE_KEY)
     if (!raw) return fallback
     const parsed = JSON.parse(raw) as { key?: string; order?: string }
     const key = typeof parsed.key === 'string' ? parsed.key : ''
-    if (!sortable.has(key)) return fallback
+    if (!SERVER_SORTABLE_USER_KEYS.has(key)) return fallback
     return {
       sort_by: key,
       sort_order: parsed.order === 'asc' ? 'asc' : 'desc'
@@ -971,6 +991,11 @@ const loadInitialSortState = (): { sort_by: string; sort_order: 'asc' | 'desc' }
   }
 }
 const sortState = reactive(loadInitialSortState())
+const mobileSortOptions = computed(() => [
+  { value: 'created_at:desc', label: t('admin.users.columns.created') },
+  { value: 'last_used_at:desc', label: t('admin.users.columns.lastUsed') }
+])
+const mobileSortValue = computed(() => `${sortState.sort_by}:${sortState.sort_order}`)
 
 // Groups data for the groups column
 const allGroups = ref<AdminGroup[]>([])
@@ -1483,6 +1508,13 @@ const handleSort = (key: string, order: 'asc' | 'desc') => {
   sortState.sort_order = order
   pagination.page = 1
   loadUsers()
+}
+
+const handleMobileSortChange = (value: string | number | boolean | null) => {
+  if (typeof value !== 'string') return
+  const [key, order] = value.split(':')
+  if (!SERVER_SORTABLE_USER_KEYS.has(key)) return
+  handleSort(key, order === 'asc' ? 'asc' : 'desc')
 }
 
 // Filter helpers
