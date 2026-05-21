@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import ModelDistributionChart from '../ModelDistributionChart.vue'
+
+const testDir = dirname(fileURLToPath(import.meta.url))
+const source = readFileSync(resolve(testDir, '../ModelDistributionChart.vue'), 'utf8')
 
 const messages: Record<string, string> = {
   'admin.dashboard.modelDistribution': 'Model Distribution',
@@ -53,6 +59,7 @@ describe('ModelDistributionChart', () => {
       total_tokens: 1000,
       cost: 1.5,
       actual_cost: 0.2,
+      account_cost: 0.15,
     },
     {
       model: 'model-b',
@@ -64,6 +71,7 @@ describe('ModelDistributionChart', () => {
       total_tokens: 500,
       cost: 0.5,
       actual_cost: 1.4,
+      account_cost: 0.9,
     },
   ]
 
@@ -167,5 +175,14 @@ describe('ModelDistributionChart', () => {
     expect(rows[2].text()).toContain('4')
     expect(rows[2].text()).toContain('400')
     expect(rows[2].text()).toContain('$10.00')
+  })
+
+  it('uses theme tokens for chart toggle controls', () => {
+    expect(source).toContain('chart-toggle-group')
+    expect(source).toContain('chart-toggle-button')
+    expect(source).toContain('background: var(--theme-surface-muted);')
+    expect(source).toContain('background: var(--theme-surface);')
+    expect(source).not.toContain('bg-gray-100 p-1 dark:bg-dark-800')
+    expect(source).not.toContain('dark:bg-dark-700 dark:text-white')
   })
 })

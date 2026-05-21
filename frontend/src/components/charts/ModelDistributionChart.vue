@@ -9,34 +9,34 @@
       <div class="flex flex-wrap items-center justify-end gap-2">
         <div
           v-if="showSourceToggle"
-          class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 dark:border-gray-700 dark:bg-dark-800"
+          class="chart-toggle-group"
         >
           <button
             type="button"
-            class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+            class="chart-toggle-button"
             :class="source === 'requested'
-              ? 'bg-white text-gray-900 shadow-sm dark:bg-dark-700 dark:text-white'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+              ? 'chart-toggle-button-active'
+              : 'chart-toggle-button-inactive'"
             @click="emit('update:source', 'requested')"
           >
             {{ t('usage.requestedModel') }}
           </button>
           <button
             type="button"
-            class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+            class="chart-toggle-button"
             :class="source === 'upstream'
-              ? 'bg-white text-gray-900 shadow-sm dark:bg-dark-700 dark:text-white'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+              ? 'chart-toggle-button-active'
+              : 'chart-toggle-button-inactive'"
             @click="emit('update:source', 'upstream')"
           >
             {{ t('usage.upstreamModel') }}
           </button>
           <button
             type="button"
-            class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+            class="chart-toggle-button"
             :class="source === 'mapping'
-              ? 'bg-white text-gray-900 shadow-sm dark:bg-dark-700 dark:text-white'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+              ? 'chart-toggle-button-active'
+              : 'chart-toggle-button-inactive'"
             @click="emit('update:source', 'mapping')"
           >
             {{ t('usage.mapping') }}
@@ -44,37 +44,37 @@
         </div>
         <div
           v-if="showMetricToggle"
-          class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 dark:border-gray-700 dark:bg-dark-800"
+          class="chart-toggle-group"
         >
           <button
             type="button"
-            class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+            class="chart-toggle-button"
             :class="metric === 'tokens'
-              ? 'bg-white text-gray-900 shadow-sm dark:bg-dark-700 dark:text-white'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+              ? 'chart-toggle-button-active'
+              : 'chart-toggle-button-inactive'"
             @click="emit('update:metric', 'tokens')"
           >
             {{ t('admin.dashboard.metricTokens') }}
           </button>
           <button
             type="button"
-            class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+            class="chart-toggle-button"
             :class="metric === 'actual_cost'
-              ? 'bg-white text-gray-900 shadow-sm dark:bg-dark-700 dark:text-white'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+              ? 'chart-toggle-button-active'
+              : 'chart-toggle-button-inactive'"
             @click="emit('update:metric', 'actual_cost')"
           >
             {{ t('admin.dashboard.metricActualCost') }}
           </button>
         </div>
-        <div v-if="enableRankingView" class="inline-flex rounded-lg bg-gray-100 p-1 dark:bg-dark-800">
+        <div v-if="enableRankingView" class="chart-toggle-group">
           <button
             type="button"
-            class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+            class="chart-toggle-button"
             :class="
               activeView === 'model_distribution'
-                ? 'bg-white text-gray-900 shadow-sm dark:bg-dark-700 dark:text-white'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                ? 'chart-toggle-button-active'
+                : 'chart-toggle-button-inactive'
             "
             @click="activeView = 'model_distribution'"
           >
@@ -82,11 +82,11 @@
           </button>
           <button
             type="button"
-            class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+            class="chart-toggle-button"
             :class="
               activeView === 'spending_ranking'
-                ? 'bg-white text-gray-900 shadow-sm dark:bg-dark-700 dark:text-white'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                ? 'chart-toggle-button-active'
+                : 'chart-toggle-button-inactive'
             "
             @click="activeView = 'spending_ranking'"
           >
@@ -506,3 +506,30 @@ const formatCost = (value: number): string => {
   return value.toFixed(4)
 }
 </script>
+
+<style scoped>
+.chart-toggle-group {
+  @apply inline-flex rounded-lg p-1;
+  background: var(--theme-surface-muted);
+  border: 1px solid var(--theme-border);
+}
+
+.chart-toggle-button {
+  @apply rounded-md px-2.5 py-1 text-xs font-medium transition-colors;
+}
+
+.chart-toggle-button-active {
+  background: var(--theme-surface);
+  color: var(--theme-text);
+  box-shadow: var(--theme-shadow);
+}
+
+.chart-toggle-button-inactive {
+  @apply text-gray-600 dark:text-gray-300;
+}
+
+.chart-toggle-button-inactive:hover {
+  background: color-mix(in srgb, var(--theme-surface) 68%, transparent);
+  @apply text-gray-700 dark:text-gray-200;
+}
+</style>
