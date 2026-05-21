@@ -150,7 +150,7 @@ jobs:
             exit 1
           fi
 
-          $compose_cmd up -d --no-build --force-recreate sub2api < /dev/null
+          $compose_cmd up -d --no-build --force-recreate --no-deps sub2api < /dev/null
           sleep 20
           $compose_cmd ps
 
