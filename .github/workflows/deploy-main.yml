@@ -1,13 +1,6 @@
 name: Deploy Main
 
 on:
-  workflow_run:
-    workflows:
-      - CI
-    branches:
-      - main
-    types:
-      - completed
   workflow_dispatch:
     inputs:
       ref:
@@ -26,7 +19,7 @@ concurrency:
 jobs:
   deploy:
     name: Deploy to Baoleyun prod
-    if: ${{ (github.event_name == 'workflow_dispatch' && (inputs.ref == '' || inputs.ref == 'main')) || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' && !contains(github.event.workflow_run.head_commit.message, '[skip deploy]')) }}
+    if: ${{ inputs.ref == '' || inputs.ref == 'main' }}
     runs-on: ubuntu-latest
     environment:
       name: prod
@@ -56,8 +49,8 @@ jobs:
         env:
           DEPLOY_HOST: ${{ vars.BAOLEYUN_HOST }}
           DEPLOY_USER: ${{ vars.BAOLEYUN_USER }}
-          DEPLOY_REF: ${{ github.event.workflow_run.head_branch || inputs.ref || 'main' }}
-          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || '' }}
+          DEPLOY_REF: ${{ inputs.ref || 'main' }}
+          DEPLOY_SHA: ''
           GHCR_USERNAME: ${{ github.actor }}
           GHCR_TOKEN: ${{ github.token }}
         run: |
