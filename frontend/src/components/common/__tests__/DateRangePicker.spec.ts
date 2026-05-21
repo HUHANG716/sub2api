@@ -1,8 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import DateRangePicker from '../DateRangePicker.vue'
+
+const testDir = dirname(fileURLToPath(import.meta.url))
+const source = readFileSync(resolve(testDir, '../DateRangePicker.vue'), 'utf8')
+
+const readCssBlock = (selector: string) => {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return source.match(new RegExp(`${escapedSelector}\\s*\\{[\\s\\S]*?\\n\\}`))?.[0] ?? ''
+}
 
 const messages: Record<string, string> = {
   'dates.today': 'Today',
@@ -70,13 +81,12 @@ describe('DateRangePicker', () => {
     })
 
     await wrapper.find('.date-picker-trigger').trigger('click')
-    const presetButton = wrapper.findAll('.date-picker-preset').find((node) =>
-      node.text().includes('Last 24 Hours')
-    )
+    const presetButton = Array.from(document.body.querySelectorAll<HTMLButtonElement>('.date-picker-preset'))
+      .find((node) => node.textContent?.includes('Last 24 Hours'))
     expect(presetButton).toBeDefined()
 
-    await presetButton!.trigger('click')
-    await wrapper.find('.date-picker-apply').trigger('click')
+    presetButton!.click()
+    document.body.querySelector<HTMLButtonElement>('.date-picker-apply')!.click()
 
     const nowAfterClick = new Date()
     const yesterdayAfterClick = new Date(nowAfterClick.getTime() - 24 * 60 * 60 * 1000)
@@ -92,5 +102,44 @@ describe('DateRangePicker', () => {
         preset: 'last24Hours'
       }
     ])
+  })
+
+  it('teleports the dropdown to body with fixed positioning', async () => {
+    const now = new Date()
+    const today = formatLocalDate(now)
+
+    const wrapper = mount(DateRangePicker, {
+      props: {
+        startDate: today,
+        endDate: today
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    await wrapper.find('.date-picker-trigger').trigger('click')
+
+    const dropdown = document.body.querySelector<HTMLElement>('.date-picker-dropdown')
+
+    expect(dropdown).not.toBeNull()
+    expect(wrapper.element.contains(dropdown)).toBe(false)
+    expect(dropdown?.style.position).toBe('fixed')
+
+    wrapper.unmount()
+  })
+
+  it('uses theme tokens for the teleported dropdown surface', () => {
+    const dropdownBlock = readCssBlock('.date-picker-dropdown')
+    const dividerBlock = readCssBlock('.date-picker-divider')
+    const inputBlock = readCssBlock('.date-picker-input')
+
+    expect(dropdownBlock).toContain('background: var(--theme-surface);')
+    expect(dropdownBlock).toContain('border: 1px solid var(--theme-border);')
+    expect(dropdownBlock).not.toContain('dark:bg-dark-800')
+    expect(dividerBlock).toContain('border-top: 1px solid var(--theme-border);')
+    expect(inputBlock).toContain('background: var(--theme-surface-muted);')
   })
 })
