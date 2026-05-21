@@ -58,6 +58,12 @@ onUnmounted(() => {
   @apply flex-1 min-h-0 flex flex-col;
 }
 
+/* 移动端：页面高度跟随内容，让 body 承担纵向滚动 */
+.table-page-layout.mobile-mode {
+  height: auto;
+  min-height: 0;
+}
+
 /* 表格滚动容器 - 增强版表体滚动方案 */
 .table-scroll-container {
   @apply flex h-full flex-col overflow-hidden rounded-2xl backdrop-blur-xl;
