@@ -38,6 +38,16 @@ describe('AppSidebar active state styles', () => {
     expect(sidebarActiveBlockMatch).not.toBeNull()
     expect(sidebarActiveBlockMatch?.[0]).not.toMatch(/\bborder\s*:/)
   })
+
+  it('keeps the active item surface clean without gradients', () => {
+    const sidebarActiveBlocks = styleSource.match(/(?:\.dark\s+)?\.sidebar-link-active(?:\:hover)?\s*\{[\s\S]*?\n {2}\}/g) ?? []
+
+    expect(sidebarActiveBlocks.length).toBeGreaterThan(0)
+    for (const block of sidebarActiveBlocks) {
+      expect(block).not.toContain('linear-gradient')
+      expect(block).not.toContain('radial-gradient')
+    }
+  })
 })
 
 describe('Modal header styles', () => {

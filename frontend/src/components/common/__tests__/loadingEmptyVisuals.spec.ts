@@ -44,6 +44,30 @@ describe('common loading and empty states', () => {
     expect(wrapper.find('.table-skeleton-line').exists()).toBe(true)
   })
 
+  it('keeps desktop empty content centered in the visible table viewport', () => {
+    installDesktopViewport()
+
+    const wrapper = mount(DataTable, {
+      props: {
+        loading: false,
+        data: [],
+        columns: Array.from({ length: 12 }, (_, index) => ({
+          key: `col-${index}`,
+          label: `Column ${index}`
+        }))
+      },
+      slots: {
+        empty: '<div data-test="empty-content">No rows</div>'
+      }
+    })
+
+    const emptyViewport = wrapper.find('.table-empty-viewport')
+    expect(emptyViewport.exists()).toBe(true)
+    expect(emptyViewport.classes()).toEqual(
+      expect.arrayContaining(['sticky', 'left-0', 'items-center', 'justify-center'])
+    )
+  })
+
   it('renders the empty icon in a lightweight frame instead of a solid tile', () => {
     const wrapper = mount(EmptyState, {
       props: {

@@ -134,18 +134,20 @@
             :colspan="columns.length"
             :class="['py-12 text-center text-gray-500 dark:text-dark-400', getAdaptivePaddingClass()]"
           >
-            <slot name="empty">
-              <div class="flex flex-col items-center">
-                <Icon
-                  name="inbox"
-                  size="xl"
-                  class="mb-4 h-12 w-12 text-gray-400 dark:text-dark-500"
-                />
-                <p class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                  {{ t('empty.noData') }}
-                </p>
-              </div>
-            </slot>
+            <div class="table-empty-viewport sticky left-0 flex items-center justify-center px-6">
+              <slot name="empty">
+                <div class="flex flex-col items-center">
+                  <Icon
+                    name="inbox"
+                    size="xl"
+                    class="mb-4 h-12 w-12 text-gray-400 dark:text-dark-500"
+                  />
+                  <p class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                    {{ t('empty.noData') }}
+                  </p>
+                </div>
+              </slot>
+            </div>
           </td>
         </tr>
 
@@ -222,6 +224,10 @@ const actionsColumnNeedsExpanding = ref(false)
 const checkScrollable = () => {
   if (tableWrapperRef.value) {
     isScrollable.value = tableWrapperRef.value.scrollWidth > tableWrapperRef.value.clientWidth
+    tableWrapperRef.value.style.setProperty(
+      '--table-empty-viewport-width',
+      `${tableWrapperRef.value.clientWidth}px`
+    )
   }
 }
 
@@ -762,6 +768,10 @@ defineExpose({
 
 .data-row:hover {
   background: var(--table-row-hover-bg);
+}
+
+.table-empty-viewport {
+  width: var(--table-empty-viewport-width, 100%);
 }
 
 /* 所有表头单元格固定在顶部 */
