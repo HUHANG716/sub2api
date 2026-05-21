@@ -21,7 +21,7 @@ describe('TablePageLayout', () => {
 
   it('uses a css media query fallback so mobile pages can scroll before resize state runs', () => {
     const mobileMediaBlock = source.match(
-      /@media\s*\(max-width:\s*1023px\)\s*\{[\s\S]*?\.table-page-layout\s*\{[\s\S]*?\n  \}/
+      /@media\s*\(max-width:\s*1023px\)\s*\{[\s\S]*?\.table-page-layout\s*\{[\s\S]*?\n {2}\}/
     )?.[0]
 
     expect(mobileMediaBlock).not.toBeNull()
