@@ -4,7 +4,7 @@
     <div v-if="!success" class="flex flex-col items-center space-y-4">
       <!-- QR Code mode -->
       <template v-if="qrUrl">
-        <div class="rounded-2xl bg-white p-4 shadow-sm dark:bg-dark-800">
+        <div class="payment-inner-panel rounded-2xl p-4 shadow-sm">
           <canvas ref="qrCanvas" class="mx-auto"></canvas>
         </div>
         <p v-if="scanHint" class="text-center text-sm text-gray-500 dark:text-gray-400">
@@ -37,7 +37,7 @@
         <Icon name="check" size="lg" class="text-green-500" />
       </div>
       <p class="text-lg font-bold text-gray-900 dark:text-white">{{ t('payment.result.success') }}</p>
-      <div v-if="paidOrder" class="w-full rounded-xl bg-gray-50 p-4 dark:bg-dark-800">
+      <div v-if="paidOrder" class="payment-inner-panel w-full rounded-xl p-4">
         <div class="space-y-2 text-sm">
           <div class="flex justify-between">
             <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.orderId') }}</span>
@@ -303,3 +303,10 @@ watch(qrUrl, () => renderQR())
 
 onUnmounted(() => cleanup())
 </script>
+
+<style scoped>
+.payment-inner-panel {
+  background: var(--theme-surface-muted);
+  border: 1px solid var(--theme-border);
+}
+</style>

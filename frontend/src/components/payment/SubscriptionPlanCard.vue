@@ -4,7 +4,7 @@
       'group relative flex flex-col overflow-hidden rounded-2xl border transition-all',
       'hover:shadow-xl hover:-translate-y-0.5',
       borderClass,
-      'bg-white dark:bg-dark-800',
+      'subscription-plan-card',
     ]"
   >
     <!-- Colored top accent bar -->
@@ -38,7 +38,7 @@
       </div>
 
       <!-- Group quota info (compact) -->
-      <div class="mb-3 grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg bg-gray-50 px-3 py-2 text-xs dark:bg-dark-700/50">
+      <div class="payment-inner-panel mb-3 grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg px-3 py-2 text-xs">
         <div class="flex items-center justify-between">
           <span class="text-gray-400 dark:text-dark-500">{{ t('payment.planCard.rate') }}</span>
           <span class="font-medium text-gray-700 dark:text-gray-300">{{ rateDisplay }}</span>
@@ -63,7 +63,7 @@
           <span class="text-gray-400 dark:text-dark-500">{{ t('payment.planCard.models') }}</span>
           <div class="flex flex-wrap justify-end gap-1">
             <span v-for="scope in modelScopeLabels" :key="scope"
-              class="rounded bg-gray-200/80 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-dark-600 dark:text-gray-300">
+              class="payment-scope-chip rounded px-1.5 py-0.5 text-[10px] font-medium">
               {{ scope }}
             </span>
           </div>
@@ -160,3 +160,19 @@ const validitySuffix = computed(() => {
   return `${props.plan.validity_days}${t('payment.days')}`
 })
 </script>
+
+<style scoped>
+.subscription-plan-card {
+  background: var(--theme-surface);
+}
+
+.payment-inner-panel {
+  background: var(--theme-surface-muted);
+  border: 1px solid var(--theme-border);
+}
+
+.payment-scope-chip {
+  background: color-mix(in srgb, var(--theme-surface) 72%, var(--theme-bg));
+  color: var(--theme-text-muted);
+}
+</style>

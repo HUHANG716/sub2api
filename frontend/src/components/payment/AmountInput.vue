@@ -11,10 +11,10 @@
           :key="amt"
           type="button"
           :class="[
-            'rounded-lg border-2 px-4 py-3 text-center font-medium transition-colors',
+            'payment-option-button',
             modelValue === amt
-              ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-900/40 dark:text-primary-300'
-              : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-200 dark:hover:border-dark-500',
+              ? 'payment-option-button-active'
+              : 'payment-option-button-inactive',
           ]"
           @click="selectAmount(amt)"
         >
@@ -109,3 +109,27 @@ watch(() => props.modelValue, (v) => {
   }
 }, { immediate: true })
 </script>
+
+<style scoped>
+.payment-option-button {
+  @apply rounded-lg px-4 py-3 text-center font-medium transition-colors;
+  border: 1px solid var(--theme-border);
+}
+
+.payment-option-button-active {
+  background: color-mix(in srgb, var(--theme-accent-soft) 62%, var(--theme-surface));
+  border-color: color-mix(in srgb, var(--theme-accent) 72%, var(--theme-border));
+  color: var(--theme-accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--theme-accent) 32%, transparent);
+}
+
+.payment-option-button-inactive {
+  background: var(--theme-surface);
+  @apply text-gray-700 dark:text-gray-200;
+}
+
+.payment-option-button-inactive:hover {
+  background: var(--theme-surface-muted);
+  border-color: var(--theme-border-strong);
+}
+</style>

@@ -2,7 +2,7 @@
   <div
     :class="[
       'group relative rounded-lg border transition-all',
-      enabled ? 'border-gray-200 dark:border-dark-600' : 'border-gray-200 bg-gray-50 opacity-50 dark:border-dark-700 dark:bg-dark-800/50',
+      enabled ? 'provider-card' : 'provider-card provider-card-disabled',
     ]"
     :title="!enabled ? t('admin.settings.payment.typeDisabled') + ' — ' + t('admin.settings.payment.enableTypesFirst') : undefined"
   >
@@ -13,8 +13,8 @@
       <!-- Left: icon + name + key badge + type badges -->
       <div class="flex items-center gap-3">
         <div :class="[
-          'rounded-md p-1.5',
-          provider.enabled && enabled ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-dark-700',
+          'provider-icon-shell rounded-md p-1.5',
+          provider.enabled && enabled ? 'provider-icon-shell-active' : 'provider-icon-shell-inactive',
         ]">
           <Icon
             name="server"
@@ -36,7 +36,7 @@
               'rounded px-2 py-0.5 text-xs font-medium transition-all',
               isSelected(pt.value)
                 ? 'bg-primary-500 text-white'
-                : 'bg-gray-100 text-gray-400 dark:bg-dark-700 dark:text-gray-500',
+                : 'provider-type-chip-inactive',
             ]"
           >{{ pt.label }}</button>
         </div>
@@ -47,12 +47,12 @@
         <ToggleSwitch :label="t('common.enabled')" :checked="provider.enabled" @toggle="emit('toggleField', 'enabled')" />
         <ToggleSwitch :label="t('admin.settings.payment.refundEnabled')" :checked="provider.refund_enabled" @toggle="emit('toggleField', 'refund_enabled')" />
         <ToggleSwitch v-if="provider.refund_enabled" :label="t('admin.settings.payment.allowUserRefund')" :checked="provider.allow_user_refund" @toggle="emit('toggleField', 'allow_user_refund')" />
-        <div class="flex items-center gap-2 border-l border-gray-200 pl-3 dark:border-dark-600">
-          <button type="button" @click="emit('edit')" class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400">
+        <div class="provider-action-divider flex items-center gap-2 pl-3">
+          <button type="button" @click="emit('edit')" class="provider-action-button provider-action-button-edit flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors">
             <Icon name="edit" size="sm" />
             <span class="text-xs">{{ t('common.edit') }}</span>
           </button>
-          <button type="button" @click="emit('delete')" class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400">
+          <button type="button" @click="emit('delete')" class="provider-action-button provider-action-button-delete flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors">
             <Icon name="trash" size="sm" />
             <span class="text-xs">{{ t('common.delete') }}</span>
           </button>
@@ -107,3 +107,45 @@ function isSelected(type: string): boolean {
   return props.provider.supported_types.includes(type)
 }
 </script>
+
+<style scoped>
+.provider-card {
+  background: var(--theme-surface);
+  border-color: var(--theme-border);
+}
+
+.provider-card-disabled {
+  background: var(--theme-surface-muted);
+  opacity: 0.5;
+}
+
+.provider-icon-shell {
+  border: 1px solid var(--theme-border);
+}
+
+.provider-icon-shell-active {
+  background: color-mix(in srgb, #16a34a 12%, var(--theme-surface));
+}
+
+.provider-icon-shell-inactive,
+.provider-type-chip-inactive {
+  background: var(--theme-surface-muted);
+  color: var(--theme-text-muted);
+}
+
+.provider-action-divider {
+  border-left: 1px solid var(--theme-border);
+}
+
+.provider-action-button:hover {
+  background: var(--theme-surface-muted);
+}
+
+.provider-action-button-edit:hover {
+  color: #2563eb;
+}
+
+.provider-action-button-delete:hover {
+  color: #dc2626;
+}
+</style>

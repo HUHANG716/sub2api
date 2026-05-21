@@ -10,7 +10,7 @@
             <Icon name="check" size="lg" class="text-green-500" />
           </div>
           <p class="text-lg font-bold text-gray-900 dark:text-white">{{ props.orderType === 'subscription' ? t('payment.result.subscriptionSuccess') : t('payment.result.success') }}</p>
-          <div v-if="paidOrder" class="w-full rounded-xl bg-gray-50 p-4 dark:bg-dark-800">
+          <div v-if="paidOrder" class="payment-inner-panel w-full rounded-xl p-4">
             <div class="space-y-2 text-sm">
               <div class="flex justify-between">
                 <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.orderId') }}</span>
@@ -39,7 +39,7 @@
     <template v-else-if="outcome === 'cancelled'">
       <div class="card p-6">
         <div class="flex flex-col items-center space-y-4 py-4">
-          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-dark-700">
+          <div class="payment-muted-icon flex h-16 w-16 items-center justify-center rounded-full">
             <svg class="h-8 w-8 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -185,9 +185,9 @@ const isAlipay = computed(() => props.paymentType.includes('alipay'))
 const isWxpay = computed(() => props.paymentType.includes('wxpay'))
 
 const qrBorderClass = computed(() => {
-  if (isAlipay.value) return 'border-[#00AEEF] bg-blue-50 dark:border-[#00AEEF]/70 dark:bg-blue-950/20'
-  if (isWxpay.value) return 'border-[#2BB741] bg-green-50 dark:border-[#2BB741]/70 dark:bg-green-950/20'
-  return 'border-gray-200 bg-white dark:border-dark-600 dark:bg-dark-800'
+  if (isAlipay.value) return 'payment-qr-panel payment-qr-panel-alipay'
+  if (isWxpay.value) return 'payment-qr-panel payment-qr-panel-wxpay'
+  return 'payment-qr-panel'
 })
 
 const qrLogoBgClass = computed(() => {
@@ -331,3 +331,30 @@ renderQR()
 watch(() => qrUrl.value, () => renderQR())
 onUnmounted(() => cleanup())
 </script>
+
+<style scoped>
+.payment-inner-panel,
+.payment-qr-panel {
+  background: var(--theme-surface-muted);
+  border: 1px solid var(--theme-border);
+}
+
+.payment-muted-icon {
+  background: var(--theme-surface-muted);
+  color: var(--theme-text-muted);
+}
+
+.payment-qr-panel {
+  --payment-qr-accent: var(--theme-accent);
+  border-color: color-mix(in srgb, var(--payment-qr-accent) 54%, var(--theme-border));
+  background: color-mix(in srgb, var(--payment-qr-accent) 8%, var(--theme-surface));
+}
+
+.payment-qr-panel-alipay {
+  --payment-qr-accent: #00aeef;
+}
+
+.payment-qr-panel-wxpay {
+  --payment-qr-accent: #2bb741;
+}
+</style>

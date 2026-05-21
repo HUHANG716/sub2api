@@ -7,8 +7,8 @@
       :aria-checked="checked"
       @click="emit('toggle')"
       :class="[
-        'relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200',
-        checked ? 'bg-primary-500' : 'bg-gray-300 dark:bg-dark-600',
+        'payment-toggle-switch relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200',
+        checked ? 'payment-toggle-switch-active' : 'payment-toggle-switch-inactive',
       ]"
     >
       <span :class="[
@@ -23,3 +23,14 @@
 defineProps<{ label: string; checked: boolean }>()
 const emit = defineEmits<{ toggle: [] }>()
 </script>
+
+<style scoped>
+.payment-toggle-switch-active {
+  background: var(--theme-primary);
+}
+
+.payment-toggle-switch-inactive {
+  background: var(--theme-surface-muted);
+  box-shadow: inset 0 0 0 1px var(--theme-border);
+}
+</style>

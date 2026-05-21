@@ -43,10 +43,10 @@
               type="button"
               @click="form.payment_mode = mode.value"
               :class="[
-                'rounded-lg border px-2.5 py-1 text-xs font-medium transition-all',
+                'provider-dialog-chip',
                 form.payment_mode === mode.value
-                  ? 'border-primary-500 bg-primary-500 text-white shadow-sm'
-                  : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300 dark:hover:border-dark-500',
+                  ? 'provider-dialog-chip-active'
+                  : 'provider-dialog-chip-inactive',
               ]"
             >{{ mode.label }}</button>
           </div>
@@ -60,10 +60,10 @@
               type="button"
               @click="toggleType(pt.value)"
               :class="[
-                'rounded-lg border px-2.5 py-1 text-xs font-medium transition-all',
+                'provider-dialog-chip',
                 isTypeSelected(pt.value)
-                  ? 'border-primary-500 bg-primary-500 text-white shadow-sm'
-                  : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300 dark:hover:border-dark-500',
+                  ? 'provider-dialog-chip-active'
+                  : 'provider-dialog-chip-inactive',
               ]"
             >{{ pt.label }}</button>
           </div>
@@ -72,7 +72,7 @@
 
 
       <!-- Config fields -->
-      <div class="border-t border-gray-200 pt-4 dark:border-dark-700">
+      <div class="provider-dialog-section pt-4">
         <div class="mb-3 flex items-center gap-2">
           <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
             {{ t('admin.settings.payment.providerConfig') }}
@@ -81,7 +81,7 @@
             <template #trigger>
               <button
                 type="button"
-                class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 text-[11px] font-semibold text-gray-400 transition-colors hover:border-primary-500 hover:text-primary-600 dark:border-dark-500 dark:text-gray-500 dark:hover:border-primary-400 dark:hover:text-primary-400"
+                class="provider-help-button inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold transition-colors"
                 :aria-label="t('admin.settings.payment.paymentGuideTrigger')"
                 :title="t('admin.settings.payment.paymentGuideTrigger')"
               >
@@ -174,20 +174,20 @@
             <label class="input-label">{{ t('admin.settings.payment.field_notifyUrl') }} <span class="text-red-500">*</span></label>
             <div class="flex">
               <input v-model="notifyBaseUrl" type="text" class="input min-w-0 flex-1 !rounded-r-none !border-r-0" :placeholder="defaultBaseUrl" />
-              <span class="inline-flex items-center whitespace-nowrap rounded-r-lg border border-gray-300 bg-gray-50 px-3 text-xs text-gray-500 dark:border-dark-600 dark:bg-dark-700 dark:text-gray-400">{{ callbackPaths.notifyUrl }}</span>
+              <span class="provider-path-suffix inline-flex items-center whitespace-nowrap rounded-r-lg px-3 text-xs">{{ callbackPaths.notifyUrl }}</span>
             </div>
           </div>
           <div v-if="callbackPaths.returnUrl">
             <label class="input-label">{{ t('admin.settings.payment.field_returnUrl') }} <span class="text-red-500">*</span></label>
             <div class="flex">
               <input v-model="returnBaseUrl" type="text" class="input min-w-0 flex-1 !rounded-r-none !border-r-0" :placeholder="defaultBaseUrl" />
-              <span class="inline-flex items-center whitespace-nowrap rounded-r-lg border border-gray-300 bg-gray-50 px-3 text-xs text-gray-500 dark:border-dark-600 dark:bg-dark-700 dark:text-gray-400">{{ callbackPaths.returnUrl }}</span>
+              <span class="provider-path-suffix inline-flex items-center whitespace-nowrap rounded-r-lg px-3 text-xs">{{ callbackPaths.returnUrl }}</span>
             </div>
           </div>
         </div>
 
         <!-- 服务商 Webhook 提示 -->
-        <div v-if="providerWebhookUrl" class="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800/50 dark:bg-blue-900/20">
+        <div v-if="providerWebhookUrl" class="provider-webhook-panel mt-3 rounded-lg p-3">
           <p class="text-xs text-blue-700 dark:text-blue-300">
             {{ t(providerWebhookHint) }}
           </p>
@@ -201,7 +201,7 @@
       </div>
 
       <!-- Per-type limits (collapsible) -->
-      <div v-if="limitableTypes.length" class="border-t border-gray-200 pt-4 dark:border-dark-700">
+      <div v-if="limitableTypes.length" class="provider-dialog-section pt-4">
         <button type="button" @click="limitsExpanded = !limitsExpanded" class="flex w-full items-center justify-between">
           <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
             {{ t('admin.settings.payment.limitsTitle') }}
@@ -212,7 +212,7 @@
           <div
             v-for="lt in limitableTypes"
             :key="lt.value"
-            class="rounded-lg border border-gray-100 p-3 dark:border-dark-700"
+            class="provider-limit-panel rounded-lg p-3"
           >
             <p class="mb-2 text-xs font-medium text-gray-700 dark:text-gray-300">{{ lt.label }}</p>
             <div class="grid grid-cols-3 gap-3">
@@ -701,3 +701,49 @@ function loadProvider(provider: ProviderInstance) {
 
 defineExpose({ reset, loadProvider })
 </script>
+
+<style scoped>
+.provider-dialog-chip {
+  @apply rounded-lg px-2.5 py-1 text-xs font-medium transition-all;
+  border: 1px solid var(--theme-border);
+}
+
+.provider-dialog-chip-active {
+  background: var(--theme-primary);
+  border-color: var(--theme-primary);
+  @apply text-white shadow-sm;
+}
+
+.provider-dialog-chip-inactive,
+.provider-path-suffix,
+.provider-limit-panel {
+  background: var(--theme-surface-muted);
+  color: var(--theme-text-muted);
+  border: 1px solid var(--theme-border);
+}
+
+.provider-dialog-chip-inactive:hover {
+  background: var(--theme-surface);
+  border-color: var(--theme-border-strong);
+  @apply text-gray-700 dark:text-gray-200;
+}
+
+.provider-dialog-section {
+  border-top: 1px solid var(--theme-border);
+}
+
+.provider-help-button {
+  border: 1px solid var(--theme-border);
+  color: var(--theme-text-muted);
+}
+
+.provider-help-button:hover {
+  border-color: color-mix(in srgb, var(--theme-primary) 52%, var(--theme-border));
+  color: var(--theme-primary);
+}
+
+.provider-webhook-panel {
+  border: 1px solid color-mix(in srgb, #2563eb 34%, var(--theme-border));
+  background: color-mix(in srgb, #2563eb 8%, var(--theme-surface));
+}
+</style>
