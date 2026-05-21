@@ -45,6 +45,14 @@ describe('payment theme tokens', () => {
     expect(checkoutSources).toContain('background: var(--theme-surface);')
     expect(checkoutSources).toContain('border: 1px solid var(--theme-border);')
 
+    const paymentTabActiveBlock = paymentViewSource.match(
+      /\.payment-tab-button-active\s*\{[\s\S]*?\n\}/
+    )?.[0] ?? ''
+
+    expect(paymentTabActiveBlock).toContain('background: var(--theme-primary-soft);')
+    expect(paymentTabActiveBlock).toContain('color: var(--theme-primary);')
+    expect(paymentTabActiveBlock).toContain('border-color: color-mix(in srgb, var(--theme-primary) 46%, transparent);')
+
     expect(checkoutSources).not.toContain('dark:bg-dark-800')
     expect(checkoutSources).not.toContain('dark:bg-dark-700')
     expect(checkoutSources).not.toContain('dark:bg-blue-950')

@@ -1085,11 +1085,13 @@ onMounted(async () => {
 
 .payment-tab-button {
   @apply flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all;
+  border: 1px solid transparent;
 }
 
 .payment-tab-button-active {
-  background: var(--theme-surface);
-  color: var(--theme-text);
+  background: var(--theme-primary-soft);
+  border-color: color-mix(in srgb, var(--theme-primary) 46%, transparent);
+  color: var(--theme-primary);
   box-shadow: var(--theme-shadow);
 }
 
