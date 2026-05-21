@@ -920,6 +920,9 @@ export default {
     // 重置密码
     resetPasswordTitle: '设置新密码',
     resetPasswordHint: '请在下方输入您的新密码。',
+    passwordSecurityHint: '为保护账户安全，请设置一个不易猜测的新密码。提交后旧密码会立即失效。',
+    showPassword: '显示密码',
+    hidePassword: '隐藏密码',
     newPassword: '新密码',
     newPasswordPlaceholder: '输入新密码',
     confirmPassword: '确认密码',
@@ -6906,6 +6909,7 @@ export default {
   userSubscriptions: {
     title: '我的订阅',
     description: '查看您的订阅计划和用量',
+    entitlementCenter: '权益中心',
     noActiveSubscriptions: '暂无有效订阅',
     noActiveSubscriptionsDesc: '您没有任何有效订阅。请联系管理员获取订阅。',
     failedToLoad: '加载订阅失败',
@@ -7105,6 +7109,14 @@ export default {
   // Payment System
   payment: {
     title: '充值/订阅',
+    secureCheckout: '安全收银台',
+    checkoutSubtitle: '集中完成余额充值、套餐订阅和支付确认，订单创建后由系统自动同步到账。',
+    topUpPanelTitle: '选择充值金额',
+    channelPanelTitle: '选择支付通道',
+    orderSummary: '订单摘要',
+    balanceRecharge: '余额充值',
+    planCatalogTitle: '选择订阅套餐',
+    backToPlans: '返回套餐列表',
     amountLabel: '充值金额',
     paymentAmount: '支付金额',
     creditedBalance: '到账余额',

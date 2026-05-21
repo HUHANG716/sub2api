@@ -1,8 +1,10 @@
 <template>
   <AuthLayout>
-    <div class="space-y-6">
-      <!-- Title -->
+    <div class="reset-password-shell space-y-6">
       <div class="text-center">
+        <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-500/15 text-primary-300 ring-1 ring-primary-400/20">
+          <Icon name="shield" size="lg" :stroke-width="2" />
+        </div>
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
           {{ t('auth.resetPasswordTitle') }}
         </h2>
@@ -11,11 +13,10 @@
         </p>
       </div>
 
-      <!-- Invalid Link State -->
       <div v-if="isInvalidLink" class="space-y-6">
-        <div class="rounded-xl border border-amber-200 bg-amber-50 p-6 dark:border-amber-800/50 dark:bg-amber-900/20">
+        <div class="reset-state-card reset-state-warning">
           <div class="flex flex-col items-center gap-4 text-center">
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-800/50">
+            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-800/50">
               <Icon name="exclamationCircle" size="lg" class="text-amber-600 dark:text-amber-400" />
             </div>
             <div>
@@ -39,11 +40,10 @@
         </div>
       </div>
 
-      <!-- Success State -->
       <div v-else-if="isSuccess" class="space-y-6">
-        <div class="rounded-xl border border-green-200 bg-green-50 p-6 dark:border-green-800/50 dark:bg-green-900/20">
+        <div class="reset-state-card reset-state-success">
           <div class="flex flex-col items-center gap-4 text-center">
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-800/50">
+            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 dark:bg-green-800/50">
               <Icon name="checkCircle" size="lg" class="text-green-600 dark:text-green-400" />
             </div>
             <div>
@@ -68,9 +68,19 @@
         </div>
       </div>
 
-      <!-- Form State -->
       <form v-else @submit.prevent="handleSubmit" class="space-y-5">
-        <!-- Email (readonly) -->
+        <div class="reset-context-card">
+          <div class="flex items-start gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-500/10 text-primary-300">
+              <Icon name="lock" size="md" />
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-white">{{ t('auth.newPassword') }}</p>
+              <p class="mt-1 text-xs leading-5 text-gray-300">{{ t('auth.passwordSecurityHint') }}</p>
+            </div>
+          </div>
+        </div>
+
         <div>
           <label for="email" class="input-label">
             {{ t('auth.emailLabel') }}
@@ -90,7 +100,6 @@
           </div>
         </div>
 
-        <!-- New Password Input -->
         <div>
           <label for="password" class="input-label">
             {{ t('auth.newPassword') }}
@@ -113,15 +122,16 @@
             <button
               type="button"
               @click="showPassword = !showPassword"
-              class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-dark-300"
+              class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 transition-colors hover:text-gray-200"
+              :aria-label="showPassword ? t('auth.hidePassword') : t('auth.showPassword')"
             >
               <Icon v-if="showPassword" name="eyeOff" size="md" />
               <Icon v-else name="eye" size="md" />
             </button>
           </div>
+          <p v-if="errors.password" class="input-error-text">{{ errors.password }}</p>
         </div>
 
-        <!-- Confirm Password Input -->
         <div>
           <label for="confirmPassword" class="input-label">
             {{ t('auth.confirmPassword') }}
@@ -144,15 +154,21 @@
             <button
               type="button"
               @click="showConfirmPassword = !showConfirmPassword"
-              class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-dark-300"
+              class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 transition-colors hover:text-gray-200"
+              :aria-label="showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')"
             >
               <Icon v-if="showConfirmPassword" name="eyeOff" size="md" />
               <Icon v-else name="eye" size="md" />
             </button>
           </div>
+          <p v-if="errors.confirmPassword" class="input-error-text">{{ errors.confirmPassword }}</p>
         </div>
 
-        <!-- Submit Button -->
+        <div v-if="errorMessage" class="reset-inline-error">
+          <Icon name="exclamationCircle" size="sm" />
+          <span>{{ errorMessage }}</span>
+        </div>
+
         <button
           type="submit"
           :disabled="isLoading"
@@ -184,7 +200,6 @@
       </form>
     </div>
 
-    <!-- Footer -->
     <template #footer>
       <p class="text-gray-500 dark:text-dark-400">
         {{ t('auth.rememberedPassword') }}
@@ -342,5 +357,37 @@ async function handleSubmit(): Promise<void> {
 .fade-leave-to {
   opacity: 0;
   transform: translateY(-8px);
+}
+
+.reset-password-shell :deep(.input) {
+  border-radius: 8px;
+}
+
+.reset-password-shell :deep(.btn) {
+  border-radius: 8px;
+}
+
+.reset-state-card,
+.reset-context-card,
+.reset-inline-error {
+  border: 1px solid;
+  @apply rounded-lg p-5;
+}
+
+.reset-state-warning {
+  @apply border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-900/20;
+}
+
+.reset-state-success {
+  @apply border-green-200 bg-green-50 dark:border-green-800/50 dark:bg-green-900/20;
+}
+
+.reset-context-card {
+  border-color: rgba(249, 115, 22, 0.18);
+  background: rgba(249, 115, 22, 0.08);
+}
+
+.reset-inline-error {
+  @apply flex items-start gap-2 border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-200;
 }
 </style>

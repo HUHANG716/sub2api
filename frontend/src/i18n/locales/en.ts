@@ -921,6 +921,9 @@ export default {
     // Reset password
     resetPasswordTitle: 'Set New Password',
     resetPasswordHint: 'Enter your new password below.',
+    passwordSecurityHint: 'Choose a password that is hard to guess. Your old password stops working immediately after reset.',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
     newPassword: 'New Password',
     newPasswordPlaceholder: 'Enter your new password',
     confirmPassword: 'Confirm Password',
@@ -6749,6 +6752,7 @@ export default {
   userSubscriptions: {
     title: 'My Subscriptions',
     description: 'View your subscription plans and usage',
+    entitlementCenter: 'Entitlement Center',
     noActiveSubscriptions: 'No Active Subscriptions',
     noActiveSubscriptionsDesc:
       "You don't have any active subscriptions. Contact administrator to get one.",
@@ -6922,6 +6926,14 @@ export default {
   // Payment System
   payment: {
     title: 'Recharge / Subscription',
+    secureCheckout: 'Secure Checkout',
+    checkoutSubtitle: 'Manage balance top-ups, subscription checkout, and payment confirmation in one controlled flow.',
+    topUpPanelTitle: 'Choose Top-up Amount',
+    channelPanelTitle: 'Choose Payment Channel',
+    orderSummary: 'Order Summary',
+    balanceRecharge: 'Balance Recharge',
+    planCatalogTitle: 'Choose a Subscription Plan',
+    backToPlans: 'Back to Plans',
     amountLabel: 'Amount',
     paymentAmount: 'Payment Amount',
     creditedBalance: 'Credited Balance',
