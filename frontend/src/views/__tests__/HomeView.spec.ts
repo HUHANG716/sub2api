@@ -370,9 +370,9 @@ describe('HomeView', () => {
     const landingShellBlock = source.match(/\.landing-shell\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
     expect(landingActiveBlock).toContain('color-scheme: dark')
-    expect(landingActiveBlock).toContain('--theme-bg: #14161a')
-    expect(landingActiveBlock).toContain('--theme-surface-strong: #1d2026')
-    expect(landingActiveBlock).toContain('--theme-text-muted: #a7adb7')
+    expect(landingActiveBlock).toContain('--theme-bg: #12151b')
+    expect(landingActiveBlock).toContain('--theme-surface-strong: #232936')
+    expect(landingActiveBlock).toContain('--theme-text-muted: #9aa7b5')
     expect(landingShellBlock).toContain('color-scheme: dark')
     expect(source).toContain('::selection')
     expect(source).toContain('landing-page-active')
@@ -406,7 +406,7 @@ describe('HomeView', () => {
     expect(globalStyleSource).toContain('--theme-scrollbar-track')
     expect(globalStyleSource).toContain('scrollbar-color: var(--theme-scrollbar-thumb) var(--theme-scrollbar-track)')
     expect(globalStyleSource).toContain('background: var(--theme-scrollbar-track)')
-    expect(homeSource).toContain('--theme-scrollbar-track: #14161a')
+    expect(homeSource).toContain('--theme-scrollbar-track: #12151b')
     expect(homeSource).toContain('--theme-scrollbar-thumb: rgba(148, 163, 184, 0.34)')
   })
 
@@ -416,8 +416,8 @@ describe('HomeView', () => {
     expect(source).not.toContain('#0a0a0a')
     expect(source).not.toContain('#111111')
     expect(source).not.toContain('#171717')
-    expect(source).toContain('#14161a')
-    expect(source).toContain('#252931')
+    expect(source).toContain('#12151b')
+    expect(source).toContain('#232936')
   })
 
   it('uses varied section treatments instead of one repeated bordered card pattern', () => {

@@ -495,28 +495,28 @@ onUnmounted(() => {
 <style scoped>
 :global(html.landing-page-active),
 :global(body.landing-page-active) {
-  --theme-bg: #0d1117;
-  --theme-bg-soft: #111820;
-  --theme-bg-deep: #070a0f;
-  --theme-surface: rgba(19, 25, 33, 0.92);
-  --theme-surface-strong: #171f29;
-  --theme-surface-muted: rgba(30, 39, 50, 0.78);
-  --theme-main-surface: #151b23;
-  --theme-border: rgba(148, 163, 184, 0.12);
-  --theme-border-strong: rgba(148, 163, 184, 0.22);
+  --theme-bg: #12151b;
+  --theme-bg-soft: #171b22;
+  --theme-bg-deep: #0f1218;
+  --theme-surface: rgba(30, 35, 43, 0.92);
+  --theme-surface-strong: #232936;
+  --theme-surface-muted: rgba(35, 41, 52, 0.78);
+  --theme-main-surface: #1b2028;
+  --theme-border: rgba(170, 181, 198, 0.12);
+  --theme-border-strong: rgba(170, 181, 198, 0.22);
   --theme-text-muted: #9aa7b5;
   --theme-primary: #f97316;
   --theme-primary-hover: #fb923c;
   --theme-primary-soft: rgba(249, 115, 22, 0.18);
-  --theme-accent: #22d3ee;
-  --theme-accent-soft: rgba(34, 211, 238, 0.1);
+  --theme-accent: #f97316;
+  --theme-accent-soft: rgba(249, 115, 22, 0.1);
   --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.035);
   --theme-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.22);
-  --theme-scrollbar-track: #0d1117;
+  --theme-scrollbar-track: #12151b;
   --theme-scrollbar-thumb: rgba(148, 163, 184, 0.34);
   --theme-scrollbar-thumb-hover: rgba(148, 163, 184, 0.56);
   color-scheme: dark;
-  background: #0d1117;
+  background: #12151b;
 }
 
 :global(.landing-page-active ::selection) {
@@ -532,17 +532,17 @@ onUnmounted(() => {
 
 :global(html.landing-page-active #app) {
   min-height: 100vh;
-  background: #0d1117;
+  background: #12151b;
 }
 
 .landing-shell {
-  --landing-bg: #0d1117;
-  --landing-bg-soft: #111820;
-  --landing-surface: #171f29;
+  --landing-bg: #12151b;
+  --landing-bg-soft: #171b22;
+  --landing-surface: #232936;
   --landing-surface-muted: #1e2732;
-  --landing-surface-subtle: rgba(30, 39, 50, 0.78);
-  --landing-border: rgba(148, 163, 184, 0.12);
-  --landing-border-strong: rgba(148, 163, 184, 0.22);
+  --landing-surface-subtle: rgba(35, 41, 52, 0.78);
+  --landing-border: rgba(170, 181, 198, 0.12);
+  --landing-border-strong: rgba(170, 181, 198, 0.22);
   --landing-text: #f5f5f5;
   --landing-text-strong: #ffffff;
   --landing-text-soft: #d4d4d4;
@@ -555,8 +555,8 @@ onUnmounted(() => {
   --landing-accent-tint: rgba(249, 115, 22, 0.18);
   --landing-accent-border: rgba(249, 115, 22, 0.38);
   --landing-accent-selection: rgba(249, 115, 22, 0.28);
-  --landing-support: #22d3ee;
-  --landing-support-soft: rgba(34, 211, 238, 0.1);
+  --landing-support: #f97316;
+  --landing-support-soft: rgba(249, 115, 22, 0.1);
   --landing-control-radius: 0.375rem;
   --landing-nav-control-height: 2.25rem;
   --landing-nav-control-radius: 0.375rem;
@@ -566,21 +566,21 @@ onUnmounted(() => {
   --landing-button-bg: var(--landing-accent);
   --landing-button-bg-hover: var(--landing-accent-hover);
   --landing-text-inverse: #ffffff;
-  --theme-bg: #0d1117;
-  --theme-bg-soft: #111820;
-  --theme-bg-deep: #070a0f;
-  --theme-surface: rgba(19, 25, 33, 0.92);
-  --theme-surface-strong: #171f29;
-  --theme-surface-muted: rgba(30, 39, 50, 0.78);
-  --theme-main-surface: #151b23;
-  --theme-border: rgba(148, 163, 184, 0.12);
-  --theme-border-strong: rgba(148, 163, 184, 0.22);
+  --theme-bg: #12151b;
+  --theme-bg-soft: #171b22;
+  --theme-bg-deep: #0f1218;
+  --theme-surface: rgba(30, 35, 43, 0.92);
+  --theme-surface-strong: #232936;
+  --theme-surface-muted: rgba(35, 41, 52, 0.78);
+  --theme-main-surface: #1b2028;
+  --theme-border: rgba(170, 181, 198, 0.12);
+  --theme-border-strong: rgba(170, 181, 198, 0.22);
   --theme-text-muted: #9aa7b5;
   --theme-primary: #f97316;
   --theme-primary-hover: #fb923c;
   --theme-primary-soft: rgba(249, 115, 22, 0.18);
-  --theme-accent: #22d3ee;
-  --theme-accent-soft: rgba(34, 211, 238, 0.1);
+  --theme-accent: #f97316;
+  --theme-accent-soft: rgba(249, 115, 22, 0.1);
   --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.035);
   --theme-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.22);
   color-scheme: dark;
@@ -595,7 +595,7 @@ onUnmounted(() => {
   --locale-text: #e2e8f0;
   --locale-text-strong: var(--landing-text-strong);
   --locale-code-bg: rgba(148, 163, 184, 0.14);
-  --locale-hover-bg: rgba(30, 39, 50, 0.92);
+  --locale-hover-bg: rgba(35, 41, 52, 0.92);
   --locale-active-bg: var(--landing-accent-tint);
   --locale-active-text: #fed7aa;
 }
@@ -604,7 +604,7 @@ onUnmounted(() => {
   min-height: var(--landing-nav-control-height);
   border-color: var(--landing-control-border);
   border-radius: var(--landing-nav-control-radius);
-  background: rgba(30, 39, 50, 0.92);
+  background: rgba(35, 41, 52, 0.92);
   padding: 0 0.55rem;
   box-shadow: var(--landing-control-shadow);
 }
@@ -629,9 +629,9 @@ onUnmounted(() => {
 .landing-header nav {
   width: 100%;
   max-width: 80rem;
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  border: 1px solid rgba(170, 181, 198, 0.16);
   border-radius: 0.9rem;
-  background: rgba(23, 31, 41, 0.97);
+  background: rgba(35, 41, 52, 0.97);
   backdrop-filter: blur(18px);
   padding-top: 0.625rem;
   padding-bottom: 0.625rem;
@@ -661,8 +661,8 @@ onUnmounted(() => {
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
   max-width: min(68rem, calc(100vw - 1.5rem));
-  border-color: rgba(148, 163, 184, 0.22);
-  background: rgba(23, 31, 41, 0.99);
+  border-color: rgba(170, 181, 198, 0.22);
+  background: rgba(35, 41, 52, 0.99);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
     0 16px 34px rgba(2, 6, 23, 0.3);
@@ -744,13 +744,13 @@ onUnmounted(() => {
   border-radius: var(--landing-nav-control-radius);
   border: 1px solid var(--landing-control-border);
   color: var(--landing-muted);
-  background: rgba(30, 39, 50, 0.94);
+  background: rgba(35, 41, 52, 0.94);
 }
 
 .icon-action:hover {
   border-color: color-mix(in srgb, var(--landing-support) 42%, transparent);
   color: var(--landing-support);
-  background: rgba(30, 39, 50, 0.96);
+  background: rgba(35, 41, 52, 0.96);
   box-shadow: var(--landing-control-shadow-hover);
 }
 
@@ -789,7 +789,7 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: rgba(13, 17, 23, 0.16);
+  background: rgba(18, 21, 27, 0.16);
   opacity: 0.44;
   pointer-events: none;
 }
@@ -858,13 +858,13 @@ onUnmounted(() => {
 
 .hero-button.secondary {
   border: 1px solid var(--landing-control-border);
-  background: rgba(30, 39, 50, 0.92);
+  background: rgba(35, 41, 52, 0.92);
   color: var(--landing-text-soft);
 }
 
 .hero-button.secondary:hover {
   border-color: color-mix(in srgb, var(--landing-support) 42%, transparent);
-  background: rgba(30, 39, 50, 0.96);
+  background: rgba(35, 41, 52, 0.96);
   color: var(--landing-support);
 }
 
@@ -1029,7 +1029,7 @@ onUnmounted(() => {
   display: grid;
   overflow: hidden;
   border-radius: 0.5rem;
-  background: rgba(30, 39, 50, 0.46);
+  background: rgba(35, 41, 52, 0.46);
   box-shadow: none;
 }
 

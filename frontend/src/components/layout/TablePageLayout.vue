@@ -120,9 +120,42 @@ onUnmounted(() => {
   @apply overflow-visible;
 }
 
+.table-page-layout.mobile-mode .table-scroll-container :deep(.flex.min-h-0.flex-1.flex-col.overflow-hidden) {
+  @apply flex-none overflow-visible;
+}
+
 .table-page-layout.mobile-mode .table-scroll-container :deep(table) {
   @apply flex-none;
   display: table;
   min-width: 100%;
+}
+
+@media (max-width: 1023px) {
+  .table-page-layout {
+    height: auto;
+    min-height: 0;
+  }
+
+  .table-scroll-container {
+    @apply h-auto overflow-visible border-none shadow-none bg-transparent;
+  }
+
+  .layout-section-scrollable {
+    @apply flex-none min-h-fit;
+  }
+
+  .table-scroll-container :deep(.table-wrapper) {
+    @apply overflow-visible;
+  }
+
+  .table-scroll-container :deep(.flex.min-h-0.flex-1.flex-col.overflow-hidden) {
+    @apply flex-none overflow-visible;
+  }
+
+  .table-scroll-container :deep(table) {
+    @apply flex-none;
+    display: table;
+    min-width: 100%;
+  }
 }
 </style>

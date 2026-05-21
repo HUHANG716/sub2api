@@ -19,8 +19,8 @@
     --theme-primary: #f97316;
     --theme-primary-hover: #ea580c;
     --theme-primary-soft: rgba(249, 115, 22, 0.12);
-    --theme-accent: #14b8a6;
-    --theme-accent-soft: rgba(20, 184, 166, 0.12);
+    --theme-accent: #f97316;
+    --theme-accent-soft: rgba(249, 115, 22, 0.12);
     --theme-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
     --theme-shadow-hover: 0 1px 0 rgba(15, 23, 42, 0.06);
     --theme-scrollbar-track: #f7f9fb;
@@ -29,28 +29,28 @@
   }
 
   .dark {
-    --theme-bg: #080b10;
-    --theme-bg-soft: #0b1118;
-    --theme-bg-deep: #05070b;
-    --theme-surface: rgba(17, 25, 35, 0.94);
-    --theme-surface-strong: #151f2a;
-    --theme-surface-muted: rgba(21, 31, 42, 0.82);
-    --theme-main-surface: #0e141c;
-    --theme-border: rgba(148, 163, 184, 0.14);
-    --theme-border-strong: rgba(148, 163, 184, 0.26);
+    --theme-bg: #12151b;
+    --theme-bg-soft: #171b22;
+    --theme-bg-deep: #0f1218;
+    --theme-surface: rgba(30, 35, 43, 0.94);
+    --theme-surface-strong: #232936;
+    --theme-surface-muted: rgba(35, 41, 52, 0.82);
+    --theme-main-surface: #1b2028;
+    --theme-border: rgba(170, 181, 198, 0.14);
+    --theme-border-strong: rgba(170, 181, 198, 0.26);
     --theme-text-muted: #a8b3c2;
     --theme-primary: #f97316;
     --theme-primary-hover: #fb923c;
     --theme-primary-soft: rgba(249, 115, 22, 0.12);
-    --theme-accent: #38bdf8;
-    --theme-accent-soft: rgba(56, 189, 248, 0.1);
+    --theme-accent: #f97316;
+    --theme-accent-soft: rgba(249, 115, 22, 0.1);
     --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.035);
     --theme-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.28);
-    --theme-scrollbar-track: #080b10;
+    --theme-scrollbar-track: #12151b;
     --theme-scrollbar-thumb: rgba(148, 163, 184, 0.34);
     --theme-scrollbar-thumb-hover: rgba(148, 163, 184, 0.56);
-    --theme-skeleton: #172230;
-    --theme-skeleton-highlight: #223044;
+    --theme-skeleton: #232936;
+    --theme-skeleton-highlight: #2d3543;
   }
 
   * {
@@ -70,7 +70,7 @@
   }
 
   .dark body {
-    background: linear-gradient(180deg, #101722 0%, #080b10 52%, #05070b 100%);
+    background: linear-gradient(180deg, #1b2028 0%, #12151b 52%, #0f1218 100%);
   }
 
   /* 自定义滚动条 - 主题化轨道，避免默认滚动槽漏出亮色 */
@@ -120,7 +120,7 @@
 
   .dark .app-shell,
   .app-shell-dark {
-    background: linear-gradient(180deg, #101722 0%, #080b10 52%, #05070b 100%);
+    background: linear-gradient(180deg, #1b2028 0%, #12151b 52%, #0f1218 100%);
   }
 
   .app-shell::before,
@@ -130,7 +130,7 @@
     inset: 0;
     pointer-events: none;
     background:
-      linear-gradient(90deg, rgba(56, 189, 248, 0.035) 0%, rgba(15, 23, 42, 0.02) 48%, rgba(249, 115, 22, 0.025) 100%);
+      linear-gradient(90deg, rgba(170, 181, 198, 0.035) 0%, rgba(15, 23, 42, 0.02) 48%, rgba(249, 115, 22, 0.025) 100%);
     opacity: 0.18;
   }
 
@@ -142,7 +142,7 @@
 
   .app-auth-shell {
     @apply relative flex min-h-screen items-center justify-center overflow-hidden p-4 text-white;
-    background: linear-gradient(180deg, #101722 0%, #080b10 52%, #05070b 100%);
+    background: linear-gradient(180deg, #1b2028 0%, #12151b 52%, #0f1218 100%);
   }
 
   .app-main-panel {
@@ -738,27 +738,27 @@
   .sidebar-link-active {
     color: var(--theme-primary);
     background:
-      linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(56, 189, 248, 0.08));
+      linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(170, 181, 198, 0.08));
     box-shadow: inset 3px 0 0 var(--theme-primary);
   }
 
   .sidebar-link-active:hover {
     color: var(--theme-primary);
     background:
-      linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(56, 189, 248, 0.08));
+      linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(170, 181, 198, 0.08));
   }
 
   .dark .sidebar-link-active {
     color: #e5edf6;
     background:
-      linear-gradient(90deg, rgba(56, 189, 248, 0.12), rgba(56, 189, 248, 0.035));
+      linear-gradient(90deg, rgba(249, 115, 22, 0.12), rgba(170, 181, 198, 0.035));
     box-shadow: inset 3px 0 0 rgba(249, 115, 22, 0.78);
   }
 
   .dark .sidebar-link-active:hover {
     color: #f8fafc;
     background:
-      linear-gradient(90deg, rgba(56, 189, 248, 0.14), rgba(56, 189, 248, 0.045));
+      linear-gradient(90deg, rgba(249, 115, 22, 0.14), rgba(170, 181, 198, 0.045));
   }
 
   .sidebar-section {
