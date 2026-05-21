@@ -150,8 +150,23 @@ jobs:
             exit 1
           fi
 
-          $compose_cmd up -d --no-build --force-recreate --no-deps sub2api < /dev/null
-          sleep 20
+          app_containers="$(docker ps -aq --filter "label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}" --filter "label=com.docker.compose.service=sub2api")"
+          if [ -n "$app_containers" ]; then
+            docker rm -f $app_containers
+          fi
+          $compose_cmd up -d --no-build --no-deps sub2api < /dev/null
+          for i in $(seq 1 30); do
+            app_health="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' sub2api 2>/dev/null || true)"
+            if [ "$app_health" = "healthy" ] || [ "$app_health" = "running" ]; then
+              break
+            fi
+            sleep 2
+            if [ "$i" -eq 30 ]; then
+              echo "sub2api did not become healthy before deployment verification" >&2
+              docker logs --tail 100 sub2api >&2 || true
+              exit 1
+            fi
+          done
           $compose_cmd ps
 
           curl -fsS http://127.0.0.1:8080/health
