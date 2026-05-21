@@ -102,7 +102,7 @@ jobs:
           DEPLOY_SHA="$(git rev-parse HEAD)"
           SHORT_SHA="${DEPLOY_SHA:0:12}"
           IMAGE="${DEPLOY_IMAGE_NAME}:dev-${SHORT_SHA}"
-          find backend/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort > /tmp/sub2api-dev-migrations.expected
+          find backend/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | LC_ALL=C sort > /tmp/sub2api-dev-migrations.expected
 
           cd "$RUNTIME_DIR"
           COMPOSE_PROJECT_NAME="sub2api-deploy"
@@ -132,7 +132,7 @@ jobs:
           done
           if [ "$($compose_cmd exec -T postgres psql -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" -Atc "SELECT to_regclass('public.schema_migrations') IS NOT NULL" < /dev/null)" = "t" ]; then
             $compose_cmd exec -T postgres psql -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" -Atc \
-              "SELECT filename FROM schema_migrations ORDER BY filename" < /dev/null > /tmp/sub2api-dev-migrations.applied
+              "SELECT filename FROM schema_migrations ORDER BY filename" < /dev/null | LC_ALL=C sort > /tmp/sub2api-dev-migrations.applied
           else
             : > /tmp/sub2api-dev-migrations.applied
           fi
@@ -145,8 +145,16 @@ jobs:
 
           cp docker-compose.yml "docker-compose.yml.bak-dev-${SHORT_SHA}-$(date +%Y%m%d%H%M%S)"
           sed -i "/^[[:space:]]*sub2api:/,/^[[:space:]]*[A-Za-z0-9_-][A-Za-z0-9_-]*:/ s#^\([[:space:]]*image:[[:space:]]*\).*#\1${IMAGE}#" docker-compose.yml
+          if [ -f docker-compose.override.yml ]; then
+            cp docker-compose.override.yml "docker-compose.override.yml.bak-dev-${SHORT_SHA}-$(date +%Y%m%d%H%M%S)"
+            sed -i "/^[[:space:]]*sub2api:/,/^[[:space:]]*[A-Za-z0-9_-][A-Za-z0-9_-]*:/ s#^\([[:space:]]*image:[[:space:]]*\).*#\1${IMAGE}#" docker-compose.override.yml
+          fi
           if ! sed -n "/^[[:space:]]*sub2api:/,/^[[:space:]]*[A-Za-z0-9_-][A-Za-z0-9_-]*:/p" docker-compose.yml | grep -F "image: ${IMAGE}"; then
             echo "Failed to update sub2api image in docker-compose.yml" >&2
+            exit 1
+          fi
+          if ! $compose_cmd config | sed -n "/^[[:space:]]*sub2api:/,/^[[:space:]]*[A-Za-z0-9_-][A-Za-z0-9_-]*:/p" | grep -F "image: ${IMAGE}"; then
+            echo "Compose resolved sub2api image is not ${IMAGE}" >&2
             exit 1
           fi
 
