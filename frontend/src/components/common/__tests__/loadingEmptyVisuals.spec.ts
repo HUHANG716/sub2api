@@ -1,8 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import DataTable from '../DataTable.vue'
 import EmptyState from '../EmptyState.vue'
+
+const testDir = dirname(fileURLToPath(import.meta.url))
+const dataTableSource = readFileSync(resolve(testDir, '../DataTable.vue'), 'utf8')
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -66,6 +72,12 @@ describe('common loading and empty states', () => {
     expect(emptyViewport.classes()).toEqual(
       expect.arrayContaining(['sticky', 'left-0', 'items-center', 'justify-center'])
     )
+  })
+
+  it('uses a lightweight sticky column edge instead of a heavy dark shadow', () => {
+    expect(dataTableSource).toContain('--table-sticky-shadow')
+    expect(dataTableSource).toContain('linear-gradient')
+    expect(dataTableSource).not.toContain('rgba(2, 6, 23, 0.32)')
   })
 
   it('renders the empty icon in a lightweight frame instead of a solid tile', () => {

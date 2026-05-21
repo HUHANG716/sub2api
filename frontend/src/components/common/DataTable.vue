@@ -720,6 +720,8 @@ defineExpose({
   --table-sticky-bg: var(--theme-surface);
   --table-row-hover-bg: #fff7ed;
   --table-border: rgba(148, 163, 184, 0.22);
+  --table-sticky-shadow: rgba(15, 23, 42, 0.08);
+  --table-sticky-edge: rgba(148, 163, 184, 0.18);
   position: relative;
   overflow-x: auto;
   overflow-y: auto;
@@ -736,6 +738,8 @@ defineExpose({
   --table-sticky-bg: var(--theme-surface);
   --table-row-hover-bg: #252931;
   --table-border: rgba(148, 163, 184, 0.13);
+  --table-sticky-shadow: rgba(2, 6, 23, 0.14);
+  --table-sticky-edge: rgba(148, 163, 184, 0.12);
 }
 
 /* 表头容器，确保在滚动时覆盖表体内容 */
@@ -840,59 +844,47 @@ tbody tr:hover .sticky-col {
   background: var(--table-row-hover-bg);
 }
 
-/* 阴影只在可滚动时显示 */
-/* 单列固定右侧阴影 */
+/* 边缘提示只在可滚动时显示 */
+/* 单列固定右侧边缘 */
 .is-scrollable .sticky-col-left::after {
   content: '';
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
-  width: 10px;
+  width: 12px;
   transform: translateX(100%);
-  background: none;
-  box-shadow: 10px 0 18px rgba(15, 23, 42, 0.1);
+  background: linear-gradient(90deg, var(--table-sticky-shadow), transparent);
+  box-shadow: inset 1px 0 0 var(--table-sticky-edge);
   pointer-events: none;
 }
 
-/* 双列固定：只在第二列显示阴影 */
+/* 双列固定：只在第二列显示边缘 */
 .is-scrollable .sticky-col-left-second::after {
   content: '';
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
-  width: 10px;
+  width: 12px;
   transform: translateX(100%);
-  background: none;
-  box-shadow: 10px 0 18px rgba(15, 23, 42, 0.1);
+  background: linear-gradient(90deg, var(--table-sticky-shadow), transparent);
+  box-shadow: inset 1px 0 0 var(--table-sticky-edge);
   pointer-events: none;
 }
 
-/* 操作列左侧阴影 */
+/* 操作列左侧边缘 */
 .is-scrollable .sticky-col-right::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   bottom: 0;
-  width: 10px;
+  width: 12px;
   transform: translateX(-100%);
-  background: none;
-  box-shadow: -10px 0 18px rgba(15, 23, 42, 0.1);
+  background: linear-gradient(270deg, var(--table-sticky-shadow), transparent);
+  box-shadow: inset -1px 0 0 var(--table-sticky-edge);
   pointer-events: none;
-}
-
-/* 暗色模式阴影 */
-.dark .is-scrollable .sticky-col-left::after,
-.dark .is-scrollable .sticky-col-left-second::after {
-  background: none;
-  box-shadow: 10px 0 18px rgba(2, 6, 23, 0.32);
-}
-
-.dark .is-scrollable .sticky-col-right::before {
-  background: none;
-  box-shadow: -10px 0 18px rgba(2, 6, 23, 0.32);
 }
 
 .table-skeleton-wrap {
