@@ -4,19 +4,12 @@
     <template v-if="isAdmin">
       <button
         @click="toggleDropdown"
-        class="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs transition-colors"
-        :class="[
-          hasUpdate
-            ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-dark-800 dark:text-dark-400 dark:hover:bg-dark-700'
-        ]"
+        class="version-badge-trigger flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs transition-colors"
+        :class="{ 'version-badge-trigger-update': hasUpdate }"
         :title="hasUpdate ? t('version.updateAvailable') : t('version.upToDate')"
       >
         <span v-if="currentVersion" class="font-medium">v{{ currentVersion }}</span>
-        <span
-          v-else
-          class="h-3 w-12 animate-pulse rounded bg-gray-200 font-medium dark:bg-dark-600"
-        ></span>
+        <span v-else class="version-badge-placeholder h-3 w-12 animate-pulse rounded font-medium"></span>
         <!-- Update indicator -->
         <span v-if="hasUpdate" class="relative flex h-2 w-2">
           <span
@@ -535,6 +528,40 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.version-badge-trigger {
+  background: var(--theme-surface-muted);
+  color: var(--theme-text-subtle);
+}
+
+.version-badge-trigger:hover {
+  background: color-mix(in srgb, var(--theme-surface-muted) 78%, var(--theme-accent-soft));
+  color: var(--theme-text-soft);
+}
+
+.version-badge-trigger-update {
+  background: color-mix(in srgb, #f59e0b 14%, var(--theme-surface));
+  color: #b45309;
+}
+
+.version-badge-trigger-update:hover {
+  background: color-mix(in srgb, #f59e0b 20%, var(--theme-surface));
+  color: #92400e;
+}
+
+:global(.dark) .version-badge-trigger-update {
+  background: color-mix(in srgb, #f59e0b 16%, var(--theme-surface));
+  color: #fbbf24;
+}
+
+:global(.dark) .version-badge-trigger-update:hover {
+  background: color-mix(in srgb, #f59e0b 22%, var(--theme-surface));
+  color: #fcd34d;
+}
+
+.version-badge-placeholder {
+  background: var(--theme-border-strong);
+}
+
 .dropdown-enter-active,
 .dropdown-leave-active {
   transition: all 0.2s ease;
