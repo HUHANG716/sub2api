@@ -32,6 +32,18 @@ jobs:
       name: dev
       url: https://code.hahacode.work
     steps:
+      - name: Validate manual dispatch target
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          if [ "$GITHUB_REF_NAME" != "dev" ]; then
+            echo "::error::Deploy Dev must be run from the dev branch workflow. Select Branch: dev."
+            exit 1
+          fi
+          if [ "${{ inputs.ref }}" != "dev" ]; then
+            echo "::error::Deploy Dev can only deploy ref=dev."
+            exit 1
+          fi
+
       - name: Configure SSH
         run: |
           install -m 700 -d ~/.ssh
