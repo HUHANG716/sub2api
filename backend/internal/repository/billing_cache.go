@@ -48,11 +48,11 @@ func billingSubKey(userID, groupID int64) string {
 }
 
 const (
-	subFieldStatus       = "status"
-	subFieldExpiresAt    = "expires_at"
-	subFieldDailyUsage   = "daily_usage"
-	subFieldWeeklyUsage  = "weekly_usage"
-	subFieldMonthlyUsage = "monthly_usage"
+	subFieldStatus        = "status"
+	subFieldExpiresAt     = "expires_at"
+	subFieldDailyUsage    = "daily_usage"
+	subFieldWeeklyUsage   = "weekly_usage"
+	subFieldMonthlyUsage  = "monthly_usage"
 	subFieldPeriodID      = "period_id"
 	subFieldPeriodStarts  = "period_starts_at"
 	subFieldPeriodExpires = "period_expires_at"

@@ -104,7 +104,7 @@ func (s *PaymentConfigService) GetPlanPeriodLimitMap(ctx context.Context, plans 
 	if err != nil {
 		return nil
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	result := make(map[int64]*float64, len(ids))
 	for rows.Next() {
 		var id int64
@@ -291,10 +291,6 @@ func (s *PaymentConfigService) GetPlan(ctx context.Context, id int64) (*dbent.Su
 		return nil, infraerrors.NotFound("PLAN_NOT_FOUND", "subscription plan not found")
 	}
 	return plan, nil
-}
-
-func (s *PaymentConfigService) setPlanPeriodLimit(ctx context.Context, planID int64, limit *float64) error {
-	return s.setPlanPeriodLimitWithClient(ctx, s.entClient, planID, limit)
 }
 
 func (s *PaymentConfigService) setPlanPeriodLimitWithClient(ctx context.Context, client interface {

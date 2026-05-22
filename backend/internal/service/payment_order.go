@@ -346,7 +346,7 @@ func (s *PaymentService) withPlanPeriodLimitSnapshot(ctx context.Context, snapsh
 		}
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	if rows.Next() {
 		if err := rows.Scan(&limit); err != nil {
 			return nil, err

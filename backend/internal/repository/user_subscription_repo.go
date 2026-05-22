@@ -474,7 +474,7 @@ func (r *userSubscriptionRepository) CreatePeriod(ctx context.Context, period *s
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	if !rows.Next() {
 		return sql.ErrNoRows
 	}
@@ -533,7 +533,7 @@ func (r *userSubscriptionRepository) scanSubscriptionPeriod(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	if !rows.Next() {
 		return nil, service.ErrSubscriptionPeriodNotFound
 	}
