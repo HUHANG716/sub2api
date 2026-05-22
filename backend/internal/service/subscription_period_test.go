@@ -136,8 +136,9 @@ func TestExtendSubscriptionShortenTrimsQueuedPeriods(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, subRepo.periods[10], 2)
-	require.Len(t, subRepo.activePeriods(10), 2)
-	require.WithinDuration(t, shortened.ExpiresAt, subRepo.periods[10][1].ExpiresAt, time.Second)
+	require.Len(t, subRepo.activePeriods(10), 1)
+	require.WithinDuration(t, shortened.ExpiresAt, subRepo.periods[10][0].ExpiresAt, time.Second)
+	require.Equal(t, SubscriptionStatusExpired, subRepo.periods[10][1].Status)
 }
 
 func TestExtendSubscriptionShortenRemovesFullyQueuedPeriods(t *testing.T) {
