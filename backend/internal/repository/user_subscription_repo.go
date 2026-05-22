@@ -390,40 +390,58 @@ func (r *userSubscriptionRepository) IncrementUsage(ctx context.Context, id int6
 
 func (r *userSubscriptionRepository) incrementUsage(ctx context.Context, id int64, costUSD float64) error {
 	const updateSQL = `
-		UPDATE user_subscriptions us
-		SET
-			daily_usage_usd = us.daily_usage_usd + $1,
-			weekly_usage_usd = us.weekly_usage_usd + $1,
-			monthly_usage_usd = us.monthly_usage_usd + $1,
-			updated_at = NOW()
-		FROM groups g
-		WHERE us.id = $2
-			AND us.deleted_at IS NULL
-			AND us.group_id = g.id
-			AND g.deleted_at IS NULL
+		WITH updated_sub AS (
+			UPDATE user_subscriptions us
+			SET
+				daily_usage_usd = us.daily_usage_usd + $1,
+				weekly_usage_usd = us.weekly_usage_usd + $1,
+				monthly_usage_usd = us.monthly_usage_usd + $1,
+				updated_at = NOW()
+			FROM groups g
+			WHERE us.id = $2
+				AND us.deleted_at IS NULL
+				AND us.group_id = g.id
+				AND g.deleted_at IS NULL
+			RETURNING us.id
+		),
+		active_period AS (
+			SELECT usp.id
+			FROM user_subscription_periods usp
+			JOIN updated_sub us ON usp.subscription_id = us.id
+			WHERE usp.deleted_at IS NULL
+				AND usp.status = $3
+				AND usp.starts_at <= NOW()
+				AND usp.expires_at > NOW()
+			ORDER BY usp.starts_at ASC, usp.id ASC
+			LIMIT 1
+		),
+		updated_period AS (
+			UPDATE user_subscription_periods usp
+			SET usage_usd = usp.usage_usd + $1,
+				updated_at = NOW()
+			WHERE usp.id IN (SELECT id FROM active_period)
+			RETURNING usp.id
+		)
+		SELECT COUNT(*) FROM updated_sub
 	`
 
 	client := userSubscriptionSQLFromContext(ctx, r.client)
-	result, err := client.ExecContext(ctx, updateSQL, costUSD, id)
+	rows, err := client.QueryContext(ctx, updateSQL, costUSD, id, service.SubscriptionStatusActive)
 	if err != nil {
 		return err
 	}
+	defer func() { _ = rows.Close() }()
 
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if affected > 0 {
-		period, err := r.GetActivePeriod(ctx, id, time.Now())
-		if err != nil && !errors.Is(err, service.ErrSubscriptionPeriodNotFound) {
+	var affected int64
+	if rows.Next() {
+		if err := rows.Scan(&affected); err != nil {
 			return err
 		}
-		if err == nil && period != nil {
-			if err := r.IncrementPeriodUsage(ctx, period.ID, costUSD); err != nil {
-				return err
-			}
-		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if affected > 0 {
 		return nil
 	}
 
