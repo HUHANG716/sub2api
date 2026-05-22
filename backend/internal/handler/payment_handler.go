@@ -81,7 +81,7 @@ func (h *PaymentHandler) GetPlans(c *gin.Context) {
 			Description:    p.Description,
 			Price:          p.Price,
 			OriginalPrice:  p.OriginalPrice,
-			PeriodLimitUSD:  periodLimitMap[p.ID],
+			PeriodLimitUSD: periodLimitMap[p.ID],
 			ValidityDays:   p.ValidityDays,
 			ValidityUnit:   p.ValidityUnit,
 			Features:       p.Features,

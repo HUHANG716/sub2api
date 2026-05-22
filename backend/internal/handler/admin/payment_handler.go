@@ -255,7 +255,7 @@ func (h *PaymentHandler) planResponses(ctx context.Context, plans []*dbent.Subsc
 			Description:    p.Description,
 			Price:          p.Price,
 			OriginalPrice:  p.OriginalPrice,
-			PeriodLimitUSD:  periodLimitMap[p.ID],
+			PeriodLimitUSD: periodLimitMap[p.ID],
 			ValidityDays:   p.ValidityDays,
 			ValidityUnit:   p.ValidityUnit,
 			Features:       p.Features,
