@@ -723,7 +723,6 @@ func normalizeExpiredWindows(subs []UserSubscription) {
 func normalizeExpiredWindowsAt(subs []UserSubscription, now time.Time) {
 	for i := range subs {
 		sub := &subs[i]
-		normalizeMissingUsageWindows(sub)
 		// 日窗口过期：清零展示数据
 		if !sub.HasOneTimeDailyQuota() {
 			if needsReset, _ := needsAnchoredWindowReset(sub.StartsAt, sub.DailyWindowStart, 24*time.Hour, now); needsReset {

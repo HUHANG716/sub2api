@@ -319,7 +319,7 @@ func TestNormalizeExpiredWindows_LegacyMidnightWeeklyWindowWaitsForPurchaseTime(
 	require.Equal(t, legacyWeeklyWindowStart, *subs[0].WeeklyWindowStart)
 }
 
-func TestNormalizeExpiredWindows_BackfillsMissingWindowWhenUsageExists(t *testing.T) {
+func TestNormalizeExpiredWindows_DoesNotClearMissingWindowUsage(t *testing.T) {
 	now := time.Date(2026, 5, 20, 10, 0, 0, 0, time.UTC)
 	startsAt := time.Date(2026, 5, 18, 15, 30, 0, 0, time.UTC)
 	subs := []UserSubscription{
@@ -333,11 +333,9 @@ func TestNormalizeExpiredWindows_BackfillsMissingWindowWhenUsageExists(t *testin
 
 	normalizeExpiredWindowsAt(subs, now)
 
-	require.NotNil(t, subs[0].WeeklyWindowStart)
-	require.Equal(t, startsAt, *subs[0].WeeklyWindowStart)
+	require.Nil(t, subs[0].WeeklyWindowStart)
 	require.Equal(t, 369.99, subs[0].WeeklyUsageUSD)
-	require.NotNil(t, subs[0].MonthlyWindowStart)
-	require.Equal(t, startsAt, *subs[0].MonthlyWindowStart)
+	require.Nil(t, subs[0].MonthlyWindowStart)
 	require.Equal(t, 369.99, subs[0].MonthlyUsageUSD)
 }
 
