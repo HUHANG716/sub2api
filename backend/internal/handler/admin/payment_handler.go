@@ -259,7 +259,7 @@ func (h *PaymentHandler) planResponses(ctx context.Context, plans []*dbent.Subsc
 			ValidityDays:   p.ValidityDays,
 			ValidityUnit:   p.ValidityUnit,
 			Features:       p.Features,
-			ProductName:    p.ProductName,
+			ProductName:     p.ProductName,
 			ForSale:        p.ForSale,
 			SortOrder:      p.SortOrder,
 		})
