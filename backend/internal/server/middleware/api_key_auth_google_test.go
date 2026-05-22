@@ -183,6 +183,21 @@ func (f fakeGoogleSubscriptionRepo) ResetMonthlyUsage(ctx context.Context, id in
 func (f fakeGoogleSubscriptionRepo) IncrementUsage(ctx context.Context, id int64, costUSD float64) error {
 	return errors.New("not implemented")
 }
+func (f fakeGoogleSubscriptionRepo) CreatePeriod(ctx context.Context, period *service.UserSubscriptionPeriod) error {
+	return errors.New("not implemented")
+}
+func (f fakeGoogleSubscriptionRepo) GetActivePeriod(ctx context.Context, subscriptionID int64, at time.Time) (*service.UserSubscriptionPeriod, error) {
+	return nil, service.ErrSubscriptionPeriodNotFound
+}
+func (f fakeGoogleSubscriptionRepo) GetLatestPeriod(ctx context.Context, subscriptionID int64) (*service.UserSubscriptionPeriod, error) {
+	return nil, service.ErrSubscriptionPeriodNotFound
+}
+func (f fakeGoogleSubscriptionRepo) GetPeriodByOrderID(ctx context.Context, orderID int64) (*service.UserSubscriptionPeriod, error) {
+	return nil, service.ErrSubscriptionPeriodNotFound
+}
+func (f fakeGoogleSubscriptionRepo) IncrementPeriodUsage(ctx context.Context, periodID int64, costUSD float64) error {
+	return errors.New("not implemented")
+}
 func (f fakeGoogleSubscriptionRepo) BatchUpdateExpiredStatus(ctx context.Context) (int64, error) {
 	return 0, errors.New("not implemented")
 }

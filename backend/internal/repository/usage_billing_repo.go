@@ -168,9 +168,43 @@ func incrementUsageBillingSubscription(ctx context.Context, tx *sql.Tx, subscrip
 		return err
 	}
 	if affected > 0 {
+		if err := incrementUsageBillingActiveSubscriptionPeriod(ctx, tx, subscriptionID, costUSD); err != nil {
+			return err
+		}
 		return nil
 	}
 	return service.ErrSubscriptionNotFound
+}
+
+func incrementUsageBillingActiveSubscriptionPeriod(ctx context.Context, tx *sql.Tx, subscriptionID int64, costUSD float64) error {
+	const updateSQL = `
+		UPDATE user_subscription_periods
+		SET usage_usd = usage_usd + $1,
+			updated_at = NOW()
+		WHERE id = (
+			SELECT id
+			FROM user_subscription_periods
+			WHERE subscription_id = $2
+				AND deleted_at IS NULL
+				AND status = $3
+				AND starts_at <= NOW()
+				AND expires_at > NOW()
+			ORDER BY starts_at ASC, id ASC
+			LIMIT 1
+		)
+	`
+	res, err := tx.ExecContext(ctx, updateSQL, costUSD, subscriptionID, service.SubscriptionStatusActive)
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		logger.LegacyPrintf("repository.usage_billing", "subscription usage recorded without active period: subscription_id=%d cost_usd=%f", subscriptionID, costUSD)
+	}
+	return nil
 }
 
 func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, amount float64) (float64, error) {

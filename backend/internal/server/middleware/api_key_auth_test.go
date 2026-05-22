@@ -865,6 +865,26 @@ func (r *stubUserSubscriptionRepo) IncrementUsage(ctx context.Context, id int64,
 	return errors.New("not implemented")
 }
 
+func (r *stubUserSubscriptionRepo) CreatePeriod(ctx context.Context, period *service.UserSubscriptionPeriod) error {
+	return errors.New("not implemented")
+}
+
+func (r *stubUserSubscriptionRepo) GetActivePeriod(ctx context.Context, subscriptionID int64, at time.Time) (*service.UserSubscriptionPeriod, error) {
+	return nil, service.ErrSubscriptionPeriodNotFound
+}
+
+func (r *stubUserSubscriptionRepo) GetLatestPeriod(ctx context.Context, subscriptionID int64) (*service.UserSubscriptionPeriod, error) {
+	return nil, service.ErrSubscriptionPeriodNotFound
+}
+
+func (r *stubUserSubscriptionRepo) GetPeriodByOrderID(ctx context.Context, orderID int64) (*service.UserSubscriptionPeriod, error) {
+	return nil, service.ErrSubscriptionPeriodNotFound
+}
+
+func (r *stubUserSubscriptionRepo) IncrementPeriodUsage(ctx context.Context, periodID int64, costUSD float64) error {
+	return errors.New("not implemented")
+}
+
 func (r *stubUserSubscriptionRepo) BatchUpdateExpiredStatus(ctx context.Context) (int64, error) {
 	return 0, errors.New("not implemented")
 }

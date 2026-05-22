@@ -91,6 +91,26 @@ func (r *subscriptionExpiryRepoStub) IncrementUsage(context.Context, int64, floa
 	return nil
 }
 
+func (r *subscriptionExpiryRepoStub) CreatePeriod(context.Context, *UserSubscriptionPeriod) error {
+	return nil
+}
+
+func (r *subscriptionExpiryRepoStub) GetActivePeriod(context.Context, int64, time.Time) (*UserSubscriptionPeriod, error) {
+	return nil, ErrSubscriptionPeriodNotFound
+}
+
+func (r *subscriptionExpiryRepoStub) GetLatestPeriod(context.Context, int64) (*UserSubscriptionPeriod, error) {
+	return nil, ErrSubscriptionPeriodNotFound
+}
+
+func (r *subscriptionExpiryRepoStub) GetPeriodByOrderID(context.Context, int64) (*UserSubscriptionPeriod, error) {
+	return nil, ErrSubscriptionPeriodNotFound
+}
+
+func (r *subscriptionExpiryRepoStub) IncrementPeriodUsage(context.Context, int64, float64) error {
+	return nil
+}
+
 func (r *subscriptionExpiryRepoStub) BatchUpdateExpiredStatus(context.Context) (int64, error) {
 	return 0, nil
 }

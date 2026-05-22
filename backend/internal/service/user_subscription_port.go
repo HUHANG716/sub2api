@@ -30,6 +30,11 @@ type UserSubscriptionRepository interface {
 	ResetWeeklyUsage(ctx context.Context, id int64, newWindowStart time.Time) error
 	ResetMonthlyUsage(ctx context.Context, id int64, newWindowStart time.Time) error
 	IncrementUsage(ctx context.Context, id int64, costUSD float64) error
+	CreatePeriod(ctx context.Context, period *UserSubscriptionPeriod) error
+	GetActivePeriod(ctx context.Context, subscriptionID int64, at time.Time) (*UserSubscriptionPeriod, error)
+	GetLatestPeriod(ctx context.Context, subscriptionID int64) (*UserSubscriptionPeriod, error)
+	GetPeriodByOrderID(ctx context.Context, orderID int64) (*UserSubscriptionPeriod, error)
+	IncrementPeriodUsage(ctx context.Context, periodID int64, costUSD float64) error
 
 	BatchUpdateExpiredStatus(ctx context.Context) (int64, error)
 }

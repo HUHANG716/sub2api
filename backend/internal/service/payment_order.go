@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -11,11 +12,13 @@ import (
 	"strings"
 	"time"
 
+	"entgo.io/ent/dialect"
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/Wei-Shaw/sub2api/internal/payment/provider"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/lib/pq"
 )
 
 // --- Order Creation ---
@@ -169,6 +172,13 @@ func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderReq
 		return nil, err
 	}
 	providerSnapshot := buildPaymentOrderProviderSnapshot(sel, req)
+	if plan != nil {
+		var snapshotErr error
+		providerSnapshot, snapshotErr = s.withPlanPeriodLimitSnapshot(ctx, providerSnapshot, plan.ID)
+		if snapshotErr != nil {
+			return nil, fmt.Errorf("snapshot subscription period limit: %w", snapshotErr)
+		}
+	}
 	selectedInstanceID := ""
 	selectedProviderKey := ""
 	if sel != nil {
@@ -308,6 +318,65 @@ func buildPaymentOrderProviderSnapshot(sel *payment.InstanceSelection, req Creat
 		return nil
 	}
 	return snapshot
+}
+
+func (s *PaymentService) withPlanPeriodLimitSnapshot(ctx context.Context, snapshot map[string]any, planID int64) (map[string]any, error) {
+	hadSnapshot := snapshot != nil
+	if snapshot == nil {
+		snapshot = map[string]any{}
+	}
+	if s == nil || s.entClient == nil || planID == 0 {
+		if hadSnapshot {
+			return snapshot, nil
+		}
+		return nil, nil
+	}
+	var limit sql.NullFloat64
+	query := `SELECT period_limit_usd FROM subscription_plans WHERE id = $1`
+	if s.entClient.Driver().Dialect() == dialect.SQLite {
+		query = `SELECT period_limit_usd FROM subscription_plans WHERE id = ?`
+	}
+	rows, err := s.entClient.QueryContext(ctx, query, planID)
+	if err != nil {
+		if isMissingColumnError(err, "period_limit_usd") {
+			if hadSnapshot {
+				return snapshot, nil
+			}
+			return nil, nil
+		}
+		return nil, err
+	}
+	defer rows.Close()
+	if rows.Next() {
+		if err := rows.Scan(&limit); err != nil {
+			return nil, err
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if limit.Valid && limit.Float64 > 0 {
+		snapshot["subscription_period_limit_usd"] = limit.Float64
+		return snapshot, nil
+	}
+	if hadSnapshot {
+		return snapshot, nil
+	}
+	return nil, nil
+}
+
+func isMissingColumnError(err error, columnName string) bool {
+	if err == nil {
+		return false
+	}
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) {
+		return pqErr.Code == "42703" && strings.Contains(strings.ToLower(pqErr.Message), strings.ToLower(columnName))
+	}
+	msg := strings.ToLower(err.Error())
+	columnName = strings.ToLower(strings.TrimSpace(columnName))
+	return strings.Contains(msg, "no such column") && strings.Contains(msg, columnName) ||
+		strings.Contains(msg, "column") && strings.Contains(msg, columnName) && strings.Contains(msg, "does not exist")
 }
 
 func paymentOrderSnapshotWxpayAppID(sel *payment.InstanceSelection, req CreateOrderRequest) string {

@@ -36,6 +36,9 @@
         <template #cell-validity_days="{ value, row }">
           <span class="text-sm">{{ value }} {{ t('payment.admin.' + (row.validity_unit || 'days')) }}</span>
         </template>
+        <template #cell-period_limit_usd="{ value }">
+          <span class="text-sm">{{ value != null ? `$${value}` : '-' }}</span>
+        </template>
         <template #cell-for_sale="{ value, row }">
           <button
             type="button"
@@ -133,6 +136,7 @@ const planColumns = computed((): Column[] => [
   { key: 'group_id', label: t('payment.admin.group') },
   { key: 'price', label: t('payment.admin.price') },
   { key: 'validity_days', label: t('payment.admin.validityDays') },
+  { key: 'period_limit_usd', label: t('payment.admin.periodLimit') },
   { key: 'for_sale', label: t('payment.admin.forSale') },
   { key: 'sort_order', label: t('payment.admin.sortOrder') },
   { key: 'actions', label: t('common.actions') },
