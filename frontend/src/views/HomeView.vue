@@ -474,6 +474,14 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+@font-face {
+  font-family: 'Hahacode Landing SC';
+  font-style: normal;
+  font-display: optional;
+  font-weight: 400 900;
+  src: url('/fonts/hahacode-landing-sc.woff2') format('woff2-variations');
+}
+
 :global(html.landing-page-active),
 :global(body.landing-page-active) {
   --theme-bg: #171717;
@@ -574,6 +582,16 @@ onUnmounted(() => {
   width: 100%;
   max-width: 100vw;
   overflow-x: clip;
+  font-family:
+    'Hahacode Landing SC',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
+    sans-serif;
   color: var(--landing-text);
   background: var(--landing-bg);
 }

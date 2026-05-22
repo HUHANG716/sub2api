@@ -7,6 +7,7 @@ import HomeView from '@/views/HomeView.vue'
 
 const homeViewSourcePath = path.resolve(process.cwd(), 'src/views/HomeView.vue')
 const globalStyleSourcePath = path.resolve(process.cwd(), 'src/style.css')
+const indexHtmlSourcePath = path.resolve(process.cwd(), 'index.html')
 
 const { authState, appState } = vi.hoisted(() => ({
   authState: {
@@ -425,6 +426,23 @@ describe('HomeView', () => {
     expect(globalStyleSource).toContain('background: var(--theme-scrollbar-track)')
     expect(homeSource).toContain('--theme-scrollbar-track: #171717')
     expect(homeSource).toContain('--theme-scrollbar-thumb: rgba(148, 163, 184, 0.34)')
+  })
+
+  it('preloads a small landing font subset without falling through to the async global webfont', () => {
+    const homeSource = readFileSync(homeViewSourcePath, 'utf-8')
+    const indexHtmlSource = readFileSync(indexHtmlSourcePath, 'utf-8')
+    const landingShellBlock = homeSource.match(/\.landing-shell\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(indexHtmlSource).toContain('/fonts/hahacode-landing-sc.woff2')
+    expect(indexHtmlSource).toContain('rel="preload"')
+    expect(indexHtmlSource).toContain('as="font"')
+    expect(indexHtmlSource).toContain('crossorigin')
+    expect(homeSource).toContain("font-family: 'Hahacode Landing SC'")
+    expect(homeSource).toContain("font-display: optional")
+    expect(homeSource).toContain("url('/fonts/hahacode-landing-sc.woff2')")
+    expect(landingShellBlock).not.toContain("'Noto Sans SC Variable'")
+    expect(landingShellBlock).toContain("'PingFang SC'")
+    expect(landingShellBlock).toContain("'Microsoft YaHei'")
   })
 
   it('keeps the fixed dark landing theme softer than pure black', () => {
