@@ -723,6 +723,7 @@ func normalizeExpiredWindows(subs []UserSubscription) {
 func normalizeExpiredWindowsAt(subs []UserSubscription, now time.Time) {
 	for i := range subs {
 		sub := &subs[i]
+		normalizeMissingUsageWindows(sub)
 		// 日窗口过期：清零展示数据
 		if !sub.HasOneTimeDailyQuota() {
 			if needsReset, _ := needsAnchoredWindowReset(sub.StartsAt, sub.DailyWindowStart, 24*time.Hour, now); needsReset {
@@ -740,6 +741,24 @@ func normalizeExpiredWindowsAt(subs []UserSubscription, now time.Time) {
 			sub.MonthlyWindowStart = nil
 			sub.MonthlyUsageUSD = 0
 		}
+	}
+}
+
+func normalizeMissingUsageWindows(sub *UserSubscription) {
+	if sub == nil || sub.StartsAt.IsZero() {
+		return
+	}
+	if sub.DailyWindowStart == nil && sub.DailyUsageUSD > 0 {
+		windowStart := sub.StartsAt
+		sub.DailyWindowStart = &windowStart
+	}
+	if sub.WeeklyWindowStart == nil && sub.WeeklyUsageUSD > 0 {
+		windowStart := sub.StartsAt
+		sub.WeeklyWindowStart = &windowStart
+	}
+	if sub.MonthlyWindowStart == nil && sub.MonthlyUsageUSD > 0 {
+		windowStart := sub.StartsAt
+		sub.MonthlyWindowStart = &windowStart
 	}
 }
 
@@ -1105,6 +1124,8 @@ func (s *SubscriptionService) GetSubscriptionProgress(ctx context.Context, subsc
 
 // calculateProgress 根据已加载的订阅和分组数据计算使用进度（纯内存计算，无 DB 查询）
 func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Group) *SubscriptionProgress {
+	normalizeMissingUsageWindows(sub)
+
 	progress := &SubscriptionProgress{
 		ID:            sub.ID,
 		GroupName:     group.Name,

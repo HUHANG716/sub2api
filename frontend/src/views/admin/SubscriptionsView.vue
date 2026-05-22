@@ -232,7 +232,7 @@
                     ${{ row.group?.daily_limit_usd?.toFixed(2) }}
                   </span>
                 </div>
-                <div class="reset-info" v-if="row.daily_window_start">
+                <div class="reset-info">
                   <svg
                     class="h-3 w-3"
                     fill="none"
@@ -269,7 +269,7 @@
                     ${{ row.group?.weekly_limit_usd?.toFixed(2) }}
                   </span>
                 </div>
-                <div class="reset-info" v-if="row.weekly_window_start">
+                <div class="reset-info">
                   <svg
                     class="h-3 w-3"
                     fill="none"
@@ -306,7 +306,7 @@
                     ${{ row.group?.monthly_limit_usd?.toFixed(2) }}
                   </span>
                 </div>
-                <div class="reset-info" v-if="row.monthly_window_start">
+                <div class="reset-info">
                   <svg
                     class="h-3 w-3"
                     fill="none"
@@ -1379,13 +1379,14 @@ const getWindowStart = (
   subscription: UserSubscription,
   period: 'daily' | 'weekly' | 'monthly'
 ): string | null => {
+  const fallbackStart = subscription.starts_at || null
   switch (period) {
     case 'daily':
-      return subscription.daily_window_start
+      return subscription.daily_window_start || ((subscription.daily_usage_usd || 0) > 0 ? fallbackStart : null)
     case 'weekly':
-      return subscription.weekly_window_start
+      return subscription.weekly_window_start || ((subscription.weekly_usage_usd || 0) > 0 ? fallbackStart : null)
     case 'monthly':
-      return subscription.monthly_window_start
+      return subscription.monthly_window_start || ((subscription.monthly_usage_usd || 0) > 0 ? fallbackStart : null)
   }
 }
 

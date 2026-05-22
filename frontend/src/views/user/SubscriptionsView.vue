@@ -141,7 +141,6 @@
                 ></div>
               </div>
               <p
-                v-if="subscription.daily_window_start"
                 class="text-xs text-gray-500 dark:text-dark-400"
               >
                 {{ formatDailyUsageWindow(subscription) }}
@@ -177,7 +176,6 @@
                 ></div>
               </div>
               <p
-                v-if="subscription.weekly_window_start"
                 class="text-xs text-gray-500 dark:text-dark-400"
               >
                 {{
@@ -215,7 +213,6 @@
                 ></div>
               </div>
               <p
-                v-if="subscription.monthly_window_start"
                 class="text-xs text-gray-500 dark:text-dark-400"
               >
                 {{
@@ -384,13 +381,14 @@ function getWindowStart(
   subscription: UserSubscription,
   period: 'daily' | 'weekly' | 'monthly'
 ): string | null {
+  const fallbackStart = subscription.starts_at || null
   switch (period) {
     case 'daily':
-      return subscription.daily_window_start
+      return subscription.daily_window_start || ((subscription.daily_usage_usd || 0) > 0 ? fallbackStart : null)
     case 'weekly':
-      return subscription.weekly_window_start
+      return subscription.weekly_window_start || ((subscription.weekly_usage_usd || 0) > 0 ? fallbackStart : null)
     case 'monthly':
-      return subscription.monthly_window_start
+      return subscription.monthly_window_start || ((subscription.monthly_usage_usd || 0) > 0 ? fallbackStart : null)
   }
 }
 

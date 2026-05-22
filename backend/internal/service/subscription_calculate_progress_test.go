@@ -190,6 +190,30 @@ func TestCalculateProgress_MonthlyResetCappedBySubscriptionExpiry(t *testing.T) 
 	assert.GreaterOrEqual(t, progress.Monthly.ResetsInSeconds, int64(0))
 }
 
+func TestCalculateProgress_BackfillsMissingWindowWhenUsageExists(t *testing.T) {
+	svc := newTestSubscriptionService()
+	now := time.Now()
+	startsAt := now.Add(-2 * 24 * time.Hour)
+
+	sub := &UserSubscription{
+		ID:             1,
+		StartsAt:       startsAt,
+		ExpiresAt:      startsAt.AddDate(0, 0, 7),
+		WeeklyUsageUSD: 25,
+	}
+	group := &Group{
+		Name:           "Weekly",
+		WeeklyLimitUSD: ptrFloat64(50.0),
+	}
+
+	progress := svc.calculateProgress(sub, group)
+
+	require.NotNil(t, progress.Weekly)
+	assert.Equal(t, startsAt, progress.Weekly.WindowStart)
+	assert.Equal(t, startsAt, *sub.WeeklyWindowStart)
+	assert.Equal(t, 50.0, progress.Weekly.Percentage)
+}
+
 func TestCalculateProgress_OverLimit_ClampedTo100Percent(t *testing.T) {
 	svc := newTestSubscriptionService()
 	now := time.Now()
