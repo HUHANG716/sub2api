@@ -181,9 +181,7 @@
                 class="text-xs text-gray-500 dark:text-dark-400"
               >
                 {{
-                  t('userSubscriptions.resetIn', {
-                    time: formatResetTime(subscription.weekly_window_start, 168)
-                  })
+                  formatUsageWindow(subscription, 'weekly')
                 }}
               </p>
             </div>
@@ -221,9 +219,7 @@
                 class="text-xs text-gray-500 dark:text-dark-400"
               >
                 {{
-                  t('userSubscriptions.resetIn', {
-                    time: formatResetTime(subscription.monthly_window_start, 720)
-                  })
+                  formatUsageWindow(subscription, 'monthly')
                 }}
               </p>
             </div>
@@ -266,7 +262,12 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { formatDateOnly } from '@/utils/format'
 import { platformBorderClass, platformBadgeClass, platformButtonClass, platformLabel } from '@/utils/platformColors'
-import { getRemainingDurationParts, isOneTimeDailyQuota, type RemainingDurationParts } from '@/utils/subscriptionQuota'
+import {
+  getRemainingDurationParts,
+  getWindowEndState,
+  isOneTimeDailyQuota,
+  type RemainingDurationParts
+} from '@/utils/subscriptionQuota'
 
 function platformAccentDotClass(p: string): string {
   switch (p) {
@@ -358,25 +359,72 @@ function formatDurationParts(parts: RemainingDurationParts): string {
 }
 
 function formatDailyUsageWindow(subscription: UserSubscription): string {
+  if (isSubscriptionExpired(subscription)) {
+    return t('userSubscriptions.status.expired')
+  }
+
   if (isOneTimeDailyQuota(subscription) && subscription.expires_at) {
     const parts = getRemainingDurationParts(subscription.expires_at)
-    if (!parts) return t('userSubscriptions.windowNotActive')
+    if (!parts) return t('userSubscriptions.status.expired')
     return t('userSubscriptions.quotaEndsIn', { time: formatDurationParts(parts) })
   }
 
-  return t('userSubscriptions.resetIn', {
-    time: formatResetTime(subscription.daily_window_start, 24)
-  })
+  return formatUsageWindow(subscription, 'daily')
 }
 
-function formatResetTime(windowStart: string | null, windowHours: number): string {
-  if (!windowStart) return t('userSubscriptions.windowNotActive')
+function isSubscriptionExpired(subscription: UserSubscription): boolean {
+  if (subscription.status === 'expired') return true
+  if (!subscription.expires_at) return false
 
-  const start = new Date(windowStart)
-  const end = new Date(start.getTime() + windowHours * 60 * 60 * 1000)
-  const parts = getRemainingDurationParts(end)
+  const expiresTime = new Date(subscription.expires_at).getTime()
+  return Number.isFinite(expiresTime) && expiresTime <= Date.now()
+}
 
-  return parts ? formatDurationParts(parts) : t('userSubscriptions.windowNotActive')
+function getWindowStart(
+  subscription: UserSubscription,
+  period: 'daily' | 'weekly' | 'monthly'
+): string | null {
+  switch (period) {
+    case 'daily':
+      return subscription.daily_window_start
+    case 'weekly':
+      return subscription.weekly_window_start
+    case 'monthly':
+      return subscription.monthly_window_start
+  }
+}
+
+function getWindowHours(period: 'daily' | 'weekly' | 'monthly'): number {
+  switch (period) {
+    case 'daily':
+      return 24
+    case 'weekly':
+      return 168
+    case 'monthly':
+      return 720
+  }
+}
+
+function formatUsageWindow(
+  subscription: UserSubscription,
+  period: 'daily' | 'weekly' | 'monthly'
+): string {
+  if (isSubscriptionExpired(subscription)) {
+    return t('userSubscriptions.status.expired')
+  }
+
+  const state = getWindowEndState(
+    getWindowStart(subscription, period),
+    getWindowHours(period),
+    subscription.expires_at
+  )
+
+  if (!state) return t('userSubscriptions.windowNotActive')
+
+  const time = formatDurationParts(state.parts)
+  return state.type === 'quota_end'
+    ? t('userSubscriptions.quotaEndsIn', { time })
+    : t('userSubscriptions.resetIn', { time })
 }
 
 onMounted(() => {

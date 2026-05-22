@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"testing"
 	"time"
@@ -335,6 +336,33 @@ func TestAssignSubscriptionKeepsWorkingWhenIdempotencyStoreUnavailable(t *testin
 	require.NoError(t, err)
 	require.NotNil(t, sub)
 	require.Equal(t, 1, subRepo.createCalls, "semantic idempotent endpoint should not depend on idempotency store availability")
+}
+
+type assignOrExtendLookupErrorRepo struct {
+	userSubRepoNoop
+	err error
+}
+
+func (r assignOrExtendLookupErrorRepo) GetByUserIDAndGroupID(context.Context, int64, int64) (*UserSubscription, error) {
+	return nil, r.err
+}
+
+func TestAssignOrExtendSubscriptionReturnsLookupError(t *testing.T) {
+	lookupErr := errors.New("database unavailable")
+	groupRepo := &subscriptionGroupRepoStub{
+		group: &Group{ID: 1, SubscriptionType: SubscriptionTypeSubscription},
+	}
+	svc := NewSubscriptionService(groupRepo, assignOrExtendLookupErrorRepo{err: lookupErr}, nil, nil, nil)
+
+	sub, reused, err := svc.AssignOrExtendSubscription(context.Background(), &AssignSubscriptionInput{
+		UserID:       9100,
+		GroupID:      1,
+		ValidityDays: 7,
+	})
+
+	require.Nil(t, sub)
+	require.False(t, reused)
+	require.ErrorIs(t, err, lookupErr)
 }
 
 func TestAssignSubscriptionAnchorsWindowsAtPurchaseTime(t *testing.T) {

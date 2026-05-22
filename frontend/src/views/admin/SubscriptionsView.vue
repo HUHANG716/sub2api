@@ -283,7 +283,7 @@
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <span>{{ formatResetTime(row.weekly_window_start, 'weekly') }}</span>
+                  <span>{{ formatUsageWindow(row, 'weekly') }}</span>
                 </div>
               </div>
 
@@ -320,7 +320,7 @@
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <span>{{ formatResetTime(row.monthly_window_start, 'monthly') }}</span>
+                  <span>{{ formatUsageWindow(row, 'monthly') }}</span>
                 </div>
               </div>
 
@@ -758,7 +758,12 @@ import Select from '@/components/common/Select.vue'
 import GroupBadge from '@/components/common/GroupBadge.vue'
 import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
 import Icon from '@/components/icons/Icon.vue'
-import { getRemainingDurationParts, isOneTimeDailyQuota, type RemainingDurationParts } from '@/utils/subscriptionQuota'
+import {
+  getRemainingDurationParts,
+  getWindowEndState,
+  isOneTimeDailyQuota,
+  type RemainingDurationParts
+} from '@/utils/subscriptionQuota'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -1339,38 +1344,70 @@ const formatQuotaEndDuration = (parts: RemainingDurationParts): string => {
 }
 
 const formatDailyUsageWindow = (subscription: UserSubscription): string => {
+  if (isSubscriptionExpired(subscription)) {
+    return t('admin.subscriptions.status.expired')
+  }
+
   if (isOneTimeDailyQuota(subscription) && subscription.expires_at) {
     const parts = getRemainingDurationParts(subscription.expires_at)
-    return parts ? formatQuotaEndDuration(parts) : t('admin.subscriptions.windowNotActive')
+    return parts ? formatQuotaEndDuration(parts) : t('admin.subscriptions.status.expired')
   }
 
-  return formatResetTime(subscription.daily_window_start, 'daily')
+  return formatUsageWindow(subscription, 'daily')
 }
 
-// Format reset time based on window start and period type
-const formatResetTime = (windowStart: string | null, period: 'daily' | 'weekly' | 'monthly'): string => {
-  if (!windowStart) return t('admin.subscriptions.windowNotActive')
+const isSubscriptionExpired = (subscription: UserSubscription): boolean => {
+  if (subscription.status === 'expired') return true
+  if (!subscription.expires_at) return false
 
-  const start = new Date(windowStart)
-  const now = new Date()
+  const expiresTime = new Date(subscription.expires_at).getTime()
+  return Number.isFinite(expiresTime) && expiresTime <= Date.now()
+}
 
-  // Calculate reset time based on period
-  let resetTime: Date
+const periodWindowHours = (period: 'daily' | 'weekly' | 'monthly'): number => {
   switch (period) {
     case 'daily':
-      resetTime = new Date(start.getTime() + 24 * 60 * 60 * 1000)
-      break
+      return 24
     case 'weekly':
-      resetTime = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000)
-      break
+      return 7 * 24
     case 'monthly':
-      resetTime = new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000)
-      break
+      return 30 * 24
+  }
+}
+
+const getWindowStart = (
+  subscription: UserSubscription,
+  period: 'daily' | 'weekly' | 'monthly'
+): string | null => {
+  switch (period) {
+    case 'daily':
+      return subscription.daily_window_start
+    case 'weekly':
+      return subscription.weekly_window_start
+    case 'monthly':
+      return subscription.monthly_window_start
+  }
+}
+
+const formatUsageWindow = (
+  subscription: UserSubscription,
+  period: 'daily' | 'weekly' | 'monthly'
+): string => {
+  if (isSubscriptionExpired(subscription)) {
+    return t('admin.subscriptions.status.expired')
   }
 
-  const parts = getRemainingDurationParts(resetTime, now)
+  const state = getWindowEndState(
+    getWindowStart(subscription, period),
+    periodWindowHours(period),
+    subscription.expires_at
+  )
 
-  return parts ? formatResetDuration(parts) : t('admin.subscriptions.windowNotActive')
+  if (!state) return t('admin.subscriptions.windowNotActive')
+
+  return state.type === 'quota_end'
+    ? formatQuotaEndDuration(state.parts)
+    : formatResetDuration(state.parts)
 }
 
 // Handle click outside to close dropdowns

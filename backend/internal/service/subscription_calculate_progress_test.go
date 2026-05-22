@@ -115,6 +115,31 @@ func TestCalculateProgress_WeeklyUsage(t *testing.T) {
 	assert.Equal(t, 50.0, progress.Weekly.Percentage)
 }
 
+func TestCalculateProgress_WeeklyResetCappedBySubscriptionExpiry(t *testing.T) {
+	svc := newTestSubscriptionService()
+	now := time.Now()
+	weeklyStart := now.Add(-2 * 24 * time.Hour)
+	expiresAt := now.Add(2 * time.Minute)
+
+	sub := &UserSubscription{
+		ID:                1,
+		ExpiresAt:         expiresAt,
+		WeeklyUsageUSD:    50.0,
+		WeeklyWindowStart: ptrTime(weeklyStart),
+	}
+	group := &Group{
+		Name:           "Weekly",
+		WeeklyLimitUSD: ptrFloat64(50.0),
+	}
+
+	progress := svc.calculateProgress(sub, group)
+
+	require.NotNil(t, progress.Weekly)
+	assert.Equal(t, expiresAt, progress.Weekly.ResetsAt, "订阅先过期时，周额度结束时间应为订阅过期时间")
+	assert.LessOrEqual(t, progress.Weekly.ResetsInSeconds, int64(120))
+	assert.GreaterOrEqual(t, progress.Weekly.ResetsInSeconds, int64(0))
+}
+
 func TestCalculateProgress_MonthlyUsage(t *testing.T) {
 	svc := newTestSubscriptionService()
 	now := time.Now()
@@ -138,6 +163,31 @@ func TestCalculateProgress_MonthlyUsage(t *testing.T) {
 	assert.Equal(t, 80.0, progress.Monthly.UsedUSD)
 	assert.Equal(t, 20.0, progress.Monthly.RemainingUSD)
 	assert.Equal(t, 80.0, progress.Monthly.Percentage)
+}
+
+func TestCalculateProgress_MonthlyResetCappedBySubscriptionExpiry(t *testing.T) {
+	svc := newTestSubscriptionService()
+	now := time.Now()
+	monthlyStart := now.Add(-10 * 24 * time.Hour)
+	expiresAt := now.Add(2 * time.Minute)
+
+	sub := &UserSubscription{
+		ID:                 1,
+		ExpiresAt:          expiresAt,
+		MonthlyUsageUSD:    100.0,
+		MonthlyWindowStart: ptrTime(monthlyStart),
+	}
+	group := &Group{
+		Name:            "Monthly",
+		MonthlyLimitUSD: ptrFloat64(100.0),
+	}
+
+	progress := svc.calculateProgress(sub, group)
+
+	require.NotNil(t, progress.Monthly)
+	assert.Equal(t, expiresAt, progress.Monthly.ResetsAt, "订阅先过期时，月额度结束时间应为订阅过期时间")
+	assert.LessOrEqual(t, progress.Monthly.ResetsInSeconds, int64(120))
+	assert.GreaterOrEqual(t, progress.Monthly.ResetsInSeconds, int64(0))
 }
 
 func TestCalculateProgress_OverLimit_ClampedTo100Percent(t *testing.T) {

@@ -300,6 +300,25 @@ func TestValidateAndCheckLimits_LegacyMidnightWeeklyWindowWaitsForPurchaseTime(t
 	require.Equal(t, 80.0, sub.WeeklyUsageUSD)
 }
 
+func TestNormalizeExpiredWindows_LegacyMidnightWeeklyWindowWaitsForPurchaseTime(t *testing.T) {
+	now := time.Date(2026, 5, 25, 10, 0, 0, 0, time.UTC)
+	startsAt := time.Date(2026, 5, 18, 15, 30, 0, 0, time.UTC)
+	legacyWeeklyWindowStart := time.Date(2026, 5, 18, 0, 0, 0, 0, time.UTC)
+	sub := UserSubscription{
+		StartsAt:          startsAt,
+		ExpiresAt:         startsAt.AddDate(0, 0, 14),
+		WeeklyUsageUSD:    80,
+		WeeklyWindowStart: &legacyWeeklyWindowStart,
+	}
+	subs := []UserSubscription{sub}
+
+	normalizeExpiredWindowsAt(subs, now)
+
+	require.Equal(t, 80.0, subs[0].WeeklyUsageUSD)
+	require.NotNil(t, subs[0].WeeklyWindowStart)
+	require.Equal(t, legacyWeeklyWindowStart, *subs[0].WeeklyWindowStart)
+}
+
 func TestCheckAndResetWindows_LegacyMidnightWeeklyWindowResetsAtPurchaseTime(t *testing.T) {
 	now := time.Date(2026, 5, 25, 16, 0, 0, 0, time.UTC)
 	startsAt := time.Date(2026, 5, 18, 15, 30, 0, 0, time.UTC)

@@ -40,3 +40,30 @@ export function getRemainingDurationParts(
 
   return { days, hours, minutes }
 }
+
+export function getWindowEndState(
+  windowStart: string | null | undefined,
+  windowHours: number,
+  expiresAt?: string | null,
+  now: Date = new Date()
+): { type: 'reset' | 'quota_end'; parts: RemainingDurationParts } | null {
+  if (!windowStart) return null
+
+  const startTime = new Date(windowStart).getTime()
+  if (!Number.isFinite(startTime)) return null
+
+  const resetTime = new Date(startTime + windowHours * 60 * 60 * 1000)
+  let targetTime = resetTime
+  let type: 'reset' | 'quota_end' = 'reset'
+
+  if (expiresAt) {
+    const expiresTime = new Date(expiresAt).getTime()
+    if (Number.isFinite(expiresTime) && expiresTime < resetTime.getTime()) {
+      targetTime = new Date(expiresTime)
+      type = 'quota_end'
+    }
+  }
+
+  const parts = getRemainingDurationParts(targetTime, now)
+  return parts ? { type, parts } : null
+}
