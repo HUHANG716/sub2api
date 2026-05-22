@@ -251,6 +251,81 @@ func TestCheckAndResetWindows_AdvancesFromPurchaseAnchoredWindow(t *testing.T) {
 	require.Equal(t, monthlyWindowStart.Add(30*24*time.Hour), repo.monthlyWindowStart)
 }
 
+func TestCheckAndResetWindows_LegacyMidnightWeeklyWindowWaitsForPurchaseTime(t *testing.T) {
+	now := time.Date(2026, 5, 25, 10, 0, 0, 0, time.UTC)
+	startsAt := time.Date(2026, 5, 18, 15, 30, 0, 0, time.UTC)
+	legacyWeeklyWindowStart := time.Date(2026, 5, 18, 0, 0, 0, 0, time.UTC)
+	repo := &dailyResetTrackingUserSubRepo{}
+	svc := NewSubscriptionService(groupRepoNoop{}, repo, nil, nil, nil)
+	sub := &UserSubscription{
+		ID:                1,
+		UserID:            10,
+		GroupID:           20,
+		StartsAt:          startsAt,
+		ExpiresAt:         startsAt.AddDate(0, 0, 14),
+		WeeklyUsageUSD:    20,
+		WeeklyWindowStart: &legacyWeeklyWindowStart,
+	}
+
+	err := svc.checkAndResetWindowsAt(context.Background(), sub, now)
+
+	require.NoError(t, err)
+	require.False(t, repo.resetWeeklyCalled, "老周卡零点窗口应等到购买时间点后再刷新")
+	require.Equal(t, 20.0, sub.WeeklyUsageUSD)
+	require.Equal(t, legacyWeeklyWindowStart, *sub.WeeklyWindowStart)
+}
+
+func TestValidateAndCheckLimits_LegacyMidnightWeeklyWindowWaitsForPurchaseTime(t *testing.T) {
+	now := time.Date(2026, 5, 25, 10, 0, 0, 0, time.UTC)
+	startsAt := time.Date(2026, 5, 18, 15, 30, 0, 0, time.UTC)
+	legacyWeeklyWindowStart := time.Date(2026, 5, 18, 0, 0, 0, 0, time.UTC)
+	weeklyLimit := 100.0
+	sub := &UserSubscription{
+		Status:            SubscriptionStatusActive,
+		StartsAt:          startsAt,
+		ExpiresAt:         startsAt.AddDate(0, 0, 14),
+		WeeklyUsageUSD:    80,
+		WeeklyWindowStart: &legacyWeeklyWindowStart,
+	}
+	group := &Group{
+		SubscriptionType: SubscriptionTypeSubscription,
+		WeeklyLimitUSD:   &weeklyLimit,
+	}
+	svc := NewSubscriptionService(groupRepoNoop{}, userSubRepoNoop{}, nil, nil, nil)
+
+	needsMaintenance, err := svc.validateAndCheckLimitsAt(sub, group, now)
+
+	require.NoError(t, err)
+	require.False(t, needsMaintenance)
+	require.Equal(t, 80.0, sub.WeeklyUsageUSD)
+}
+
+func TestCheckAndResetWindows_LegacyMidnightWeeklyWindowResetsAtPurchaseTime(t *testing.T) {
+	now := time.Date(2026, 5, 25, 16, 0, 0, 0, time.UTC)
+	startsAt := time.Date(2026, 5, 18, 15, 30, 0, 0, time.UTC)
+	legacyWeeklyWindowStart := time.Date(2026, 5, 18, 0, 0, 0, 0, time.UTC)
+	repo := &dailyResetTrackingUserSubRepo{}
+	svc := NewSubscriptionService(groupRepoNoop{}, repo, nil, nil, nil)
+	sub := &UserSubscription{
+		ID:                1,
+		UserID:            10,
+		GroupID:           20,
+		StartsAt:          startsAt,
+		ExpiresAt:         startsAt.AddDate(0, 0, 14),
+		WeeklyUsageUSD:    20,
+		WeeklyWindowStart: &legacyWeeklyWindowStart,
+	}
+
+	err := svc.checkAndResetWindowsAt(context.Background(), sub, now)
+
+	expectedWindowStart := time.Date(2026, 5, 25, 15, 30, 0, 0, time.UTC)
+	require.NoError(t, err)
+	require.True(t, repo.resetWeeklyCalled)
+	require.Equal(t, expectedWindowStart, *sub.WeeklyWindowStart)
+	require.Equal(t, expectedWindowStart, repo.weeklyWindowStart)
+	require.Equal(t, 0.0, sub.WeeklyUsageUSD)
+}
+
 func TestRollingWindowStartKeepsPurchaseTimeOfDay(t *testing.T) {
 	purchaseAnchoredStart := time.Date(2026, 5, 18, 15, 30, 0, 0, time.UTC)
 	now := time.Date(2026, 5, 19, 16, 0, 0, 0, time.UTC)

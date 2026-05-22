@@ -763,6 +763,42 @@ func subscriptionWindowAnchor(sub *UserSubscription, fallback time.Time) time.Ti
 	return fallback
 }
 
+func needsAnchoredWindowReset(anchor time.Time, windowStart *time.Time, windowSize time.Duration, now time.Time) (bool, time.Time) {
+	if windowStart == nil {
+		return false, time.Time{}
+	}
+	if isLegacyMidnightWindow(anchor, *windowStart, windowSize, now) {
+		currentAnchorWindow := rollingWindowStart(anchor, windowSize, now)
+		if currentAnchorWindow.After(windowStart.Add(windowSize)) {
+			return true, currentAnchorWindow
+		}
+		return false, time.Time{}
+	}
+	if now.Before(windowStart.Add(windowSize)) {
+		return false, time.Time{}
+	}
+	return true, rollingWindowStart(*windowStart, windowSize, now)
+}
+
+func isLegacyMidnightWindow(anchor, windowStart time.Time, windowSize time.Duration, now time.Time) bool {
+	if anchor.IsZero() || windowSize <= 0 || windowStart.IsZero() || isStartOfDay(anchor) || !isStartOfDay(windowStart) {
+		return false
+	}
+	currentAnchorWindow := rollingWindowStart(anchor, windowSize, now)
+	previousAnchorWindow := currentAnchorWindow.Add(-windowSize)
+	return windowStart.Equal(startOfDay(currentAnchorWindow)) ||
+		windowStart.Equal(startOfDay(previousAnchorWindow)) ||
+		windowStart.Before(startOfDay(previousAnchorWindow))
+}
+
+func isStartOfDay(t time.Time) bool {
+	return t.Hour() == 0 && t.Minute() == 0 && t.Second() == 0 && t.Nanosecond() == 0
+}
+
+func startOfDay(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
 // CheckAndActivateWindow 检查并激活窗口（首次使用时）
 func (s *SubscriptionService) CheckAndActivateWindow(ctx context.Context, sub *UserSubscription) error {
 	if sub.IsWindowActivated() {
@@ -822,22 +858,27 @@ func (s *SubscriptionService) AdminResetQuota(ctx context.Context, subscriptionI
 // CheckAndResetWindows 检查并重置过期的窗口
 func (s *SubscriptionService) CheckAndResetWindows(ctx context.Context, sub *UserSubscription) error {
 	now := time.Now()
+	return s.checkAndResetWindowsAt(ctx, sub, now)
+}
+
+func (s *SubscriptionService) checkAndResetWindowsAt(ctx context.Context, sub *UserSubscription, now time.Time) error {
 	needsInvalidateCache := false
 
 	// 日窗口重置（24小时）
-	if sub.NeedsDailyResetAt(now) {
-		windowStart := rollingWindowStart(*sub.DailyWindowStart, 24*time.Hour, now)
-		if err := s.userSubRepo.ResetDailyUsage(ctx, sub.ID, windowStart); err != nil {
-			return err
+	if !sub.HasOneTimeDailyQuota() {
+		needsReset, windowStart := needsAnchoredWindowReset(sub.StartsAt, sub.DailyWindowStart, 24*time.Hour, now)
+		if needsReset {
+			if err := s.userSubRepo.ResetDailyUsage(ctx, sub.ID, windowStart); err != nil {
+				return err
+			}
+			sub.DailyWindowStart = &windowStart
+			sub.DailyUsageUSD = 0
+			needsInvalidateCache = true
 		}
-		sub.DailyWindowStart = &windowStart
-		sub.DailyUsageUSD = 0
-		needsInvalidateCache = true
 	}
 
 	// 周窗口重置（7天）
-	if sub.NeedsWeeklyResetAt(now) {
-		windowStart := rollingWindowStart(*sub.WeeklyWindowStart, 7*24*time.Hour, now)
+	if needsReset, windowStart := needsAnchoredWindowReset(sub.StartsAt, sub.WeeklyWindowStart, 7*24*time.Hour, now); needsReset {
 		if err := s.userSubRepo.ResetWeeklyUsage(ctx, sub.ID, windowStart); err != nil {
 			return err
 		}
@@ -847,8 +888,7 @@ func (s *SubscriptionService) CheckAndResetWindows(ctx context.Context, sub *Use
 	}
 
 	// 月窗口重置（30天）
-	if sub.NeedsMonthlyResetAt(now) {
-		windowStart := rollingWindowStart(*sub.MonthlyWindowStart, 30*24*time.Hour, now)
+	if needsReset, windowStart := needsAnchoredWindowReset(sub.StartsAt, sub.MonthlyWindowStart, 30*24*time.Hour, now); needsReset {
 		if err := s.userSubRepo.ResetMonthlyUsage(ctx, sub.ID, windowStart); err != nil {
 			return err
 		}
@@ -887,6 +927,11 @@ func (s *SubscriptionService) CheckUsageLimits(ctx context.Context, sub *UserSub
 // 仅做内存检查，不触发 DB 写入。窗口重置的 DB 写入由 DoWindowMaintenance 异步完成。
 // 返回 needsMaintenance 表示是否需要异步执行窗口维护。
 func (s *SubscriptionService) ValidateAndCheckLimits(sub *UserSubscription, group *Group) (needsMaintenance bool, err error) {
+	now := time.Now()
+	return s.validateAndCheckLimitsAt(sub, group, now)
+}
+
+func (s *SubscriptionService) validateAndCheckLimitsAt(sub *UserSubscription, group *Group, now time.Time) (needsMaintenance bool, err error) {
 	// 1. 验证订阅状态
 	if sub.Status == SubscriptionStatusExpired {
 		return false, ErrSubscriptionExpired
@@ -900,16 +945,17 @@ func (s *SubscriptionService) ValidateAndCheckLimits(sub *UserSubscription, grou
 
 	// 2. 内存中修正过期窗口的用量，确保 CheckUsageLimits 不会误拒绝用户
 	//    实际的 DB 窗口重置由 DoWindowMaintenance 异步完成
-	now := time.Now()
-	if sub.NeedsDailyResetAt(now) {
-		sub.DailyUsageUSD = 0
-		needsMaintenance = true
+	if !sub.HasOneTimeDailyQuota() {
+		if needsReset, _ := needsAnchoredWindowReset(sub.StartsAt, sub.DailyWindowStart, 24*time.Hour, now); needsReset {
+			sub.DailyUsageUSD = 0
+			needsMaintenance = true
+		}
 	}
-	if sub.NeedsWeeklyResetAt(now) {
+	if needsReset, _ := needsAnchoredWindowReset(sub.StartsAt, sub.WeeklyWindowStart, 7*24*time.Hour, now); needsReset {
 		sub.WeeklyUsageUSD = 0
 		needsMaintenance = true
 	}
-	if sub.NeedsMonthlyResetAt(now) {
+	if needsReset, _ := needsAnchoredWindowReset(sub.StartsAt, sub.MonthlyWindowStart, 30*24*time.Hour, now); needsReset {
 		sub.MonthlyUsageUSD = 0
 		needsMaintenance = true
 	}
