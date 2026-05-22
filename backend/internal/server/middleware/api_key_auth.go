@@ -187,8 +187,7 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 					status := 403
 					if errors.Is(validateErr, service.ErrDailyLimitExceeded) ||
 						errors.Is(validateErr, service.ErrWeeklyLimitExceeded) ||
-						errors.Is(validateErr, service.ErrMonthlyLimitExceeded) ||
-						errors.Is(validateErr, service.ErrPeriodLimitExceeded) {
+						errors.Is(validateErr, service.ErrMonthlyLimitExceeded) {
 						code = "USAGE_LIMIT_EXCEEDED"
 						status = 429
 					}

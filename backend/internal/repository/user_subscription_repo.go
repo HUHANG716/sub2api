@@ -2,8 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
@@ -12,11 +10,6 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
-
-type userSubscriptionSQLClient interface {
-	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
-	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
-}
 
 type userSubscriptionRepository struct {
 	client *dbent.Client
@@ -91,42 +84,21 @@ func (r *userSubscriptionRepository) GetByUserIDAndGroupID(ctx context.Context, 
 	return userSubscriptionEntityToService(m), nil
 }
 
-func (r *userSubscriptionRepository) GetByUserIDAndGroupIDForUpdate(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
-	client := clientFromContext(ctx, r.client)
-	m, err := client.UserSubscription.Query().
-		Where(
-			usersubscription.UserIDEQ(userID),
-			usersubscription.GroupIDEQ(groupID),
-		).
-		WithGroup().
-		ForUpdate().
-		Only(ctx)
-	if err != nil {
-		return nil, translatePersistenceError(err, service.ErrSubscriptionNotFound, nil)
-	}
-	return userSubscriptionEntityToService(m), nil
-}
-
 func (r *userSubscriptionRepository) GetActiveByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
-	now := time.Now()
 	client := clientFromContext(ctx, r.client)
 	m, err := client.UserSubscription.Query().
 		Where(
 			usersubscription.UserIDEQ(userID),
 			usersubscription.GroupIDEQ(groupID),
 			usersubscription.StatusEQ(service.SubscriptionStatusActive),
-			usersubscription.ExpiresAtGT(now),
+			usersubscription.ExpiresAtGT(time.Now()),
 		).
 		WithGroup().
 		Only(ctx)
 	if err != nil {
 		return nil, translatePersistenceError(err, service.ErrSubscriptionNotFound, nil)
 	}
-	sub := userSubscriptionEntityToService(m)
-	if period, periodErr := r.GetActivePeriod(ctx, sub.ID, now); periodErr == nil {
-		sub.CurrentPeriod = period
-	}
-	return sub, nil
+	return userSubscriptionEntityToService(m), nil
 }
 
 func (r *userSubscriptionRepository) Update(ctx context.Context, sub *service.UserSubscription) error {
@@ -368,23 +340,6 @@ func (r *userSubscriptionRepository) ResetMonthlyUsage(ctx context.Context, id i
 // 限额检查已在请求前由 BillingCacheService.CheckBillingEligibility 完成，
 // 此处仅负责记录实际消费，确保消费数据的完整性。
 func (r *userSubscriptionRepository) IncrementUsage(ctx context.Context, id int64, costUSD float64) error {
-	if dbent.TxFromContext(ctx) != nil || r.client == nil {
-		return r.incrementUsage(ctx, id, costUSD)
-	}
-
-	tx, err := r.client.Tx(ctx)
-	if err != nil {
-		return err
-	}
-	txCtx := dbent.NewTxContext(ctx, tx)
-	if err := r.incrementUsage(txCtx, id, costUSD); err != nil {
-		_ = tx.Rollback()
-		return err
-	}
-	return tx.Commit()
-}
-
-func (r *userSubscriptionRepository) incrementUsage(ctx context.Context, id int64, costUSD float64) error {
 	const updateSQL = `
 		UPDATE user_subscriptions us
 		SET
@@ -399,7 +354,7 @@ func (r *userSubscriptionRepository) incrementUsage(ctx context.Context, id int6
 			AND g.deleted_at IS NULL
 	`
 
-	client := userSubscriptionSQLFromContext(ctx, r.client)
+	client := clientFromContext(ctx, r.client)
 	result, err := client.ExecContext(ctx, updateSQL, costUSD, id)
 	if err != nil {
 		return err
@@ -411,214 +366,11 @@ func (r *userSubscriptionRepository) incrementUsage(ctx context.Context, id int6
 	}
 
 	if affected > 0 {
-		period, err := r.GetActivePeriod(ctx, id, time.Now())
-		if err != nil && !errors.Is(err, service.ErrSubscriptionPeriodNotFound) {
-			return err
-		}
-		if err == nil && period != nil {
-			if err := r.IncrementPeriodUsage(ctx, period.ID, costUSD); err != nil {
-				return err
-			}
-		}
 		return nil
 	}
 
 	// affected == 0：订阅不存在或已删除
 	return service.ErrSubscriptionNotFound
-}
-
-func userSubscriptionSQLFromContext(ctx context.Context, fallback *dbent.Client) userSubscriptionSQLClient {
-	if tx := dbent.TxFromContext(ctx); tx != nil {
-		return tx.Client()
-	}
-	return fallback
-}
-
-func (r *userSubscriptionRepository) CreatePeriod(ctx context.Context, period *service.UserSubscriptionPeriod) error {
-	if period == nil {
-		return nil
-	}
-	client := userSubscriptionSQLFromContext(ctx, r.client)
-	status := period.Status
-	if status == "" {
-		status = service.SubscriptionStatusActive
-	}
-	const insertSQL = `
-		INSERT INTO user_subscription_periods (
-			subscription_id, user_id, group_id, order_id,
-			starts_at, expires_at, status, limit_usd, usage_usd,
-			created_at, updated_at
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-		RETURNING id, created_at, updated_at
-	`
-	var orderID any
-	if period.OrderID != nil {
-		orderID = *period.OrderID
-	}
-	var limitUSD any
-	if period.LimitUSD != nil {
-		limitUSD = *period.LimitUSD
-	}
-	rows, err := client.QueryContext(ctx, insertSQL,
-		period.SubscriptionID,
-		period.UserID,
-		period.GroupID,
-		orderID,
-		period.StartsAt,
-		period.ExpiresAt,
-		status,
-		limitUSD,
-		period.UsageUSD,
-	)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	if !rows.Next() {
-		return sql.ErrNoRows
-	}
-	if err := rows.Scan(&period.ID, &period.CreatedAt, &period.UpdatedAt); err != nil {
-		return err
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-	period.Status = status
-	return nil
-}
-
-func (r *userSubscriptionRepository) GetActivePeriod(ctx context.Context, subscriptionID int64, at time.Time) (*service.UserSubscriptionPeriod, error) {
-	const querySQL = `
-		SELECT id, subscription_id, user_id, group_id, order_id, starts_at, expires_at, status, limit_usd, usage_usd, created_at, updated_at
-		FROM user_subscription_periods
-		WHERE subscription_id = $1
-			AND deleted_at IS NULL
-			AND status = $2
-			AND starts_at <= $3
-			AND expires_at > $3
-		ORDER BY starts_at ASC, id ASC
-		LIMIT 1
-	`
-	return r.scanSubscriptionPeriod(ctx, querySQL, subscriptionID, service.SubscriptionStatusActive, at)
-}
-
-func (r *userSubscriptionRepository) GetLatestPeriod(ctx context.Context, subscriptionID int64) (*service.UserSubscriptionPeriod, error) {
-	const querySQL = `
-		SELECT id, subscription_id, user_id, group_id, order_id, starts_at, expires_at, status, limit_usd, usage_usd, created_at, updated_at
-		FROM user_subscription_periods
-		WHERE subscription_id = $1
-			AND deleted_at IS NULL
-		ORDER BY expires_at DESC, id DESC
-		LIMIT 1
-	`
-	return r.scanSubscriptionPeriod(ctx, querySQL, subscriptionID)
-}
-
-func (r *userSubscriptionRepository) GetPeriodByOrderID(ctx context.Context, orderID int64) (*service.UserSubscriptionPeriod, error) {
-	const querySQL = `
-		SELECT id, subscription_id, user_id, group_id, order_id, starts_at, expires_at, status, limit_usd, usage_usd, created_at, updated_at
-		FROM user_subscription_periods
-		WHERE order_id = $1
-			AND deleted_at IS NULL
-		ORDER BY id DESC
-		LIMIT 1
-	`
-	return r.scanSubscriptionPeriod(ctx, querySQL, orderID)
-}
-
-func (r *userSubscriptionRepository) scanSubscriptionPeriod(ctx context.Context, query string, args ...any) (*service.UserSubscriptionPeriod, error) {
-	client := userSubscriptionSQLFromContext(ctx, r.client)
-	rows, err := client.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	if !rows.Next() {
-		return nil, service.ErrSubscriptionPeriodNotFound
-	}
-	var period service.UserSubscriptionPeriod
-	var orderID sql.NullInt64
-	var limitUSD sql.NullFloat64
-	err = rows.Scan(
-		&period.ID,
-		&period.SubscriptionID,
-		&period.UserID,
-		&period.GroupID,
-		&orderID,
-		&period.StartsAt,
-		&period.ExpiresAt,
-		&period.Status,
-		&limitUSD,
-		&period.UsageUSD,
-		&period.CreatedAt,
-		&period.UpdatedAt,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	if orderID.Valid {
-		period.OrderID = &orderID.Int64
-	}
-	if limitUSD.Valid {
-		period.LimitUSD = &limitUSD.Float64
-	}
-	return &period, nil
-}
-
-func (r *userSubscriptionRepository) IncrementPeriodUsage(ctx context.Context, periodID int64, costUSD float64) error {
-	const updateSQL = `
-		UPDATE user_subscription_periods usp
-		SET usage_usd = usp.usage_usd + $1,
-			updated_at = NOW()
-		FROM user_subscriptions us, groups g
-		WHERE usp.id = $2
-			AND usp.deleted_at IS NULL
-			AND usp.subscription_id = us.id
-			AND us.deleted_at IS NULL
-			AND us.group_id = g.id
-			AND g.deleted_at IS NULL
-	`
-	client := userSubscriptionSQLFromContext(ctx, r.client)
-	result, err := client.ExecContext(ctx, updateSQL, costUSD, periodID)
-	if err != nil {
-		return err
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if affected > 0 {
-		return nil
-	}
-	return service.ErrSubscriptionPeriodNotFound
-}
-
-func (r *userSubscriptionRepository) TrimPeriodsAfter(ctx context.Context, subscriptionID int64, cutoff time.Time) error {
-	client := userSubscriptionSQLFromContext(ctx, r.client)
-	if _, err := client.ExecContext(ctx, `
-		UPDATE user_subscription_periods
-		SET deleted_at = NOW(),
-			updated_at = NOW()
-		WHERE subscription_id = $1
-			AND deleted_at IS NULL
-			AND starts_at >= $2
-	`, subscriptionID, cutoff); err != nil {
-		return err
-	}
-	_, err := client.ExecContext(ctx, `
-		UPDATE user_subscription_periods
-		SET expires_at = $2,
-			updated_at = NOW()
-		WHERE subscription_id = $1
-			AND deleted_at IS NULL
-			AND starts_at < $2
-			AND expires_at > $2
-	`, subscriptionID, cutoff)
-	return err
 }
 
 func (r *userSubscriptionRepository) BatchUpdateExpiredStatus(ctx context.Context) (int64, error) {

@@ -2,20 +2,17 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
-	"entgo.io/ent/dialect"
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
-	"github.com/lib/pq"
 )
 
 // validatePlanRequired checks that all required fields for a plan are provided.
-func validatePlanRequired(name string, groupID int64, price float64, validityDays int, validityUnit string, originalPrice, periodLimit *float64) error {
+func validatePlanRequired(name string, groupID int64, price float64, validityDays int, validityUnit string, originalPrice *float64) error {
 	if strings.TrimSpace(name) == "" {
 		return infraerrors.BadRequest("PLAN_NAME_REQUIRED", "plan name is required")
 	}
@@ -33,9 +30,6 @@ func validatePlanRequired(name string, groupID int64, price float64, validityDay
 	}
 	if originalPrice != nil && *originalPrice < 0 {
 		return infraerrors.BadRequest("PLAN_ORIGINAL_PRICE_INVALID", "original price must be >= 0")
-	}
-	if periodLimit != nil && *periodLimit < 0 {
-		return infraerrors.BadRequest("PLAN_PERIOD_LIMIT_INVALID", "period limit must be >= 0")
 	}
 	return nil
 }
@@ -60,9 +54,6 @@ func validatePlanPatch(req UpdatePlanRequest) error {
 	if req.OriginalPrice != nil && *req.OriginalPrice < 0 {
 		return infraerrors.BadRequest("PLAN_ORIGINAL_PRICE_INVALID", "original price must be >= 0")
 	}
-	if req.PeriodLimitUSD != nil && *req.PeriodLimitUSD < 0 {
-		return infraerrors.BadRequest("PLAN_PERIOD_LIMIT_INVALID", "period limit must be >= 0")
-	}
 	return nil
 }
 
@@ -77,50 +68,6 @@ type PlanGroupInfo struct {
 	WeeklyLimitUSD  *float64 `json:"weekly_limit_usd"`
 	MonthlyLimitUSD *float64 `json:"monthly_limit_usd"`
 	ModelScopes     []string `json:"supported_model_scopes"`
-}
-
-func (s *PaymentConfigService) GetPlanPeriodLimitMap(ctx context.Context, plans []*dbent.SubscriptionPlan) map[int64]*float64 {
-	ids := make([]int64, 0, len(plans))
-	for _, p := range plans {
-		if p != nil {
-			ids = append(ids, p.ID)
-		}
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query := `SELECT id, period_limit_usd FROM subscription_plans WHERE id = ANY($1)`
-	args := []any{pq.Int64Array(ids)}
-	if s.entClient.Driver().Dialect() == dialect.SQLite {
-		placeholders := make([]string, 0, len(ids))
-		args = make([]any, 0, len(ids))
-		for _, id := range ids {
-			placeholders = append(placeholders, "?")
-			args = append(args, id)
-		}
-		query = `SELECT id, period_limit_usd FROM subscription_plans WHERE id IN (` + strings.Join(placeholders, ",") + `)`
-	}
-	rows, err := s.entClient.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil
-	}
-	defer rows.Close()
-	result := make(map[int64]*float64, len(ids))
-	for rows.Next() {
-		var id int64
-		var limit sql.NullFloat64
-		if err := rows.Scan(&id, &limit); err != nil {
-			return result
-		}
-		if limit.Valid {
-			v := limit.Float64
-			result[id] = &v
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return result
-	}
-	return result
 }
 
 // GetGroupPlatformMap returns a map of group_id → platform for the given plans.
@@ -166,11 +113,7 @@ func (s *PaymentConfigService) GetGroupInfoMap(ctx context.Context, plans []*dbe
 }
 
 func (s *PaymentConfigService) ListPlans(ctx context.Context) ([]*dbent.SubscriptionPlan, error) {
-	plans, err := s.entClient.SubscriptionPlan.Query().Order(subscriptionplan.BySortOrder()).All(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return plans, nil
+	return s.entClient.SubscriptionPlan.Query().Order(subscriptionplan.BySortOrder()).All(ctx)
 }
 
 func (s *PaymentConfigService) ListPlansForSale(ctx context.Context) ([]*dbent.SubscriptionPlan, error) {
@@ -178,16 +121,10 @@ func (s *PaymentConfigService) ListPlansForSale(ctx context.Context) ([]*dbent.S
 }
 
 func (s *PaymentConfigService) CreatePlan(ctx context.Context, req CreatePlanRequest) (*dbent.SubscriptionPlan, error) {
-	if err := validatePlanRequired(req.Name, req.GroupID, req.Price, req.ValidityDays, req.ValidityUnit, req.OriginalPrice, req.PeriodLimitUSD); err != nil {
+	if err := validatePlanRequired(req.Name, req.GroupID, req.Price, req.ValidityDays, req.ValidityUnit, req.OriginalPrice); err != nil {
 		return nil, err
 	}
-	tx, err := s.entClient.Tx(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("begin plan transaction: %w", err)
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	b := tx.SubscriptionPlan.Create().
+	b := s.entClient.SubscriptionPlan.Create().
 		SetGroupID(req.GroupID).SetName(req.Name).SetDescription(req.Description).
 		SetPrice(req.Price).SetValidityDays(req.ValidityDays).SetValidityUnit(req.ValidityUnit).
 		SetFeatures(req.Features).SetProductName(req.ProductName).
@@ -195,19 +132,7 @@ func (s *PaymentConfigService) CreatePlan(ctx context.Context, req CreatePlanReq
 	if req.OriginalPrice != nil {
 		b.SetOriginalPrice(*req.OriginalPrice)
 	}
-	plan, err := b.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if req.PeriodLimitUSD != nil {
-		if err := s.setPlanPeriodLimitWithClient(ctx, tx.Client(), plan.ID, req.PeriodLimitUSD); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("commit plan transaction: %w", err)
-	}
-	return s.GetPlan(ctx, plan.ID)
+	return b.Save(ctx)
 }
 
 // UpdatePlan updates a subscription plan by ID (patch semantics).
@@ -217,13 +142,7 @@ func (s *PaymentConfigService) UpdatePlan(ctx context.Context, id int64, req Upd
 	if err := validatePlanPatch(req); err != nil {
 		return nil, err
 	}
-	tx, err := s.entClient.Tx(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("begin plan transaction: %w", err)
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	u := tx.SubscriptionPlan.UpdateOneID(id)
+	u := s.entClient.SubscriptionPlan.UpdateOneID(id)
 	if req.GroupID != nil {
 		u.SetGroupID(*req.GroupID)
 	}
@@ -257,19 +176,7 @@ func (s *PaymentConfigService) UpdatePlan(ctx context.Context, id int64, req Upd
 	if req.SortOrder != nil {
 		u.SetSortOrder(*req.SortOrder)
 	}
-	plan, err := u.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if req.PeriodLimitUSD != nil {
-		if err := s.setPlanPeriodLimitWithClient(ctx, tx.Client(), id, req.PeriodLimitUSD); err != nil {
-			return nil, err
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("commit plan transaction: %w", err)
-	}
-	return s.GetPlan(ctx, plan.ID)
+	return u.Save(ctx)
 }
 
 func (s *PaymentConfigService) DeletePlan(ctx context.Context, id int64) error {
@@ -291,22 +198,4 @@ func (s *PaymentConfigService) GetPlan(ctx context.Context, id int64) (*dbent.Su
 		return nil, infraerrors.NotFound("PLAN_NOT_FOUND", "subscription plan not found")
 	}
 	return plan, nil
-}
-
-func (s *PaymentConfigService) setPlanPeriodLimit(ctx context.Context, planID int64, limit *float64) error {
-	return s.setPlanPeriodLimitWithClient(ctx, s.entClient, planID, limit)
-}
-
-func (s *PaymentConfigService) setPlanPeriodLimitWithClient(ctx context.Context, client interface {
-	ExecContext(context.Context, string, ...any) (sql.Result, error)
-}, planID int64, limit *float64) error {
-	if limit == nil || *limit <= 0 {
-		_, err := client.ExecContext(ctx, `UPDATE subscription_plans SET period_limit_usd = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, planID)
-		if isMissingColumnError(err, "period_limit_usd") {
-			return nil
-		}
-		return err
-	}
-	_, err := client.ExecContext(ctx, `UPDATE subscription_plans SET period_limit_usd = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, *limit, planID)
-	return err
 }

@@ -53,12 +53,7 @@ const (
 	subFieldDailyUsage   = "daily_usage"
 	subFieldWeeklyUsage  = "weekly_usage"
 	subFieldMonthlyUsage = "monthly_usage"
-	subFieldPeriodID      = "period_id"
-	subFieldPeriodStarts  = "period_starts_at"
-	subFieldPeriodExpires = "period_expires_at"
-	subFieldPeriodUsage   = "period_usage"
-	subFieldPeriodLimit   = "period_limit"
-	subFieldVersion       = "version"
+	subFieldVersion      = "version"
 )
 
 // billingRateLimitKey generates the Redis key for API key rate limit cache.
@@ -96,9 +91,6 @@ var (
 		redis.call('HINCRBYFLOAT', KEYS[1], 'daily_usage', cost)
 		redis.call('HINCRBYFLOAT', KEYS[1], 'weekly_usage', cost)
 		redis.call('HINCRBYFLOAT', KEYS[1], 'monthly_usage', cost)
-		if redis.call('HEXISTS', KEYS[1], 'period_usage') == 1 then
-			redis.call('HINCRBYFLOAT', KEYS[1], 'period_usage', cost)
-		end
 		redis.call('EXPIRE', KEYS[1], ARGV[2])
 		return 1
 	`)
@@ -218,30 +210,6 @@ func (c *billingCache) parseSubscriptionCache(data map[string]string) (*service.
 		result.MonthlyUsage, _ = strconv.ParseFloat(monthlyStr, 64)
 	}
 
-	if periodUsageStr, ok := data[subFieldPeriodUsage]; ok {
-		result.PeriodUsage, _ = strconv.ParseFloat(periodUsageStr, 64)
-	}
-
-	if periodIDStr, ok := data[subFieldPeriodID]; ok {
-		result.PeriodID, _ = strconv.ParseInt(periodIDStr, 10, 64)
-	}
-	if startsStr, ok := data[subFieldPeriodStarts]; ok {
-		if unix, err := strconv.ParseInt(startsStr, 10, 64); err == nil {
-			result.PeriodStartsAt = time.Unix(unix, 0)
-		}
-	}
-	if expiresStr, ok := data[subFieldPeriodExpires]; ok {
-		if unix, err := strconv.ParseInt(expiresStr, 10, 64); err == nil {
-			result.PeriodExpiresAt = time.Unix(unix, 0)
-		}
-	}
-
-	if periodLimitStr, ok := data[subFieldPeriodLimit]; ok {
-		if limit, err := strconv.ParseFloat(periodLimitStr, 64); err == nil && limit > 0 {
-			result.PeriodLimit = &limit
-		}
-	}
-
 	if versionStr, ok := data[subFieldVersion]; ok {
 		result.Version, _ = strconv.ParseInt(versionStr, 10, 64)
 	}
@@ -264,18 +232,8 @@ func (c *billingCache) SetSubscriptionCache(ctx context.Context, userID, groupID
 		subFieldMonthlyUsage: data.MonthlyUsage,
 		subFieldVersion:      data.Version,
 	}
-	if data.PeriodID > 0 {
-		fields[subFieldPeriodID] = data.PeriodID
-		fields[subFieldPeriodStarts] = data.PeriodStartsAt.Unix()
-		fields[subFieldPeriodExpires] = data.PeriodExpiresAt.Unix()
-		fields[subFieldPeriodUsage] = data.PeriodUsage
-	}
-	if data.PeriodLimit != nil && *data.PeriodLimit > 0 {
-		fields[subFieldPeriodLimit] = *data.PeriodLimit
-	}
 
-	pipe := c.rdb.TxPipeline()
-	pipe.Del(ctx, key)
+	pipe := c.rdb.Pipeline()
 	pipe.HSet(ctx, key, fields)
 	pipe.Expire(ctx, key, jitteredTTL())
 	_, err := pipe.Exec(ctx)

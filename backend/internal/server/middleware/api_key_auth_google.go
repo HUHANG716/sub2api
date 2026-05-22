@@ -90,8 +90,7 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 				status := 403
 				if errors.Is(err, service.ErrDailyLimitExceeded) ||
 					errors.Is(err, service.ErrWeeklyLimitExceeded) ||
-					errors.Is(err, service.ErrMonthlyLimitExceeded) ||
-					errors.Is(err, service.ErrPeriodLimitExceeded) {
+					errors.Is(err, service.ErrMonthlyLimitExceeded) {
 					status = 429
 				}
 				abortWithGoogleError(c, status, err.Error())

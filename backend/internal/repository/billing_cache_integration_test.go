@@ -188,51 +188,6 @@ func (s *BillingCacheSuite) TestSubscriptionCache() {
 			},
 		},
 		{
-			name: "set_replaces_stale_period_limit",
-			fn: func(ctx context.Context, rdb *redis.Client, cache service.BillingCache) {
-				userID := int64(121)
-				groupID := int64(221)
-				subKey := fmt.Sprintf("%s%d:%d", billingSubKeyPrefix, userID, groupID)
-				periodLimit := 500.0
-
-				require.NoError(s.T(), cache.SetSubscriptionCache(ctx, userID, groupID, &service.SubscriptionCacheData{
-					Status:          "active",
-					ExpiresAt:       time.Now().Add(24 * time.Hour),
-					DailyUsage:      1.0,
-					WeeklyUsage:     2.0,
-					MonthlyUsage:    3.0,
-					PeriodID:        1,
-					PeriodStartsAt:  time.Now().Add(-time.Hour),
-					PeriodExpiresAt: time.Now().Add(time.Hour),
-					PeriodUsage:     10.0,
-					PeriodLimit:     &periodLimit,
-					Version:         1,
-				}), "SetSubscriptionCache with period limit")
-
-				require.NoError(s.T(), cache.SetSubscriptionCache(ctx, userID, groupID, &service.SubscriptionCacheData{
-					Status:          "active",
-					ExpiresAt:       time.Now().Add(24 * time.Hour),
-					DailyUsage:      0,
-					WeeklyUsage:     0,
-					MonthlyUsage:    0,
-					PeriodID:        2,
-					PeriodStartsAt:  time.Now().Add(-time.Minute),
-					PeriodExpiresAt: time.Now().Add(time.Hour),
-					PeriodUsage:     0,
-					Version:         2,
-				}), "SetSubscriptionCache without period limit")
-
-				hasLimit, err := rdb.HExists(ctx, subKey, subFieldPeriodLimit).Result()
-				require.NoError(s.T(), err, "HExists period_limit")
-				require.False(s.T(), hasLimit, "old period_limit field should be removed when new cache data is unlimited")
-
-				gotSub, err := cache.GetSubscriptionCache(ctx, userID, groupID)
-				require.NoError(s.T(), err, "GetSubscriptionCache")
-				require.Equal(s.T(), int64(2), gotSub.PeriodID)
-				require.Nil(s.T(), gotSub.PeriodLimit)
-			},
-		},
-		{
 			name: "update_usage_increments_all_fields",
 			fn: func(ctx context.Context, rdb *redis.Client, cache service.BillingCache) {
 				userID := int64(13)
@@ -255,34 +210,6 @@ func (s *BillingCacheSuite) TestSubscriptionCache() {
 				require.Equal(s.T(), 1.5, gotSub.DailyUsage)
 				require.Equal(s.T(), 2.5, gotSub.WeeklyUsage)
 				require.Equal(s.T(), 3.5, gotSub.MonthlyUsage)
-			},
-		},
-		{
-			name: "update_usage_increments_unlimited_period_usage",
-			fn: func(ctx context.Context, rdb *redis.Client, cache service.BillingCache) {
-				userID := int64(131)
-				groupID := int64(231)
-
-				data := &service.SubscriptionCacheData{
-					Status:          "active",
-					ExpiresAt:       time.Now().Add(1 * time.Hour),
-					DailyUsage:      1.0,
-					WeeklyUsage:     2.0,
-					MonthlyUsage:    3.0,
-					PeriodID:        10,
-					PeriodStartsAt:  time.Now().Add(-time.Minute),
-					PeriodExpiresAt: time.Now().Add(time.Hour),
-					PeriodUsage:     4.0,
-					Version:         1,
-				}
-				require.NoError(s.T(), cache.SetSubscriptionCache(ctx, userID, groupID, data), "SetSubscriptionCache")
-
-				require.NoError(s.T(), cache.UpdateSubscriptionUsage(ctx, userID, groupID, 0.5), "UpdateSubscriptionUsage")
-
-				gotSub, err := cache.GetSubscriptionCache(ctx, userID, groupID)
-				require.NoError(s.T(), err, "GetSubscriptionCache after update")
-				require.Equal(s.T(), 4.5, gotSub.PeriodUsage)
-				require.Nil(s.T(), gotSub.PeriodLimit)
 			},
 		},
 		{

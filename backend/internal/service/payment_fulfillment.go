@@ -436,38 +436,11 @@ func (s *PaymentService) doSub(ctx context.Context, o *dbent.PaymentOrder) error
 		return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
 	}
 	orderNote := fmt.Sprintf("payment order %d", o.ID)
-	_, _, err = s.subscriptionSvc.AssignOrExtendSubscription(ctx, &AssignSubscriptionInput{UserID: o.UserID, GroupID: gid, OrderID: &o.ID, ValidityDays: days, PeriodLimitUSD: orderSubscriptionPeriodLimit(o), AssignedBy: 0, Notes: orderNote})
+	_, _, err = s.subscriptionSvc.AssignOrExtendSubscription(ctx, &AssignSubscriptionInput{UserID: o.UserID, GroupID: gid, ValidityDays: days, AssignedBy: 0, Notes: orderNote})
 	if err != nil {
 		return fmt.Errorf("assign subscription: %w", err)
 	}
 	return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
-}
-
-func orderSubscriptionPeriodLimit(o *dbent.PaymentOrder) *float64 {
-	if o == nil || len(o.ProviderSnapshot) == 0 {
-		return nil
-	}
-	raw, ok := o.ProviderSnapshot["subscription_period_limit_usd"]
-	if !ok || raw == nil {
-		return nil
-	}
-	switch v := raw.(type) {
-	case float64:
-		if v > 0 {
-			return &v
-		}
-	case int:
-		f := float64(v)
-		if f > 0 {
-			return &f
-		}
-	case int64:
-		f := float64(v)
-		if f > 0 {
-			return &f
-		}
-	}
-	return nil
 }
 
 func (s *PaymentService) hasAuditLog(ctx context.Context, orderID int64, action string) bool {

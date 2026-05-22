@@ -242,11 +242,7 @@
                       <span>{{ t('payment.planCard.monthlyLimit') }}</span>
                       <strong>${{ selectedPlan.monthly_limit_usd }}</strong>
                     </div>
-                    <div v-if="selectedPlan.period_limit_usd != null">
-                      <span>{{ t('payment.planCard.periodLimit') }}</span>
-                      <strong>${{ selectedPlan.period_limit_usd }}</strong>
-                    </div>
-                    <div v-if="selectedPlan.daily_limit_usd == null && selectedPlan.weekly_limit_usd == null && selectedPlan.monthly_limit_usd == null && selectedPlan.period_limit_usd == null">
+                    <div v-if="selectedPlan.daily_limit_usd == null && selectedPlan.weekly_limit_usd == null && selectedPlan.monthly_limit_usd == null">
                       <span>{{ t('payment.planCard.quota') }}</span>
                       <strong>{{ t('payment.planCard.unlimited') }}</strong>
                     </div>

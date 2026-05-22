@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"context"
 	"strconv"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
@@ -10,22 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
-type adminSubscriptionPlanResponse struct {
-	ID             int64    `json:"id"`
-	GroupID        int64    `json:"group_id"`
-	Name           string   `json:"name"`
-	Description    string   `json:"description"`
-	Price          float64  `json:"price"`
-	OriginalPrice  *float64 `json:"original_price,omitempty"`
-	PeriodLimitUSD *float64 `json:"period_limit_usd,omitempty"`
-	ValidityDays   int      `json:"validity_days"`
-	ValidityUnit   string   `json:"validity_unit"`
-	Features       string   `json:"features"`
-	ProductName    string   `json:"product_name"`
-	ForSale        bool     `json:"for_sale"`
-	SortOrder      int      `json:"sort_order"`
-}
 
 // PaymentHandler handles admin payment management.
 type PaymentHandler struct {
@@ -202,7 +185,7 @@ func (h *PaymentHandler) ListPlans(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	response.Success(c, h.planResponses(c.Request.Context(), plans))
+	response.Success(c, plans)
 }
 
 // CreatePlan creates a new subscription plan.
@@ -218,7 +201,7 @@ func (h *PaymentHandler) CreatePlan(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	response.Created(c, h.planResponses(c.Request.Context(), []*dbent.SubscriptionPlan{plan})[0])
+	response.Created(c, plan)
 }
 
 // UpdatePlan updates an existing subscription plan.
@@ -238,33 +221,7 @@ func (h *PaymentHandler) UpdatePlan(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	response.Success(c, h.planResponses(c.Request.Context(), []*dbent.SubscriptionPlan{plan})[0])
-}
-
-func (h *PaymentHandler) planResponses(ctx context.Context, plans []*dbent.SubscriptionPlan) []adminSubscriptionPlanResponse {
-	periodLimitMap := h.configService.GetPlanPeriodLimitMap(ctx, plans)
-	out := make([]adminSubscriptionPlanResponse, 0, len(plans))
-	for _, p := range plans {
-		if p == nil {
-			continue
-		}
-		out = append(out, adminSubscriptionPlanResponse{
-			ID:             p.ID,
-			GroupID:        p.GroupID,
-			Name:           p.Name,
-			Description:    p.Description,
-			Price:          p.Price,
-			OriginalPrice:  p.OriginalPrice,
-			PeriodLimitUSD: periodLimitMap[p.ID],
-			ValidityDays:   p.ValidityDays,
-			ValidityUnit:   p.ValidityUnit,
-			Features:       p.Features,
-			ProductName:     p.ProductName,
-			ForSale:        p.ForSale,
-			SortOrder:      p.SortOrder,
-		})
-	}
-	return out
+	response.Success(c, plan)
 }
 
 // DeletePlan deletes a subscription plan.

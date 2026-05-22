@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"math/rand/v2"
@@ -36,8 +35,6 @@ var (
 	ErrDailyLimitExceeded         = infraerrors.TooManyRequests("DAILY_LIMIT_EXCEEDED", "daily usage limit exceeded")
 	ErrWeeklyLimitExceeded        = infraerrors.TooManyRequests("WEEKLY_LIMIT_EXCEEDED", "weekly usage limit exceeded")
 	ErrMonthlyLimitExceeded       = infraerrors.TooManyRequests("MONTHLY_LIMIT_EXCEEDED", "monthly usage limit exceeded")
-	ErrPeriodLimitExceeded        = infraerrors.TooManyRequests("PERIOD_LIMIT_EXCEEDED", "subscription period usage limit exceeded")
-	ErrSubscriptionPeriodNotFound = infraerrors.NotFound("SUBSCRIPTION_PERIOD_NOT_FOUND", "subscription period not found")
 	ErrSubscriptionNilInput       = infraerrors.BadRequest("SUBSCRIPTION_NIL_INPUT", "subscription input cannot be nil")
 	ErrAdjustWouldExpire          = infraerrors.BadRequest("ADJUST_WOULD_EXPIRE", "adjustment would result in expired subscription (remaining days must be > 0)")
 )
@@ -147,13 +144,11 @@ func (s *SubscriptionService) InvalidateSubCache(userID, groupID int64) {
 
 // AssignSubscriptionInput 分配订阅输入
 type AssignSubscriptionInput struct {
-	UserID         int64
-	GroupID        int64
-	OrderID        *int64
-	ValidityDays   int
-	PeriodLimitUSD *float64
-	AssignedBy     int64
-	Notes          string
+	UserID       int64
+	GroupID      int64
+	ValidityDays int
+	AssignedBy   int64
+	Notes        string
 }
 
 // AssignSubscription 分配订阅给用户（不允许重复分配）
@@ -181,6 +176,13 @@ func (s *SubscriptionService) AssignOrExtendSubscription(ctx context.Context, in
 		return nil, false, ErrGroupNotSubscriptionType
 	}
 
+	// 查询是否已有订阅
+	existingSub, err := s.userSubRepo.GetByUserIDAndGroupID(ctx, input.UserID, input.GroupID)
+	if err != nil {
+		// 不存在记录是正常情况，其他错误需要返回
+		existingSub = nil
+	}
+
 	validityDays := input.ValidityDays
 	if validityDays <= 0 {
 		validityDays = 30
@@ -189,48 +191,8 @@ func (s *SubscriptionService) AssignOrExtendSubscription(ctx context.Context, in
 		validityDays = MaxValidityDays
 	}
 
-	var result *UserSubscription
-	var reused bool
-	if err := s.withSubscriptionUpdateTx(ctx, func(txCtx context.Context) error {
-		if existingPeriod, ok, err := s.subscriptionPeriodForOrder(txCtx, input.OrderID); err != nil {
-			return err
-		} else if ok {
-			if existingPeriod.UserID != input.UserID || existingPeriod.GroupID != input.GroupID {
-				return ErrSubscriptionAssignConflict.WithMetadata(map[string]string{
-					"reason": "order already assigned to a different user or group",
-				})
-			}
-			existingSub, getErr := s.userSubRepo.GetByID(txCtx, existingPeriod.SubscriptionID)
-			if getErr != nil {
-				return getErr
-			}
-			existingSub.CurrentPeriod = existingPeriod
-			result = existingSub
-			reused = true
-			return nil
-		}
-
-		existingSub, err := s.getSubscriptionForAssignment(txCtx, input.UserID, input.GroupID)
-		if err != nil && !errors.Is(err, ErrSubscriptionNotFound) {
-			return err
-		}
-		if errors.Is(err, ErrSubscriptionNotFound) {
-			existingSub = nil
-		}
-
-		if existingSub == nil {
-			var createErr error
-			result, createErr = s.createSubscription(txCtx, input)
-			if createErr != nil {
-				return createErr
-			}
-			if err := s.createSubscriptionPeriod(txCtx, result.ID, input.UserID, input.GroupID, input.OrderID, result.StartsAt, result.ExpiresAt, input.PeriodLimitUSD); err != nil {
-				return fmt.Errorf("create subscription period: %w", err)
-			}
-			reused = false
-			return nil
-		}
-
+	// 已有订阅，执行续期（在事务中完成所有更新）
+	if existingSub != nil {
 		now := time.Now()
 		var newExpiresAt time.Time
 
@@ -248,38 +210,29 @@ func (s *SubscriptionService) AssignOrExtendSubscription(ctx context.Context, in
 			newExpiresAt = MaxExpiresAt
 		}
 
-		periodStartsAt := existingSub.ExpiresAt
-		if isExpired {
-			periodStartsAt = now
-		} else {
-			latestPeriod, periodErr := s.userSubRepo.GetLatestPeriod(txCtx, existingSub.ID)
-			if periodErr != nil && !errors.Is(periodErr, ErrSubscriptionPeriodNotFound) {
-				return fmt.Errorf("get latest subscription period: %w", periodErr)
-			}
-			if periodErr == nil && latestPeriod != nil && latestPeriod.ExpiresAt.After(periodStartsAt) {
-				periodStartsAt = latestPeriod.ExpiresAt
-			}
+		if err := s.updateExistingSubscriptionTerm(ctx, existingSub, input.Notes, now, newExpiresAt, isExpired); err != nil {
+			return nil, false, err
 		}
-		periodExpiresAt := periodStartsAt.AddDate(0, 0, validityDays)
-		if periodExpiresAt.After(MaxExpiresAt) {
-			periodExpiresAt = MaxExpiresAt
+
+		// 失效订阅缓存
+		s.InvalidateSubCache(input.UserID, input.GroupID)
+		if s.billingCacheService != nil {
+			userID, groupID := input.UserID, input.GroupID
+			go func() {
+				cacheCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				_ = s.billingCacheService.InvalidateSubscription(cacheCtx, userID, groupID)
+			}()
 		}
-		if periodExpiresAt.After(newExpiresAt) {
-			newExpiresAt = periodExpiresAt
-		}
-		if err := s.applyExistingSubscriptionTerm(txCtx, existingSub, input.Notes, now, newExpiresAt, isExpired); err != nil {
-			return err
-		}
-		if err := s.createSubscriptionPeriod(txCtx, existingSub.ID, input.UserID, input.GroupID, input.OrderID, periodStartsAt, periodExpiresAt, input.PeriodLimitUSD); err != nil {
-			return fmt.Errorf("create subscription period: %w", err)
-		}
-		result, err = s.userSubRepo.GetByID(txCtx, existingSub.ID)
-		if err != nil {
-			return err
-		}
-		reused = true
-		return nil
-	}); err != nil {
+
+		// 返回更新后的订阅
+		sub, err := s.userSubRepo.GetByID(ctx, existingSub.ID)
+		return sub, true, err // true 表示是续期
+	}
+
+	// 没有订阅，创建新订阅
+	sub, err := s.createSubscription(ctx, input)
+	if err != nil {
 		return nil, false, err
 	}
 
@@ -294,38 +247,10 @@ func (s *SubscriptionService) AssignOrExtendSubscription(ctx context.Context, in
 		}()
 	}
 
-	return result, reused, nil
+	return sub, false, nil // false 表示是新建
 }
 
-func (s *SubscriptionService) subscriptionPeriodForOrder(ctx context.Context, orderID *int64) (*UserSubscriptionPeriod, bool, error) {
-	if s == nil || s.userSubRepo == nil || orderID == nil || *orderID <= 0 {
-		return nil, false, nil
-	}
-	period, err := s.userSubRepo.GetPeriodByOrderID(ctx, *orderID)
-	if err != nil {
-		if errors.Is(err, ErrSubscriptionPeriodNotFound) {
-			return nil, false, nil
-		}
-		return nil, false, fmt.Errorf("get subscription period by order: %w", err)
-	}
-	return period, period != nil, nil
-}
-
-type subscriptionAssignmentLocker interface {
-	GetByUserIDAndGroupIDForUpdate(ctx context.Context, userID, groupID int64) (*UserSubscription, error)
-}
-
-func (s *SubscriptionService) getSubscriptionForAssignment(ctx context.Context, userID, groupID int64) (*UserSubscription, error) {
-	if s == nil || s.userSubRepo == nil {
-		return nil, ErrSubscriptionNotFound
-	}
-	if locker, ok := s.userSubRepo.(subscriptionAssignmentLocker); ok {
-		return locker.GetByUserIDAndGroupIDForUpdate(ctx, userID, groupID)
-	}
-	return s.userSubRepo.GetByUserIDAndGroupID(ctx, userID, groupID)
-}
-
-func (s *SubscriptionService) applyExistingSubscriptionTerm(
+func (s *SubscriptionService) updateExistingSubscriptionTerm(
 	ctx context.Context,
 	existingSub *UserSubscription,
 	notes string,
@@ -333,40 +258,39 @@ func (s *SubscriptionService) applyExistingSubscriptionTerm(
 	newExpiresAt time.Time,
 	isExpired bool,
 ) error {
-	if isExpired {
-		renewed := renewedSubscriptionTerm(existingSub, notes, startsAt, newExpiresAt)
-		if err := s.userSubRepo.Update(ctx, renewed); err != nil {
-			return fmt.Errorf("renew expired subscription: %w", err)
+	return s.withSubscriptionUpdateTx(ctx, func(txCtx context.Context) error {
+		if isExpired {
+			renewed := renewedSubscriptionTerm(existingSub, notes, startsAt, newExpiresAt)
+			if err := s.userSubRepo.Update(txCtx, renewed); err != nil {
+				return fmt.Errorf("renew expired subscription: %w", err)
+			}
+			return nil
 		}
+
+		// 更新过期时间
+		if err := s.userSubRepo.ExtendExpiry(txCtx, existingSub.ID, newExpiresAt); err != nil {
+			return fmt.Errorf("extend subscription: %w", err)
+		}
+
+		// 如果订阅被暂停，恢复为 active 状态
+		if existingSub.Status != SubscriptionStatusActive {
+			if err := s.userSubRepo.UpdateStatus(txCtx, existingSub.ID, SubscriptionStatusActive); err != nil {
+				return fmt.Errorf("update subscription status: %w", err)
+			}
+		}
+
+		// 追加备注
+		if notes != "" {
+			if err := s.userSubRepo.UpdateNotes(txCtx, existingSub.ID, appendSubscriptionNotes(existingSub.Notes, notes)); err != nil {
+				return fmt.Errorf("update subscription notes: %w", err)
+			}
+		}
+
 		return nil
-	}
-
-	// 更新过期时间
-	if err := s.userSubRepo.ExtendExpiry(ctx, existingSub.ID, newExpiresAt); err != nil {
-		return fmt.Errorf("extend subscription: %w", err)
-	}
-
-	// 如果订阅被暂停，恢复为 active 状态
-	if existingSub.Status != SubscriptionStatusActive {
-		if err := s.userSubRepo.UpdateStatus(ctx, existingSub.ID, SubscriptionStatusActive); err != nil {
-			return fmt.Errorf("update subscription status: %w", err)
-		}
-	}
-
-	// 追加备注
-	if notes != "" {
-		if err := s.userSubRepo.UpdateNotes(ctx, existingSub.ID, appendSubscriptionNotes(existingSub.Notes, notes)); err != nil {
-			return fmt.Errorf("update subscription notes: %w", err)
-		}
-	}
-
-	return nil
+	})
 }
 
 func (s *SubscriptionService) withSubscriptionUpdateTx(ctx context.Context, fn func(context.Context) error) error {
-	if dbent.TxFromContext(ctx) != nil {
-		return fn(ctx)
-	}
 	if s.entClient == nil {
 		return fn(ctx)
 	}
@@ -454,35 +378,6 @@ func (s *SubscriptionService) createSubscription(ctx context.Context, input *Ass
 	return s.userSubRepo.GetByID(ctx, sub.ID)
 }
 
-func (s *SubscriptionService) createSubscriptionPeriod(ctx context.Context, subscriptionID, userID, groupID int64, orderID *int64, startsAt, expiresAt time.Time, limitUSD *float64) error {
-	if s == nil || s.userSubRepo == nil {
-		return nil
-	}
-	if !expiresAt.After(startsAt) {
-		return nil
-	}
-	period := &UserSubscriptionPeriod{
-		SubscriptionID: subscriptionID,
-		UserID:         userID,
-		GroupID:        groupID,
-		OrderID:        orderID,
-		StartsAt:       startsAt,
-		ExpiresAt:      expiresAt,
-		Status:         SubscriptionStatusActive,
-		LimitUSD:       normalizeLimitPtr(limitUSD),
-		UsageUSD:       0,
-	}
-	return s.userSubRepo.CreatePeriod(ctx, period)
-}
-
-func normalizeLimitPtr(limit *float64) *float64 {
-	if limit == nil || *limit <= 0 {
-		return nil
-	}
-	v := *limit
-	return &v
-}
-
 // BulkAssignSubscriptionInput 批量分配订阅输入
 type BulkAssignSubscriptionInput struct {
 	UserIDs      []int64
@@ -567,18 +462,8 @@ func (s *SubscriptionService) assignSubscriptionWithReuse(ctx context.Context, i
 		return sub, true, nil
 	}
 
-	var sub *UserSubscription
-	if err := s.withSubscriptionUpdateTx(ctx, func(txCtx context.Context) error {
-		var createErr error
-		sub, createErr = s.createSubscription(txCtx, input)
-		if createErr != nil {
-			return createErr
-		}
-		if err := s.createSubscriptionPeriod(txCtx, sub.ID, input.UserID, input.GroupID, input.OrderID, sub.StartsAt, sub.ExpiresAt, input.PeriodLimitUSD); err != nil {
-			return fmt.Errorf("create subscription period: %w", err)
-		}
-		return nil
-	}); err != nil {
+	sub, err := s.createSubscription(ctx, input)
+	if err != nil {
 		return nil, false, err
 	}
 
@@ -699,27 +584,15 @@ func (s *SubscriptionService) ExtendSubscription(ctx context.Context, subscripti
 		return nil, ErrAdjustWouldExpire
 	}
 
-	if err := s.withSubscriptionUpdateTx(ctx, func(txCtx context.Context) error {
-		if err := s.userSubRepo.ExtendExpiry(txCtx, subscriptionID, newExpiresAt); err != nil {
-			return err
-		}
-
-		// 如果订阅已过期，恢复为active状态
-		if sub.Status == SubscriptionStatusExpired {
-			if err := s.userSubRepo.UpdateStatus(txCtx, subscriptionID, SubscriptionStatusActive); err != nil {
-				return err
-			}
-		}
-
-		if days < 0 {
-			if err := s.trimSubscriptionPeriodsAfter(txCtx, subscriptionID, newExpiresAt); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}); err != nil {
+	if err := s.userSubRepo.ExtendExpiry(ctx, subscriptionID, newExpiresAt); err != nil {
 		return nil, err
+	}
+
+	// 如果订阅已过期，恢复为active状态
+	if sub.Status == SubscriptionStatusExpired {
+		if err := s.userSubRepo.UpdateStatus(ctx, subscriptionID, SubscriptionStatusActive); err != nil {
+			return nil, err
+		}
 	}
 
 	// 失效订阅缓存
@@ -752,7 +625,6 @@ func (s *SubscriptionService) GetActiveSubscription(ctx context.Context, userID,
 		if v, ok := s.subCacheL1.Get(key); ok {
 			if sub, ok := v.(*UserSubscription); ok {
 				cp := *sub
-				s.attachCurrentPeriod(ctx, &cp)
 				return &cp, nil
 			}
 		}
@@ -779,34 +651,7 @@ func (s *SubscriptionService) GetActiveSubscription(ctx context.Context, userID,
 		return nil, ErrSubscriptionNotFound
 	}
 	cp := *sub
-	s.attachCurrentPeriod(ctx, &cp)
 	return &cp, nil
-}
-
-type subscriptionPeriodTrimmer interface {
-	TrimPeriodsAfter(ctx context.Context, subscriptionID int64, cutoff time.Time) error
-}
-
-func (s *SubscriptionService) trimSubscriptionPeriodsAfter(ctx context.Context, subscriptionID int64, cutoff time.Time) error {
-	if s == nil || s.userSubRepo == nil {
-		return nil
-	}
-	trimmer, ok := s.userSubRepo.(subscriptionPeriodTrimmer)
-	if !ok {
-		return nil
-	}
-	return trimmer.TrimPeriodsAfter(ctx, subscriptionID, cutoff)
-}
-
-func (s *SubscriptionService) attachCurrentPeriod(ctx context.Context, sub *UserSubscription) {
-	if s == nil || s.userSubRepo == nil || sub == nil {
-		return
-	}
-	period, err := s.userSubRepo.GetActivePeriod(ctx, sub.ID, time.Now())
-	if err != nil {
-		return
-	}
-	sub.CurrentPeriod = period
 }
 
 // ListUserSubscriptions 获取用户的所有订阅
@@ -1049,9 +894,6 @@ func (s *SubscriptionService) ValidateAndCheckLimits(sub *UserSubscription, grou
 	}
 	if !sub.CheckMonthlyLimit(group, 0) {
 		return needsMaintenance, ErrMonthlyLimitExceeded
-	}
-	if !sub.CheckPeriodLimit(0) {
-		return needsMaintenance, ErrPeriodLimitExceeded
 	}
 
 	return needsMaintenance, nil

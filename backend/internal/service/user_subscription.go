@@ -19,8 +19,6 @@ type UserSubscription struct {
 	WeeklyUsageUSD  float64
 	MonthlyUsageUSD float64
 
-	CurrentPeriod *UserSubscriptionPeriod
-
 	AssignedBy *int64
 	AssignedAt time.Time
 	Notes      string
@@ -136,38 +134,9 @@ func (s *UserSubscription) CheckMonthlyLimit(group *Group, additionalCost float6
 	return s.MonthlyUsageUSD+additionalCost <= *group.MonthlyLimitUSD
 }
 
-func (s *UserSubscription) CheckPeriodLimit(additionalCost float64) bool {
-	if s == nil || s.CurrentPeriod == nil || !s.CurrentPeriod.HasLimit() {
-		return true
-	}
-	return s.CurrentPeriod.UsageUSD+additionalCost <= *s.CurrentPeriod.LimitUSD
-}
-
 func (s *UserSubscription) CheckAllLimits(group *Group, additionalCost float64) (daily, weekly, monthly bool) {
 	daily = s.CheckDailyLimit(group, additionalCost)
 	weekly = s.CheckWeeklyLimit(group, additionalCost)
 	monthly = s.CheckMonthlyLimit(group, additionalCost)
 	return
-}
-
-type UserSubscriptionPeriod struct {
-	ID             int64
-	SubscriptionID int64
-	UserID         int64
-	GroupID        int64
-	OrderID        *int64
-
-	StartsAt  time.Time
-	ExpiresAt time.Time
-	Status    string
-
-	LimitUSD *float64
-	UsageUSD float64
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
-func (p *UserSubscriptionPeriod) HasLimit() bool {
-	return p != nil && p.LimitUSD != nil && *p.LimitUSD > 0
 }
