@@ -1050,7 +1050,7 @@ func (s *SubscriptionService) ValidateAndCheckLimits(sub *UserSubscription, grou
 	if !sub.CheckMonthlyLimit(group, 0) {
 		return needsMaintenance, ErrMonthlyLimitExceeded
 	}
-	if sub.CurrentPeriod != nil && sub.CurrentPeriod.HasLimit() && sub.CurrentPeriod.UsageUSD >= *sub.CurrentPeriod.LimitUSD {
+	if !sub.CheckPeriodLimit(0) {
 		return needsMaintenance, ErrPeriodLimitExceeded
 	}
 
