@@ -45,11 +45,12 @@ export function getWindowEndState(
   windowStart: string | null | undefined,
   windowHours: number,
   expiresAt?: string | null,
-  now: Date = new Date()
+  now: Date = new Date(),
+  anchorStart?: string | null
 ): { type: 'reset' | 'quota_end'; parts: RemainingDurationParts } | null {
   if (!windowStart) return null
 
-  const startTime = new Date(windowStart).getTime()
+  const startTime = effectiveWindowStart(windowStart, windowHours, now, anchorStart)
   if (!Number.isFinite(startTime)) return null
 
   const resetTime = new Date(startTime + windowHours * 60 * 60 * 1000)
@@ -66,4 +67,43 @@ export function getWindowEndState(
 
   const parts = getRemainingDurationParts(targetTime, now)
   return parts ? { type, parts } : null
+}
+
+function effectiveWindowStart(
+  windowStart: string,
+  windowHours: number,
+  now: Date,
+  anchorStart?: string | null
+): number {
+  const startTime = new Date(windowStart).getTime()
+  if (!Number.isFinite(startTime) || !anchorStart) return startTime
+
+  const anchorTime = new Date(anchorStart).getTime()
+  if (!Number.isFinite(anchorTime)) return startTime
+
+  const windowDate = new Date(windowStart)
+  const anchorDate = new Date(anchorStart)
+  const isLegacyMidnightWindow = isLocalMidnight(windowDate) || isUTCMidnight(windowDate)
+  const anchorHasTimeOfDay = !isLocalMidnight(anchorDate) && !isUTCMidnight(anchorDate)
+
+  if (!isLegacyMidnightWindow || !anchorHasTimeOfDay) return startTime
+
+  const windowMs = windowHours * 60 * 60 * 1000
+  if (windowMs <= 0 || now.getTime() < anchorTime + windowMs) return anchorTime
+
+  return anchorTime + Math.floor((now.getTime() - anchorTime) / windowMs) * windowMs
+}
+
+function isLocalMidnight(date: Date): boolean {
+  return date.getHours() === 0
+    && date.getMinutes() === 0
+    && date.getSeconds() === 0
+    && date.getMilliseconds() === 0
+}
+
+function isUTCMidnight(date: Date): boolean {
+  return date.getUTCHours() === 0
+    && date.getUTCMinutes() === 0
+    && date.getUTCSeconds() === 0
+    && date.getUTCMilliseconds() === 0
 }

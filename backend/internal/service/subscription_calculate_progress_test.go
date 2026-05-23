@@ -140,6 +140,33 @@ func TestCalculateProgress_WeeklyResetCappedBySubscriptionExpiry(t *testing.T) {
 	assert.GreaterOrEqual(t, progress.Weekly.ResetsInSeconds, int64(0))
 }
 
+func TestCalculateProgress_LegacyMidnightWeeklyWindowDisplaysPurchaseAnchoredReset(t *testing.T) {
+	anchor := time.Now().Add(-6*24*time.Hour - 10*time.Hour).Truncate(time.Second)
+	anchor = time.Date(anchor.Year(), anchor.Month(), anchor.Day(), 14, 22, 32, 0, anchor.Location())
+	legacyWindowStart := time.Date(anchor.Year(), anchor.Month(), anchor.Day(), 0, 0, 0, 0, anchor.Location())
+	expiresAt := anchor.AddDate(0, 0, 7)
+
+	sub := &UserSubscription{
+		ID:                1,
+		StartsAt:          anchor,
+		ExpiresAt:         expiresAt,
+		WeeklyUsageUSD:    297.16,
+		WeeklyWindowStart: ptrTime(legacyWindowStart),
+	}
+	group := &Group{
+		Name:           "Weekly",
+		WeeklyLimitUSD: ptrFloat64(500.0),
+	}
+	svc := newTestSubscriptionService()
+
+	progress := svc.calculateProgress(sub, group)
+
+	require.NotNil(t, progress.Weekly)
+	assert.Equal(t, anchor, progress.Weekly.WindowStart)
+	assert.Equal(t, expiresAt, progress.Weekly.ResetsAt)
+	assert.NotEqual(t, legacyWindowStart.Add(7*24*time.Hour), progress.Weekly.ResetsAt)
+}
+
 func TestCalculateProgress_MonthlyUsage(t *testing.T) {
 	svc := newTestSubscriptionService()
 	now := time.Now()

@@ -1401,7 +1401,9 @@ const formatUsageWindow = (
   const state = getWindowEndState(
     getWindowStart(subscription, period),
     periodWindowHours(period),
-    subscription.expires_at
+    subscription.expires_at,
+    new Date(),
+    subscription.starts_at
   )
 
   if (!state) return t('admin.subscriptions.windowNotActive')

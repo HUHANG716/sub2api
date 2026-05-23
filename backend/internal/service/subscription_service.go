@@ -768,6 +768,17 @@ func quotaWindowEnd(windowResetAt, expiresAt time.Time) time.Time {
 	return windowResetAt
 }
 
+func effectiveWindowStart(anchor time.Time, windowStart *time.Time, windowSize time.Duration, now time.Time) *time.Time {
+	if windowStart == nil {
+		return nil
+	}
+	effective := *windowStart
+	if isLegacyMidnightWindow(anchor, *windowStart, windowSize, now) {
+		effective = rollingWindowStart(anchor, windowSize, now)
+	}
+	return &effective
+}
+
 func resetSecondsUntil(t time.Time) int64 {
 	seconds := int64(time.Until(t).Seconds())
 	if seconds < 0 {
@@ -1133,9 +1144,10 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	}
 
 	// 日进度
-	if group.HasDailyLimit() && sub.DailyWindowStart != nil {
+	dailyWindowStart := effectiveWindowStart(sub.StartsAt, sub.DailyWindowStart, 24*time.Hour, time.Now())
+	if group.HasDailyLimit() && dailyWindowStart != nil {
 		limit := *group.DailyLimitUSD
-		resetsAt := sub.DailyWindowStart.Add(24 * time.Hour)
+		resetsAt := dailyWindowStart.Add(24 * time.Hour)
 		if dailyResetTime := sub.DailyResetTime(); dailyResetTime != nil {
 			resetsAt = *dailyResetTime
 		}
@@ -1145,7 +1157,7 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 			UsedUSD:         sub.DailyUsageUSD,
 			RemainingUSD:    limit - sub.DailyUsageUSD,
 			Percentage:      (sub.DailyUsageUSD / limit) * 100,
-			WindowStart:     *sub.DailyWindowStart,
+			WindowStart:     *dailyWindowStart,
 			ResetsAt:        resetsAt,
 			ResetsInSeconds: resetSecondsUntil(resetsAt),
 		}
@@ -1153,15 +1165,16 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	}
 
 	// 周进度
-	if group.HasWeeklyLimit() && sub.WeeklyWindowStart != nil {
+	weeklyWindowStart := effectiveWindowStart(sub.StartsAt, sub.WeeklyWindowStart, 7*24*time.Hour, time.Now())
+	if group.HasWeeklyLimit() && weeklyWindowStart != nil {
 		limit := *group.WeeklyLimitUSD
-		resetsAt := quotaWindowEnd(sub.WeeklyWindowStart.Add(7*24*time.Hour), sub.ExpiresAt)
+		resetsAt := quotaWindowEnd(weeklyWindowStart.Add(7*24*time.Hour), sub.ExpiresAt)
 		progress.Weekly = &UsageWindowProgress{
 			LimitUSD:        limit,
 			UsedUSD:         sub.WeeklyUsageUSD,
 			RemainingUSD:    limit - sub.WeeklyUsageUSD,
 			Percentage:      (sub.WeeklyUsageUSD / limit) * 100,
-			WindowStart:     *sub.WeeklyWindowStart,
+			WindowStart:     *weeklyWindowStart,
 			ResetsAt:        resetsAt,
 			ResetsInSeconds: resetSecondsUntil(resetsAt),
 		}
@@ -1169,15 +1182,16 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	}
 
 	// 月进度
-	if group.HasMonthlyLimit() && sub.MonthlyWindowStart != nil {
+	monthlyWindowStart := effectiveWindowStart(sub.StartsAt, sub.MonthlyWindowStart, 30*24*time.Hour, time.Now())
+	if group.HasMonthlyLimit() && monthlyWindowStart != nil {
 		limit := *group.MonthlyLimitUSD
-		resetsAt := quotaWindowEnd(sub.MonthlyWindowStart.Add(30*24*time.Hour), sub.ExpiresAt)
+		resetsAt := quotaWindowEnd(monthlyWindowStart.Add(30*24*time.Hour), sub.ExpiresAt)
 		progress.Monthly = &UsageWindowProgress{
 			LimitUSD:        limit,
 			UsedUSD:         sub.MonthlyUsageUSD,
 			RemainingUSD:    limit - sub.MonthlyUsageUSD,
 			Percentage:      (sub.MonthlyUsageUSD / limit) * 100,
-			WindowStart:     *sub.MonthlyWindowStart,
+			WindowStart:     *monthlyWindowStart,
 			ResetsAt:        resetsAt,
 			ResetsInSeconds: resetSecondsUntil(resetsAt),
 		}
