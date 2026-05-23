@@ -407,12 +407,12 @@ func TestAPIContracts(t *testing.T) {
 						"starts_at": "2025-01-02T03:04:05Z",
 						"expires_at": "2099-01-02T03:04:05Z",
 						"status": "active",
-						"daily_window_start": null,
-						"weekly_window_start": null,
-						"monthly_window_start": null,
-						"daily_usage_usd": 1.23,
-						"weekly_usage_usd": 2.34,
-						"monthly_usage_usd": 3.45,
+						"daily_window_start": "2026-05-23T03:04:05Z",
+						"weekly_window_start": "2026-05-21T03:04:05Z",
+						"monthly_window_start": "2026-04-27T03:04:05Z",
+						"daily_usage_usd": 0,
+						"weekly_usage_usd": 0,
+						"monthly_usage_usd": 0,
 						"created_at": "2025-01-02T03:04:05Z",
 						"updated_at": "2025-01-02T03:04:05Z"
 					}
