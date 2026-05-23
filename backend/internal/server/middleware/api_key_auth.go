@@ -195,10 +195,12 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 					return
 				}
 
-				// 窗口维护异步化（不阻塞请求）
+				// 窗口维护必须在放行前完成，避免后续计费检查读到旧窗口用量。
 				if needsMaintenance {
-					maintenanceCopy := *subscription
-					subscriptionService.DoWindowMaintenance(&maintenanceCopy)
+					if err := subscriptionService.EnsureWindowMaintenance(c.Request.Context(), subscription); err != nil {
+						AbortWithError(c, 503, "SUBSCRIPTION_MAINTENANCE_FAILED", "Subscription quota maintenance failed")
+						return
+					}
 				}
 			} else {
 				// 非订阅模式 或 订阅模式但 subscriptionService 未注入：回退到余额检查

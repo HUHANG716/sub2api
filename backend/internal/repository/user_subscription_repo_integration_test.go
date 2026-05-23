@@ -356,6 +356,48 @@ func (s *UserSubscriptionRepoSuite) TestIncrementUsage_Accumulates() {
 	s.Require().InDelta(3.5, got.DailyUsageUSD, 1e-6)
 }
 
+func (s *UserSubscriptionRepoSuite) TestIncrementUsageResetsExpiredWindowAndKeepsCurrentCost() {
+	user := s.mustCreateUser("increment-window@test.com", service.RoleUser)
+	group, err := s.client.Group.Create().
+		SetName("g-increment-window").
+		SetStatus(service.StatusActive).
+		SetSubscriptionType(service.SubscriptionTypeSubscription).
+		SetDailyLimitUsd(100).
+		SetWeeklyLimitUsd(500).
+		SetMonthlyLimitUsd(1000).
+		Save(s.ctx)
+	s.Require().NoError(err)
+	startsAt := time.Now().Add(-8 * 24 * time.Hour).Truncate(time.Second)
+	sub := s.mustCreateSubscription(user.ID, group.ID, func(c *dbent.UserSubscriptionCreate) {
+		c.SetStartsAt(startsAt)
+		c.SetExpiresAt(startsAt.AddDate(0, 0, 30))
+		c.SetDailyWindowStart(startsAt)
+		c.SetWeeklyWindowStart(startsAt)
+		c.SetMonthlyWindowStart(startsAt)
+		c.SetDailyUsageUsd(99)
+		c.SetWeeklyUsageUsd(499)
+		c.SetMonthlyUsageUsd(123)
+	})
+
+	err = s.repo.IncrementUsage(s.ctx, sub.ID, 2.5)
+
+	s.Require().NoError(err)
+	got, err := s.repo.GetByID(s.ctx, sub.ID)
+	s.Require().NoError(err)
+	expectedDailyStart := startsAt
+	for !time.Now().Before(expectedDailyStart.Add(24 * time.Hour)) {
+		expectedDailyStart = expectedDailyStart.Add(24 * time.Hour)
+	}
+	expectedWeeklyStart := startsAt.Add(7 * 24 * time.Hour)
+	s.Require().InDelta(2.5, got.DailyUsageUSD, 1e-6)
+	s.Require().InDelta(2.5, got.WeeklyUsageUSD, 1e-6)
+	s.Require().InDelta(125.5, got.MonthlyUsageUSD, 1e-6)
+	s.Require().NotNil(got.DailyWindowStart)
+	s.Require().WithinDuration(expectedDailyStart, *got.DailyWindowStart, time.Second)
+	s.Require().NotNil(got.WeeklyWindowStart)
+	s.Require().WithinDuration(expectedWeeklyStart, *got.WeeklyWindowStart, time.Second)
+}
+
 func (s *UserSubscriptionRepoSuite) TestActivateWindows() {
 	user := s.mustCreateUser("activate@test.com", service.RoleUser)
 	group := s.mustCreateGroup("g-activate")

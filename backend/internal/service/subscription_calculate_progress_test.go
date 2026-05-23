@@ -66,10 +66,10 @@ func TestCalculateProgress_DailyUsage(t *testing.T) {
 	assert.Equal(t, dailyStart, progress.Daily.WindowStart)
 }
 
-func TestCalculateProgress_DailyCardUsesExpiryAsDailyResetTime(t *testing.T) {
+func TestCalculateProgress_DailyCardUsesPurchaseAnchoredDailyResetTime(t *testing.T) {
 	svc := newTestSubscriptionService()
 	startsAt := time.Now().Add(-12 * time.Hour)
-	dailyStart := time.Date(startsAt.Year(), startsAt.Month(), startsAt.Day(), 0, 0, 0, 0, startsAt.Location())
+	dailyStart := startsAt
 	expiresAt := startsAt.Add(24 * time.Hour)
 
 	sub := &UserSubscription{
@@ -87,7 +87,8 @@ func TestCalculateProgress_DailyCardUsesExpiryAsDailyResetTime(t *testing.T) {
 	progress := svc.calculateProgress(sub, group)
 
 	require.NotNil(t, progress.Daily, "日卡有日限额和窗口时 Daily 不应为 nil")
-	assert.Equal(t, expiresAt, progress.Daily.ResetsAt, "日卡的一次性日额度结束时间应为订阅过期时间")
+	assert.Equal(t, dailyStart.Add(24*time.Hour), progress.Daily.ResetsAt, "日卡应按购买时间后的 24 小时刷新")
+	assert.Equal(t, expiresAt, progress.Daily.ResetsAt, "1 日有效期下，日额度刷新时间自然等于订阅过期时间")
 }
 
 func TestCalculateProgress_WeeklyUsage(t *testing.T) {
@@ -140,8 +141,66 @@ func TestCalculateProgress_WeeklyResetCappedBySubscriptionExpiry(t *testing.T) {
 	assert.GreaterOrEqual(t, progress.Weekly.ResetsInSeconds, int64(0))
 }
 
+func TestCalculateProgress_LegacyMidnightDailyWindowDisplaysPurchaseAnchoredReset(t *testing.T) {
+	now := time.Now().Truncate(time.Second)
+	anchor := now.Add(-18 * time.Hour)
+	legacyWindowStart := time.Date(anchor.Year(), anchor.Month(), anchor.Day(), 0, 0, 0, 0, anchor.Location())
+	expiresAt := anchor.AddDate(0, 0, 7)
+
+	sub := &UserSubscription{
+		ID:               1,
+		StartsAt:         anchor,
+		ExpiresAt:        expiresAt,
+		DailyUsageUSD:    42.0,
+		DailyWindowStart: ptrTime(legacyWindowStart),
+	}
+	group := &Group{
+		Name:          "Weekly",
+		DailyLimitUSD: ptrFloat64(100.0),
+	}
+	svc := newTestSubscriptionService()
+
+	progress := svc.calculateProgress(sub, group)
+
+	require.NotNil(t, progress.Daily)
+	assert.Equal(t, anchor, progress.Daily.WindowStart)
+	assert.Equal(t, anchor.Add(24*time.Hour), progress.Daily.ResetsAt)
+	assert.NotEqual(t, legacyWindowStart.Add(24*time.Hour), progress.Daily.ResetsAt)
+}
+
+func TestCalculateProgress_LegacyMidnightDailyWindowRollsForwardWhenMaintenanceIsPending(t *testing.T) {
+	now := time.Now().Truncate(time.Second)
+	anchor := now.Add(-3 * 24 * time.Hour)
+	anchor = time.Date(anchor.Year(), anchor.Month(), anchor.Day(), 14, 22, 32, 0, anchor.Location())
+	legacyWindowStart := time.Date(anchor.Year(), anchor.Month(), anchor.Day(), 0, 0, 0, 0, anchor.Location())
+	expiresAt := anchor.AddDate(0, 0, 7)
+	expectedWindowStart := rollingWindowStart(anchor, 24*time.Hour, now)
+
+	sub := &UserSubscription{
+		ID:               1,
+		StartsAt:         anchor,
+		ExpiresAt:        expiresAt,
+		DailyUsageUSD:    99.0,
+		DailyWindowStart: ptrTime(legacyWindowStart),
+	}
+	group := &Group{
+		Name:          "Weekly",
+		DailyLimitUSD: ptrFloat64(100.0),
+	}
+	svc := newTestSubscriptionService()
+
+	progress := svc.calculateProgress(sub, group)
+
+	require.NotNil(t, progress.Daily)
+	assert.Equal(t, expectedWindowStart, progress.Daily.WindowStart)
+	assert.Equal(t, expectedWindowStart.Add(24*time.Hour), progress.Daily.ResetsAt)
+	assert.Equal(t, 0.0, progress.Daily.UsedUSD)
+	assert.NotEqual(t, legacyWindowStart.Add(24*time.Hour), progress.Daily.ResetsAt)
+}
+
 func TestCalculateProgress_LegacyMidnightWeeklyWindowDisplaysPurchaseAnchoredReset(t *testing.T) {
-	anchor := time.Now().Add(-6*24*time.Hour - 10*time.Hour).Truncate(time.Second)
+	now := time.Now().Truncate(time.Second)
+	anchor := now.Add(-6*24*time.Hour - 10*time.Hour)
 	anchor = time.Date(anchor.Year(), anchor.Month(), anchor.Day(), 14, 22, 32, 0, anchor.Location())
 	legacyWindowStart := time.Date(anchor.Year(), anchor.Month(), anchor.Day(), 0, 0, 0, 0, anchor.Location())
 	expiresAt := anchor.AddDate(0, 0, 7)
@@ -165,6 +224,34 @@ func TestCalculateProgress_LegacyMidnightWeeklyWindowDisplaysPurchaseAnchoredRes
 	assert.Equal(t, anchor, progress.Weekly.WindowStart)
 	assert.Equal(t, expiresAt, progress.Weekly.ResetsAt)
 	assert.NotEqual(t, legacyWindowStart.Add(7*24*time.Hour), progress.Weekly.ResetsAt)
+}
+
+func TestCalculateProgress_ExpiredWeeklyWindowDisplaysFreshWindowBeforeMaintenance(t *testing.T) {
+	now := time.Now().Truncate(time.Second)
+	weeklyStart := now.Add(-8 * 24 * time.Hour)
+	expiresAt := now.Add(10 * 24 * time.Hour)
+	expectedWindowStart := rollingWindowStart(weeklyStart, 7*24*time.Hour, now)
+
+	sub := &UserSubscription{
+		ID:                1,
+		StartsAt:          weeklyStart,
+		ExpiresAt:         expiresAt,
+		WeeklyUsageUSD:    50.0,
+		WeeklyWindowStart: ptrTime(weeklyStart),
+	}
+	group := &Group{
+		Name:           "Weekly",
+		WeeklyLimitUSD: ptrFloat64(50.0),
+	}
+	svc := newTestSubscriptionService()
+
+	progress := svc.calculateProgress(sub, group)
+
+	require.NotNil(t, progress.Weekly)
+	assert.Equal(t, expectedWindowStart, progress.Weekly.WindowStart)
+	assert.Equal(t, expectedWindowStart.Add(7*24*time.Hour), progress.Weekly.ResetsAt)
+	assert.Equal(t, 0.0, progress.Weekly.UsedUSD)
+	assert.Equal(t, 50.0, sub.WeeklyUsageUSD, "展示修正不应修改原始订阅对象的用量")
 }
 
 func TestCalculateProgress_MonthlyUsage(t *testing.T) {

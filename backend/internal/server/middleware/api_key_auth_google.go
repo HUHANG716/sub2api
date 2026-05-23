@@ -100,8 +100,10 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 			c.Set(string(ContextKeySubscription), subscription)
 
 			if needsMaintenance {
-				maintenanceCopy := *subscription
-				subscriptionService.DoWindowMaintenance(&maintenanceCopy)
+				if err := subscriptionService.EnsureWindowMaintenance(c.Request.Context(), subscription); err != nil {
+					abortWithGoogleError(c, 503, "Subscription quota maintenance failed")
+					return
+				}
 			}
 		} else {
 			if apiKey.User.Balance <= 0 {

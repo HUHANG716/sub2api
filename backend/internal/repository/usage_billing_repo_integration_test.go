@@ -128,6 +128,62 @@ func TestUsageBillingRepositoryApply_DeduplicatesSubscriptionBilling(t *testing.
 	require.InDelta(t, 2.5, dailyUsage, 0.000001)
 }
 
+func TestUsageBillingRepositoryApply_SubscriptionBillingResetsExpiredWindowAndKeepsCurrentCost(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-billing-window-user-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+	})
+	weeklyLimit := 500.0
+	group := mustCreateGroup(t, client, &service.Group{
+		Name:             "usage-billing-window-group-" + uuid.NewString(),
+		Platform:         service.PlatformAnthropic,
+		SubscriptionType: service.SubscriptionTypeSubscription,
+		WeeklyLimitUSD:   &weeklyLimit,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID:  user.ID,
+		GroupID: &group.ID,
+		Key:     "sk-usage-billing-window-" + uuid.NewString(),
+		Name:    "billing-window",
+	})
+	startsAt := time.Now().Add(-8 * 24 * time.Hour).Truncate(time.Second)
+	subscription := mustCreateSubscription(t, client, &service.UserSubscription{
+		UserID:            user.ID,
+		GroupID:           group.ID,
+		StartsAt:          startsAt,
+		ExpiresAt:         startsAt.AddDate(0, 0, 30),
+		WeeklyWindowStart: &startsAt,
+		WeeklyUsageUSD:    499,
+	})
+
+	cmd := &service.UsageBillingCommand{
+		RequestID:        uuid.NewString(),
+		APIKeyID:         apiKey.ID,
+		UserID:           user.ID,
+		AccountID:        0,
+		SubscriptionID:   &subscription.ID,
+		SubscriptionCost: 2.5,
+	}
+
+	result, err := repo.Apply(ctx, cmd)
+
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	var weeklyUsage float64
+	var weeklyWindowStart time.Time
+	require.NoError(t, integrationDB.QueryRowContext(ctx, `
+		SELECT weekly_usage_usd, weekly_window_start
+		FROM user_subscriptions
+		WHERE id = $1
+	`, subscription.ID).Scan(&weeklyUsage, &weeklyWindowStart))
+	require.InDelta(t, 2.5, weeklyUsage, 0.000001)
+	require.WithinDuration(t, startsAt.Add(7*24*time.Hour), weeklyWindowStart, time.Second)
+}
+
 func TestUsageBillingRepositoryApply_RequestFingerprintConflict(t *testing.T) {
 	ctx := context.Background()
 	client := testEntClient(t)

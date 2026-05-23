@@ -341,17 +341,121 @@ func (r *userSubscriptionRepository) ResetMonthlyUsage(ctx context.Context, id i
 // 此处仅负责记录实际消费，确保消费数据的完整性。
 func (r *userSubscriptionRepository) IncrementUsage(ctx context.Context, id int64, costUSD float64) error {
 	const updateSQL = `
+		WITH current_windows AS (
+			SELECT
+				us.id,
+				us.starts_at,
+				us.expires_at,
+				us.daily_window_start,
+				us.weekly_window_start,
+				us.monthly_window_start,
+				us.starts_at + (
+					GREATEST(FLOOR(EXTRACT(EPOCH FROM (NOW() - us.starts_at)) / 86400), 0)
+					* INTERVAL '1 day'
+				) AS current_daily_window_start,
+				us.starts_at + (
+					GREATEST(FLOOR(EXTRACT(EPOCH FROM (NOW() - us.starts_at)) / 604800), 0)
+					* INTERVAL '7 days'
+				) AS current_weekly_window_start,
+				us.starts_at + (
+					GREATEST(FLOOR(EXTRACT(EPOCH FROM (NOW() - us.starts_at)) / 2592000), 0)
+					* INTERVAL '30 days'
+				) AS current_monthly_window_start
+			FROM user_subscriptions us
+			JOIN groups g ON g.id = us.group_id AND g.deleted_at IS NULL
+			WHERE us.id = $2
+				AND us.deleted_at IS NULL
+		),
+		window_decisions AS (
+			SELECT
+				cw.*,
+				cw.daily_window_start IS NOT NULL
+					AND cw.starts_at::time <> TIME '00:00:00'
+					AND cw.daily_window_start::time = TIME '00:00:00'
+					AND (
+						cw.daily_window_start = date_trunc('day', cw.current_daily_window_start)
+						OR cw.daily_window_start = date_trunc('day', cw.current_daily_window_start - INTERVAL '1 day')
+						OR cw.daily_window_start < date_trunc('day', cw.current_daily_window_start - INTERVAL '1 day')
+					) AS legacy_daily_window,
+				cw.weekly_window_start IS NOT NULL
+					AND cw.starts_at::time <> TIME '00:00:00'
+					AND cw.weekly_window_start::time = TIME '00:00:00'
+					AND (
+						cw.weekly_window_start = date_trunc('day', cw.current_weekly_window_start)
+						OR cw.weekly_window_start = date_trunc('day', cw.current_weekly_window_start - INTERVAL '7 days')
+						OR cw.weekly_window_start < date_trunc('day', cw.current_weekly_window_start - INTERVAL '7 days')
+					) AS legacy_weekly_window,
+				cw.monthly_window_start IS NOT NULL
+					AND cw.starts_at::time <> TIME '00:00:00'
+					AND cw.monthly_window_start::time = TIME '00:00:00'
+					AND (
+						cw.monthly_window_start = date_trunc('day', cw.current_monthly_window_start)
+						OR cw.monthly_window_start = date_trunc('day', cw.current_monthly_window_start - INTERVAL '30 days')
+						OR cw.monthly_window_start < date_trunc('day', cw.current_monthly_window_start - INTERVAL '30 days')
+					) AS legacy_monthly_window
+			FROM current_windows cw
+		),
+		reset_decisions AS (
+			SELECT
+				wd.*,
+				wd.daily_window_start IS NULL
+					OR CASE
+						WHEN wd.legacy_daily_window THEN wd.current_daily_window_start > wd.daily_window_start + INTERVAL '1 day'
+						ELSE wd.daily_window_start + INTERVAL '1 day' <= NOW()
+					END AS reset_daily_window,
+				wd.weekly_window_start IS NULL
+					OR CASE
+						WHEN wd.legacy_weekly_window THEN wd.current_weekly_window_start > wd.weekly_window_start + INTERVAL '7 days'
+						ELSE wd.weekly_window_start + INTERVAL '7 days' <= NOW()
+					END AS reset_weekly_window,
+				wd.monthly_window_start IS NULL
+					OR CASE
+						WHEN wd.legacy_monthly_window THEN wd.current_monthly_window_start > wd.monthly_window_start + INTERVAL '30 days'
+						ELSE wd.monthly_window_start + INTERVAL '30 days' <= NOW()
+					END AS reset_monthly_window
+			FROM window_decisions wd
+		)
 		UPDATE user_subscriptions us
 		SET
-			daily_usage_usd = us.daily_usage_usd + $1,
-			weekly_usage_usd = us.weekly_usage_usd + $1,
-			monthly_usage_usd = us.monthly_usage_usd + $1,
+			daily_usage_usd = CASE
+				WHEN cw.reset_daily_window
+					THEN $1
+				ELSE us.daily_usage_usd + $1
+			END,
+			weekly_usage_usd = CASE
+				WHEN cw.reset_weekly_window
+					THEN $1
+				ELSE us.weekly_usage_usd + $1
+			END,
+			monthly_usage_usd = CASE
+				WHEN cw.reset_monthly_window
+					THEN $1
+				ELSE us.monthly_usage_usd + $1
+			END,
+			daily_window_start = CASE
+				WHEN cw.reset_daily_window
+					THEN cw.current_daily_window_start
+				WHEN cw.daily_window_start IS NULL
+					THEN cw.starts_at
+				ELSE us.daily_window_start
+			END,
+			weekly_window_start = CASE
+				WHEN cw.reset_weekly_window
+					THEN cw.current_weekly_window_start
+				WHEN cw.weekly_window_start IS NULL
+					THEN cw.starts_at
+				ELSE us.weekly_window_start
+			END,
+			monthly_window_start = CASE
+				WHEN cw.reset_monthly_window
+					THEN cw.current_monthly_window_start
+				WHEN cw.monthly_window_start IS NULL
+					THEN cw.starts_at
+				ELSE us.monthly_window_start
+			END,
 			updated_at = NOW()
-		FROM groups g
-		WHERE us.id = $2
-			AND us.deleted_at IS NULL
-			AND us.group_id = g.id
-			AND g.deleted_at IS NULL
+		FROM reset_decisions cw
+		WHERE us.id = cw.id
 	`
 
 	client := clientFromContext(ctx, r.client)
