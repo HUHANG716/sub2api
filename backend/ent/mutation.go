@@ -27,6 +27,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/sub2api/ent/imagestudiotemplate"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
@@ -74,6 +75,7 @@ const (
 	TypeGroup                         = "Group"
 	TypeIdempotencyRecord             = "IdempotencyRecord"
 	TypeIdentityAdoptionDecision      = "IdentityAdoptionDecision"
+	TypeImageStudioTemplate           = "ImageStudioTemplate"
 	TypePaymentAuditLog               = "PaymentAuditLog"
 	TypePaymentOrder                  = "PaymentOrder"
 	TypePaymentProviderInstance       = "PaymentProviderInstance"
@@ -19886,6 +19888,1731 @@ func (m *IdentityAdoptionDecisionMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown IdentityAdoptionDecision edge %s", name)
+}
+
+// ImageStudioTemplateMutation represents an operation that mutates the ImageStudioTemplate nodes in the graph.
+type ImageStudioTemplateMutation struct {
+	config
+	op                   Op
+	typ                  string
+	id                   *int64
+	created_at           *time.Time
+	updated_at           *time.Time
+	key                  *string
+	mode                 *string
+	title                *string
+	model                *string
+	image                *string
+	original_image_url   *string
+	image_hash           *string
+	image_download_error *string
+	prompt_hash          *string
+	prompt               *string
+	source_name          *string
+	source_url           *string
+	source_type          *string
+	license              *string
+	author               *string
+	meta                 *string
+	tags                 *[]string
+	appendtags           []string
+	requires_reference   *bool
+	enabled              *bool
+	sort_order           *int
+	addsort_order        *int
+	clearedFields        map[string]struct{}
+	done                 bool
+	oldValue             func(context.Context) (*ImageStudioTemplate, error)
+	predicates           []predicate.ImageStudioTemplate
+}
+
+var _ ent.Mutation = (*ImageStudioTemplateMutation)(nil)
+
+// imagestudiotemplateOption allows management of the mutation configuration using functional options.
+type imagestudiotemplateOption func(*ImageStudioTemplateMutation)
+
+// newImageStudioTemplateMutation creates new mutation for the ImageStudioTemplate entity.
+func newImageStudioTemplateMutation(c config, op Op, opts ...imagestudiotemplateOption) *ImageStudioTemplateMutation {
+	m := &ImageStudioTemplateMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeImageStudioTemplate,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withImageStudioTemplateID sets the ID field of the mutation.
+func withImageStudioTemplateID(id int64) imagestudiotemplateOption {
+	return func(m *ImageStudioTemplateMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ImageStudioTemplate
+		)
+		m.oldValue = func(ctx context.Context) (*ImageStudioTemplate, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ImageStudioTemplate.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withImageStudioTemplate sets the old ImageStudioTemplate of the mutation.
+func withImageStudioTemplate(node *ImageStudioTemplate) imagestudiotemplateOption {
+	return func(m *ImageStudioTemplateMutation) {
+		m.oldValue = func(context.Context) (*ImageStudioTemplate, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ImageStudioTemplateMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ImageStudioTemplateMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ImageStudioTemplateMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ImageStudioTemplateMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ImageStudioTemplate.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ImageStudioTemplateMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ImageStudioTemplateMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ImageStudioTemplateMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ImageStudioTemplateMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ImageStudioTemplateMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ImageStudioTemplateMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetKey sets the "key" field.
+func (m *ImageStudioTemplateMutation) SetKey(s string) {
+	m.key = &s
+}
+
+// Key returns the value of the "key" field in the mutation.
+func (m *ImageStudioTemplateMutation) Key() (r string, exists bool) {
+	v := m.key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKey returns the old "key" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldKey(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKey: %w", err)
+	}
+	return oldValue.Key, nil
+}
+
+// ResetKey resets all changes to the "key" field.
+func (m *ImageStudioTemplateMutation) ResetKey() {
+	m.key = nil
+}
+
+// SetMode sets the "mode" field.
+func (m *ImageStudioTemplateMutation) SetMode(s string) {
+	m.mode = &s
+}
+
+// Mode returns the value of the "mode" field in the mutation.
+func (m *ImageStudioTemplateMutation) Mode() (r string, exists bool) {
+	v := m.mode
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMode returns the old "mode" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldMode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMode: %w", err)
+	}
+	return oldValue.Mode, nil
+}
+
+// ResetMode resets all changes to the "mode" field.
+func (m *ImageStudioTemplateMutation) ResetMode() {
+	m.mode = nil
+}
+
+// SetTitle sets the "title" field.
+func (m *ImageStudioTemplateMutation) SetTitle(s string) {
+	m.title = &s
+}
+
+// Title returns the value of the "title" field in the mutation.
+func (m *ImageStudioTemplateMutation) Title() (r string, exists bool) {
+	v := m.title
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTitle returns the old "title" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldTitle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTitle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTitle: %w", err)
+	}
+	return oldValue.Title, nil
+}
+
+// ResetTitle resets all changes to the "title" field.
+func (m *ImageStudioTemplateMutation) ResetTitle() {
+	m.title = nil
+}
+
+// SetModel sets the "model" field.
+func (m *ImageStudioTemplateMutation) SetModel(s string) {
+	m.model = &s
+}
+
+// Model returns the value of the "model" field in the mutation.
+func (m *ImageStudioTemplateMutation) Model() (r string, exists bool) {
+	v := m.model
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldModel returns the old "model" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldModel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldModel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldModel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldModel: %w", err)
+	}
+	return oldValue.Model, nil
+}
+
+// ResetModel resets all changes to the "model" field.
+func (m *ImageStudioTemplateMutation) ResetModel() {
+	m.model = nil
+}
+
+// SetImage sets the "image" field.
+func (m *ImageStudioTemplateMutation) SetImage(s string) {
+	m.image = &s
+}
+
+// Image returns the value of the "image" field in the mutation.
+func (m *ImageStudioTemplateMutation) Image() (r string, exists bool) {
+	v := m.image
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImage returns the old "image" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldImage(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImage: %w", err)
+	}
+	return oldValue.Image, nil
+}
+
+// ResetImage resets all changes to the "image" field.
+func (m *ImageStudioTemplateMutation) ResetImage() {
+	m.image = nil
+}
+
+// SetOriginalImageURL sets the "original_image_url" field.
+func (m *ImageStudioTemplateMutation) SetOriginalImageURL(s string) {
+	m.original_image_url = &s
+}
+
+// OriginalImageURL returns the value of the "original_image_url" field in the mutation.
+func (m *ImageStudioTemplateMutation) OriginalImageURL() (r string, exists bool) {
+	v := m.original_image_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOriginalImageURL returns the old "original_image_url" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldOriginalImageURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOriginalImageURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOriginalImageURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOriginalImageURL: %w", err)
+	}
+	return oldValue.OriginalImageURL, nil
+}
+
+// ClearOriginalImageURL clears the value of the "original_image_url" field.
+func (m *ImageStudioTemplateMutation) ClearOriginalImageURL() {
+	m.original_image_url = nil
+	m.clearedFields[imagestudiotemplate.FieldOriginalImageURL] = struct{}{}
+}
+
+// OriginalImageURLCleared returns if the "original_image_url" field was cleared in this mutation.
+func (m *ImageStudioTemplateMutation) OriginalImageURLCleared() bool {
+	_, ok := m.clearedFields[imagestudiotemplate.FieldOriginalImageURL]
+	return ok
+}
+
+// ResetOriginalImageURL resets all changes to the "original_image_url" field.
+func (m *ImageStudioTemplateMutation) ResetOriginalImageURL() {
+	m.original_image_url = nil
+	delete(m.clearedFields, imagestudiotemplate.FieldOriginalImageURL)
+}
+
+// SetImageHash sets the "image_hash" field.
+func (m *ImageStudioTemplateMutation) SetImageHash(s string) {
+	m.image_hash = &s
+}
+
+// ImageHash returns the value of the "image_hash" field in the mutation.
+func (m *ImageStudioTemplateMutation) ImageHash() (r string, exists bool) {
+	v := m.image_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImageHash returns the old "image_hash" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldImageHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImageHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImageHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImageHash: %w", err)
+	}
+	return oldValue.ImageHash, nil
+}
+
+// ClearImageHash clears the value of the "image_hash" field.
+func (m *ImageStudioTemplateMutation) ClearImageHash() {
+	m.image_hash = nil
+	m.clearedFields[imagestudiotemplate.FieldImageHash] = struct{}{}
+}
+
+// ImageHashCleared returns if the "image_hash" field was cleared in this mutation.
+func (m *ImageStudioTemplateMutation) ImageHashCleared() bool {
+	_, ok := m.clearedFields[imagestudiotemplate.FieldImageHash]
+	return ok
+}
+
+// ResetImageHash resets all changes to the "image_hash" field.
+func (m *ImageStudioTemplateMutation) ResetImageHash() {
+	m.image_hash = nil
+	delete(m.clearedFields, imagestudiotemplate.FieldImageHash)
+}
+
+// SetImageDownloadError sets the "image_download_error" field.
+func (m *ImageStudioTemplateMutation) SetImageDownloadError(s string) {
+	m.image_download_error = &s
+}
+
+// ImageDownloadError returns the value of the "image_download_error" field in the mutation.
+func (m *ImageStudioTemplateMutation) ImageDownloadError() (r string, exists bool) {
+	v := m.image_download_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImageDownloadError returns the old "image_download_error" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldImageDownloadError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImageDownloadError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImageDownloadError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImageDownloadError: %w", err)
+	}
+	return oldValue.ImageDownloadError, nil
+}
+
+// ClearImageDownloadError clears the value of the "image_download_error" field.
+func (m *ImageStudioTemplateMutation) ClearImageDownloadError() {
+	m.image_download_error = nil
+	m.clearedFields[imagestudiotemplate.FieldImageDownloadError] = struct{}{}
+}
+
+// ImageDownloadErrorCleared returns if the "image_download_error" field was cleared in this mutation.
+func (m *ImageStudioTemplateMutation) ImageDownloadErrorCleared() bool {
+	_, ok := m.clearedFields[imagestudiotemplate.FieldImageDownloadError]
+	return ok
+}
+
+// ResetImageDownloadError resets all changes to the "image_download_error" field.
+func (m *ImageStudioTemplateMutation) ResetImageDownloadError() {
+	m.image_download_error = nil
+	delete(m.clearedFields, imagestudiotemplate.FieldImageDownloadError)
+}
+
+// SetPromptHash sets the "prompt_hash" field.
+func (m *ImageStudioTemplateMutation) SetPromptHash(s string) {
+	m.prompt_hash = &s
+}
+
+// PromptHash returns the value of the "prompt_hash" field in the mutation.
+func (m *ImageStudioTemplateMutation) PromptHash() (r string, exists bool) {
+	v := m.prompt_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPromptHash returns the old "prompt_hash" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldPromptHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPromptHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPromptHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPromptHash: %w", err)
+	}
+	return oldValue.PromptHash, nil
+}
+
+// ClearPromptHash clears the value of the "prompt_hash" field.
+func (m *ImageStudioTemplateMutation) ClearPromptHash() {
+	m.prompt_hash = nil
+	m.clearedFields[imagestudiotemplate.FieldPromptHash] = struct{}{}
+}
+
+// PromptHashCleared returns if the "prompt_hash" field was cleared in this mutation.
+func (m *ImageStudioTemplateMutation) PromptHashCleared() bool {
+	_, ok := m.clearedFields[imagestudiotemplate.FieldPromptHash]
+	return ok
+}
+
+// ResetPromptHash resets all changes to the "prompt_hash" field.
+func (m *ImageStudioTemplateMutation) ResetPromptHash() {
+	m.prompt_hash = nil
+	delete(m.clearedFields, imagestudiotemplate.FieldPromptHash)
+}
+
+// SetPrompt sets the "prompt" field.
+func (m *ImageStudioTemplateMutation) SetPrompt(s string) {
+	m.prompt = &s
+}
+
+// Prompt returns the value of the "prompt" field in the mutation.
+func (m *ImageStudioTemplateMutation) Prompt() (r string, exists bool) {
+	v := m.prompt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPrompt returns the old "prompt" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldPrompt(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPrompt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPrompt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPrompt: %w", err)
+	}
+	return oldValue.Prompt, nil
+}
+
+// ResetPrompt resets all changes to the "prompt" field.
+func (m *ImageStudioTemplateMutation) ResetPrompt() {
+	m.prompt = nil
+}
+
+// SetSourceName sets the "source_name" field.
+func (m *ImageStudioTemplateMutation) SetSourceName(s string) {
+	m.source_name = &s
+}
+
+// SourceName returns the value of the "source_name" field in the mutation.
+func (m *ImageStudioTemplateMutation) SourceName() (r string, exists bool) {
+	v := m.source_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceName returns the old "source_name" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldSourceName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceName: %w", err)
+	}
+	return oldValue.SourceName, nil
+}
+
+// ClearSourceName clears the value of the "source_name" field.
+func (m *ImageStudioTemplateMutation) ClearSourceName() {
+	m.source_name = nil
+	m.clearedFields[imagestudiotemplate.FieldSourceName] = struct{}{}
+}
+
+// SourceNameCleared returns if the "source_name" field was cleared in this mutation.
+func (m *ImageStudioTemplateMutation) SourceNameCleared() bool {
+	_, ok := m.clearedFields[imagestudiotemplate.FieldSourceName]
+	return ok
+}
+
+// ResetSourceName resets all changes to the "source_name" field.
+func (m *ImageStudioTemplateMutation) ResetSourceName() {
+	m.source_name = nil
+	delete(m.clearedFields, imagestudiotemplate.FieldSourceName)
+}
+
+// SetSourceURL sets the "source_url" field.
+func (m *ImageStudioTemplateMutation) SetSourceURL(s string) {
+	m.source_url = &s
+}
+
+// SourceURL returns the value of the "source_url" field in the mutation.
+func (m *ImageStudioTemplateMutation) SourceURL() (r string, exists bool) {
+	v := m.source_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceURL returns the old "source_url" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldSourceURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceURL: %w", err)
+	}
+	return oldValue.SourceURL, nil
+}
+
+// ClearSourceURL clears the value of the "source_url" field.
+func (m *ImageStudioTemplateMutation) ClearSourceURL() {
+	m.source_url = nil
+	m.clearedFields[imagestudiotemplate.FieldSourceURL] = struct{}{}
+}
+
+// SourceURLCleared returns if the "source_url" field was cleared in this mutation.
+func (m *ImageStudioTemplateMutation) SourceURLCleared() bool {
+	_, ok := m.clearedFields[imagestudiotemplate.FieldSourceURL]
+	return ok
+}
+
+// ResetSourceURL resets all changes to the "source_url" field.
+func (m *ImageStudioTemplateMutation) ResetSourceURL() {
+	m.source_url = nil
+	delete(m.clearedFields, imagestudiotemplate.FieldSourceURL)
+}
+
+// SetSourceType sets the "source_type" field.
+func (m *ImageStudioTemplateMutation) SetSourceType(s string) {
+	m.source_type = &s
+}
+
+// SourceType returns the value of the "source_type" field in the mutation.
+func (m *ImageStudioTemplateMutation) SourceType() (r string, exists bool) {
+	v := m.source_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceType returns the old "source_type" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldSourceType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceType: %w", err)
+	}
+	return oldValue.SourceType, nil
+}
+
+// ClearSourceType clears the value of the "source_type" field.
+func (m *ImageStudioTemplateMutation) ClearSourceType() {
+	m.source_type = nil
+	m.clearedFields[imagestudiotemplate.FieldSourceType] = struct{}{}
+}
+
+// SourceTypeCleared returns if the "source_type" field was cleared in this mutation.
+func (m *ImageStudioTemplateMutation) SourceTypeCleared() bool {
+	_, ok := m.clearedFields[imagestudiotemplate.FieldSourceType]
+	return ok
+}
+
+// ResetSourceType resets all changes to the "source_type" field.
+func (m *ImageStudioTemplateMutation) ResetSourceType() {
+	m.source_type = nil
+	delete(m.clearedFields, imagestudiotemplate.FieldSourceType)
+}
+
+// SetLicense sets the "license" field.
+func (m *ImageStudioTemplateMutation) SetLicense(s string) {
+	m.license = &s
+}
+
+// License returns the value of the "license" field in the mutation.
+func (m *ImageStudioTemplateMutation) License() (r string, exists bool) {
+	v := m.license
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLicense returns the old "license" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldLicense(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLicense is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLicense requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLicense: %w", err)
+	}
+	return oldValue.License, nil
+}
+
+// ClearLicense clears the value of the "license" field.
+func (m *ImageStudioTemplateMutation) ClearLicense() {
+	m.license = nil
+	m.clearedFields[imagestudiotemplate.FieldLicense] = struct{}{}
+}
+
+// LicenseCleared returns if the "license" field was cleared in this mutation.
+func (m *ImageStudioTemplateMutation) LicenseCleared() bool {
+	_, ok := m.clearedFields[imagestudiotemplate.FieldLicense]
+	return ok
+}
+
+// ResetLicense resets all changes to the "license" field.
+func (m *ImageStudioTemplateMutation) ResetLicense() {
+	m.license = nil
+	delete(m.clearedFields, imagestudiotemplate.FieldLicense)
+}
+
+// SetAuthor sets the "author" field.
+func (m *ImageStudioTemplateMutation) SetAuthor(s string) {
+	m.author = &s
+}
+
+// Author returns the value of the "author" field in the mutation.
+func (m *ImageStudioTemplateMutation) Author() (r string, exists bool) {
+	v := m.author
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAuthor returns the old "author" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldAuthor(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAuthor is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAuthor requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAuthor: %w", err)
+	}
+	return oldValue.Author, nil
+}
+
+// ClearAuthor clears the value of the "author" field.
+func (m *ImageStudioTemplateMutation) ClearAuthor() {
+	m.author = nil
+	m.clearedFields[imagestudiotemplate.FieldAuthor] = struct{}{}
+}
+
+// AuthorCleared returns if the "author" field was cleared in this mutation.
+func (m *ImageStudioTemplateMutation) AuthorCleared() bool {
+	_, ok := m.clearedFields[imagestudiotemplate.FieldAuthor]
+	return ok
+}
+
+// ResetAuthor resets all changes to the "author" field.
+func (m *ImageStudioTemplateMutation) ResetAuthor() {
+	m.author = nil
+	delete(m.clearedFields, imagestudiotemplate.FieldAuthor)
+}
+
+// SetMeta sets the "meta" field.
+func (m *ImageStudioTemplateMutation) SetMeta(s string) {
+	m.meta = &s
+}
+
+// Meta returns the value of the "meta" field in the mutation.
+func (m *ImageStudioTemplateMutation) Meta() (r string, exists bool) {
+	v := m.meta
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMeta returns the old "meta" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldMeta(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMeta is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMeta requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMeta: %w", err)
+	}
+	return oldValue.Meta, nil
+}
+
+// ClearMeta clears the value of the "meta" field.
+func (m *ImageStudioTemplateMutation) ClearMeta() {
+	m.meta = nil
+	m.clearedFields[imagestudiotemplate.FieldMeta] = struct{}{}
+}
+
+// MetaCleared returns if the "meta" field was cleared in this mutation.
+func (m *ImageStudioTemplateMutation) MetaCleared() bool {
+	_, ok := m.clearedFields[imagestudiotemplate.FieldMeta]
+	return ok
+}
+
+// ResetMeta resets all changes to the "meta" field.
+func (m *ImageStudioTemplateMutation) ResetMeta() {
+	m.meta = nil
+	delete(m.clearedFields, imagestudiotemplate.FieldMeta)
+}
+
+// SetTags sets the "tags" field.
+func (m *ImageStudioTemplateMutation) SetTags(s []string) {
+	m.tags = &s
+	m.appendtags = nil
+}
+
+// Tags returns the value of the "tags" field in the mutation.
+func (m *ImageStudioTemplateMutation) Tags() (r []string, exists bool) {
+	v := m.tags
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTags returns the old "tags" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldTags(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTags is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTags requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTags: %w", err)
+	}
+	return oldValue.Tags, nil
+}
+
+// AppendTags adds s to the "tags" field.
+func (m *ImageStudioTemplateMutation) AppendTags(s []string) {
+	m.appendtags = append(m.appendtags, s...)
+}
+
+// AppendedTags returns the list of values that were appended to the "tags" field in this mutation.
+func (m *ImageStudioTemplateMutation) AppendedTags() ([]string, bool) {
+	if len(m.appendtags) == 0 {
+		return nil, false
+	}
+	return m.appendtags, true
+}
+
+// ClearTags clears the value of the "tags" field.
+func (m *ImageStudioTemplateMutation) ClearTags() {
+	m.tags = nil
+	m.appendtags = nil
+	m.clearedFields[imagestudiotemplate.FieldTags] = struct{}{}
+}
+
+// TagsCleared returns if the "tags" field was cleared in this mutation.
+func (m *ImageStudioTemplateMutation) TagsCleared() bool {
+	_, ok := m.clearedFields[imagestudiotemplate.FieldTags]
+	return ok
+}
+
+// ResetTags resets all changes to the "tags" field.
+func (m *ImageStudioTemplateMutation) ResetTags() {
+	m.tags = nil
+	m.appendtags = nil
+	delete(m.clearedFields, imagestudiotemplate.FieldTags)
+}
+
+// SetRequiresReference sets the "requires_reference" field.
+func (m *ImageStudioTemplateMutation) SetRequiresReference(b bool) {
+	m.requires_reference = &b
+}
+
+// RequiresReference returns the value of the "requires_reference" field in the mutation.
+func (m *ImageStudioTemplateMutation) RequiresReference() (r bool, exists bool) {
+	v := m.requires_reference
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequiresReference returns the old "requires_reference" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldRequiresReference(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequiresReference is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequiresReference requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequiresReference: %w", err)
+	}
+	return oldValue.RequiresReference, nil
+}
+
+// ResetRequiresReference resets all changes to the "requires_reference" field.
+func (m *ImageStudioTemplateMutation) ResetRequiresReference() {
+	m.requires_reference = nil
+}
+
+// SetEnabled sets the "enabled" field.
+func (m *ImageStudioTemplateMutation) SetEnabled(b bool) {
+	m.enabled = &b
+}
+
+// Enabled returns the value of the "enabled" field in the mutation.
+func (m *ImageStudioTemplateMutation) Enabled() (r bool, exists bool) {
+	v := m.enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnabled returns the old "enabled" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldEnabled(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnabled: %w", err)
+	}
+	return oldValue.Enabled, nil
+}
+
+// ResetEnabled resets all changes to the "enabled" field.
+func (m *ImageStudioTemplateMutation) ResetEnabled() {
+	m.enabled = nil
+}
+
+// SetSortOrder sets the "sort_order" field.
+func (m *ImageStudioTemplateMutation) SetSortOrder(i int) {
+	m.sort_order = &i
+	m.addsort_order = nil
+}
+
+// SortOrder returns the value of the "sort_order" field in the mutation.
+func (m *ImageStudioTemplateMutation) SortOrder() (r int, exists bool) {
+	v := m.sort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSortOrder returns the old "sort_order" field's value of the ImageStudioTemplate entity.
+// If the ImageStudioTemplate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ImageStudioTemplateMutation) OldSortOrder(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSortOrder is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSortOrder requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSortOrder: %w", err)
+	}
+	return oldValue.SortOrder, nil
+}
+
+// AddSortOrder adds i to the "sort_order" field.
+func (m *ImageStudioTemplateMutation) AddSortOrder(i int) {
+	if m.addsort_order != nil {
+		*m.addsort_order += i
+	} else {
+		m.addsort_order = &i
+	}
+}
+
+// AddedSortOrder returns the value that was added to the "sort_order" field in this mutation.
+func (m *ImageStudioTemplateMutation) AddedSortOrder() (r int, exists bool) {
+	v := m.addsort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSortOrder resets all changes to the "sort_order" field.
+func (m *ImageStudioTemplateMutation) ResetSortOrder() {
+	m.sort_order = nil
+	m.addsort_order = nil
+}
+
+// Where appends a list predicates to the ImageStudioTemplateMutation builder.
+func (m *ImageStudioTemplateMutation) Where(ps ...predicate.ImageStudioTemplate) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ImageStudioTemplateMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ImageStudioTemplateMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ImageStudioTemplate, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ImageStudioTemplateMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ImageStudioTemplateMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ImageStudioTemplate).
+func (m *ImageStudioTemplateMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ImageStudioTemplateMutation) Fields() []string {
+	fields := make([]string, 0, 22)
+	if m.created_at != nil {
+		fields = append(fields, imagestudiotemplate.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, imagestudiotemplate.FieldUpdatedAt)
+	}
+	if m.key != nil {
+		fields = append(fields, imagestudiotemplate.FieldKey)
+	}
+	if m.mode != nil {
+		fields = append(fields, imagestudiotemplate.FieldMode)
+	}
+	if m.title != nil {
+		fields = append(fields, imagestudiotemplate.FieldTitle)
+	}
+	if m.model != nil {
+		fields = append(fields, imagestudiotemplate.FieldModel)
+	}
+	if m.image != nil {
+		fields = append(fields, imagestudiotemplate.FieldImage)
+	}
+	if m.original_image_url != nil {
+		fields = append(fields, imagestudiotemplate.FieldOriginalImageURL)
+	}
+	if m.image_hash != nil {
+		fields = append(fields, imagestudiotemplate.FieldImageHash)
+	}
+	if m.image_download_error != nil {
+		fields = append(fields, imagestudiotemplate.FieldImageDownloadError)
+	}
+	if m.prompt_hash != nil {
+		fields = append(fields, imagestudiotemplate.FieldPromptHash)
+	}
+	if m.prompt != nil {
+		fields = append(fields, imagestudiotemplate.FieldPrompt)
+	}
+	if m.source_name != nil {
+		fields = append(fields, imagestudiotemplate.FieldSourceName)
+	}
+	if m.source_url != nil {
+		fields = append(fields, imagestudiotemplate.FieldSourceURL)
+	}
+	if m.source_type != nil {
+		fields = append(fields, imagestudiotemplate.FieldSourceType)
+	}
+	if m.license != nil {
+		fields = append(fields, imagestudiotemplate.FieldLicense)
+	}
+	if m.author != nil {
+		fields = append(fields, imagestudiotemplate.FieldAuthor)
+	}
+	if m.meta != nil {
+		fields = append(fields, imagestudiotemplate.FieldMeta)
+	}
+	if m.tags != nil {
+		fields = append(fields, imagestudiotemplate.FieldTags)
+	}
+	if m.requires_reference != nil {
+		fields = append(fields, imagestudiotemplate.FieldRequiresReference)
+	}
+	if m.enabled != nil {
+		fields = append(fields, imagestudiotemplate.FieldEnabled)
+	}
+	if m.sort_order != nil {
+		fields = append(fields, imagestudiotemplate.FieldSortOrder)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ImageStudioTemplateMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case imagestudiotemplate.FieldCreatedAt:
+		return m.CreatedAt()
+	case imagestudiotemplate.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case imagestudiotemplate.FieldKey:
+		return m.Key()
+	case imagestudiotemplate.FieldMode:
+		return m.Mode()
+	case imagestudiotemplate.FieldTitle:
+		return m.Title()
+	case imagestudiotemplate.FieldModel:
+		return m.Model()
+	case imagestudiotemplate.FieldImage:
+		return m.Image()
+	case imagestudiotemplate.FieldOriginalImageURL:
+		return m.OriginalImageURL()
+	case imagestudiotemplate.FieldImageHash:
+		return m.ImageHash()
+	case imagestudiotemplate.FieldImageDownloadError:
+		return m.ImageDownloadError()
+	case imagestudiotemplate.FieldPromptHash:
+		return m.PromptHash()
+	case imagestudiotemplate.FieldPrompt:
+		return m.Prompt()
+	case imagestudiotemplate.FieldSourceName:
+		return m.SourceName()
+	case imagestudiotemplate.FieldSourceURL:
+		return m.SourceURL()
+	case imagestudiotemplate.FieldSourceType:
+		return m.SourceType()
+	case imagestudiotemplate.FieldLicense:
+		return m.License()
+	case imagestudiotemplate.FieldAuthor:
+		return m.Author()
+	case imagestudiotemplate.FieldMeta:
+		return m.Meta()
+	case imagestudiotemplate.FieldTags:
+		return m.Tags()
+	case imagestudiotemplate.FieldRequiresReference:
+		return m.RequiresReference()
+	case imagestudiotemplate.FieldEnabled:
+		return m.Enabled()
+	case imagestudiotemplate.FieldSortOrder:
+		return m.SortOrder()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ImageStudioTemplateMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case imagestudiotemplate.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case imagestudiotemplate.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case imagestudiotemplate.FieldKey:
+		return m.OldKey(ctx)
+	case imagestudiotemplate.FieldMode:
+		return m.OldMode(ctx)
+	case imagestudiotemplate.FieldTitle:
+		return m.OldTitle(ctx)
+	case imagestudiotemplate.FieldModel:
+		return m.OldModel(ctx)
+	case imagestudiotemplate.FieldImage:
+		return m.OldImage(ctx)
+	case imagestudiotemplate.FieldOriginalImageURL:
+		return m.OldOriginalImageURL(ctx)
+	case imagestudiotemplate.FieldImageHash:
+		return m.OldImageHash(ctx)
+	case imagestudiotemplate.FieldImageDownloadError:
+		return m.OldImageDownloadError(ctx)
+	case imagestudiotemplate.FieldPromptHash:
+		return m.OldPromptHash(ctx)
+	case imagestudiotemplate.FieldPrompt:
+		return m.OldPrompt(ctx)
+	case imagestudiotemplate.FieldSourceName:
+		return m.OldSourceName(ctx)
+	case imagestudiotemplate.FieldSourceURL:
+		return m.OldSourceURL(ctx)
+	case imagestudiotemplate.FieldSourceType:
+		return m.OldSourceType(ctx)
+	case imagestudiotemplate.FieldLicense:
+		return m.OldLicense(ctx)
+	case imagestudiotemplate.FieldAuthor:
+		return m.OldAuthor(ctx)
+	case imagestudiotemplate.FieldMeta:
+		return m.OldMeta(ctx)
+	case imagestudiotemplate.FieldTags:
+		return m.OldTags(ctx)
+	case imagestudiotemplate.FieldRequiresReference:
+		return m.OldRequiresReference(ctx)
+	case imagestudiotemplate.FieldEnabled:
+		return m.OldEnabled(ctx)
+	case imagestudiotemplate.FieldSortOrder:
+		return m.OldSortOrder(ctx)
+	}
+	return nil, fmt.Errorf("unknown ImageStudioTemplate field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ImageStudioTemplateMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case imagestudiotemplate.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case imagestudiotemplate.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case imagestudiotemplate.FieldKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKey(v)
+		return nil
+	case imagestudiotemplate.FieldMode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMode(v)
+		return nil
+	case imagestudiotemplate.FieldTitle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTitle(v)
+		return nil
+	case imagestudiotemplate.FieldModel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModel(v)
+		return nil
+	case imagestudiotemplate.FieldImage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImage(v)
+		return nil
+	case imagestudiotemplate.FieldOriginalImageURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOriginalImageURL(v)
+		return nil
+	case imagestudiotemplate.FieldImageHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImageHash(v)
+		return nil
+	case imagestudiotemplate.FieldImageDownloadError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImageDownloadError(v)
+		return nil
+	case imagestudiotemplate.FieldPromptHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPromptHash(v)
+		return nil
+	case imagestudiotemplate.FieldPrompt:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPrompt(v)
+		return nil
+	case imagestudiotemplate.FieldSourceName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceName(v)
+		return nil
+	case imagestudiotemplate.FieldSourceURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceURL(v)
+		return nil
+	case imagestudiotemplate.FieldSourceType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceType(v)
+		return nil
+	case imagestudiotemplate.FieldLicense:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLicense(v)
+		return nil
+	case imagestudiotemplate.FieldAuthor:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAuthor(v)
+		return nil
+	case imagestudiotemplate.FieldMeta:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMeta(v)
+		return nil
+	case imagestudiotemplate.FieldTags:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTags(v)
+		return nil
+	case imagestudiotemplate.FieldRequiresReference:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequiresReference(v)
+		return nil
+	case imagestudiotemplate.FieldEnabled:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnabled(v)
+		return nil
+	case imagestudiotemplate.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSortOrder(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ImageStudioTemplate field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ImageStudioTemplateMutation) AddedFields() []string {
+	var fields []string
+	if m.addsort_order != nil {
+		fields = append(fields, imagestudiotemplate.FieldSortOrder)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ImageStudioTemplateMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case imagestudiotemplate.FieldSortOrder:
+		return m.AddedSortOrder()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ImageStudioTemplateMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case imagestudiotemplate.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSortOrder(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ImageStudioTemplate numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ImageStudioTemplateMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(imagestudiotemplate.FieldOriginalImageURL) {
+		fields = append(fields, imagestudiotemplate.FieldOriginalImageURL)
+	}
+	if m.FieldCleared(imagestudiotemplate.FieldImageHash) {
+		fields = append(fields, imagestudiotemplate.FieldImageHash)
+	}
+	if m.FieldCleared(imagestudiotemplate.FieldImageDownloadError) {
+		fields = append(fields, imagestudiotemplate.FieldImageDownloadError)
+	}
+	if m.FieldCleared(imagestudiotemplate.FieldPromptHash) {
+		fields = append(fields, imagestudiotemplate.FieldPromptHash)
+	}
+	if m.FieldCleared(imagestudiotemplate.FieldSourceName) {
+		fields = append(fields, imagestudiotemplate.FieldSourceName)
+	}
+	if m.FieldCleared(imagestudiotemplate.FieldSourceURL) {
+		fields = append(fields, imagestudiotemplate.FieldSourceURL)
+	}
+	if m.FieldCleared(imagestudiotemplate.FieldSourceType) {
+		fields = append(fields, imagestudiotemplate.FieldSourceType)
+	}
+	if m.FieldCleared(imagestudiotemplate.FieldLicense) {
+		fields = append(fields, imagestudiotemplate.FieldLicense)
+	}
+	if m.FieldCleared(imagestudiotemplate.FieldAuthor) {
+		fields = append(fields, imagestudiotemplate.FieldAuthor)
+	}
+	if m.FieldCleared(imagestudiotemplate.FieldMeta) {
+		fields = append(fields, imagestudiotemplate.FieldMeta)
+	}
+	if m.FieldCleared(imagestudiotemplate.FieldTags) {
+		fields = append(fields, imagestudiotemplate.FieldTags)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ImageStudioTemplateMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ImageStudioTemplateMutation) ClearField(name string) error {
+	switch name {
+	case imagestudiotemplate.FieldOriginalImageURL:
+		m.ClearOriginalImageURL()
+		return nil
+	case imagestudiotemplate.FieldImageHash:
+		m.ClearImageHash()
+		return nil
+	case imagestudiotemplate.FieldImageDownloadError:
+		m.ClearImageDownloadError()
+		return nil
+	case imagestudiotemplate.FieldPromptHash:
+		m.ClearPromptHash()
+		return nil
+	case imagestudiotemplate.FieldSourceName:
+		m.ClearSourceName()
+		return nil
+	case imagestudiotemplate.FieldSourceURL:
+		m.ClearSourceURL()
+		return nil
+	case imagestudiotemplate.FieldSourceType:
+		m.ClearSourceType()
+		return nil
+	case imagestudiotemplate.FieldLicense:
+		m.ClearLicense()
+		return nil
+	case imagestudiotemplate.FieldAuthor:
+		m.ClearAuthor()
+		return nil
+	case imagestudiotemplate.FieldMeta:
+		m.ClearMeta()
+		return nil
+	case imagestudiotemplate.FieldTags:
+		m.ClearTags()
+		return nil
+	}
+	return fmt.Errorf("unknown ImageStudioTemplate nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ImageStudioTemplateMutation) ResetField(name string) error {
+	switch name {
+	case imagestudiotemplate.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case imagestudiotemplate.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case imagestudiotemplate.FieldKey:
+		m.ResetKey()
+		return nil
+	case imagestudiotemplate.FieldMode:
+		m.ResetMode()
+		return nil
+	case imagestudiotemplate.FieldTitle:
+		m.ResetTitle()
+		return nil
+	case imagestudiotemplate.FieldModel:
+		m.ResetModel()
+		return nil
+	case imagestudiotemplate.FieldImage:
+		m.ResetImage()
+		return nil
+	case imagestudiotemplate.FieldOriginalImageURL:
+		m.ResetOriginalImageURL()
+		return nil
+	case imagestudiotemplate.FieldImageHash:
+		m.ResetImageHash()
+		return nil
+	case imagestudiotemplate.FieldImageDownloadError:
+		m.ResetImageDownloadError()
+		return nil
+	case imagestudiotemplate.FieldPromptHash:
+		m.ResetPromptHash()
+		return nil
+	case imagestudiotemplate.FieldPrompt:
+		m.ResetPrompt()
+		return nil
+	case imagestudiotemplate.FieldSourceName:
+		m.ResetSourceName()
+		return nil
+	case imagestudiotemplate.FieldSourceURL:
+		m.ResetSourceURL()
+		return nil
+	case imagestudiotemplate.FieldSourceType:
+		m.ResetSourceType()
+		return nil
+	case imagestudiotemplate.FieldLicense:
+		m.ResetLicense()
+		return nil
+	case imagestudiotemplate.FieldAuthor:
+		m.ResetAuthor()
+		return nil
+	case imagestudiotemplate.FieldMeta:
+		m.ResetMeta()
+		return nil
+	case imagestudiotemplate.FieldTags:
+		m.ResetTags()
+		return nil
+	case imagestudiotemplate.FieldRequiresReference:
+		m.ResetRequiresReference()
+		return nil
+	case imagestudiotemplate.FieldEnabled:
+		m.ResetEnabled()
+		return nil
+	case imagestudiotemplate.FieldSortOrder:
+		m.ResetSortOrder()
+		return nil
+	}
+	return fmt.Errorf("unknown ImageStudioTemplate field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ImageStudioTemplateMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ImageStudioTemplateMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ImageStudioTemplateMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ImageStudioTemplateMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ImageStudioTemplateMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ImageStudioTemplateMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ImageStudioTemplateMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown ImageStudioTemplate unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ImageStudioTemplateMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown ImageStudioTemplate edge %s", name)
 }
 
 // PaymentAuditLogMutation represents an operation that mutates the PaymentAuditLog nodes in the graph.

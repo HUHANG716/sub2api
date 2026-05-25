@@ -68,6 +68,23 @@ func NormalizeImageBillingTierOrDefault(size string) string {
 	return ImageBillingSize2K
 }
 
+func OpenAIImageSizeForBillingTier(size string) (string, string, bool) {
+	tier, ok := ClassifyImageBillingTier(size)
+	if !ok {
+		return "", "", false
+	}
+	switch tier {
+	case ImageBillingSize1K:
+		return "1024x1024", tier, true
+	case ImageBillingSize2K:
+		return "2048x2048", tier, true
+	case ImageBillingSize4K:
+		return "3840x2160", tier, true
+	default:
+		return "", "", false
+	}
+}
+
 func ResolveImageBillingSize(inputSize string, outputSizes []string) ImageBillingSizeResolution {
 	inputSize = strings.TrimSpace(inputSize)
 	outputSizes = compactTrimmedStrings(outputSizes)

@@ -8130,14 +8130,23 @@ func buildUsageBillingCommand(requestID string, usageLog *UsageLog, p *postUsage
 }
 
 func applyUsageBilling(ctx context.Context, requestID string, usageLog *UsageLog, p *postUsageBillingParams, deps *billingDeps, repo UsageBillingRepository) (bool, error) {
+	applied, _, err := applyUsageBillingDetailed(ctx, requestID, usageLog, p, deps, repo)
+	return applied, err
+}
+
+func applyUsageBillingDetailed(ctx context.Context, requestID string, usageLog *UsageLog, p *postUsageBillingParams, deps *billingDeps, repo UsageBillingRepository) (bool, *UsageBillingApplyResult, error) {
 	if p == nil || deps == nil {
-		return false, nil
+		return false, nil, nil
 	}
 
 	cmd := buildUsageBillingCommand(requestID, usageLog, p)
 	if cmd == nil || cmd.RequestID == "" || repo == nil {
 		postUsageBilling(ctx, p, deps)
-		return true, nil
+		newBalance := p.User.Balance
+		if p.Cost != nil && p.Cost.ActualCost > 0 && !p.IsSubscriptionBill {
+			newBalance -= p.Cost.ActualCost
+		}
+		return true, &UsageBillingApplyResult{Applied: true, NewBalance: &newBalance}, nil
 	}
 
 	billingCtx, cancel := detachedBillingContext(ctx)
@@ -8145,12 +8154,12 @@ func applyUsageBilling(ctx context.Context, requestID string, usageLog *UsageLog
 
 	result, err := repo.Apply(billingCtx, cmd)
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
 
 	if result == nil || !result.Applied {
 		deps.deferredService.ScheduleLastUsedUpdate(p.Account.ID)
-		return false, nil
+		return false, result, nil
 	}
 
 	if result.APIKeyQuotaExhausted {
@@ -8160,7 +8169,7 @@ func applyUsageBilling(ctx context.Context, requestID string, usageLog *UsageLog
 	}
 
 	finalizePostUsageBilling(p, deps, result)
-	return true, nil
+	return true, result, nil
 }
 
 func finalizePostUsageBilling(p *postUsageBillingParams, deps *billingDeps, result *UsageBillingApplyResult) {

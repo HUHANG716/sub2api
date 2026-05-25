@@ -92,11 +92,27 @@ func RegisterAdminRoutes(
 		// 渠道监控
 		registerChannelMonitorRoutes(admin, h)
 
+		// 图片工作台模板库
+		registerImageStudioTemplateRoutes(admin, h)
+
 		// 风控中心
 		registerContentModerationRoutes(admin, h)
 
 		// 邀请返利（专属用户管理）
 		registerAffiliateRoutes(admin, h)
+	}
+}
+
+func registerImageStudioTemplateRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	templates := admin.Group("/image-studio-templates")
+	{
+		templates.GET("", h.Admin.ImageStudioTemplate.List)
+		templates.POST("", h.Admin.ImageStudioTemplate.Create)
+		templates.POST("/seed-defaults", h.Admin.ImageStudioTemplate.SeedDefaults)
+		templates.POST("/import/github", h.Admin.ImageStudioTemplate.ImportGitHub)
+		templates.GET("/:id", h.Admin.ImageStudioTemplate.Get)
+		templates.PUT("/:id", h.Admin.ImageStudioTemplate.Update)
+		templates.DELETE("/:id", h.Admin.ImageStudioTemplate.Delete)
 	}
 }
 

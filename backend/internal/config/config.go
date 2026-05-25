@@ -79,6 +79,7 @@ type Config struct {
 	Default                 DefaultConfig                 `mapstructure:"default"`
 	RateLimit               RateLimitConfig               `mapstructure:"rate_limit"`
 	Pricing                 PricingConfig                 `mapstructure:"pricing"`
+	ImageStudio             ImageStudioConfig             `mapstructure:"image_studio"`
 	Gateway                 GatewayConfig                 `mapstructure:"gateway"`
 	APIKeyAuth              APIKeyAuthCacheConfig         `mapstructure:"api_key_auth_cache"`
 	SubscriptionCache       SubscriptionCacheConfig       `mapstructure:"subscription_cache"`
@@ -544,6 +545,29 @@ type PricingConfig struct {
 	UpdateIntervalHours int `mapstructure:"update_interval_hours"`
 	// 哈希校验间隔（分钟）
 	HashCheckIntervalMinutes int `mapstructure:"hash_check_interval_minutes"`
+}
+
+type ImageStudioConfig struct {
+	AssetStorage ImageStudioAssetStorageConfig `mapstructure:"asset_storage"`
+}
+
+type ImageStudioAssetStorageConfig struct {
+	// Mode supports "local", "r2", and "backup_s3". Object storage is accessed only by the backend.
+	Mode            string `mapstructure:"mode"`
+	Endpoint        string `mapstructure:"endpoint"`
+	Region          string `mapstructure:"region"`
+	Bucket          string `mapstructure:"bucket"`
+	AccessKeyID     string `mapstructure:"access_key_id"`
+	SecretAccessKey string `mapstructure:"secret_access_key"`
+	Prefix          string `mapstructure:"prefix"`
+	ForcePathStyle  bool   `mapstructure:"force_path_style"`
+}
+
+func (c ImageStudioAssetStorageConfig) IsR2Configured() bool {
+	return strings.EqualFold(strings.TrimSpace(c.Mode), "r2") &&
+		strings.TrimSpace(c.Bucket) != "" &&
+		strings.TrimSpace(c.AccessKeyID) != "" &&
+		strings.TrimSpace(c.SecretAccessKey) != ""
 }
 
 type ServerConfig struct {
@@ -1350,6 +1374,16 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 		cfg.Server.Mode = "debug"
 	}
 	cfg.Server.FrontendURL = strings.TrimSpace(cfg.Server.FrontendURL)
+	cfg.ImageStudio.AssetStorage.Mode = strings.ToLower(strings.TrimSpace(cfg.ImageStudio.AssetStorage.Mode))
+	cfg.ImageStudio.AssetStorage.Endpoint = strings.TrimSpace(cfg.ImageStudio.AssetStorage.Endpoint)
+	cfg.ImageStudio.AssetStorage.Region = strings.TrimSpace(cfg.ImageStudio.AssetStorage.Region)
+	cfg.ImageStudio.AssetStorage.Bucket = strings.TrimSpace(cfg.ImageStudio.AssetStorage.Bucket)
+	cfg.ImageStudio.AssetStorage.AccessKeyID = strings.TrimSpace(cfg.ImageStudio.AssetStorage.AccessKeyID)
+	cfg.ImageStudio.AssetStorage.SecretAccessKey = strings.TrimSpace(cfg.ImageStudio.AssetStorage.SecretAccessKey)
+	cfg.ImageStudio.AssetStorage.Prefix = strings.Trim(strings.TrimSpace(cfg.ImageStudio.AssetStorage.Prefix), "/")
+	if cfg.ImageStudio.AssetStorage.Mode == "" {
+		cfg.ImageStudio.AssetStorage.Mode = "local"
+	}
 	cfg.JWT.Secret = strings.TrimSpace(cfg.JWT.Secret)
 	cfg.LinuxDo.ClientID = strings.TrimSpace(cfg.LinuxDo.ClientID)
 	cfg.LinuxDo.ClientSecret = strings.TrimSpace(cfg.LinuxDo.ClientSecret)
@@ -1688,6 +1722,16 @@ func setDefaults() {
 	viper.SetDefault("pricing.fallback_file", "./resources/model-pricing/model_prices_and_context_window.json")
 	viper.SetDefault("pricing.update_interval_hours", 24)
 	viper.SetDefault("pricing.hash_check_interval_minutes", 10)
+
+	// Image Studio assets. R2 mode keeps all object-storage requests on the backend.
+	viper.SetDefault("image_studio.asset_storage.mode", "local")
+	viper.SetDefault("image_studio.asset_storage.endpoint", "")
+	viper.SetDefault("image_studio.asset_storage.region", "auto")
+	viper.SetDefault("image_studio.asset_storage.bucket", "")
+	viper.SetDefault("image_studio.asset_storage.access_key_id", "")
+	viper.SetDefault("image_studio.asset_storage.secret_access_key", "")
+	viper.SetDefault("image_studio.asset_storage.prefix", "image-studio/previews")
+	viper.SetDefault("image_studio.asset_storage.force_path_style", true)
 
 	// Timezone (default to Asia/Shanghai for Chinese users)
 	viper.SetDefault("timezone", "Asia/Shanghai")

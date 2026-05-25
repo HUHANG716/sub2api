@@ -108,3 +108,28 @@ func TestResolveImageBillingSize(t *testing.T) {
 		})
 	}
 }
+
+func TestOpenAIImageSizeForBillingTier(t *testing.T) {
+	tests := []struct {
+		name         string
+		input        string
+		wantUpstream string
+		wantTier     string
+		wantOK       bool
+	}{
+		{name: "1K tier", input: "1K", wantUpstream: "1024x1024", wantTier: ImageBillingSize1K, wantOK: true},
+		{name: "2K tier", input: "2K", wantUpstream: "2048x2048", wantTier: ImageBillingSize2K, wantOK: true},
+		{name: "4K tier", input: "4K", wantUpstream: "3840x2160", wantTier: ImageBillingSize4K, wantOK: true},
+		{name: "explicit dimension normalizes to tier", input: "1536x1024", wantUpstream: "2048x2048", wantTier: ImageBillingSize2K, wantOK: true},
+		{name: "invalid", input: "auto", wantOK: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotUpstream, gotTier, gotOK := OpenAIImageSizeForBillingTier(tt.input)
+			require.Equal(t, tt.wantOK, gotOK)
+			require.Equal(t, tt.wantUpstream, gotUpstream)
+			require.Equal(t, tt.wantTier, gotTier)
+		})
+	}
+}

@@ -790,6 +790,55 @@ var (
 			},
 		},
 	}
+	// ImageStudioTemplatesColumns holds the columns for the "image_studio_templates" table.
+	ImageStudioTemplatesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "key", Type: field.TypeString, Unique: true, Size: 120},
+		{Name: "mode", Type: field.TypeString, Size: 20},
+		{Name: "title", Type: field.TypeString, Size: 160},
+		{Name: "model", Type: field.TypeString, Size: 80},
+		{Name: "image", Type: field.TypeString, Size: 1000},
+		{Name: "original_image_url", Type: field.TypeString, Nullable: true, Size: 1000, Default: ""},
+		{Name: "image_hash", Type: field.TypeString, Nullable: true, Size: 64, Default: ""},
+		{Name: "image_download_error", Type: field.TypeString, Nullable: true, Size: 1000, Default: ""},
+		{Name: "prompt_hash", Type: field.TypeString, Nullable: true, Size: 64, Default: ""},
+		{Name: "prompt", Type: field.TypeString, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "source_name", Type: field.TypeString, Nullable: true, Size: 200, Default: ""},
+		{Name: "source_url", Type: field.TypeString, Nullable: true, Size: 1000, Default: ""},
+		{Name: "source_type", Type: field.TypeString, Nullable: true, Size: 50, Default: ""},
+		{Name: "license", Type: field.TypeString, Nullable: true, Size: 120, Default: ""},
+		{Name: "author", Type: field.TypeString, Nullable: true, Size: 120, Default: ""},
+		{Name: "meta", Type: field.TypeString, Nullable: true, Size: 500, Default: ""},
+		{Name: "tags", Type: field.TypeJSON, Nullable: true, SchemaType: map[string]string{"postgres": "jsonb"}},
+		{Name: "requires_reference", Type: field.TypeBool, Default: false},
+		{Name: "enabled", Type: field.TypeBool, Default: true},
+		{Name: "sort_order", Type: field.TypeInt, Default: 0},
+	}
+	// ImageStudioTemplatesTable holds the schema information for the "image_studio_templates" table.
+	ImageStudioTemplatesTable = &schema.Table{
+		Name:       "image_studio_templates",
+		Columns:    ImageStudioTemplatesColumns,
+		PrimaryKey: []*schema.Column{ImageStudioTemplatesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "imagestudiotemplate_enabled_mode",
+				Unique:  false,
+				Columns: []*schema.Column{ImageStudioTemplatesColumns[21], ImageStudioTemplatesColumns[4]},
+			},
+			{
+				Name:    "imagestudiotemplate_model",
+				Unique:  false,
+				Columns: []*schema.Column{ImageStudioTemplatesColumns[6]},
+			},
+			{
+				Name:    "imagestudiotemplate_sort_order",
+				Unique:  false,
+				Columns: []*schema.Column{ImageStudioTemplatesColumns[22]},
+			},
+		},
+	}
 	// PaymentAuditLogsColumns holds the columns for the "payment_audit_logs" table.
 	PaymentAuditLogsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1718,6 +1767,7 @@ var (
 		GroupsTable,
 		IdempotencyRecordsTable,
 		IdentityAdoptionDecisionsTable,
+		ImageStudioTemplatesTable,
 		PaymentAuditLogsTable,
 		PaymentOrdersTable,
 		PaymentProviderInstancesTable,
@@ -1799,6 +1849,9 @@ func init() {
 	IdentityAdoptionDecisionsTable.ForeignKeys[1].RefTable = PendingAuthSessionsTable
 	IdentityAdoptionDecisionsTable.Annotation = &entsql.Annotation{
 		Table: "identity_adoption_decisions",
+	}
+	ImageStudioTemplatesTable.Annotation = &entsql.Annotation{
+		Table: "image_studio_templates",
 	}
 	PaymentAuditLogsTable.Annotation = &entsql.Annotation{
 		Table: "payment_audit_logs",

@@ -433,7 +433,25 @@ func (s *APIKeyService) List(ctx context.Context, userID int64, params paginatio
 	if err != nil {
 		return nil, nil, fmt.Errorf("list api keys: %w", err)
 	}
-	return keys, pagination, nil
+	visible := make([]APIKey, 0, len(keys))
+	hidden := 0
+	for i := range keys {
+		if IsImageStudioAPIKeyName(keys[i].Name) {
+			hidden++
+			continue
+		}
+		visible = append(visible, keys[i])
+	}
+	if hidden > 0 && pagination != nil {
+		pagination.Total -= int64(hidden)
+		if pagination.Total < 0 {
+			pagination.Total = 0
+		}
+		if pagination.PageSize > 0 {
+			pagination.Pages = int((pagination.Total + int64(pagination.PageSize) - 1) / int64(pagination.PageSize))
+		}
+	}
+	return visible, pagination, nil
 }
 
 func (s *APIKeyService) VerifyOwnership(ctx context.Context, userID int64, apiKeyIDs []int64) ([]int64, error) {
@@ -791,6 +809,32 @@ func (s *APIKeyService) SearchAPIKeys(ctx context.Context, userID int64, keyword
 		return nil, fmt.Errorf("search api keys: %w", err)
 	}
 	return keys, nil
+}
+
+func (s *APIKeyService) EnsureImageStudioAPIKey(ctx context.Context, userID, groupID int64) (*APIKey, error) {
+	if groupID <= 0 {
+		return nil, fmt.Errorf("group_id is required")
+	}
+	name := ImageStudioAPIKeyName(groupID)
+	keys, err := s.apiKeyRepo.SearchAPIKeys(ctx, userID, name, 20)
+	if err != nil {
+		return nil, fmt.Errorf("search image studio api key: %w", err)
+	}
+	for i := range keys {
+		key := &keys[i]
+		if key.Name == name && key.GroupID != nil && *key.GroupID == groupID && key.Status == StatusActive {
+			return s.GetByID(ctx, key.ID)
+		}
+	}
+
+	key, err := s.Create(ctx, userID, CreateAPIKeyRequest{
+		Name:    name,
+		GroupID: &groupID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return s.GetByID(ctx, key.ID)
 }
 
 // GetUserGroupRates 获取用户的专属分组倍率配置

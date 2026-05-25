@@ -217,6 +217,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/images',
+    name: 'ImageStudio',
+    component: () => import('@/views/user/ImageStudioView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'GPT Image 2',
+      titleKey: 'imageStudio.title',
+      descriptionKey: 'imageStudio.description'
+    }
+  },
+  {
     path: '/redeem',
     name: 'Redeem',
     component: () => import('@/views/user/RedeemView.vue'),
@@ -451,6 +463,18 @@ const routes: RouteRecordRaw[] = [
       title: 'Channel Monitor',
       titleKey: 'admin.channelMonitor.title',
       descriptionKey: 'admin.channelMonitor.description'
+    }
+  },
+  {
+    path: '/admin/image-studio-templates',
+    name: 'AdminImageStudioTemplates',
+    component: () => import('@/views/admin/ImageStudioTemplatesView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Image Studio Templates',
+      titleKey: 'admin.imageStudioTemplates.title',
+      descriptionKey: 'admin.imageStudioTemplates.description'
     }
   },
   {

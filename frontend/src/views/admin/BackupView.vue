@@ -30,6 +30,7 @@
           <div>
             <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.backup.s3.prefix') }}</label>
             <input v-model="s3Form.prefix" class="input w-full" placeholder="backups/" />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('admin.backup.s3.prefixHint') }}</p>
           </div>
           <div>
             <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.backup.s3.accessKeyId') }}</label>
@@ -51,6 +52,21 @@
           <button type="button" class="btn btn-primary btn-sm" :disabled="savingS3" @click="saveS3Config">
             {{ savingS3 ? t('common.loading') : t('common.save') }}
           </button>
+        </div>
+        <div class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200">
+          <p class="font-medium">{{ t('admin.backup.s3.imageStudioReuseTitle') }}</p>
+          <p class="mt-1">{{ t('admin.backup.s3.imageStudioReuseDescription') }}</p>
+          <div class="mt-2 grid gap-2 text-xs sm:grid-cols-2">
+            <div class="rounded-md bg-white/70 px-3 py-2 dark:bg-dark-900/60">
+              <span class="block text-blue-600 dark:text-blue-300">{{ t('admin.backup.s3.backupPrefixLabel') }}</span>
+              <code class="mt-1 block break-all text-gray-900 dark:text-gray-100">{{ normalizedBackupPrefix }}</code>
+            </div>
+            <div class="rounded-md bg-white/70 px-3 py-2 dark:bg-dark-900/60">
+              <span class="block text-blue-600 dark:text-blue-300">{{ t('admin.backup.s3.imageStudioPrefixLabel') }}</span>
+              <code class="mt-1 block break-all text-gray-900 dark:text-gray-100">image-studio/previews/</code>
+            </div>
+          </div>
+          <p class="mt-2 text-xs text-blue-700 dark:text-blue-300">{{ t('admin.backup.s3.imageStudioModeHint') }}</p>
         </div>
       </div>
 
@@ -425,6 +441,10 @@ function handleVisibilityChange() {
 
 // R2 guide
 const showR2Guide = ref(false)
+const normalizedBackupPrefix = computed(() => {
+  const prefix = (s3Form.value.prefix || '').trim().replace(/^\/+|\/+$/g, '')
+  return prefix ? `${prefix}/` : t('admin.backup.s3.bucketRoot')
+})
 const r2ConfigRows = computed(() => [
   { field: t('admin.backup.s3.endpoint'), value: 'https://<account_id>.r2.cloudflarestorage.com' },
   { field: t('admin.backup.s3.region'), value: 'auto' },

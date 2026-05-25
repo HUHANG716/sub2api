@@ -1,6 +1,8 @@
 package service
 
 import (
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
@@ -140,4 +142,14 @@ type APIKeyListFilters struct {
 	Search  string
 	Status  string
 	GroupID *int64 // nil=不筛选, 0=无分组, >0=指定分组
+}
+
+const imageStudioAPIKeyNamePrefix = "__system_image_studio__:"
+
+func ImageStudioAPIKeyName(groupID int64) string {
+	return imageStudioAPIKeyNamePrefix + strconv.FormatInt(groupID, 10)
+}
+
+func IsImageStudioAPIKeyName(name string) bool {
+	return strings.HasPrefix(strings.TrimSpace(name), imageStudioAPIKeyNamePrefix)
 }

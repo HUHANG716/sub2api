@@ -15,6 +15,11 @@ func RegisterUserRoutes(
 	jwtAuth middleware.JWTAuthMiddleware,
 	settingService *service.SettingService,
 ) {
+	publicImages := v1.Group("/images")
+	{
+		publicImages.GET("/template-assets/previews/:source/:filename", h.ImageStudio.ServeTemplatePreview)
+	}
+
 	authenticated := v1.Group("")
 	authenticated.Use(gin.HandlerFunc(jwtAuth))
 	authenticated.Use(middleware.BackendModeUserGuard(settingService))
@@ -75,6 +80,14 @@ func RegisterUserRoutes(
 		channels := authenticated.Group("/channels")
 		{
 			channels.GET("/available", h.AvailableChannel.List)
+		}
+
+		images := authenticated.Group("/images")
+		{
+			images.GET("/options", h.ImageStudio.Options)
+			images.GET("/templates", h.ImageStudio.Templates)
+			images.POST("/estimate", h.ImageStudio.Estimate)
+			images.POST("/generate", h.ImageStudio.Generate)
 		}
 
 		// 使用记录

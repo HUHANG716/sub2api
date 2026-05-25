@@ -20,6 +20,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/sub2api/ent/imagestudiotemplate"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
@@ -935,6 +936,187 @@ func init() {
 	identityadoptiondecisionDescDecidedAt := identityadoptiondecisionFields[4].Descriptor()
 	// identityadoptiondecision.DefaultDecidedAt holds the default value on creation for the decided_at field.
 	identityadoptiondecision.DefaultDecidedAt = identityadoptiondecisionDescDecidedAt.Default.(func() time.Time)
+	imagestudiotemplateMixin := schema.ImageStudioTemplate{}.Mixin()
+	imagestudiotemplateMixinFields0 := imagestudiotemplateMixin[0].Fields()
+	_ = imagestudiotemplateMixinFields0
+	imagestudiotemplateFields := schema.ImageStudioTemplate{}.Fields()
+	_ = imagestudiotemplateFields
+	// imagestudiotemplateDescCreatedAt is the schema descriptor for created_at field.
+	imagestudiotemplateDescCreatedAt := imagestudiotemplateMixinFields0[0].Descriptor()
+	// imagestudiotemplate.DefaultCreatedAt holds the default value on creation for the created_at field.
+	imagestudiotemplate.DefaultCreatedAt = imagestudiotemplateDescCreatedAt.Default.(func() time.Time)
+	// imagestudiotemplateDescUpdatedAt is the schema descriptor for updated_at field.
+	imagestudiotemplateDescUpdatedAt := imagestudiotemplateMixinFields0[1].Descriptor()
+	// imagestudiotemplate.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	imagestudiotemplate.DefaultUpdatedAt = imagestudiotemplateDescUpdatedAt.Default.(func() time.Time)
+	// imagestudiotemplate.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	imagestudiotemplate.UpdateDefaultUpdatedAt = imagestudiotemplateDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// imagestudiotemplateDescKey is the schema descriptor for key field.
+	imagestudiotemplateDescKey := imagestudiotemplateFields[0].Descriptor()
+	// imagestudiotemplate.KeyValidator is a validator for the "key" field. It is called by the builders before save.
+	imagestudiotemplate.KeyValidator = func() func(string) error {
+		validators := imagestudiotemplateDescKey.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(key string) error {
+			for _, fn := range fns {
+				if err := fn(key); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// imagestudiotemplateDescMode is the schema descriptor for mode field.
+	imagestudiotemplateDescMode := imagestudiotemplateFields[1].Descriptor()
+	// imagestudiotemplate.ModeValidator is a validator for the "mode" field. It is called by the builders before save.
+	imagestudiotemplate.ModeValidator = func() func(string) error {
+		validators := imagestudiotemplateDescMode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(mode string) error {
+			for _, fn := range fns {
+				if err := fn(mode); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// imagestudiotemplateDescTitle is the schema descriptor for title field.
+	imagestudiotemplateDescTitle := imagestudiotemplateFields[2].Descriptor()
+	// imagestudiotemplate.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	imagestudiotemplate.TitleValidator = func() func(string) error {
+		validators := imagestudiotemplateDescTitle.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(title string) error {
+			for _, fn := range fns {
+				if err := fn(title); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// imagestudiotemplateDescModel is the schema descriptor for model field.
+	imagestudiotemplateDescModel := imagestudiotemplateFields[3].Descriptor()
+	// imagestudiotemplate.ModelValidator is a validator for the "model" field. It is called by the builders before save.
+	imagestudiotemplate.ModelValidator = func() func(string) error {
+		validators := imagestudiotemplateDescModel.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(model string) error {
+			for _, fn := range fns {
+				if err := fn(model); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// imagestudiotemplateDescImage is the schema descriptor for image field.
+	imagestudiotemplateDescImage := imagestudiotemplateFields[4].Descriptor()
+	// imagestudiotemplate.ImageValidator is a validator for the "image" field. It is called by the builders before save.
+	imagestudiotemplate.ImageValidator = func() func(string) error {
+		validators := imagestudiotemplateDescImage.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(image string) error {
+			for _, fn := range fns {
+				if err := fn(image); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// imagestudiotemplateDescOriginalImageURL is the schema descriptor for original_image_url field.
+	imagestudiotemplateDescOriginalImageURL := imagestudiotemplateFields[5].Descriptor()
+	// imagestudiotemplate.DefaultOriginalImageURL holds the default value on creation for the original_image_url field.
+	imagestudiotemplate.DefaultOriginalImageURL = imagestudiotemplateDescOriginalImageURL.Default.(string)
+	// imagestudiotemplate.OriginalImageURLValidator is a validator for the "original_image_url" field. It is called by the builders before save.
+	imagestudiotemplate.OriginalImageURLValidator = imagestudiotemplateDescOriginalImageURL.Validators[0].(func(string) error)
+	// imagestudiotemplateDescImageHash is the schema descriptor for image_hash field.
+	imagestudiotemplateDescImageHash := imagestudiotemplateFields[6].Descriptor()
+	// imagestudiotemplate.DefaultImageHash holds the default value on creation for the image_hash field.
+	imagestudiotemplate.DefaultImageHash = imagestudiotemplateDescImageHash.Default.(string)
+	// imagestudiotemplate.ImageHashValidator is a validator for the "image_hash" field. It is called by the builders before save.
+	imagestudiotemplate.ImageHashValidator = imagestudiotemplateDescImageHash.Validators[0].(func(string) error)
+	// imagestudiotemplateDescImageDownloadError is the schema descriptor for image_download_error field.
+	imagestudiotemplateDescImageDownloadError := imagestudiotemplateFields[7].Descriptor()
+	// imagestudiotemplate.DefaultImageDownloadError holds the default value on creation for the image_download_error field.
+	imagestudiotemplate.DefaultImageDownloadError = imagestudiotemplateDescImageDownloadError.Default.(string)
+	// imagestudiotemplate.ImageDownloadErrorValidator is a validator for the "image_download_error" field. It is called by the builders before save.
+	imagestudiotemplate.ImageDownloadErrorValidator = imagestudiotemplateDescImageDownloadError.Validators[0].(func(string) error)
+	// imagestudiotemplateDescPromptHash is the schema descriptor for prompt_hash field.
+	imagestudiotemplateDescPromptHash := imagestudiotemplateFields[8].Descriptor()
+	// imagestudiotemplate.DefaultPromptHash holds the default value on creation for the prompt_hash field.
+	imagestudiotemplate.DefaultPromptHash = imagestudiotemplateDescPromptHash.Default.(string)
+	// imagestudiotemplate.PromptHashValidator is a validator for the "prompt_hash" field. It is called by the builders before save.
+	imagestudiotemplate.PromptHashValidator = imagestudiotemplateDescPromptHash.Validators[0].(func(string) error)
+	// imagestudiotemplateDescPrompt is the schema descriptor for prompt field.
+	imagestudiotemplateDescPrompt := imagestudiotemplateFields[9].Descriptor()
+	// imagestudiotemplate.PromptValidator is a validator for the "prompt" field. It is called by the builders before save.
+	imagestudiotemplate.PromptValidator = imagestudiotemplateDescPrompt.Validators[0].(func(string) error)
+	// imagestudiotemplateDescSourceName is the schema descriptor for source_name field.
+	imagestudiotemplateDescSourceName := imagestudiotemplateFields[10].Descriptor()
+	// imagestudiotemplate.DefaultSourceName holds the default value on creation for the source_name field.
+	imagestudiotemplate.DefaultSourceName = imagestudiotemplateDescSourceName.Default.(string)
+	// imagestudiotemplate.SourceNameValidator is a validator for the "source_name" field. It is called by the builders before save.
+	imagestudiotemplate.SourceNameValidator = imagestudiotemplateDescSourceName.Validators[0].(func(string) error)
+	// imagestudiotemplateDescSourceURL is the schema descriptor for source_url field.
+	imagestudiotemplateDescSourceURL := imagestudiotemplateFields[11].Descriptor()
+	// imagestudiotemplate.DefaultSourceURL holds the default value on creation for the source_url field.
+	imagestudiotemplate.DefaultSourceURL = imagestudiotemplateDescSourceURL.Default.(string)
+	// imagestudiotemplate.SourceURLValidator is a validator for the "source_url" field. It is called by the builders before save.
+	imagestudiotemplate.SourceURLValidator = imagestudiotemplateDescSourceURL.Validators[0].(func(string) error)
+	// imagestudiotemplateDescSourceType is the schema descriptor for source_type field.
+	imagestudiotemplateDescSourceType := imagestudiotemplateFields[12].Descriptor()
+	// imagestudiotemplate.DefaultSourceType holds the default value on creation for the source_type field.
+	imagestudiotemplate.DefaultSourceType = imagestudiotemplateDescSourceType.Default.(string)
+	// imagestudiotemplate.SourceTypeValidator is a validator for the "source_type" field. It is called by the builders before save.
+	imagestudiotemplate.SourceTypeValidator = imagestudiotemplateDescSourceType.Validators[0].(func(string) error)
+	// imagestudiotemplateDescLicense is the schema descriptor for license field.
+	imagestudiotemplateDescLicense := imagestudiotemplateFields[13].Descriptor()
+	// imagestudiotemplate.DefaultLicense holds the default value on creation for the license field.
+	imagestudiotemplate.DefaultLicense = imagestudiotemplateDescLicense.Default.(string)
+	// imagestudiotemplate.LicenseValidator is a validator for the "license" field. It is called by the builders before save.
+	imagestudiotemplate.LicenseValidator = imagestudiotemplateDescLicense.Validators[0].(func(string) error)
+	// imagestudiotemplateDescAuthor is the schema descriptor for author field.
+	imagestudiotemplateDescAuthor := imagestudiotemplateFields[14].Descriptor()
+	// imagestudiotemplate.DefaultAuthor holds the default value on creation for the author field.
+	imagestudiotemplate.DefaultAuthor = imagestudiotemplateDescAuthor.Default.(string)
+	// imagestudiotemplate.AuthorValidator is a validator for the "author" field. It is called by the builders before save.
+	imagestudiotemplate.AuthorValidator = imagestudiotemplateDescAuthor.Validators[0].(func(string) error)
+	// imagestudiotemplateDescMeta is the schema descriptor for meta field.
+	imagestudiotemplateDescMeta := imagestudiotemplateFields[15].Descriptor()
+	// imagestudiotemplate.DefaultMeta holds the default value on creation for the meta field.
+	imagestudiotemplate.DefaultMeta = imagestudiotemplateDescMeta.Default.(string)
+	// imagestudiotemplate.MetaValidator is a validator for the "meta" field. It is called by the builders before save.
+	imagestudiotemplate.MetaValidator = imagestudiotemplateDescMeta.Validators[0].(func(string) error)
+	// imagestudiotemplateDescRequiresReference is the schema descriptor for requires_reference field.
+	imagestudiotemplateDescRequiresReference := imagestudiotemplateFields[17].Descriptor()
+	// imagestudiotemplate.DefaultRequiresReference holds the default value on creation for the requires_reference field.
+	imagestudiotemplate.DefaultRequiresReference = imagestudiotemplateDescRequiresReference.Default.(bool)
+	// imagestudiotemplateDescEnabled is the schema descriptor for enabled field.
+	imagestudiotemplateDescEnabled := imagestudiotemplateFields[18].Descriptor()
+	// imagestudiotemplate.DefaultEnabled holds the default value on creation for the enabled field.
+	imagestudiotemplate.DefaultEnabled = imagestudiotemplateDescEnabled.Default.(bool)
+	// imagestudiotemplateDescSortOrder is the schema descriptor for sort_order field.
+	imagestudiotemplateDescSortOrder := imagestudiotemplateFields[19].Descriptor()
+	// imagestudiotemplate.DefaultSortOrder holds the default value on creation for the sort_order field.
+	imagestudiotemplate.DefaultSortOrder = imagestudiotemplateDescSortOrder.Default.(int)
 	paymentauditlogFields := schema.PaymentAuditLog{}.Fields()
 	_ = paymentauditlogFields
 	// paymentauditlogDescOrderID is the schema descriptor for order_id field.
