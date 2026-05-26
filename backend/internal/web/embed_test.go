@@ -402,6 +402,36 @@ func TestFrontendServer_ServeIndexHTML(t *testing.T) {
 		assert.Contains(t, body, `<script nonce="override-nonce">window.__APP_CONFIG__={"site_name":"Override Site"};</script>`)
 		assert.Contains(t, body, `<title>Override Site - AI API Gateway</title>`)
 	})
+
+	t.Run("injects_empty_config_for_override_index_when_settings_fail", func(t *testing.T) {
+		provider := &mockSettingsProvider{
+			err: context.DeadlineExceeded,
+		}
+
+		server, err := NewFrontendServer(provider)
+		require.NoError(t, err)
+
+		overrideRoot := t.TempDir()
+		server.overrideDir = overrideRoot
+		require.NoError(t, os.WriteFile(
+			filepath.Join(overrideRoot, "index.html"),
+			[]byte(`<!doctype html><html><head><title>Static Shell</title></head><body><div id="app">override shell</div></body></html>`),
+			0o644,
+		))
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/dashboard", nil)
+		c.Set(middleware.CSPNonceKey, "fallback-nonce")
+
+		server.serveIndexHTML(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		body := w.Body.String()
+		assert.Contains(t, body, `override shell`)
+		assert.Contains(t, body, `<script nonce="fallback-nonce">window.__APP_CONFIG__={};</script>`)
+		assert.NotContains(t, body, NonceHTMLPlaceholder)
+	})
 }
 
 func TestFrontendServer_InvalidateCache(t *testing.T) {

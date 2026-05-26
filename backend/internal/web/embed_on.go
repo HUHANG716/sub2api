@@ -178,6 +178,10 @@ func (s *FrontendServer) serveIndexHTML(c *gin.Context) {
 
 	settings, err := s.settings.GetPublicSettingsForInjection(ctx)
 	if err != nil {
+		if isOverride {
+			s.serveIndexHTMLWithFallbackConfig(c, baseHTML, nonce)
+			return
+		}
 		// Fallback: serve without injection
 		c.Data(http.StatusOK, "text/html; charset=utf-8", baseHTML)
 		c.Abort()
@@ -186,6 +190,10 @@ func (s *FrontendServer) serveIndexHTML(c *gin.Context) {
 
 	settingsJSON, err := json.Marshal(settings)
 	if err != nil {
+		if isOverride {
+			s.serveIndexHTMLWithFallbackConfig(c, baseHTML, nonce)
+			return
+		}
 		// Fallback: serve without injection
 		c.Data(http.StatusOK, "text/html; charset=utf-8", baseHTML)
 		c.Abort()
@@ -205,6 +213,14 @@ func (s *FrontendServer) serveIndexHTML(c *gin.Context) {
 			c.Header("ETag", cached.ETag)
 		}
 	}
+	c.Header("Cache-Control", "no-cache")
+	c.Data(http.StatusOK, "text/html; charset=utf-8", content)
+	c.Abort()
+}
+
+func (s *FrontendServer) serveIndexHTMLWithFallbackConfig(c *gin.Context, baseHTML []byte, nonce string) {
+	rendered := s.injectSettingsInto(baseHTML, []byte(`{}`))
+	content := replaceNoncePlaceholder(rendered, nonce)
 	c.Header("Cache-Control", "no-cache")
 	c.Data(http.StatusOK, "text/html; charset=utf-8", content)
 	c.Abort()

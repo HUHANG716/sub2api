@@ -13,6 +13,7 @@ on:
 permissions:
   contents: read
   packages: write
+  pull-requests: read
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -53,7 +54,7 @@ jobs:
   backend:
     name: Backend
     needs: changes
-    if: ${{ github.event_name == 'pull_request' || needs.changes.outputs.backend == 'true' }}
+    if: ${{ needs.changes.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -78,7 +79,7 @@ jobs:
   frontend:
     name: Frontend
     needs: changes
-    if: ${{ github.event_name == 'pull_request' || needs.changes.outputs.frontend == 'true' }}
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -118,7 +119,7 @@ jobs:
   golangci-lint:
     name: Go Lint
     needs: changes
-    if: ${{ github.event_name == 'pull_request' || needs.changes.outputs.backend == 'true' }}
+    if: ${{ needs.changes.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

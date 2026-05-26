@@ -121,7 +121,7 @@ jobs:
           ssh -i ~/.ssh/id_seoul "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -se' <<'REMOTE'
           set -euo pipefail
 
-          CONTAINER_NAME="sub2api"
+          RUNTIME_DIR="/opt/sub2api-dev/runtime"
           RELEASE_DIR="/tmp/sub2api-dev-frontend-dist"
 
           rm -rf "$RELEASE_DIR"
@@ -129,9 +129,21 @@ jobs:
           tar -xzf /tmp/sub2api-dev-frontend-dist.tar.gz -C "$RELEASE_DIR"
           test -f "$RELEASE_DIR/index.html"
 
-          docker exec "$CONTAINER_NAME" sh -c 'rm -rf /app/data/public.next /app/data/public.previous && mkdir -p /app/data/public.next'
-          docker cp "${RELEASE_DIR}/." "$CONTAINER_NAME:/app/data/public.next/"
-          docker exec "$CONTAINER_NAME" sh -c 'test -f /app/data/public.next/index.html && if [ -d /app/data/public ]; then mv /app/data/public /app/data/public.previous; fi && mv /app/data/public.next /app/data/public'
+          cd "$RUNTIME_DIR"
+          if docker compose version >/dev/null 2>&1; then
+            compose_cmd="docker compose"
+          else
+            compose_cmd="docker-compose"
+          fi
+          CONTAINER_ID="$($compose_cmd ps -q sub2api)"
+          if [ -z "$CONTAINER_ID" ]; then
+            echo "sub2api container not found" >&2
+            exit 1
+          fi
+
+          docker exec "$CONTAINER_ID" sh -c 'rm -rf /app/data/public.next /app/data/public.previous && mkdir -p /app/data/public.next'
+          docker cp "${RELEASE_DIR}/." "$CONTAINER_ID:/app/data/public.next/"
+          docker exec "$CONTAINER_ID" sh -c 'test -f /app/data/public.next/index.html && if [ -d /app/data/public ]; then mv /app/data/public /app/data/public.previous; fi && mv /app/data/public.next /app/data/public'
 
           rm -rf "$RELEASE_DIR"
           rm -f /tmp/sub2api-dev-frontend-dist.tar.gz
