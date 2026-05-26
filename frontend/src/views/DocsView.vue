@@ -114,6 +114,14 @@
               </div>
             </div>
           </div>
+          <div class="docs-key-prerequisite" data-testid="docs-key-prerequisite">
+            <Icon name="key" size="sm" />
+            <span>
+              还没有 API Key？先到
+              <router-link to="/keys" class="docs-inline-link">我的密钥</router-link>
+              点击“创建密钥”，选择可用分组后再导入或复制配置。
+            </span>
+          </div>
           <div v-if="showManualConfigControls" class="docs-config-controls">
             <label class="docs-field">
               <span class="docs-field-label">
@@ -163,7 +171,7 @@
                   <span>下载 CC-Switch</span>
                   <h4>先安装桌面端，再回到 Hahacode 一键导入</h4>
                   <p>
-                    支持 Windows / macOS / Linux。下载后先启动一次 CC-Switch，确认浏览器能自动唤起它，再点击“导入到 CCS”。
+                    支持 Windows / macOS / Linux。下载并打开 CC-Switch 后，回到“我的密钥”点击“导入到 CCS”。
                   </p>
                 </div>
               </div>
@@ -370,25 +378,25 @@ const brandIcons = {
 
 const ccSwitchFlowSteps: FlowStep[] = [
   {
-    title: '安装并启动 CC-Switch',
+    title: '下载并打开 CC-Switch',
     description: [
       { text: '打开' },
       { text: '下载页', href: 'https://ccswitch.io' },
-      { text: '安装桌面端，并确认浏览器可以自动唤起。' }
+      { text: '安装桌面端。安装完成后先打开 CC-Switch，让它在后台保持运行。' }
     ]
   },
   {
     title: '在“我的密钥”点击“导入到 CCS”',
     description: [
-      { text: '到' },
+      { text: '如果还没有 API Key，先到' },
       { text: '我的密钥', to: '/keys' },
-      { text: '按提示完成导入，并在 CC-Switch 中确认导入项。' }
+      { text: '点击“创建密钥”并选择可用分组；已有密钥则按提示完成导入，并在 CC-Switch 中确认导入项。' }
     ]
   },
   {
     title: '启用导入项并重启对应客户端',
     description: [
-      { text: '然后到' },
+      { text: '导入完成后，在 CC-Switch 中启用对应配置并重启 Claude Code、Codex 或 Gemini CLI；发起一次请求后到' },
       { text: '用量记录', to: '/usage' },
       { text: '确认请求被记录。' }
     ]
@@ -917,6 +925,26 @@ onMounted(() => {
 
 .docs-inline-link:hover {
   color: var(--theme-primary-hover);
+}
+
+.docs-key-prerequisite {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0.85rem 0 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 22%, var(--theme-border));
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--theme-primary) 6%, var(--theme-surface));
+  padding: 0.75rem 0.85rem;
+  color: var(--theme-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+.docs-key-prerequisite :deep(svg) {
+  flex: 0 0 auto;
+  margin-top: 0.18rem;
+  color: var(--theme-primary);
 }
 
 .docs-config-controls {
