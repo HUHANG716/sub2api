@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"net/http"
@@ -28,6 +29,15 @@ import (
 
 func TestAPIContracts(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+
+	subscriptionAnchor := time.Date(2025, 1, 2, 3, 4, 5, 0, time.UTC)
+	subscriptionContractNow := time.Now()
+	expiredDailyWindowStart := subscriptionAnchor
+	expiredWeeklyWindowStart := subscriptionAnchor
+	expiredMonthlyWindowStart := subscriptionAnchor
+	subscriptionDailyWindowStart := rollingContractWindowStart(subscriptionAnchor, 24*time.Hour, subscriptionContractNow)
+	subscriptionWeeklyWindowStart := rollingContractWindowStart(subscriptionAnchor, 7*24*time.Hour, subscriptionContractNow)
+	subscriptionMonthlyWindowStart := rollingContractWindowStart(subscriptionAnchor, 30*24*time.Hour, subscriptionContractNow)
 
 	tests := []struct {
 		name       string
@@ -376,27 +386,30 @@ func TestAPIContracts(t *testing.T) {
 				// 普通用户订阅接口不应包含 assigned_* / notes 等管理员字段。
 				deps.userSubRepo.SetByUserID(1, []service.UserSubscription{
 					{
-						ID:              501,
-						UserID:          1,
-						GroupID:         10,
-						StartsAt:        deps.now,
-						ExpiresAt:       time.Date(2099, 1, 2, 3, 4, 5, 0, time.UTC), // 使用未来日期避免 normalizeSubscriptionStatus 标记为过期
-						Status:          service.SubscriptionStatusActive,
-						DailyUsageUSD:   1.23,
-						WeeklyUsageUSD:  2.34,
-						MonthlyUsageUSD: 3.45,
-						AssignedBy:      ptr(int64(999)),
-						AssignedAt:      deps.now,
-						Notes:           "admin-note",
-						CreatedAt:       deps.now,
-						UpdatedAt:       deps.now,
+						ID:                 501,
+						UserID:             1,
+						GroupID:            10,
+						StartsAt:           deps.now,
+						ExpiresAt:          time.Date(2099, 1, 2, 3, 4, 5, 0, time.UTC), // 使用未来日期避免 normalizeSubscriptionStatus 标记为过期
+						Status:             service.SubscriptionStatusActive,
+						DailyWindowStart:   &expiredDailyWindowStart,
+						WeeklyWindowStart:  &expiredWeeklyWindowStart,
+						MonthlyWindowStart: &expiredMonthlyWindowStart,
+						DailyUsageUSD:      1.23,
+						WeeklyUsageUSD:     2.34,
+						MonthlyUsageUSD:    3.45,
+						AssignedBy:         ptr(int64(999)),
+						AssignedAt:         deps.now,
+						Notes:              "admin-note",
+						CreatedAt:          deps.now,
+						UpdatedAt:          deps.now,
 					},
 				})
 			},
 			method:     http.MethodGet,
 			path:       "/api/v1/subscriptions",
 			wantStatus: http.StatusOK,
-			wantJSON: `{
+			wantJSON: fmt.Sprintf(`{
 				"code": 0,
 				"message": "success",
 				"data": [
@@ -407,9 +420,9 @@ func TestAPIContracts(t *testing.T) {
 						"starts_at": "2025-01-02T03:04:05Z",
 						"expires_at": "2099-01-02T03:04:05Z",
 						"status": "active",
-						"daily_window_start": "2026-05-23T03:04:05Z",
-						"weekly_window_start": "2026-05-21T03:04:05Z",
-						"monthly_window_start": "2026-04-27T03:04:05Z",
+						"daily_window_start": %q,
+						"weekly_window_start": %q,
+						"monthly_window_start": %q,
 						"daily_usage_usd": 0,
 						"weekly_usage_usd": 0,
 						"monthly_usage_usd": 0,
@@ -417,7 +430,7 @@ func TestAPIContracts(t *testing.T) {
 						"updated_at": "2025-01-02T03:04:05Z"
 					}
 				]
-			}`,
+			}`, subscriptionDailyWindowStart.Format(time.RFC3339), subscriptionWeeklyWindowStart.Format(time.RFC3339), subscriptionMonthlyWindowStart.Format(time.RFC3339)),
 		},
 		{
 			name: "GET /api/v1/redeem/history",
@@ -1347,6 +1360,16 @@ func doRequest(t *testing.T, router http.Handler, method, path, body string, hea
 }
 
 func ptr[T any](v T) *T { return &v }
+
+func rollingContractWindowStart(windowStart time.Time, windowSize time.Duration, now time.Time) time.Time {
+	if windowSize <= 0 || windowStart.IsZero() || now.Before(windowStart.Add(windowSize)) {
+		return windowStart
+	}
+	for !now.Before(windowStart.Add(windowSize)) {
+		windowStart = windowStart.Add(windowSize)
+	}
+	return windowStart
+}
 
 type stubUserRepo struct {
 	users map[int64]*service.User

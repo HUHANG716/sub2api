@@ -1,0 +1,153 @@
+name: Deploy Dev Frontend
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    branches:
+      - dev
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to deploy
+        required: false
+        default: dev
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy frontend to code.hahacode.work
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'dev' && !contains(github.event.workflow_run.head_commit.message, '[skip deploy]')) }}
+    runs-on: ubuntu-latest
+    environment:
+      name: dev
+      url: https://code.hahacode.work
+    steps:
+      - name: Check deploy image
+        id: image
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        env:
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ github.token }}
+        run: |
+          owner="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          short_sha="${DEPLOY_SHA::12}"
+          image="ghcr.io/${owner}/sub2api:dev-${short_sha}"
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+
+          if [ -n "${GHCR_USERNAME:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then
+            printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin >/dev/null
+          fi
+          if docker manifest inspect "$image" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate manual dispatch target
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          if [ "$GITHUB_REF_NAME" != "dev" ]; then
+            echo "::error::Deploy Dev Frontend must be run from the dev branch workflow. Select Branch: dev."
+            exit 1
+          fi
+          if [ "${{ inputs.ref }}" != "dev" ]; then
+            echo "::error::Deploy Dev Frontend can only deploy ref=dev."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || inputs.ref || 'dev' }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        working-directory: frontend
+        run: pnpm run lint:check
+
+      - name: Typecheck
+        working-directory: frontend
+        run: pnpm run typecheck
+
+      - name: Critical tests
+        run: make test-frontend-critical
+
+      - name: Build frontend
+        working-directory: frontend
+        run: pnpm run build
+
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.SEOUL_SSH_KEY }}" > ~/.ssh/id_seoul
+          chmod 600 ~/.ssh/id_seoul
+          printf '%s\n' "${{ secrets.SEOUL_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Package frontend dist
+        run: tar -C backend/internal/web/dist -czf frontend-dist.tar.gz .
+
+      - name: Deploy frontend files
+        env:
+          DEPLOY_HOST: ${{ vars.SEOUL_HOST }}
+          DEPLOY_USER: ${{ vars.SEOUL_USER }}
+        run: |
+          scp -i ~/.ssh/id_seoul frontend-dist.tar.gz "${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/sub2api-dev-frontend-dist.tar.gz"
+          ssh -i ~/.ssh/id_seoul "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -se' <<'REMOTE'
+          set -euo pipefail
+
+          RUNTIME_DIR="/opt/sub2api-dev/runtime"
+          RELEASE_DIR="/tmp/sub2api-dev-frontend-dist"
+
+          rm -rf "$RELEASE_DIR"
+          mkdir -p "$RELEASE_DIR"
+          tar -xzf /tmp/sub2api-dev-frontend-dist.tar.gz -C "$RELEASE_DIR"
+          test -f "$RELEASE_DIR/index.html"
+
+          cd "$RUNTIME_DIR"
+          if docker compose version >/dev/null 2>&1; then
+            compose_cmd="docker compose"
+          else
+            compose_cmd="docker-compose"
+          fi
+          CONTAINER_ID="$($compose_cmd ps -q sub2api)"
+          if [ -z "$CONTAINER_ID" ]; then
+            echo "sub2api container not found" >&2
+            exit 1
+          fi
+
+          docker exec "$CONTAINER_ID" sh -c 'rm -rf /app/data/public.next /app/data/public.previous && mkdir -p /app/data/public.next'
+          docker cp "${RELEASE_DIR}/." "$CONTAINER_ID:/app/data/public.next/"
+          docker exec "$CONTAINER_ID" sh -c 'test -f /app/data/public.next/index.html && if [ -d /app/data/public ]; then mv /app/data/public /app/data/public.previous; fi && mv /app/data/public.next /app/data/public'
+
+          rm -rf "$RELEASE_DIR"
+          rm -f /tmp/sub2api-dev-frontend-dist.tar.gz
+
+          curl -fsS http://127.0.0.1:8080/health
+          curl -fsS https://code.hahacode.work/health
+          REMOTE
