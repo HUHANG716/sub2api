@@ -234,6 +234,27 @@ describe('HomeView', () => {
     expect(wrapper.findAll('.support-platform-chip .support-icon-frame-backed')).toHaveLength(3)
   })
 
+  it('shows the docs label in the landing header instead of relying on an icon-only link', () => {
+    const wrapper = mount(HomeView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a :href="to"><slot /></a>'
+          },
+          LocaleSwitcher: true,
+          Icon: true
+        }
+      }
+    })
+
+    const docsLink = wrapper.get('.landing-docs-action')
+
+    expect(docsLink.text()).toContain('查看文档')
+    expect(docsLink.attributes('href')).toBe('/docs')
+    expect(docsLink.classes()).not.toContain('icon-action')
+  })
+
   it('keeps the hero terminal preview simple without dashboard metric panels', () => {
     const wrapper = mount(HomeView, {
       global: {

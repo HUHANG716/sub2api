@@ -27,16 +27,13 @@
         <AnnouncementBell v-if="user" />
 
         <!-- Docs Link -->
-        <a
-          v-if="docUrl"
-          :href="docUrl"
-          target="_blank"
-          rel="noopener noreferrer"
+        <router-link
+          to="/docs"
           class="icon-action-themed h-9 gap-1.5 px-2.5 text-sm font-medium"
         >
           <Icon name="book" size="sm" />
           <span class="hidden sm:inline">{{ t('nav.docs') }}</span>
-        </a>
+        </router-link>
 
         <!-- Language Switcher -->
         <LocaleSwitcher />
@@ -245,7 +242,6 @@ const user = computed(() => authStore.user)
 const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 const contactInfo = computed(() => appStore.contactInfo)
-const docUrl = computed(() => appStore.docUrl)
 const avatarUrl = computed(() => user.value?.avatar_url?.trim() || '')
 const avatarSeed = computed(() => defaultAvatarSeed(user.value))
 

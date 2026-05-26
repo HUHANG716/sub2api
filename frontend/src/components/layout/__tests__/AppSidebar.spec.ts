@@ -61,6 +61,20 @@ describe('AppSidebar active state styles', () => {
   })
 })
 
+describe('AppSidebar docs entry', () => {
+  it('adds a prominent internal docs link to self navigation', () => {
+    expect(componentSource).toContain("items.push({ path: '/docs', label: t('nav.docs'), icon: DocumentIcon, prominent: true })")
+    expect(componentSource).not.toContain("path: docUrl.value, label: t('nav.docs')")
+  })
+
+  it('renders external sidebar nav items as links instead of router links', () => {
+    expect(componentSource).toContain('v-if="item.external"')
+    expect(componentSource).toContain(':href="item.path"')
+    expect(componentSource).toContain('target="_blank"')
+    expect(componentSource).toContain('rel="noopener noreferrer"')
+  })
+})
+
 describe('Modal header styles', () => {
   it('uses the neutral modal surface instead of a tinted header background', () => {
     const modalHeaderBlockMatch = styleSource.match(/\.modal-header\s*\{[\s\S]*?\n {2}\}/)
