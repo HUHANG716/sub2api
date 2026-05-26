@@ -34,6 +34,9 @@ jobs:
         id: filter
         uses: dorny/paths-filter@v3
         with:
+          # For pushes to long-lived branches, compare against the previous
+          # commit on the same branch instead of the repository default branch.
+          base: ${{ github.ref }}
           filters: |
             backend:
               - 'backend/**'
