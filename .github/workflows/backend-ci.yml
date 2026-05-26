@@ -52,7 +52,7 @@ jobs:
               - 'frontend/**'
               - 'Makefile'
               - '.github/workflows/backend-ci.yml'
-              - '.github/workflows/frontend-deploy-dev.yml'
+              - '.github/workflows/deploy-dev.yml'
 
   backend:
     name: Backend
@@ -118,6 +118,14 @@ jobs:
       - name: Build
         working-directory: frontend
         run: pnpm run build
+
+      - name: Upload frontend dist
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-dist
+          path: backend/internal/web/dist/
+          if-no-files-found: error
+          retention-days: 2
 
   golangci-lint:
     name: Go Lint

@@ -8,9 +8,45 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Detect changed paths
+        id: filter
+        if: ${{ github.event_name != 'schedule' }}
+        uses: dorny/paths-filter@v3
+        with:
+          base: ${{ github.ref }}
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'deploy/**'
+              - 'Dockerfile'
+              - 'Dockerfile.goreleaser'
+              - '.goreleaser*.yaml'
+              - 'go.work'
+              - 'go.work.sum'
+              - '.github/workflows/security-scan.yml'
+              - '.github/audit-exceptions.yml'
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/security-scan.yml'
+              - '.github/audit-exceptions.yml'
+              - 'tools/check_pnpm_audit_exceptions.py'
+
   backend-security:
+    needs: changes
+    if: ${{ github.event_name == 'schedule' || needs.changes.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -31,6 +67,8 @@ jobs:
           govulncheck ./...
 
   frontend-security:
+    needs: changes
+    if: ${{ github.event_name == 'schedule' || needs.changes.outputs.frontend == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
