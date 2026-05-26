@@ -156,9 +156,8 @@ jobs:
     needs:
       - changes
       - backend
-      - frontend
       - golangci-lint
-    if: ${{ always() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && (needs.changes.outputs.backend == 'true' || (github.ref == 'refs/heads/main' && needs.changes.outputs.frontend == 'true')) && (needs.changes.outputs.backend != 'true' || (needs.backend.result == 'success' && needs.golangci-lint.result == 'success')) && (needs.changes.outputs.frontend != 'true' || needs.frontend.result == 'success') }}
+    if: ${{ always() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && needs.changes.outputs.backend == 'true' && needs.backend.result == 'success' && needs.golangci-lint.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
