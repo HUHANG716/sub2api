@@ -7,6 +7,8 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -368,6 +370,38 @@ func TestFrontendServer_ServeIndexHTML(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Header().Get("Content-Type"), "text/html")
 	})
+
+	t.Run("uses_override_index_template_with_settings_injection", func(t *testing.T) {
+		provider := &mockSettingsProvider{
+			settings: map[string]string{
+				"site_name": "Override Site",
+			},
+		}
+
+		server, err := NewFrontendServer(provider)
+		require.NoError(t, err)
+
+		overrideRoot := t.TempDir()
+		server.overrideDir = overrideRoot
+		require.NoError(t, os.WriteFile(
+			filepath.Join(overrideRoot, "index.html"),
+			[]byte(`<!doctype html><html><head><title>Static Shell</title></head><body><div id="app">override shell</div></body></html>`),
+			0o644,
+		))
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/dashboard", nil)
+		c.Set(middleware.CSPNonceKey, "override-nonce")
+
+		server.serveIndexHTML(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		body := w.Body.String()
+		assert.Contains(t, body, `override shell`)
+		assert.Contains(t, body, `<script nonce="override-nonce">window.__APP_CONFIG__={"site_name":"Override Site"};</script>`)
+		assert.Contains(t, body, `<title>Override Site - AI API Gateway</title>`)
+	})
 }
 
 func TestFrontendServer_InvalidateCache(t *testing.T) {
@@ -540,6 +574,32 @@ func TestFrontendServer_Middleware(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Header().Get("Content-Type"), "image/png")
+	})
+
+	t.Run("serves_override_static_files_missing_from_embedded_dist", func(t *testing.T) {
+		provider := &mockSettingsProvider{
+			settings: map[string]string{"test": "value"},
+		}
+
+		server, err := NewFrontendServer(provider)
+		require.NoError(t, err)
+
+		overrideRoot := t.TempDir()
+		server.overrideDir = overrideRoot
+		assetPath := filepath.Join(overrideRoot, "assets", "fresh-build.js")
+		require.NoError(t, os.MkdirAll(filepath.Dir(assetPath), 0o755))
+		require.NoError(t, os.WriteFile(assetPath, []byte(`console.log("fresh build")`), 0o644))
+
+		router := gin.New()
+		router.Use(server.Middleware())
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/assets/fresh-build.js", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, `console.log("fresh build")`, strings.TrimSpace(w.Body.String()))
+		assert.NotContains(t, w.Body.String(), `window.__APP_CONFIG__`)
 	})
 }
 
