@@ -222,7 +222,7 @@
         <span class="sidebar-account-copy" :class="{ 'sidebar-account-copy-collapsed': sidebarCollapsed }">
           <span class="sidebar-account-name">{{ displayName }}</span>
           <span class="sidebar-account-balance">
-            <Icon name="wallet" size="sm" class="sidebar-account-balance-icon" />
+            <Icon name="wallet" size="xs" class="sidebar-account-balance-icon" />
             ${{ user.balance?.toFixed(2) || '0.00' }}
           </span>
         </span>
@@ -829,18 +829,18 @@ onBeforeUnmount(() => {
   position: relative;
   margin-top: auto;
   border-top: 1px solid var(--theme-border);
-  padding: 0.75rem;
+  padding: 0.5rem;
 }
 
 .sidebar-account-button {
   display: flex;
   width: 100%;
-  min-height: 3rem;
+  min-height: 2.75rem;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.625rem;
   overflow: hidden;
   border-radius: 0.25rem;
-  padding: 0.5rem;
+  padding: 0.375rem;
   color: var(--theme-text);
   transition:
     background-color 0.18s ease,
@@ -862,9 +862,9 @@ onBeforeUnmount(() => {
 
 .sidebar-account-avatar {
   display: flex;
-  height: 2rem;
-  width: 2rem;
-  flex: 0 0 2rem;
+  height: 1.875rem;
+  width: 1.875rem;
+  flex: 0 0 1.875rem;
   align-items: center;
   justify-content: center;
   overflow: hidden;
@@ -888,7 +888,7 @@ onBeforeUnmount(() => {
     max-width 0.2s ease,
     opacity 0.12s ease,
     transform 0.12s ease;
-  max-width: 9.5rem;
+  max-width: 9.25rem;
 }
 
 .sidebar-account-copy-collapsed {
@@ -909,25 +909,27 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-account-name {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  line-height: 1.1rem;
+  line-height: 1rem;
 }
 
 .sidebar-account-balance {
-  margin-top: 0.375rem;
+  margin-top: 0.25rem;
   border-radius: 0.25rem;
   background: color-mix(in srgb, var(--theme-primary-soft) 86%, var(--theme-surface));
   color: var(--theme-primary);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 700;
-  line-height: 1.125rem;
-  padding: 0.1875rem 0.55rem;
+  line-height: 1rem;
+  padding: 0.125rem 0.45rem;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--theme-primary) 12%, transparent);
 }
 
 .sidebar-account-balance-icon {
   flex: 0 0 auto;
+  height: 0.875rem;
+  width: 0.875rem;
 }
 
 .sidebar-account-chevron {
