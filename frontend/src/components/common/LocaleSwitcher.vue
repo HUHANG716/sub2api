@@ -141,21 +141,17 @@ onBeforeUnmount(() => {
   min-height: 2.25rem;
   align-items: center;
   gap: 0.42rem;
-  border: 1px solid var(--theme-border);
+  border: 0;
   border-radius: 999px;
-  background: var(--theme-surface-muted);
+  background: transparent;
   padding: 0.28rem 0.58rem;
   color: var(--locale-text);
   transition:
-    border-color 180ms ease,
-    background-color 180ms ease,
     color 180ms ease;
 }
 
 .locale-trigger:hover,
 .locale-trigger[aria-expanded='true'] {
-  border-color: rgba(249, 115, 22, 0.48);
-  background: var(--theme-surface);
   color: var(--locale-text-strong);
 }
 
@@ -258,11 +254,6 @@ onBeforeUnmount(() => {
 .locale-option-check {
   flex: 0 0 auto;
   color: #f97316;
-}
-
-.dark .locale-trigger:hover,
-.dark .locale-trigger[aria-expanded='true'] {
-  border-color: rgba(249, 115, 22, 0.58);
 }
 
 @keyframes locale-spin {

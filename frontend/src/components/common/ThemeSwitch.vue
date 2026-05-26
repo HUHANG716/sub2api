@@ -31,24 +31,17 @@ const { isDark, toggleTheme } = useTheme()
   align-items: center;
   justify-content: center;
   border-radius: 0.625rem;
-  border: 1px solid var(--theme-border);
-  background: color-mix(in srgb, var(--theme-surface-muted) 86%, transparent);
+  border: 0;
+  background: transparent;
   padding: 0.25rem 0.5rem;
   color: var(--theme-text-muted);
-  box-shadow: var(--theme-shadow);
   transition:
-    border-color 0.2s ease,
-    background 0.2s ease,
     color 0.2s ease,
-    box-shadow 0.2s ease,
     transform 0.2s ease;
 }
 
 .theme-switch:hover {
-  border-color: var(--theme-border-strong);
-  background: color-mix(in srgb, var(--theme-surface-strong) 88%, var(--theme-accent-soft));
   color: color-mix(in srgb, var(--theme-text-muted) 55%, var(--theme-accent));
-  box-shadow: var(--theme-shadow-hover);
 }
 
 .theme-switch:focus-visible {

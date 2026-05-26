@@ -743,6 +743,17 @@
     color: var(--theme-accent);
   }
 
+  .sidebar-link-docs {
+    color: var(--theme-primary);
+    background: color-mix(in srgb, var(--theme-primary-soft) 62%, var(--theme-surface));
+    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--theme-primary) 76%, transparent);
+  }
+
+  .sidebar-link-docs:hover {
+    color: var(--theme-primary-hover);
+    background: color-mix(in srgb, var(--theme-primary-soft) 78%, var(--theme-surface-strong));
+  }
+
   .sidebar-link-active {
     color: var(--theme-primary);
     background: color-mix(in srgb, var(--theme-surface-strong) 86%, var(--theme-accent-soft));

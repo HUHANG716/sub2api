@@ -31,16 +31,14 @@
 
         <div class="landing-header-actions flex items-center gap-2">
           <LocaleSwitcher />
-          <a
-            v-if="docUrl"
-            :href="docUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="icon-action"
+          <router-link
+            to="/docs"
+            class="landing-docs-action"
             :title="t('home.viewDocs')"
           >
-            <Icon name="book" size="md" />
-          </a>
+            <Icon name="book" size="sm" />
+            <span>{{ t('home.viewDocs') }}</span>
+          </router-link>
           <router-link
             :to="isAuthenticated ? dashboardPath : '/login'"
             class="primary-action"
@@ -71,10 +69,10 @@
                 {{ isAuthenticated ? t('home.goToDashboard') : t('home.getStarted') }}
                 <Icon name="arrowRight" size="sm" />
               </router-link>
-              <a v-if="docUrl" :href="docUrl" target="_blank" rel="noopener noreferrer" class="hero-button secondary">
+              <router-link to="/docs" class="hero-button secondary">
                 {{ t('home.viewDocs') }}
-                <Icon name="externalLink" size="sm" />
-              </a>
+                <Icon name="book" size="sm" />
+              </router-link>
             </div>
           </div>
 
@@ -293,7 +291,6 @@ const appStore = useAppStore()
 const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'Hahacode')
 const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
 const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || t('home.modern.hero.subtitle'))
-const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
 const homeContent = computed(() => appStore.cachedPublicSettings?.home_content || '')
 
 const isHomeContentUrl = computed(() => {
@@ -409,7 +406,7 @@ const footerGroups = computed<FooterGroup[]>(() => [
     items: [
       { label: t('home.modern.nav.features'), href: '#features' },
       { label: t('home.modern.nav.testimonials'), href: '#testimonials' },
-      ...(docUrl.value ? [{ label: t('home.docs'), href: docUrl.value }] : [])
+      { label: t('home.docs'), to: '/docs' }
     ]
   },
   {
@@ -741,6 +738,7 @@ onUnmounted(() => {
 }
 
 .icon-action,
+.landing-docs-action,
 .primary-action,
 .hero-button {
   display: inline-flex;
@@ -759,6 +757,7 @@ onUnmounted(() => {
 }
 
 .icon-action:focus-visible,
+.landing-docs-action:focus-visible,
 .primary-action:focus-visible,
 .hero-button:focus-visible {
   outline: none;
@@ -777,6 +776,32 @@ onUnmounted(() => {
   background: var(--theme-surface-muted);
 }
 
+.landing-docs-action {
+  min-height: var(--landing-nav-control-height);
+  max-width: 8.5rem;
+  border-radius: var(--landing-nav-control-radius);
+  border: 1px solid color-mix(in srgb, var(--landing-support) 34%, var(--landing-control-border));
+  background: color-mix(in srgb, var(--landing-support) 10%, var(--theme-surface-muted));
+  padding: 0 0.7rem;
+  color: var(--landing-support);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.landing-docs-action span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.landing-docs-action:hover {
+  border-color: color-mix(in srgb, var(--landing-support) 58%, transparent);
+  background: color-mix(in srgb, var(--landing-support) 16%, var(--theme-surface-strong));
+  box-shadow: var(--landing-control-shadow-hover);
+}
+
 .icon-action:hover {
   border-color: color-mix(in srgb, var(--landing-support) 42%, transparent);
   color: var(--landing-support);
@@ -785,6 +810,7 @@ onUnmounted(() => {
 }
 
 .icon-action:hover,
+.landing-docs-action:hover,
 .primary-action:hover,
 .hero-button:hover {
   transform: translateY(-1px);
