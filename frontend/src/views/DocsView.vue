@@ -340,7 +340,10 @@ const contactInfo = computed(() => appStore.cachedPublicSettings?.contact_info |
 const apiBaseUrl = computed(() => {
   const configured = appStore.cachedPublicSettings?.api_base_url || appStore.apiBaseUrl
   if (configured) return configured.replace(/\/+$/, '')
-  return 'https://code.hahacode.work'
+  if (typeof window !== 'undefined' && window.location.origin) {
+    return window.location.origin.replace(/\/+$/, '')
+  }
+  return ''
 })
 
 const v1BaseUrl = computed(() => `${apiBaseUrl.value}/v1`)
@@ -367,13 +370,12 @@ const tocItems = [
   { href: '#faq', number: '2', label: '常见问题 FAQ' }
 ]
 
-const brandIconBase = 'https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons'
 const brandIcons = {
   ccSwitch: '/landing-support/cc-switch.png',
-  claude: `${brandIconBase}/claude-color.svg`,
-  codex: `${brandIconBase}/codex-color.svg`,
-  gemini: `${brandIconBase}/gemini-color.svg`,
-  openai: `${brandIconBase}/openai.svg`
+  claude: '/landing-support/claude-code.svg',
+  codex: '/landing-support/codex.svg',
+  gemini: '/landing-support/gemini-cli.svg',
+  openai: '/logo.png'
 } as const
 
 const ccSwitchFlowSteps: FlowStep[] = [
