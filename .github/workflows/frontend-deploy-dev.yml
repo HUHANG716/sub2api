@@ -130,6 +130,9 @@ jobs:
           test -f "$RELEASE_DIR/index.html"
 
           cd "$RUNTIME_DIR"
+          COMPOSE_PROJECT_NAME="sub2api-deploy"
+          export COMPOSE_PROJECT_NAME
+
           if docker compose version >/dev/null 2>&1; then
             compose_cmd="docker compose"
           else
