@@ -301,9 +301,10 @@ describe('DocsView', () => {
     expect(wrapper.findAll('.docs-tool-option-row')).toHaveLength(5)
     expect(wrapper.findAll('[data-testid="docs-tool-icon"]').length).toBeGreaterThanOrEqual(6)
     expect(wrapper.findAll('.docs-tool-logo img').length).toBeGreaterThanOrEqual(5)
-    expect(wrapper.get('[data-testid="docs-tool-option-codex"] .docs-tool-logo img').attributes('src')).toContain('/codex-color.svg')
-    expect(wrapper.get('[data-testid="docs-tool-option-codex-ws"] .docs-tool-logo img').attributes('src')).toContain('/codex-color.svg')
-    expect(wrapper.get('[data-testid="docs-tool-option-openai"] .docs-tool-logo img').attributes('src')).toContain('/openai.svg')
+    expect(wrapper.get('[data-testid="docs-tool-option-codex"] .docs-tool-logo img').attributes('src')).toBe('/landing-support/codex.svg')
+    expect(wrapper.get('[data-testid="docs-tool-option-codex-ws"] .docs-tool-logo img').attributes('src')).toBe('/landing-support/codex.svg')
+    expect(wrapper.get('[data-testid="docs-tool-option-openai"] .docs-tool-logo img').attributes('src')).toBe('/logo.png')
+    expect(wrapper.html()).not.toContain('registry.npmmirror.com')
     expect(wrapper.get('[data-testid="docs-tool-option-codex"] .docs-tool-icon').classes()).not.toContain('tone-light')
     expect(wrapper.get('[data-testid="docs-tool-option-codex-ws"] .docs-tool-icon').classes()).not.toContain('tone-light')
     expect(wrapper.get('[data-testid="docs-tool-option-openai"] .docs-tool-icon').classes()).toContain('tone-light')
@@ -411,6 +412,36 @@ describe('DocsView', () => {
     await nextTick()
     expect(wrapper.html()).toContain('GOOGLE_GEMINI_BASE_URL="https://tenant.example.dev/api"')
     expect(wrapper.text()).toContain('https://tenant.example.dev/api/v1beta/models')
+  })
+
+  it('falls back to the current origin when no API Base URL is configured', async () => {
+    appState.cachedPublicSettings.api_base_url = ''
+    appState.apiBaseUrl = ''
+    vi.stubGlobal('location', {
+      ...window.location,
+      origin: 'https://code.hahacode.top'
+    })
+
+    const wrapper = mount(DocsView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a :href="to"><slot /></a>'
+          },
+          Icon: true
+        }
+      }
+    })
+
+    expect(wrapper.get('.docs-endpoint-panel code').text()).toBe('https://code.hahacode.top')
+    expect(wrapper.html()).not.toContain('https://code.hahacode.work')
+
+    await wrapper.get('[data-testid="docs-tool-option-openai"]').trigger('click')
+    await nextTick()
+    expect(wrapper.html()).toContain('curl https://code.hahacode.top/v1/chat/completions')
+
+    vi.unstubAllGlobals()
   })
 
   it('uses the same Codex and Gemini fields as the product use-key modal', async () => {
