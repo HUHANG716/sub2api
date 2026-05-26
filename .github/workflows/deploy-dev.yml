@@ -18,6 +18,7 @@ on:
 permissions:
   contents: read
   packages: read
+  actions: read
 
 concurrency:
   group: deploy-dev
@@ -56,11 +57,6 @@ jobs:
           image="ghcr.io/${owner}/sub2api:dev-${short_sha}"
           echo "image=${image}" >> "$GITHUB_OUTPUT"
 
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
           if [ -n "${GHCR_USERNAME:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then
             printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin >/dev/null
           fi
@@ -71,8 +67,91 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check frontend artifact
+        id: frontend_artifact
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const run_id = context.payload.workflow_run.id;
+            const { data } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner,
+              repo,
+              run_id,
+              per_page: 100,
+            });
+            const artifact = data.artifacts.find((item) => item.name === 'frontend-dist' && !item.expired);
+            core.setOutput('exists', artifact ? 'true' : 'false');
+            if (artifact) {
+              core.info(`Found frontend-dist artifact ${artifact.id}.`);
+            } else {
+              core.info('No frontend-dist artifact found; skipping frontend deploy.');
+            }
+
+      - name: Checkout
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || 'dev' }}
+
+      - name: Setup pnpm
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint frontend
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        working-directory: frontend
+        run: pnpm run lint:check
+
+      - name: Typecheck frontend
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        working-directory: frontend
+        run: pnpm run typecheck
+
+      - name: Critical frontend tests
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: make test-frontend-critical
+
+      - name: Build frontend
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        working-directory: frontend
+        run: pnpm run build
+
+      - name: Download frontend dist
+        if: ${{ github.event_name != 'workflow_dispatch' && steps.frontend_artifact.outputs.exists == 'true' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: frontend-dist
+          path: frontend-dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Package frontend dist from CI
+        if: ${{ github.event_name != 'workflow_dispatch' && steps.frontend_artifact.outputs.exists == 'true' }}
+        run: tar -C frontend-dist -czf frontend-dist.tar.gz .
+
+      - name: Package frontend dist from manual build
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: tar -C backend/internal/web/dist -czf frontend-dist.tar.gz .
+
       - name: Configure SSH
-        if: ${{ steps.image.outputs.exists == 'true' }}
+        if: ${{ steps.image.outputs.exists == 'true' || github.event_name == 'workflow_dispatch' || steps.frontend_artifact.outputs.exists == 'true' }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "${{ secrets.SEOUL_SSH_KEY }}" > ~/.ssh/id_seoul
@@ -80,13 +159,13 @@ jobs:
           printf '%s\n' "${{ secrets.SEOUL_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-      - name: Deploy on server
+      - name: Deploy backend on server
         if: ${{ steps.image.outputs.exists == 'true' }}
         env:
           DEPLOY_HOST: ${{ vars.SEOUL_HOST }}
           DEPLOY_USER: ${{ vars.SEOUL_USER }}
           DEPLOY_REF: ${{ github.event.workflow_run.head_branch || inputs.ref || 'dev' }}
-          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || '' }}
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
           GHCR_USERNAME: ${{ github.actor }}
           GHCR_TOKEN: ${{ github.token }}
         run: |
@@ -210,3 +289,47 @@ jobs:
           curl -fsS https://code.hahacode.work/health
           REMOTE
           } | ssh -i ~/.ssh/id_seoul "${DEPLOY_USER}@${DEPLOY_HOST}" "env DEPLOY_REF=${DEPLOY_REF_Q} DEPLOY_SHA=${DEPLOY_SHA_Q} DEPLOY_IMAGE_NAME=${DEPLOY_IMAGE_NAME_Q} GHCR_USERNAME=${GHCR_USERNAME_Q} sh -c 'IFS= read -r GHCR_TOKEN; export GHCR_TOKEN; bash -se'"
+
+      - name: Deploy frontend files
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.frontend_artifact.outputs.exists == 'true' }}
+        env:
+          DEPLOY_HOST: ${{ vars.SEOUL_HOST }}
+          DEPLOY_USER: ${{ vars.SEOUL_USER }}
+        run: |
+          scp -i ~/.ssh/id_seoul frontend-dist.tar.gz "${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/sub2api-dev-frontend-dist.tar.gz"
+          ssh -i ~/.ssh/id_seoul "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -se' <<'REMOTE'
+          set -euo pipefail
+
+          RUNTIME_DIR="/opt/sub2api-dev/runtime"
+          RELEASE_DIR="/tmp/sub2api-dev-frontend-dist"
+
+          rm -rf "$RELEASE_DIR"
+          mkdir -p "$RELEASE_DIR"
+          tar -xzf /tmp/sub2api-dev-frontend-dist.tar.gz -C "$RELEASE_DIR"
+          test -f "$RELEASE_DIR/index.html"
+
+          cd "$RUNTIME_DIR"
+          COMPOSE_PROJECT_NAME="sub2api-deploy"
+          export COMPOSE_PROJECT_NAME
+
+          if docker compose version >/dev/null 2>&1; then
+            compose_cmd="docker compose"
+          else
+            compose_cmd="docker-compose"
+          fi
+          CONTAINER_ID="$($compose_cmd ps -q sub2api)"
+          if [ -z "$CONTAINER_ID" ]; then
+            echo "sub2api container not found" >&2
+            exit 1
+          fi
+
+          docker exec "$CONTAINER_ID" sh -c 'rm -rf /app/data/public.next /app/data/public.previous && mkdir -p /app/data/public.next'
+          docker cp "${RELEASE_DIR}/." "$CONTAINER_ID:/app/data/public.next/"
+          docker exec "$CONTAINER_ID" sh -c 'test -f /app/data/public.next/index.html && if [ -d /app/data/public ]; then mv /app/data/public /app/data/public.previous; fi && mv /app/data/public.next /app/data/public'
+
+          rm -rf "$RELEASE_DIR"
+          rm -f /tmp/sub2api-dev-frontend-dist.tar.gz
+
+          curl -fsS http://127.0.0.1:8080/health
+          curl -fsS https://code.hahacode.work/health
+          REMOTE
