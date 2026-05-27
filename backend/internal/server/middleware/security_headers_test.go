@@ -110,6 +110,39 @@ func TestSecurityHeaders(t *testing.T) {
 		assert.Empty(t, w.Header().Get("Content-Security-Policy"))
 	})
 
+	t.Run("csp_disabled_still_protects_image_playground_shell_embedding", func(t *testing.T) {
+		cfg := config.CSPConfig{Enabled: false}
+		middleware := SecurityHeaders(cfg, nil)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/image-playground", nil)
+
+		middleware(c)
+
+		csp := w.Header().Get("Content-Security-Policy")
+		assert.Equal(t, "DENY", w.Header().Get("X-Frame-Options"))
+		assert.Equal(t, 1, countDirectiveValue(csp, "frame-src", "'self'"))
+		assert.Contains(t, csp, "frame-ancestors 'none'")
+	})
+
+	t.Run("csp_disabled_still_allows_image_playground_app_same_origin_embed", func(t *testing.T) {
+		cfg := config.CSPConfig{Enabled: false}
+		middleware := SecurityHeaders(cfg, nil)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/image-playground-app/", nil)
+
+		middleware(c)
+
+		csp := w.Header().Get("Content-Security-Policy")
+		assert.Equal(t, "SAMEORIGIN", w.Header().Get("X-Frame-Options"))
+		assert.Equal(t, 1, countDirectiveValue(csp, "frame-src", "'self'"))
+		assert.Contains(t, csp, "frame-ancestors 'self'")
+		assert.NotContains(t, csp, "frame-ancestors 'none'")
+	})
+
 	t.Run("csp_enabled_sets_csp_header", func(t *testing.T) {
 		cfg := config.CSPConfig{
 			Enabled: true,

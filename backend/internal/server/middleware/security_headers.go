@@ -94,6 +94,7 @@ func SecurityHeaders(cfg config.CSPConfig, getFrameSrcOrigins func() []string) g
 
 		c.Header("X-Content-Type-Options", "nosniff")
 		isImagePlaygroundApp := isImagePlaygroundAppPath(c)
+		isImagePlaygroundShell := isImagePlaygroundShellPath(c)
 		if isImagePlaygroundApp {
 			c.Header("X-Frame-Options", "SAMEORIGIN")
 			finalPolicy = replaceDirective(finalPolicy, "frame-ancestors", "'self'")
@@ -106,9 +107,10 @@ func SecurityHeaders(cfg config.CSPConfig, getFrameSrcOrigins func() []string) g
 			return
 		}
 
-		if cfg.Enabled {
+		if cfg.Enabled || isImagePlaygroundApp || isImagePlaygroundShell {
 			// Generate nonce for this request
 			nonce, err := GenerateNonce()
+			finalPolicy = ensureImagePlaygroundCSP(finalPolicy, isImagePlaygroundApp, isImagePlaygroundShell)
 			if err != nil {
 				// crypto/rand 失败时降级为无 nonce 的 CSP 策略
 				log.Printf("[SecurityHeaders] %v — 降级为无 nonce 的 CSP", err)
@@ -132,6 +134,13 @@ func isImagePlaygroundAppPath(c *gin.Context) bool {
 	return strings.HasPrefix(c.Request.URL.Path, "/image-playground-app/")
 }
 
+func isImagePlaygroundShellPath(c *gin.Context) bool {
+	if c == nil || c.Request == nil || c.Request.URL == nil {
+		return false
+	}
+	return c.Request.URL.Path == "/image-playground"
+}
+
 func isAPIRoutePath(c *gin.Context) bool {
 	if c == nil || c.Request == nil || c.Request.URL == nil {
 		return false
@@ -142,6 +151,19 @@ func isAPIRoutePath(c *gin.Context) bool {
 		strings.HasPrefix(path, "/antigravity/") ||
 		strings.HasPrefix(path, "/responses") ||
 		strings.HasPrefix(path, "/images")
+}
+
+func ensureImagePlaygroundCSP(policy string, isAppPath, isShellPath bool) string {
+	if !isAppPath && !isShellPath {
+		return policy
+	}
+	if !directiveHasValue(policy, "frame-src", "'self'") {
+		policy = addToDirective(policy, "frame-src", "'self'")
+	}
+	if isAppPath {
+		return replaceDirective(policy, "frame-ancestors", "'self'")
+	}
+	return replaceDirective(policy, "frame-ancestors", "'none'")
 }
 
 // enhanceCSPPolicy 确保 CSP 策略包含 nonce 支持和支付 SDK 必需域名。

@@ -216,6 +216,97 @@ jobs:
           COMPOSE_PROJECT_NAME="sub2api-deploy"
           export COMPOSE_PROJECT_NAME
 
+          if command -v caddy >/dev/null 2>&1 && [ -f /etc/caddy/Caddyfile ]; then
+            caddyfile="/etc/caddy/Caddyfile"
+            backup="${caddyfile}.bak-image-playground-${SHORT_SHA}-$(date +%Y%m%d%H%M%S)"
+            sudo cp "$caddyfile" "$backup"
+            sudo python3 - "$caddyfile" <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          text = path.read_text()
+
+          block = """
+              # sub2api-dev-image-playground-csp
+              handle /image-playground-app* {
+                  reverse_proxy 127.0.0.1:8080 {
+                      header_down -Content-Security-Policy
+                      header_down Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; frame-src 'self'; worker-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+                      header_down -X-Frame-Options
+                      header_down X-Frame-Options "SAMEORIGIN"
+                  }
+                  header {
+                      >X-Frame-Options "SAMEORIGIN"
+                      >Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; frame-src 'self'; worker-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+                  }
+              }
+
+              handle /image-playground {
+                  reverse_proxy 127.0.0.1:8080 {
+                      header_down -Content-Security-Policy
+                      header_down Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-rN/mwjSDRbSp/GyWf3SbRSivx2cXMjUCUKQReJN0U0Y=' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://*.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https:; frame-src 'self' https://challenges.cloudflare.com https://*.stripe.com https://pay.ldxp.cn; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+                  }
+                  header {
+                      >Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-rN/mwjSDRbSp/GyWf3SbRSivx2cXMjUCUKQReJN0U0Y=' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://*.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https:; frame-src 'self' https://challenges.cloudflare.com https://*.stripe.com https://pay.ldxp.cn; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+                  }
+              }
+
+              # sub2api-dev-image-playground-csp-end
+          """
+          managed_block_pattern = re.compile(
+              r"\n[ \t]*# sub2api-dev-image-playground-csp\n"
+              r".*?\n[ \t]*# sub2api-dev-image-playground-csp-end\n?",
+              re.S,
+          )
+          text = managed_block_pattern.sub("", text)
+
+          def find_site_block(source: str, host: str) -> tuple[int, int] | None:
+              for match in re.finditer(r"(?m)^[ \t]*([^#\n{]*\b" + re.escape(host) + r"\b[^{}\n]*)\{", source):
+                  open_brace = match.end() - 1
+                  depth = 0
+                  for index in range(open_brace, len(source)):
+                      char = source[index]
+                      if char == "{":
+                          depth += 1
+                      elif char == "}":
+                          depth -= 1
+                          if depth == 0:
+                              return open_brace, index
+              return None
+
+          site_block = find_site_block(text, "code.hahacode.work")
+          if site_block is None:
+              print("Caddyfile insertion point not found; showing likely site labels:", file=sys.stderr)
+              for line_no, line in enumerate(text.splitlines(), 1):
+                  stripped = line.strip()
+                  if stripped.endswith("{") and not stripped.startswith(("#", "@", "header ", "handle", "route", "reverse_proxy")):
+                      print(f"{line_no}: {stripped[:160]}", file=sys.stderr)
+              raise SystemExit(1)
+
+          open_brace, _ = site_block
+          text = text[:open_brace + 1] + block + text[open_brace + 1:]
+          path.write_text(text)
+          PY
+            sudo sed -n '/sub2api-dev-image-playground-csp/,+35p' "$caddyfile"
+            if sudo caddy validate --config "$caddyfile"; then
+              if ! sudo systemctl reload caddy; then
+                echo "Caddy reload failed; restarting caddy because this server does not expose the admin reload endpoint." >&2
+                sudo systemctl restart caddy
+              fi
+              sudo systemctl is-active --quiet caddy
+            else
+              sudo systemctl status caddy --no-pager -l || true
+              sudo journalctl -u caddy --no-pager -n 80 || true
+              sudo cp "$backup" "$caddyfile"
+              sudo caddy validate --config "$caddyfile"
+              sudo systemctl restart caddy || true
+              echo "Failed to apply image playground Caddy headers; restored previous Caddyfile" >&2
+              exit 1
+            fi
+          fi
+
           if [ -n "${GHCR_USERNAME:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then
             printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin >/dev/null
           fi
@@ -287,6 +378,30 @@ jobs:
 
           curl -fsS http://127.0.0.1:8080/health
           curl -fsS https://code.hahacode.work/health
+          app_headers="$(mktemp)"
+          shell_headers="$(mktemp)"
+          curl -fsSI https://code.hahacode.work/image-playground-app/ -o "$app_headers"
+          curl -fsSI https://code.hahacode.work/image-playground -o "$shell_headers"
+          if ! grep -iq '^X-Frame-Options:[[:space:]]*SAMEORIGIN' "$app_headers"; then
+            echo "image playground app must allow same-origin iframe embedding" >&2
+            cat "$app_headers" >&2
+            exit 1
+          fi
+          if ! grep -iq "frame-ancestors 'self'" "$app_headers"; then
+            echo "image playground app CSP must include frame-ancestors 'self'" >&2
+            cat "$app_headers" >&2
+            exit 1
+          fi
+          if grep -iq "frame-ancestors 'none'" "$app_headers"; then
+            echo "image playground app CSP must not include frame-ancestors 'none'" >&2
+            cat "$app_headers" >&2
+            exit 1
+          fi
+          if ! grep -iq "frame-src[^;]*'self'" "$shell_headers"; then
+            echo "image playground shell CSP must allow same-origin iframe via frame-src 'self'" >&2
+            cat "$shell_headers" >&2
+            exit 1
+          fi
           REMOTE
           } | ssh -i ~/.ssh/id_seoul "${DEPLOY_USER}@${DEPLOY_HOST}" "env DEPLOY_REF=${DEPLOY_REF_Q} DEPLOY_SHA=${DEPLOY_SHA_Q} DEPLOY_IMAGE_NAME=${DEPLOY_IMAGE_NAME_Q} GHCR_USERNAME=${GHCR_USERNAME_Q} sh -c 'IFS= read -r GHCR_TOKEN; export GHCR_TOKEN; bash -se'"
 
