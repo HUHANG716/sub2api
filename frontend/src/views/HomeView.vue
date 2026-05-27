@@ -51,7 +51,7 @@
 
     <main>
       <section class="hero-section px-5 pb-16 pt-14 sm:px-6 sm:pb-20 sm:pt-20 lg:px-8">
-        <div class="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+        <div class="landing-container grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div class="hero-copy">
             <p class="eyebrow">{{ t('home.modern.hero.eyebrow') }}</p>
             <h1>
@@ -108,7 +108,7 @@
       </section>
 
       <section class="trust-band px-5 py-8 sm:px-6 lg:px-8">
-        <div class="trust-strip">
+        <div class="landing-container trust-strip">
           <div v-for="stat in trustStats" :key="stat.label" class="trust-card">
             <strong>{{ stat.value }}</strong>
             <span>{{ stat.label }}</span>
@@ -117,7 +117,7 @@
       </section>
 
       <section id="features" class="support-showcase px-5 py-12 sm:px-6 lg:px-8">
-        <div class="support-showcase-panel mx-auto">
+        <div class="landing-container support-showcase-panel">
           <h2 class="support-showcase-title">
             <span>{{ t('home.modern.supportShowcase.titlePrefix') }}</span>
             <strong>{{ t('home.modern.supportShowcase.titleCore') }}</strong>
@@ -155,7 +155,7 @@
       </section>
 
       <section id="testimonials" class="testimonial-section px-5 py-20 sm:px-6 lg:px-8">
-        <div>
+        <div class="landing-container">
           <div class="section-heading centered">
             <p>{{ t('home.modern.testimonials.eyebrow') }}</p>
             <h2>{{ t('home.modern.testimonials.title') }}</h2>
@@ -200,7 +200,7 @@
       </section>
 
       <section id="faq" class="section-pad px-5 sm:px-6 lg:px-8">
-        <div class="grid gap-10 lg:grid-cols-[0.75fr_1.25fr]">
+        <div class="landing-container grid gap-10 lg:grid-cols-[0.75fr_1.25fr]">
           <div class="section-heading sticky-heading">
             <p>FAQ</p>
             <h2>{{ t('home.modern.faq.title') }}</h2>
@@ -217,7 +217,7 @@
     </main>
 
     <footer id="contact" class="landing-footer px-5 py-12 sm:px-6 lg:px-8">
-      <div>
+      <div class="landing-container">
         <div class="footer-top">
           <div>
             <div class="brand-lockup">
@@ -528,10 +528,13 @@ onUnmounted(() => {
   --landing-bg: #171717;
   --landing-bg-soft: #1c1c1c;
   --landing-surface: #242424;
+  --landing-surface-raised: #292929;
   --landing-surface-muted: #262626;
   --landing-surface-subtle: rgba(38, 38, 38, 0.84);
+  --landing-surface-soft: rgba(255, 255, 255, 0.035);
   --landing-border: rgba(255, 255, 255, 0.08);
   --landing-border-strong: rgba(255, 255, 255, 0.14);
+  --landing-hairline: rgba(255, 255, 255, 0.055);
   --landing-text: #f8fafc;
   --landing-text-strong: #ffffff;
   --landing-text-soft: #e2e8f0;
@@ -550,8 +553,8 @@ onUnmounted(() => {
   --landing-nav-control-height: 2.25rem;
   --landing-nav-control-radius: 0.375rem;
   --landing-control-border: rgba(148, 163, 184, 0.18);
-  --landing-control-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 10px 24px rgba(2, 6, 23, 0.2);
-  --landing-control-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 14px 30px rgba(2, 6, 23, 0.28);
+  --landing-control-shadow: 0 1px 0 rgba(255, 255, 255, 0.055) inset, 0 8px 18px rgba(2, 6, 23, 0.16);
+  --landing-control-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.075) inset, 0 10px 22px rgba(2, 6, 23, 0.22);
   --landing-button-bg: var(--landing-accent);
   --landing-button-bg-hover: var(--landing-accent-hover);
   --landing-text-inverse: #ffffff;
@@ -599,6 +602,11 @@ onUnmounted(() => {
   box-sizing: border-box;
 }
 
+.landing-container {
+  width: min(100%, 78rem);
+  margin: 0 auto;
+}
+
 .landing-shell :deep(.locale-switcher) {
   --locale-text: #e2e8f0;
   --locale-text-strong: var(--landing-text-strong);
@@ -635,7 +643,6 @@ onUnmounted(() => {
   max-width: 100vw;
   overflow-x: clip;
   padding-top: 0;
-  background: var(--landing-bg);
   transition: padding 180ms ease;
 }
 
@@ -652,7 +659,7 @@ onUnmounted(() => {
   padding-bottom: 0.625rem;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.05) inset,
-    0 14px 32px rgba(2, 6, 23, 0.24);
+    0 10px 26px rgba(2, 6, 23, 0.18);
   transition:
     padding 180ms ease,
     width 240ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -679,13 +686,13 @@ onUnmounted(() => {
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
   border-color: var(--theme-border-strong);
-  border-right: 1px solid var(--theme-border-strong);
-  border-left: 1px solid var(--theme-border-strong);
+  border-right: 0;
+  border-left: 0;
   border-radius: 0.9rem;
   background: var(--theme-surface-strong);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 16px 34px rgba(2, 6, 23, 0.3);
+    0 12px 28px rgba(2, 6, 23, 0.24);
   pointer-events: auto;
 }
 
@@ -845,6 +852,8 @@ onUnmounted(() => {
   isolation: isolate;
   max-width: 100vw;
   overflow-x: clip;
+  padding-top: clamp(4rem, 7vw, 5.75rem);
+  padding-bottom: clamp(5rem, 8vw, 7rem);
 }
 
 .hero-section > div {
@@ -870,10 +879,10 @@ onUnmounted(() => {
   margin-top: 0.9rem;
   max-width: 42rem;
   color: var(--landing-text-strong);
-  font-size: clamp(2.65rem, 5.6vw, 4.8rem);
-  font-weight: 900;
+  font-size: clamp(2.45rem, 5vw, 4.45rem);
+  font-weight: 820;
   letter-spacing: 0;
-  line-height: 1;
+  line-height: 1.03;
 }
 
 .hero-copy h1 span {
@@ -883,23 +892,24 @@ onUnmounted(() => {
 
 .hero-brand-title {
   margin-bottom: 0.1em;
+  color: color-mix(in srgb, var(--landing-text-strong) 92%, var(--landing-accent-soft));
 }
 
 .eyebrow,
 .section-heading p {
   color: var(--landing-accent);
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 760;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .hero-lede {
   margin-top: 1.25rem;
-  max-width: 36rem;
+  max-width: 34rem;
   color: var(--landing-text-soft);
   font-size: 1rem;
-  line-height: 1.75;
+  line-height: 1.68;
 }
 
 .hero-lede span {
@@ -948,9 +958,12 @@ onUnmounted(() => {
 .hero-console {
   position: relative;
   min-width: 0;
+  border: 1px solid var(--landing-border-strong);
   border-radius: 0.75rem;
-  background: var(--landing-surface);
-  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.18);
+  background: var(--landing-surface-raised);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 14px 32px rgba(2, 6, 23, 0.16);
   overflow: visible;
 }
 
@@ -1077,6 +1090,8 @@ onUnmounted(() => {
 
 .trust-band {
   background: var(--landing-bg);
+  padding-top: clamp(1.5rem, 3vw, 2.5rem);
+  padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
 }
 
 .trust-strip {
@@ -1084,25 +1099,33 @@ onUnmounted(() => {
   min-width: 0;
   overflow: hidden;
   border-radius: 0.5rem;
-  background: color-mix(in srgb, var(--theme-surface-muted) 46%, transparent);
+  border: 1px solid var(--landing-hairline);
+  background: var(--landing-surface-soft);
   box-shadow: none;
 }
 
 .trust-card {
-  min-height: 7.5rem;
+  min-height: 6.75rem;
   min-width: 0;
-  padding: 1.35rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   position: relative;
 }
 
 .trust-card + .trust-card::before {
-  content: none;
+  content: '';
+  position: absolute;
+  top: 1.2rem;
+  bottom: 1.2rem;
+  left: 0;
+  width: 1px;
+  background: var(--landing-hairline);
 }
 
 .trust-card strong {
   display: block;
   color: var(--landing-text-strong);
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(1.8rem, 3.4vw, 2.65rem);
+  font-weight: 780;
   letter-spacing: 0;
 }
 
@@ -1119,11 +1142,11 @@ onUnmounted(() => {
 .support-showcase {
   border-top: 1px solid var(--theme-border);
   border-bottom: 1px solid var(--theme-border);
-  background: color-mix(in srgb, var(--theme-surface) 72%, var(--landing-bg));
+  background: color-mix(in srgb, var(--theme-surface) 58%, var(--landing-bg));
 }
 
 .support-showcase-panel {
-  padding: clamp(1.25rem, 3.2vw, 2.4rem) 0;
+  padding: clamp(2rem, 4vw, 3.25rem) 0;
   color: var(--theme-text);
 }
 
@@ -1135,20 +1158,20 @@ onUnmounted(() => {
   gap: 0.35em;
   margin: 0;
   text-align: center;
-  font-size: clamp(2rem, 5vw, 4rem);
-  font-weight: 900;
+  font-size: clamp(1.85rem, 4.2vw, 3.45rem);
+  font-weight: 780;
   letter-spacing: 0;
   line-height: 1.15;
 }
 
 .support-showcase-title strong {
-  font-weight: 900;
+  font-weight: 820;
 }
 
 .support-showcase-title em {
   color: var(--theme-primary-hover);
   font-style: normal;
-  font-weight: 900;
+  font-weight: 820;
 }
 
 .support-provider-row,
@@ -1160,32 +1183,36 @@ onUnmounted(() => {
 }
 
 .support-provider-row {
-  gap: 1rem 1.45rem;
-  margin-top: clamp(2rem, 5vw, 3.8rem);
+  gap: 0.75rem 0.85rem;
+  margin-top: clamp(1.75rem, 4vw, 3rem);
 }
 
 .support-provider-row p {
   margin: 0;
   color: var(--theme-text);
-  font-size: clamp(1.25rem, 2.5vw, 2rem);
-  font-weight: 900;
+  font-size: clamp(1.1rem, 2.1vw, 1.6rem);
+  font-weight: 780;
   line-height: 1.2;
 }
 
 .support-provider-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.55rem;
+  border: 1px solid var(--landing-hairline);
+  border-radius: 0.5rem;
+  background: var(--landing-surface-soft);
+  padding: 0.48rem 0.72rem;
   color: var(--theme-text-soft);
-  font-size: clamp(1rem, 1.7vw, 1.35rem);
-  font-weight: 900;
+  font-size: clamp(0.94rem, 1.45vw, 1.12rem);
+  font-weight: 760;
   line-height: 1.2;
 }
 
 .support-icon-frame {
   display: inline-flex;
-  height: clamp(2.05rem, 3vw, 2.75rem);
-  width: clamp(2.05rem, 3vw, 2.75rem);
+  height: clamp(1.75rem, 2.4vw, 2.2rem);
+  width: clamp(1.75rem, 2.4vw, 2.2rem);
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
@@ -1208,7 +1235,7 @@ onUnmounted(() => {
 
 .support-platform-row {
   gap: 0.85rem 1rem;
-  margin-top: clamp(2.4rem, 5vw, 4rem);
+  margin-top: clamp(2rem, 4vw, 3rem);
 }
 
 .support-platform-row p {
@@ -1221,28 +1248,28 @@ onUnmounted(() => {
 
 .support-platform-chip {
   display: inline-flex;
-  min-height: 4rem;
-  min-width: min(13.4rem, 100%);
+  min-height: 3.35rem;
+  min-width: min(12rem, 100%);
   align-items: center;
   justify-content: center;
   gap: 0.8rem;
   border: 1px solid var(--theme-border-strong);
   border-radius: 0.5rem;
-  background: var(--theme-surface-strong);
-  padding: 0.8rem 1.5rem;
+  background: var(--landing-surface-soft);
+  padding: 0.68rem 1.2rem;
   color: var(--theme-text-soft);
-  font-size: clamp(1rem, 1.7vw, 1.4rem);
-  font-weight: 800;
+  font-size: clamp(0.96rem, 1.45vw, 1.16rem);
+  font-weight: 760;
 }
 
 .support-platform-chip .support-icon-frame {
-  height: 2.35rem;
-  width: 2.35rem;
+  height: 2rem;
+  width: 2rem;
 }
 
 .section-pad {
-  padding-top: 5rem;
-  padding-bottom: 5rem;
+  padding-top: clamp(5.5rem, 8vw, 7.5rem);
+  padding-bottom: clamp(5.5rem, 8vw, 7.5rem);
 }
 
 .section-heading {
@@ -1257,10 +1284,10 @@ onUnmounted(() => {
 .section-heading h2 {
   margin-top: 0.8rem;
   color: var(--landing-text-strong);
-  font-size: clamp(2.2rem, 5vw, 4.3rem);
-  font-weight: 900;
+  font-size: clamp(2rem, 4.5vw, 3.85rem);
+  font-weight: 780;
   letter-spacing: 0;
-  line-height: 1.04;
+  line-height: 1.08;
   overflow-wrap: anywhere;
 }
 
@@ -1277,6 +1304,8 @@ onUnmounted(() => {
   isolation: isolate;
   background: var(--landing-bg);
   color: var(--landing-text);
+  padding-top: clamp(5.5rem, 8vw, 7.5rem);
+  padding-bottom: clamp(5.5rem, 8vw, 7.5rem);
 }
 
 .testimonial-section .section-heading h2 {
@@ -1319,9 +1348,9 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   width: max-content;
-  gap: 1rem;
+  gap: 0.9rem;
   padding-left: 1rem;
-  animation: testimonial-scroll 44s linear infinite;
+  animation: testimonial-scroll 52s linear infinite;
   will-change: transform;
 }
 
@@ -1338,29 +1367,32 @@ onUnmounted(() => {
   flex-direction: column;
   justify-content: space-between;
   flex: 0 0 auto;
-  padding: 1.4rem;
+  padding: 1.35rem;
   color: var(--landing-text);
+  border: 1px solid var(--landing-hairline);
   border-radius: 0.5rem;
-  background: var(--landing-surface);
-  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.2);
+  background: var(--landing-surface-soft);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.045) inset,
+    0 10px 24px rgba(2, 6, 23, 0.13);
 }
 
 .testimonial-card:nth-child(4n + 2) {
   width: min(24rem, calc(100vw - 2.5rem));
-  min-height: 18rem;
-  background: var(--landing-surface);
+  min-height: 17rem;
+  background: var(--landing-surface-soft);
 }
 
 .testimonial-card:nth-child(4n + 3) {
-  transform: translateY(1.25rem);
-  background: var(--landing-surface);
+  transform: translateY(0.9rem);
+  background: var(--landing-surface-soft);
 }
 
 .testimonial-card:nth-child(4n) {
   width: min(20rem, calc(100vw - 2.5rem));
   min-height: 15rem;
-  transform: translateY(-0.9rem);
-  background: var(--landing-surface);
+  transform: translateY(-0.65rem);
+  background: var(--landing-surface-soft);
 }
 
 .testimonial-card::before {
@@ -1492,7 +1524,7 @@ onUnmounted(() => {
 }
 
 .faq-item {
-  padding: 1.45rem 0;
+  padding: 1.65rem 0;
   border-top: 1px solid var(--landing-border-strong);
 }
 
@@ -1503,13 +1535,13 @@ onUnmounted(() => {
 .faq-item h3 {
   color: var(--landing-text-strong);
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: 760;
 }
 
 .faq-item p {
   margin-top: 0.75rem;
   color: var(--landing-text-soft);
-  line-height: 1.8;
+  line-height: 1.72;
 }
 
 .landing-footer {
@@ -1517,6 +1549,8 @@ onUnmounted(() => {
   isolation: isolate;
   color: var(--landing-text-soft);
   background: var(--landing-bg);
+  padding-top: clamp(4.5rem, 7vw, 6.5rem);
+  padding-bottom: clamp(3.5rem, 6vw, 5rem);
 }
 
 .landing-footer::before {
