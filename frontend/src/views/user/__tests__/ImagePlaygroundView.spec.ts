@@ -9,7 +9,7 @@ import {
 } from '../imagePlayground'
 import type { ApiKey, Group } from '@/types'
 
-const { appState, createKey, getAvailableGroups } = vi.hoisted(() => ({
+const { appState, createKey, estimateImageCost, getAvailableGroups } = vi.hoisted(() => ({
   appState: {
     cachedPublicSettings: {
       image_playground_group_id: 11
@@ -17,6 +17,7 @@ const { appState, createKey, getAvailableGroups } = vi.hoisted(() => ({
     fetchPublicSettings: vi.fn()
   },
   createKey: vi.fn(),
+  estimateImageCost: vi.fn(),
   getAvailableGroups: vi.fn()
 }))
 
@@ -26,6 +27,10 @@ const messages: Record<string, string> = {
   'imagePlayground.description': 'Create and edit images through your OpenAI image group.',
   'imagePlayground.loading': 'Preparing image playground...',
   'imagePlayground.regenerateKey': 'Regenerate key',
+  'imagePlayground.estimatedCost': 'Est. cost',
+  'imagePlayground.estimateWaiting': 'Waiting',
+  'imagePlayground.estimateLoading': 'Calculating',
+  'imagePlayground.estimateUnavailable': 'Unavailable',
   'imagePlayground.currentKeyLabel': 'Using Key #{id}',
   'imagePlayground.groupFallback': 'Group #{id}',
   'imagePlayground.groupUnknown': 'Group not recorded',
@@ -41,6 +46,9 @@ const messages: Record<string, string> = {
 vi.mock('@/api', () => ({
   keysAPI: {
     create: createKey
+  },
+  usageAPI: {
+    estimateImageCost
   },
   userGroupsAPI: {
     getAvailable: getAvailableGroups
@@ -151,7 +159,7 @@ describe('image playground helpers', () => {
     })
 
     expect(url).toBe(
-      'https://code.example.com/image-playground-app/?apiUrl=https%3A%2F%2Fcode.example.com%2Fv1&apiKey=sk-url&apiMode=images&model=gpt-image-2&streamImages=true&streamPartialImages=3'
+      'https://code.example.com/image-playground-app/?apiUrl=https%3A%2F%2Fcode.example.com%2Fv1&apiKey=sk-url&apiMode=images&appMode=gallery&model=gpt-image-2&streamImages=true&streamPartialImages=3'
     )
   })
 })
@@ -166,6 +174,7 @@ describe('ImagePlaygroundView', () => {
     appState.fetchPublicSettings.mockReset()
     appState.fetchPublicSettings.mockResolvedValue(appState.cachedPublicSettings)
     createKey.mockReset()
+    estimateImageCost.mockReset()
     getAvailableGroups.mockReset()
     window.localStorage.clear()
     consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
@@ -203,7 +212,56 @@ describe('ImagePlaygroundView', () => {
     const iframe = wrapper.get('[data-test="image-playground-frame"]')
     expect(iframe.attributes('src')).toContain('/image-playground-app/?')
     expect(iframe.attributes('src')).toContain('apiMode=images')
+    expect(iframe.attributes('src')).toContain('appMode=gallery')
     expect(iframe.attributes('src')).toContain('model=gpt-image-2')
+    expect(wrapper.get('[data-test="image-playground-estimate"]').text()).toContain('Waiting')
+  })
+
+  it('shows estimated image cost from iframe parameter messages', async () => {
+    getAvailableGroups.mockResolvedValue([makeGroup({ id: 11, name: 'OpenAI Images' })])
+    createKey.mockResolvedValue(makeApiKey({ id: 42, key: 'sk-created', group_id: 11 }))
+    estimateImageCost.mockResolvedValue({
+      model: 'gpt-image-2',
+      image_size: '1K',
+      image_count: 2,
+      unit_cost: 0.03,
+      total_cost: 0.06,
+      actual_cost: 0.09,
+      rate_multiplier: 1.5,
+      billing_mode: 'image',
+      pricing_source: 'fallback'
+    })
+
+    const wrapper = mount(ImagePlaygroundView, {
+      global: {
+        stubs: {
+          AppLayout: BaseLayoutStub,
+          Icon: true
+        }
+      }
+    })
+
+    await flushPromises()
+    window.dispatchEvent(new MessageEvent('message', {
+      origin: window.location.origin,
+      data: {
+        type: 'hahacode:image-playground-params',
+        payload: {
+          model: 'gpt-image-2',
+          size: '1024x1024',
+          count: 2
+        }
+      }
+    }))
+    await flushPromises()
+
+    expect(estimateImageCost).toHaveBeenCalledWith({
+      group_id: 11,
+      model: 'gpt-image-2',
+      size: '1024x1024',
+      count: 2
+    }, expect.any(Object))
+    expect(wrapper.get('[data-test="image-playground-estimate"]').text()).toContain('$0.0900')
   })
 
   it('fetches public settings when the admin configured group is not cached yet', async () => {

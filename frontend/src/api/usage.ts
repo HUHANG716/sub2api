@@ -88,6 +88,25 @@ export interface ApiKeyDailyUsageResponse {
   end_date: string
 }
 
+export interface ImageEstimateRequest {
+  group_id: number
+  model: string
+  size: string
+  count: number
+}
+
+export interface ImageEstimateResponse {
+  model: string
+  image_size: string
+  image_count: number
+  unit_cost: number
+  total_cost: number
+  actual_cost: number
+  rate_multiplier: number
+  billing_mode: string
+  pricing_source: string
+}
+
 /**
  * List usage logs with optional filters
  * @param page - Page number (default: 1)
@@ -304,6 +323,22 @@ export async function getDashboardApiKeysUsage(
   return data
 }
 
+export async function estimateImageCost(
+  payload: ImageEstimateRequest,
+  options?: {
+    signal?: AbortSignal
+  }
+): Promise<ImageEstimateResponse> {
+  const { data } = await apiClient.post<ImageEstimateResponse>(
+    '/usage/image-estimate',
+    payload,
+    {
+      signal: options?.signal
+    }
+  )
+  return data
+}
+
 export const usageAPI = {
   list,
   query,
@@ -316,7 +351,8 @@ export const usageAPI = {
   getDashboardTrend,
   getDashboardModels,
   getMyApiKeyDailyUsage,
-  getDashboardApiKeysUsage
+  getDashboardApiKeysUsage,
+  estimateImageCost
 }
 
 export default usageAPI

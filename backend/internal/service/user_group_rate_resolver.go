@@ -18,6 +18,12 @@ type userGroupRateResolver struct {
 	logComponent string
 }
 
+type UserGroupRateResolver = userGroupRateResolver
+
+func NewUserGroupRateResolver(repo UserGroupRateRepository, logComponent string) *UserGroupRateResolver {
+	return newUserGroupRateResolver(repo, nil, defaultUserGroupRateCacheTTL, nil, logComponent)
+}
+
 func newUserGroupRateResolver(repo UserGroupRateRepository, cache *gocache.Cache, cacheTTL time.Duration, sf *singleflight.Group, logComponent string) *userGroupRateResolver {
 	if cacheTTL <= 0 {
 		cacheTTL = defaultUserGroupRateCacheTTL

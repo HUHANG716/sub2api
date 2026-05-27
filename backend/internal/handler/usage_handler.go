@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -18,16 +19,169 @@ import (
 
 // UsageHandler handles usage-related requests
 type UsageHandler struct {
-	usageService  *service.UsageService
-	apiKeyService *service.APIKeyService
+	usageService          *service.UsageService
+	apiKeyService         *service.APIKeyService
+	billingService        *service.BillingService
+	modelPricingResolver  *service.ModelPricingResolver
+	userGroupRateResolver *service.UserGroupRateResolver
 }
 
 // NewUsageHandler creates a new UsageHandler
-func NewUsageHandler(usageService *service.UsageService, apiKeyService *service.APIKeyService) *UsageHandler {
+func NewUsageHandler(
+	usageService *service.UsageService,
+	apiKeyService *service.APIKeyService,
+	billingService *service.BillingService,
+	modelPricingResolver *service.ModelPricingResolver,
+	userGroupRateRepo service.UserGroupRateRepository,
+) *UsageHandler {
 	return &UsageHandler{
-		usageService:  usageService,
-		apiKeyService: apiKeyService,
+		usageService:          usageService,
+		apiKeyService:         apiKeyService,
+		billingService:        billingService,
+		modelPricingResolver:  modelPricingResolver,
+		userGroupRateResolver: service.NewUserGroupRateResolver(userGroupRateRepo, "handler.usage"),
 	}
+}
+
+type imageEstimateRequest struct {
+	GroupID int64  `json:"group_id"`
+	Model   string `json:"model"`
+	Size    string `json:"size"`
+	Count   int    `json:"count"`
+}
+
+type imageEstimateResponse struct {
+	Model          string  `json:"model"`
+	ImageSize      string  `json:"image_size"`
+	ImageCount     int     `json:"image_count"`
+	UnitCost       float64 `json:"unit_cost"`
+	TotalCost      float64 `json:"total_cost"`
+	ActualCost     float64 `json:"actual_cost"`
+	RateMultiplier float64 `json:"rate_multiplier"`
+	BillingMode    string  `json:"billing_mode"`
+	PricingSource  string  `json:"pricing_source"`
+}
+
+// ImageEstimate returns a read-only image generation cost estimate for a user-visible group.
+// POST /api/v1/usage/image-estimate
+func (h *UsageHandler) ImageEstimate(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	if h.apiKeyService == nil || h.billingService == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Image estimate is not available")
+		return
+	}
+
+	var req imageEstimateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request body")
+		return
+	}
+	model := strings.TrimSpace(req.Model)
+	if model == "" {
+		response.BadRequest(c, "model is required")
+		return
+	}
+	if req.GroupID <= 0 {
+		response.BadRequest(c, "group_id is required")
+		return
+	}
+	count := req.Count
+	if count <= 0 {
+		count = 1
+	}
+	if count > 16 {
+		response.BadRequest(c, "count must be between 1 and 16")
+		return
+	}
+
+	group, found, err := h.findUserImageGroup(c, subject.UserID, req.GroupID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if !found {
+		response.Forbidden(c, "Image generation group is not available")
+		return
+	}
+
+	sizeTier := service.NormalizeImageBillingTierOrDefault(req.Size)
+	multiplier := group.RateMultiplier
+	if h.userGroupRateResolver != nil {
+		multiplier = h.userGroupRateResolver.Resolve(c.Request.Context(), subject.UserID, group.ID, multiplier)
+	}
+	if group.ImageRateIndependent {
+		multiplier = group.ImageRateMultiplier
+		if multiplier < 0 {
+			multiplier = 0
+		}
+	}
+
+	cost, pricingSource := h.calculateImageEstimate(c, model, group, sizeTier, count, multiplier)
+	unitCost := 0.0
+	if count > 0 {
+		unitCost = cost.TotalCost / float64(count)
+	}
+
+	response.Success(c, imageEstimateResponse{
+		Model:          model,
+		ImageSize:      sizeTier,
+		ImageCount:     count,
+		UnitCost:       unitCost,
+		TotalCost:      cost.TotalCost,
+		ActualCost:     cost.ActualCost,
+		RateMultiplier: multiplier,
+		BillingMode:    cost.BillingMode,
+		PricingSource:  pricingSource,
+	})
+}
+
+func (h *UsageHandler) findUserImageGroup(c *gin.Context, userID, groupID int64) (*service.Group, bool, error) {
+	groups, err := h.apiKeyService.GetAvailableGroups(c.Request.Context(), userID)
+	if err != nil {
+		return nil, false, err
+	}
+	for i := range groups {
+		group := &groups[i]
+		if group.ID == groupID && group.Platform == service.PlatformOpenAI && group.IsActive() && group.AllowImageGeneration {
+			return group, true, nil
+		}
+	}
+	return nil, false, nil
+}
+
+func (h *UsageHandler) calculateImageEstimate(c *gin.Context, model string, group *service.Group, sizeTier string, count int, multiplier float64) (*service.CostBreakdown, string) {
+	if h.modelPricingResolver != nil && group != nil {
+		resolved := h.modelPricingResolver.Resolve(c.Request.Context(), service.PricingInput{Model: model, GroupID: &group.ID})
+		if resolved != nil && resolved.Source == service.PricingSourceChannel &&
+			(resolved.Mode == service.BillingModePerRequest || resolved.Mode == service.BillingModeImage) {
+			if cost, err := h.billingService.CalculateCostUnified(service.CostInput{
+				Ctx:            c.Request.Context(),
+				Model:          model,
+				GroupID:        &group.ID,
+				RequestCount:   count,
+				SizeTier:       sizeTier,
+				RateMultiplier: multiplier,
+				Resolver:       h.modelPricingResolver,
+				Resolved:       resolved,
+			}); err == nil && cost != nil {
+				return cost, resolved.Source
+			}
+		}
+	}
+
+	var groupConfig *service.ImagePriceConfig
+	if group != nil {
+		groupConfig = &service.ImagePriceConfig{
+			Price1K: group.ImagePrice1K,
+			Price2K: group.ImagePrice2K,
+			Price4K: group.ImagePrice4K,
+		}
+	}
+	return h.billingService.CalculateImageCost(model, sizeTier, count, groupConfig, multiplier), service.PricingSourceFallback
 }
 
 // List handles listing usage records with pagination

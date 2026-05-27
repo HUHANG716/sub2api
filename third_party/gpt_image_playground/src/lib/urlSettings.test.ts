@@ -6,7 +6,7 @@ import {
   DEFAULT_SETTINGS,
   normalizeSettings,
 } from './apiProfiles'
-import { buildSettingsFromUrlParams, clearUrlSettingParams, hasUrlSettingParams } from './urlSettings'
+import { buildSettingsFromUrlParams, clearUrlSettingParams, getAppModeFromUrlParams, hasUrlSettingParams } from './urlSettings'
 
 describe('URL settings params', () => {
   it('creates and activates a new OpenAI profile for legacy URL params', () => {
@@ -116,12 +116,18 @@ describe('URL settings params', () => {
   })
 
   it('clears known URL setting params without touching unrelated params', () => {
-    const params = new URLSearchParams('apiUrl=https://api.example.com/v1&apiKey=test-key&model=test-model&streamImages=false&streamPartialImages=3&foo=bar')
+    const params = new URLSearchParams('apiUrl=https://api.example.com/v1&apiKey=test-key&appMode=gallery&model=test-model&streamImages=false&streamPartialImages=3&foo=bar')
 
     expect(hasUrlSettingParams(params)).toBe(true)
     clearUrlSettingParams(params)
 
     expect(params.toString()).toBe('foo=bar')
+  })
+
+  it('reads app mode from URL params', () => {
+    expect(getAppModeFromUrlParams(new URLSearchParams('appMode=gallery'))).toBe('gallery')
+    expect(getAppModeFromUrlParams(new URLSearchParams('appMode=agent'))).toBe('agent')
+    expect(getAppModeFromUrlParams(new URLSearchParams('appMode=invalid'))).toBeUndefined()
   })
 
   it('imports settings with custom providers from URL params', () => {

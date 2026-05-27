@@ -8,6 +8,14 @@
           <p>{{ t('imagePlayground.description') }}</p>
         </div>
         <div v-if="iframeSrc" class="image-playground-session">
+          <div
+            class="image-playground-estimate"
+            data-test="image-playground-estimate"
+            :class="{ 'image-playground-estimate--muted': estimateState !== 'ready' }"
+          >
+            <span>{{ t('imagePlayground.estimatedCost') }}</span>
+            <strong>{{ estimateLabel }}</strong>
+          </div>
           <p class="image-playground-key-summary" data-test="image-playground-key-summary">
             <span>{{ currentKeyLabel }}</span>
             <span>{{ currentGroupLabel }}</span>
@@ -71,9 +79,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { keysAPI, userGroupsAPI } from '@/api'
+import { keysAPI, usageAPI, userGroupsAPI } from '@/api'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useAppStore } from '@/stores/app'
@@ -91,6 +99,16 @@ import {
 } from './imagePlayground'
 
 type PlaygroundState = 'loading' | 'ready' | 'missing-config' | 'unavailable-group' | 'failed'
+type EstimateState = 'idle' | 'loading' | 'ready' | 'failed'
+
+interface PlaygroundParamsMessage {
+  type?: string
+  payload?: {
+    model?: unknown
+    size?: unknown
+    count?: unknown
+  }
+}
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -101,6 +119,10 @@ const iframeSrc = ref('')
 const availableGroups = ref<Group[]>([])
 const storedKey = ref<StoredImagePlaygroundKey | null>(null)
 const creating = ref(false)
+const activeGroup = ref<Group | null>(null)
+const estimateState = ref<EstimateState>('idle')
+const estimateCost = ref<number | null>(null)
+const estimateAbort = ref<AbortController | null>(null)
 
 const currentKeyLabel = computed(() =>
   storedKey.value ? `Key #${storedKey.value.key_id}` : ''
@@ -112,6 +134,13 @@ const currentGroupLabel = computed(() => {
   if (key.group_name) return key.group_name
   if (typeof key.group_id === 'number') return `Group #${key.group_id}`
   return t('imagePlayground.groupUnknown')
+})
+
+const estimateLabel = computed(() => {
+  if (estimateState.value === 'loading') return t('imagePlayground.estimateLoading')
+  if (estimateState.value === 'failed') return t('imagePlayground.estimateUnavailable')
+  if (estimateCost.value == null) return t('imagePlayground.estimateWaiting')
+  return `$${estimateCost.value.toFixed(4)}`
 })
 
 function setReady(stored: StoredImagePlaygroundKey) {
@@ -167,9 +196,11 @@ async function preparePlayground() {
     if (!group) {
       clearStoredImagePlaygroundKey()
       storedKey.value = null
+      activeGroup.value = null
       state.value = 'unavailable-group'
       return
     }
+    activeGroup.value = group
 
     const stored = readStoredImagePlaygroundKey()
     if (storedKeyMatchesGroup(stored, configuredGroupId)) {
@@ -182,10 +213,52 @@ async function preparePlayground() {
   } catch (error) {
     console.error('Failed to prepare image playground:', error)
     clearStoredImagePlaygroundKey()
+    activeGroup.value = null
     state.value = 'failed'
   } finally {
     loading.value = false
   }
+}
+
+async function updateEstimate(payload: PlaygroundParamsMessage['payload']) {
+  const group = activeGroup.value
+  if (!group || !payload) return
+  const model = typeof payload.model === 'string' && payload.model.trim()
+    ? payload.model.trim()
+    : 'gpt-image-2'
+  const size = typeof payload.size === 'string' && payload.size.trim()
+    ? payload.size.trim()
+    : 'auto'
+  const rawCount = typeof payload.count === 'number' ? payload.count : Number(payload.count)
+  const count = Number.isFinite(rawCount) ? Math.max(1, Math.min(16, Math.floor(rawCount))) : 1
+
+  estimateAbort.value?.abort()
+  const controller = new AbortController()
+  estimateAbort.value = controller
+  estimateState.value = 'loading'
+
+  try {
+    const estimate = await usageAPI.estimateImageCost({
+      group_id: group.id,
+      model,
+      size,
+      count
+    }, { signal: controller.signal })
+    if (controller.signal.aborted) return
+    estimateCost.value = estimate.actual_cost
+    estimateState.value = 'ready'
+  } catch (error) {
+    if (controller.signal.aborted) return
+    console.warn('Failed to estimate image playground cost:', error)
+    estimateState.value = 'failed'
+  }
+}
+
+function handlePlaygroundMessage(event: MessageEvent) {
+  if (event.origin !== window.location.origin) return
+  const data = event.data as PlaygroundParamsMessage
+  if (!data || data.type !== 'hahacode:image-playground-params') return
+  void updateEstimate(data.payload)
 }
 
 async function regenerateKey() {
@@ -195,7 +268,13 @@ async function regenerateKey() {
 }
 
 onMounted(() => {
+  window.addEventListener('message', handlePlaygroundMessage)
   void preparePlayground()
+})
+
+onBeforeUnmount(() => {
+  estimateAbort.value?.abort()
+  window.removeEventListener('message', handlePlaygroundMessage)
 })
 </script>
 
@@ -274,6 +353,33 @@ onMounted(() => {
   flex-shrink: 0;
   align-items: center;
   gap: 0.75rem;
+}
+
+.image-playground-estimate {
+  display: inline-flex;
+  min-width: 8.5rem;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 20%, var(--theme-border));
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--theme-surface) 80%, transparent);
+  color: var(--theme-text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.2;
+  padding: 0.375rem 0.5rem;
+  white-space: nowrap;
+}
+
+.image-playground-estimate strong {
+  color: var(--theme-text-primary);
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.image-playground-estimate--muted strong {
+  color: var(--theme-text-muted);
+  font-weight: 700;
 }
 
 .image-playground-key-summary {
@@ -392,6 +498,10 @@ onMounted(() => {
 
   .image-playground-key-summary {
     display: none;
+  }
+
+  .image-playground-estimate {
+    min-width: 7.25rem;
   }
 
 }

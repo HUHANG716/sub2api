@@ -82,6 +82,7 @@ func RegisterUserRoutes(
 		usage := authenticated.Group("/usage")
 		{
 			usage.GET("", h.Usage.List)
+			usage.POST("/image-estimate", h.Usage.ImageEstimate)
 			usage.GET("/:id", h.Usage.GetByID)
 			usage.GET("/stats", h.Usage.Stats)
 			// User dashboard endpoints

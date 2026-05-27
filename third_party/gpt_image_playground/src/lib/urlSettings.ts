@@ -1,4 +1,4 @@
-import type { ApiMode, AppSettings } from '../types'
+import type { ApiMode, AppMode, AppSettings } from '../types'
 import { normalizeBaseUrl } from './devProxy'
 import {
   createDefaultOpenAIProfile,
@@ -10,7 +10,7 @@ import {
   normalizeStreamPartialImages,
 } from './apiProfiles'
 
-const URL_SETTING_KEYS = ['settings', 'apiUrl', 'apiKey', 'codexCli', 'apiMode', 'model', 'streamImages', 'streamPartialImages']
+const URL_SETTING_KEYS = ['settings', 'apiUrl', 'apiKey', 'codexCli', 'apiMode', 'appMode', 'model', 'streamImages', 'streamPartialImages']
 
 function getProfileDedupKey(profile: Pick<AppSettings['profiles'][number], 'provider' | 'baseUrl' | 'apiKey' | 'model' | 'apiMode' | 'streamImages' | 'streamPartialImages'>) {
   return JSON.stringify([
@@ -80,6 +80,11 @@ export function hasUrlSettingParams(searchParams: URLSearchParams) {
 
 export function clearUrlSettingParams(searchParams: URLSearchParams) {
   for (const key of URL_SETTING_KEYS) searchParams.delete(key)
+}
+
+export function getAppModeFromUrlParams(searchParams: URLSearchParams): AppMode | undefined {
+  const appModeParam = searchParams.get('appMode')
+  return appModeParam === 'gallery' || appModeParam === 'agent' ? appModeParam : undefined
 }
 
 export function buildSettingsFromUrlParams(currentSettings: Partial<AppSettings> | unknown, searchParams: URLSearchParams): Partial<AppSettings> {

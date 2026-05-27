@@ -46,6 +46,7 @@ export function buildImagePlaygroundUrl(options: {
   url.searchParams.set('apiUrl', `${origin}/v1`)
   url.searchParams.set('apiKey', options.apiKey)
   url.searchParams.set('apiMode', 'images')
+  url.searchParams.set('appMode', 'gallery')
   url.searchParams.set('model', IMAGE_PLAYGROUND_MODEL)
   url.searchParams.set('streamImages', 'true')
   url.searchParams.set('streamPartialImages', '3')

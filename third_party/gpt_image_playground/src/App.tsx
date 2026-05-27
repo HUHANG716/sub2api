@@ -1,10 +1,11 @@
 import { useEffect } from 'react'
 import { initStore } from './store'
 import { useStore } from './store'
-import { buildSettingsFromUrlParams, clearUrlSettingParams, hasUrlSettingParams } from './lib/urlSettings'
+import { buildSettingsFromUrlParams, clearUrlSettingParams, getAppModeFromUrlParams, hasUrlSettingParams } from './lib/urlSettings'
 import { mergeImportedSettings } from './lib/apiProfiles'
 import { getCustomProviderConfigUrl, loadCustomProviderSettingsFromUrl } from './lib/customProviderConfigUrl'
 import { useDockerApiUrlMigrationNotice } from './hooks/useDockerApiUrlMigrationNotice'
+import { useParentImageEstimateSync } from './hooks/useParentImageEstimateSync'
 import Header from './components/Header'
 import SearchBar from './components/SearchBar'
 import TaskGrid from './components/TaskGrid'
@@ -26,13 +27,18 @@ export default function App() {
   const setSettings = useStore((s) => s.setSettings)
   const appMode = useStore((s) => s.appMode)
   useDockerApiUrlMigrationNotice()
+  useParentImageEstimateSync()
   useGlobalClickSuppression()
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search)
     const nextSettings = buildSettingsFromUrlParams(useStore.getState().settings, searchParams)
+    const appModeFromUrl = getAppModeFromUrlParams(searchParams)
 
     setSettings(nextSettings)
+    if (appModeFromUrl) {
+      useStore.getState().setAppMode(appModeFromUrl)
+    }
 
     if (hasUrlSettingParams(searchParams)) {
       clearUrlSettingParams(searchParams)
