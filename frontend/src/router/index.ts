@@ -263,6 +263,19 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/image-playground',
+    name: 'ImagePlayground',
+    component: () => import('@/views/user/ImagePlaygroundView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Image Playground',
+      titleKey: 'imagePlayground.title',
+      descriptionKey: 'imagePlayground.description',
+      workspaceLayout: true
+    }
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/user/ProfileView.vue'),

@@ -728,6 +728,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyAvailableChannelsEnabled,
 		SettingKeyAffiliateEnabled,
 		SettingKeyRiskControlEnabled,
+		SettingKeyImagePlaygroundGroupID,
 	}
 
 	settings, err := s.settingRepo.GetMultiple(ctx, keys)
@@ -783,6 +784,10 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 	var balanceLowNotifyThreshold float64
 	if v, err := strconv.ParseFloat(settings[SettingKeyBalanceLowNotifyThreshold], 64); err == nil && v >= 0 {
 		balanceLowNotifyThreshold = v
+	}
+	var imagePlaygroundGroupID int64
+	if v, err := strconv.ParseInt(strings.TrimSpace(settings[SettingKeyImagePlaygroundGroupID]), 10, 64); err == nil && v > 0 {
+		imagePlaygroundGroupID = v
 	}
 
 	return &PublicSettings{
@@ -840,6 +845,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		AffiliateEnabled: settings[SettingKeyAffiliateEnabled] == "true",
 
 		RiskControlEnabled: settings[SettingKeyRiskControlEnabled] == "true",
+
+		ImagePlaygroundGroupID: imagePlaygroundGroupID,
 	}, nil
 }
 
@@ -1094,6 +1101,7 @@ type PublicSettingsInjectionPayload struct {
 	AvailableChannelsEnabled             bool `json:"available_channels_enabled"`
 	AffiliateEnabled                     bool `json:"affiliate_enabled"`
 	RiskControlEnabled                   bool `json:"risk_control_enabled"`
+	ImagePlaygroundGroupID               int64 `json:"image_playground_group_id"`
 }
 
 // GetPublicSettingsForInjection returns public settings in a format suitable for HTML injection.
@@ -1156,6 +1164,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		AvailableChannelsEnabled:             settings.AvailableChannelsEnabled,
 		AffiliateEnabled:                     settings.AffiliateEnabled,
 		RiskControlEnabled:                   settings.RiskControlEnabled,
+		ImagePlaygroundGroupID:               settings.ImagePlaygroundGroupID,
 	}, nil
 }
 
@@ -1797,6 +1806,12 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 
 	// 风控中心功能开关
 	updates[SettingKeyRiskControlEnabled] = strconv.FormatBool(settings.RiskControlEnabled)
+
+	// 生图工作台分组；0 表示未配置。
+	if settings.ImagePlaygroundGroupID < 0 {
+		settings.ImagePlaygroundGroupID = 0
+	}
+	updates[SettingKeyImagePlaygroundGroupID] = strconv.FormatInt(settings.ImagePlaygroundGroupID, 10)
 
 	// Claude Code version check
 	updates[SettingKeyMinClaudeCodeVersion] = settings.MinClaudeCodeVersion
@@ -2703,6 +2718,9 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		// 风控中心功能（默认关闭，显式启用）
 		SettingKeyRiskControlEnabled: "false",
 
+		// 生图工作台默认未配置管理员分组
+		SettingKeyImagePlaygroundGroupID: "0",
+
 		// Claude Code version check (default: empty = disabled)
 		SettingKeyMinClaudeCodeVersion: "",
 		SettingKeyMaxClaudeCodeVersion: "",
@@ -3209,6 +3227,12 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 
 	// 风控中心功能（默认关闭，严格 true 才启用）
 	result.RiskControlEnabled = settings[SettingKeyRiskControlEnabled] == "true"
+
+	if raw := strings.TrimSpace(settings[SettingKeyImagePlaygroundGroupID]); raw != "" {
+		if v, err := strconv.ParseInt(raw, 10, 64); err == nil && v > 0 {
+			result.ImagePlaygroundGroupID = v
+		}
+	}
 
 	// Claude Code version check
 	result.MinClaudeCodeVersion = settings[SettingKeyMinClaudeCodeVersion]

@@ -244,6 +244,9 @@ type SystemSettings struct {
 	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
 
+	// Image playground admin-configured group
+	ImagePlaygroundGroupID int64 `json:"image_playground_group_id"`
+
 	// Affiliate (邀请返利) feature switch
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 
@@ -316,6 +319,8 @@ type PublicSettings struct {
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 
 	RiskControlEnabled bool `json:"risk_control_enabled"`
+
+	ImagePlaygroundGroupID int64 `json:"image_playground_group_id"`
 }
 
 type LoginAgreementDocument struct {

@@ -675,6 +675,7 @@ export default {
     groups: '分组管理',
     channels: '渠道管理',
     availableChannels: '可用渠道',
+    imagePlayground: '生图工作台',
     subscriptions: '订阅管理',
     accounts: '账号管理',
     proxies: 'IP管理',
@@ -988,6 +989,24 @@ export default {
   // Groups (shared)
   groups: {
     subscription: '订阅'
+  },
+
+  imagePlayground: {
+    kicker: 'Images API',
+    title: '生图工作台',
+    description: '使用当前站点的 OpenAI 生图分组创建、编辑和管理图片。',
+    loading: '正在准备生图工作台...',
+    regenerateKey: '重新生成密钥',
+    currentKeyLabel: '当前使用 Key',
+    groupFallback: '分组',
+    groupUnknown: '未记录分组',
+    retry: '重试',
+    missingConfiguredGroupTitle: '生图工作台未配置',
+    missingConfiguredGroupDescription: '请联系管理员在系统设置中选择一个允许图片生成的 OpenAI 分组。',
+    unavailableConfiguredGroupTitle: '生图工作台分组不可用',
+    unavailableConfiguredGroupDescription: '管理员配置的分组当前不可用，或你的账号暂时没有该分组权限。',
+    createFailedTitle: '无法准备生图密钥',
+    createFailedDescription: '请稍后重试，或先在 API 密钥页面手动创建可用密钥。'
   },
 
   // API Keys
@@ -5757,6 +5776,14 @@ export default {
           configureLink: '前往 渠道管理 > 渠道定价 配置模型价格',
           enabled: '启用可用渠道',
           enabledHint: '关闭后用户端侧边栏入口隐藏，接口返回空数组。',
+        },
+        imagePlayground: {
+          title: '生图工作台',
+          description: '配置用户侧生图工作台使用的 OpenAI 生图分组。用户进入工作台时会自动使用该分组创建专用 Key。',
+          groupLabel: '工作台分组',
+          groupPlaceholder: '不启用生图工作台',
+          groupHint: '仅可选择已启用且允许图片生成的 OpenAI 分组。',
+          noGroups: '暂无可用 OpenAI 生图分组，请先在分组管理中启用图片生成。',
         },
         riskControl: {
           title: '风控中心',

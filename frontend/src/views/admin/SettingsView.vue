@@ -5145,6 +5145,43 @@
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ t('admin.settings.features.imagePlayground.title') }}
+            </h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ t('admin.settings.features.imagePlayground.description') }}
+            </p>
+          </div>
+          <div class="space-y-3 p-6">
+            <label class="input-label">
+              {{ t('admin.settings.features.imagePlayground.groupLabel') }}
+            </label>
+            <select
+              v-model.number="form.image_playground_group_id"
+              class="input"
+              data-test="image-playground-admin-group-select"
+            >
+              <option :value="0">
+                {{ t('admin.settings.features.imagePlayground.groupPlaceholder') }}
+              </option>
+              <option
+                v-for="group in imagePlaygroundGroups"
+                :key="group.id"
+                :value="group.id"
+              >
+                {{ group.name }} (#{{ group.id }})
+              </option>
+            </select>
+            <p class="text-xs text-gray-400">
+              {{ imagePlaygroundGroups.length > 0
+                ? t('admin.settings.features.imagePlayground.groupHint')
+                : t('admin.settings.features.imagePlayground.noGroups') }}
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
               {{ t('admin.settings.features.channelMonitor.title') }}
             </h2>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -6901,6 +6938,7 @@ const adminApiKeyMasked = ref("");
 const adminApiKeyOperating = ref(false);
 const newAdminApiKey = ref("");
 const subscriptionGroups = ref<AdminGroup[]>([]);
+const imagePlaygroundGroups = ref<AdminGroup[]>([]);
 
 // Overload Cooldown (529) 状态
 const overloadCooldownLoading = ref(true);
@@ -7255,6 +7293,8 @@ const form = reactive<SettingsForm>({
   channel_monitor_default_interval_seconds: 60,
   // Available Channels feature switch
   available_channels_enabled: false,
+  // Image Playground group selected by admin; 0 means disabled/unconfigured.
+  image_playground_group_id: 0,
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: false,
 });
@@ -8034,6 +8074,20 @@ async function loadSubscriptionGroups() {
   }
 }
 
+async function loadImagePlaygroundGroups() {
+  try {
+    const groups = await adminAPI.groups.getAll("openai");
+    imagePlaygroundGroups.value = groups.filter(
+      (group) =>
+        group.platform === "openai" &&
+        group.status === "active" &&
+        group.allow_image_generation === true,
+    );
+  } catch (_error: unknown) {
+    imagePlaygroundGroups.value = [];
+  }
+}
+
 function findNextAvailableSubscriptionGroup(
   existingGroupIDs: number[],
 ): AdminGroup | undefined {
@@ -8403,6 +8457,10 @@ async function saveSettings() {
       // Payment configuration
       payment_enabled: form.payment_enabled,
       risk_control_enabled: form.risk_control_enabled,
+      image_playground_group_id:
+        Number(form.image_playground_group_id) > 0
+          ? Math.floor(Number(form.image_playground_group_id))
+          : 0,
       payment_min_amount: Number(form.payment_min_amount) || 0,
       payment_max_amount: Number(form.payment_max_amount) || 0,
       payment_daily_limit: Number(form.payment_daily_limit) || 0,
@@ -9365,6 +9423,7 @@ async function handleDeleteProvider() {
 onMounted(() => {
   loadSettings();
   loadSubscriptionGroups();
+  loadImagePlaygroundGroups();
   loadAdminApiKey();
   loadOverloadCooldownSettings();
   loadRateLimit429CooldownSettings();

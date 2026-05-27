@@ -407,6 +407,7 @@ const baseSettingsResponse = {
   payment_visible_method_wxpay_source: "invalid-source",
   payment_visible_method_alipay_enabled: true,
   payment_visible_method_wxpay_enabled: true,
+  image_playground_group_id: 0,
   openai_advanced_scheduler_enabled: false,
   balance_low_notify_enabled: false,
   balance_low_notify_threshold: 0,
@@ -471,6 +472,16 @@ async function openUsersTab(wrapper: ReturnType<typeof mountView>) {
 
   expect(usersTabButton).toBeDefined();
   await usersTabButton?.trigger("click");
+  await flushPromises();
+}
+
+async function openFeaturesTab(wrapper: ReturnType<typeof mountView>) {
+  const featuresTabButton = wrapper
+    .findAll("button")
+    .find((node) => node.text().includes("admin.settings.tabs.features"));
+
+  expect(featuresTabButton).toBeDefined();
+  await featuresTabButton?.trigger("click");
   await flushPromises();
 }
 
@@ -601,6 +612,34 @@ describe("admin SettingsView payment visible method controls", () => {
     expect(payload).not.toHaveProperty("payment_visible_method_wxpay_source");
     expect(payload).not.toHaveProperty("payment_visible_method_alipay_enabled");
     expect(payload).not.toHaveProperty("payment_visible_method_wxpay_enabled");
+  });
+
+  it("submits the selected image playground group id", async () => {
+    getGroups.mockResolvedValue([
+      {
+        id: 16,
+        name: "OpenAI Images",
+        platform: "openai",
+        status: "active",
+        allow_image_generation: true,
+        subscription_type: "standard",
+      },
+    ]);
+
+    const wrapper = mountView();
+
+    await flushPromises();
+    await openFeaturesTab(wrapper);
+    await wrapper
+      .get('[data-test="image-playground-admin-group-select"]')
+      .setValue("16");
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+    expect(updateSettings.mock.calls[0]?.[0]).toMatchObject({
+      image_playground_group_id: 16,
+    });
   });
 
   it("rejects duplicate recharge bonus thresholds instead of silently dropping them", async () => {

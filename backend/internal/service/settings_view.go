@@ -145,6 +145,7 @@ type SystemSettings struct {
 	DefaultConcurrency           int
 	DefaultBalance               float64
 	RiskControlEnabled           bool
+	ImagePlaygroundGroupID       int64
 	AffiliateEnabled             bool
 	AffiliateRebateRate          float64
 	AffiliateRebateFreezeHours   int
@@ -292,6 +293,9 @@ type PublicSettings struct {
 
 	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
+
+	// 生图工作台使用的管理员配置分组；0 表示未配置。
+	ImagePlaygroundGroupID int64 `json:"image_playground_group_id"`
 }
 
 type LoginAgreementDocument struct {

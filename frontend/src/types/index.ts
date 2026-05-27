@@ -233,6 +233,7 @@ export interface PublicSettings {
   channel_monitor_default_interval_seconds: number
   available_channels_enabled: boolean
   affiliate_enabled: boolean
+  image_playground_group_id?: number | null
 }
 
 export interface AuthResponse {

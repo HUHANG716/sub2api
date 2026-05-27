@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "fonts:landing": "node tools/generate-landing-font-subset.mjs",
-    "prebuild": "pnpm run fonts:landing",
+    "images:playground": "node tools/build-image-playground.mjs",
+    "prebuild": "pnpm run fonts:landing && pnpm run images:playground",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",

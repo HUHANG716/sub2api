@@ -359,6 +359,7 @@ export const useAppStore = defineStore('app', () => {
         available_channels_enabled: false,
         risk_control_enabled: false,
         affiliate_enabled: false,
+        image_playground_group_id: 0,
       }
     }
 

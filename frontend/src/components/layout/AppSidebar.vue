@@ -438,6 +438,7 @@ type SidebarIconName =
   | 'userPlus'
   | 'database'
   | 'cube'
+  | 'sparkles'
   | 'wallet'
   | 'dollar'
   | 'cloud'
@@ -468,6 +469,7 @@ const UserIcon = createSidebarIcon('userCircle')
 const UsersIcon = createSidebarIcon('userPlus')
 const FolderIcon = createSidebarIcon('database')
 const ChannelIcon = createSidebarIcon('cube')
+const ImagePlaygroundIcon = createSidebarIcon('sparkles')
 const CreditCardIcon = createSidebarIcon('wallet')
 const RechargeSubscriptionIcon = createSidebarIcon('dollar')
 const GlobeIcon = createSidebarIcon('cloud')
@@ -510,6 +512,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     { path: '/available-channels', label: t('nav.availableChannels'), icon: ChannelIcon, hideInSimpleMode: true, featureFlag: flagAvailableChannels },
+    { path: '/image-playground', label: t('nav.imagePlayground'), icon: ImagePlaygroundIcon, hideInSimpleMode: true },
     { path: '/monitor', label: t('nav.channelStatus'), icon: SignalIcon, featureFlag: flagChannelMonitor },
     { path: '/subscriptions', label: t('nav.mySubscriptions'), icon: CreditCardIcon, hideInSimpleMode: true },
     { path: '/purchase', label: t('nav.buySubscription'), icon: RechargeSubscriptionIcon, hideInSimpleMode: true, featureFlag: flagPayment },

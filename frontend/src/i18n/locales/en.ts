@@ -675,6 +675,7 @@ export default {
     groups: 'Groups',
     channels: 'Channels',
     availableChannels: 'Available Channels',
+    imagePlayground: 'Image Playground',
     subscriptions: 'Subscriptions',
     accounts: 'Accounts',
     proxies: 'Proxies',
@@ -989,6 +990,24 @@ export default {
   // Groups (shared)
   groups: {
     subscription: 'Sub'
+  },
+
+  imagePlayground: {
+    kicker: 'Images API',
+    title: 'Image Playground',
+    description: 'Create, edit, and manage images through this site\'s OpenAI image group.',
+    loading: 'Preparing image playground...',
+    regenerateKey: 'Regenerate key',
+    currentKeyLabel: 'Using Key',
+    groupFallback: 'Group',
+    groupUnknown: 'Group not recorded',
+    retry: 'Retry',
+    missingConfiguredGroupTitle: 'Image playground is not configured',
+    missingConfiguredGroupDescription: 'Ask an admin to select an OpenAI image group in system settings.',
+    unavailableConfiguredGroupTitle: 'Image playground group is unavailable',
+    unavailableConfiguredGroupDescription: 'The configured group is disabled or unavailable to your account.',
+    createFailedTitle: 'Unable to prepare image key',
+    createFailedDescription: 'Try again later, or create an available key manually from API Keys.'
   },
 
   // API Keys
@@ -5594,6 +5613,14 @@ export default {
           configureLink: 'Configure model pricing in Channel Management > Channel Pricing',
           enabled: 'Enable Available Channels',
           enabledHint: 'When off, the sidebar entry is hidden and the endpoint returns an empty list.',
+        },
+        imagePlayground: {
+          title: 'Image Playground',
+          description: 'Choose the OpenAI image group used by the user playground. Users automatically get a dedicated key for this group when they enter.',
+          groupLabel: 'Playground group',
+          groupPlaceholder: 'Do not enable image playground',
+          groupHint: 'Only active OpenAI groups with image generation enabled can be selected.',
+          noGroups: 'No OpenAI image groups are available yet. Enable image generation on a group first.',
         },
         riskControl: {
           title: 'Risk Control',
