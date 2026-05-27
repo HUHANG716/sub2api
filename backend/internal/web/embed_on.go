@@ -21,7 +21,8 @@ import (
 
 const (
 	// NonceHTMLPlaceholder is the placeholder for nonce in HTML script tags
-	NonceHTMLPlaceholder = "__CSP_NONCE_VALUE__"
+	NonceHTMLPlaceholder    = "__CSP_NONCE_VALUE__"
+	imagePlaygroundEmbedCSP = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; frame-src 'self'; worker-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
 )
 
 //go:embed all:dist
@@ -116,6 +117,8 @@ func (s *FrontendServer) Middleware() gin.HandlerFunc {
 			return
 		}
 
+		applyImagePlaygroundEmbedHeaders(c, path)
+
 		// Try local override first
 		if s.tryServeOverride(c, cleanPath) {
 			return
@@ -135,6 +138,14 @@ func (s *FrontendServer) Middleware() gin.HandlerFunc {
 		s.fileServer.ServeHTTP(c.Writer, c.Request)
 		c.Abort()
 	}
+}
+
+func applyImagePlaygroundEmbedHeaders(c *gin.Context, requestPath string) {
+	if !strings.HasPrefix(requestPath, "/image-playground-app/") {
+		return
+	}
+	c.Header("X-Frame-Options", "SAMEORIGIN")
+	c.Header("Content-Security-Policy", imagePlaygroundEmbedCSP)
 }
 
 func (s *FrontendServer) fileExists(path string) bool {
@@ -175,10 +186,11 @@ func (s *FrontendServer) tryServeDirectoryIndex(c *gin.Context, cleanPath string
 		return false
 	}
 
-	requestPath := c.Request.URL.Path
-	c.Request.URL.Path = "/" + indexPath
-	s.fileServer.ServeHTTP(c.Writer, c.Request)
-	c.Request.URL.Path = requestPath
+	content, err := fs.ReadFile(s.distFS, indexPath)
+	if err != nil {
+		return false
+	}
+	c.Data(http.StatusOK, "text/html; charset=utf-8", content)
 	c.Abort()
 	return true
 }
@@ -347,6 +359,8 @@ func ServeEmbeddedFrontend() gin.HandlerFunc {
 		if cleanPath == "" {
 			cleanPath = "index.html"
 		}
+
+		applyImagePlaygroundEmbedHeaders(c, path)
 
 		if file, err := distFS.Open(cleanPath); err == nil {
 			_ = file.Close()

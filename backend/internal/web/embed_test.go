@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -625,6 +626,9 @@ func TestFrontendServer_Middleware(t *testing.T) {
 		assert.Contains(t, w.Header().Get("Content-Type"), "text/html")
 		assert.Contains(t, w.Body.String(), "GPT Image Playground")
 		assert.NotContains(t, w.Body.String(), "window.__APP_CONFIG__")
+		assert.Equal(t, "SAMEORIGIN", w.Header().Get("X-Frame-Options"))
+		assert.Contains(t, w.Header().Get("Content-Security-Policy"), "frame-ancestors 'self'")
+		assert.NotContains(t, w.Header().Get("Content-Security-Policy"), "frame-ancestors 'none'")
 	})
 
 	t.Run("serves_override_static_files_missing_from_embedded_dist", func(t *testing.T) {
@@ -651,6 +655,38 @@ func TestFrontendServer_Middleware(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, `console.log("fresh build")`, strings.TrimSpace(w.Body.String()))
 		assert.NotContains(t, w.Body.String(), `window.__APP_CONFIG__`)
+	})
+
+	t.Run("serves_override_image_playground_index_with_embed_headers", func(t *testing.T) {
+		provider := &mockSettingsProvider{
+			settings: map[string]string{"test": "value"},
+		}
+
+		server, err := NewFrontendServer(provider)
+		require.NoError(t, err)
+
+		overrideRoot := t.TempDir()
+		server.overrideDir = overrideRoot
+		indexPath := filepath.Join(overrideRoot, "image-playground-app", "index.html")
+		require.NoError(t, os.MkdirAll(filepath.Dir(indexPath), 0o755))
+		require.NoError(t, os.WriteFile(indexPath, []byte(`<!doctype html><title>GPT Image Playground</title>`), 0o644))
+
+		router := gin.New()
+		router.Use(middleware.SecurityHeaders(config.CSPConfig{
+			Enabled: true,
+			Policy:  "default-src 'self'; frame-ancestors 'none'; script-src 'self' __CSP_NONCE__",
+		}, nil))
+		router.Use(server.Middleware())
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/image-playground-app/", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), "GPT Image Playground")
+		assert.Equal(t, "SAMEORIGIN", w.Header().Get("X-Frame-Options"))
+		assert.Contains(t, w.Header().Get("Content-Security-Policy"), "frame-ancestors 'self'")
+		assert.NotContains(t, w.Header().Get("Content-Security-Policy"), "frame-ancestors 'none'")
 	})
 }
 
