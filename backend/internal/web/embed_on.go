@@ -74,6 +74,20 @@ func NewFrontendServer(settingsProvider PublicSettingsProvider) (*FrontendServer
 	}, nil
 }
 
+func ServeFrontend(settingsProvider PublicSettingsProvider, registerOnUpdateCallback func(func())) gin.HandlerFunc {
+	server, err := NewFrontendServer(settingsProvider)
+	if err != nil {
+		if registerOnUpdateCallback != nil {
+			registerOnUpdateCallback(nil)
+		}
+		return ServeEmbeddedFrontend()
+	}
+	if registerOnUpdateCallback != nil {
+		registerOnUpdateCallback(server.InvalidateCache)
+	}
+	return server.Middleware()
+}
+
 // InvalidateCache invalidates the HTML cache (call when settings change)
 func (s *FrontendServer) InvalidateCache() {
 	if s != nil && s.cache != nil {

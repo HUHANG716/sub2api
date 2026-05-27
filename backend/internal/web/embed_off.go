@@ -25,6 +25,13 @@ func NewFrontendServer(settingsProvider PublicSettingsProvider) (*FrontendServer
 	return nil, errors.New("frontend not embedded")
 }
 
+func ServeFrontend(settingsProvider PublicSettingsProvider, registerOnUpdateCallback func(func())) gin.HandlerFunc {
+	if registerOnUpdateCallback != nil {
+		registerOnUpdateCallback(nil)
+	}
+	return ServeEmbeddedFrontend()
+}
+
 // InvalidateCache is a no-op for non-embed builds
 func (s *FrontendServer) InvalidateCache() {}
 
