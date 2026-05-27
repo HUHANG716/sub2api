@@ -68,12 +68,13 @@ describe('AuthLayout split variant', () => {
     expect(layoutSource).toContain('margin-inline: auto;')
   })
 
-  it('keeps login password mask glyphs compact without shrinking revealed text', () => {
+  it('keeps login password mask glyphs on the same size as revealed text', () => {
     expect(loginViewSource).toContain('auth-password-input')
     expect(loginViewSource).toContain(".auth-password-input[type='password'] {")
     expect(loginViewSource).toContain('font-family: ui-sans-serif, system-ui')
-    expect(loginViewSource).toContain(".auth-password-input[type='password']:not(:placeholder-shown) {")
-    expect(loginViewSource).toContain('font-size: 11px;')
+    expect(loginViewSource).toContain('letter-spacing: 0;')
+    expect(loginViewSource).not.toContain(".auth-password-input[type='password']:not(:placeholder-shown)")
+    expect(loginViewSource).not.toContain('font-size: 13px;')
     expect(loginViewSource).not.toContain(".auth-password-input[type='text']")
   })
 })

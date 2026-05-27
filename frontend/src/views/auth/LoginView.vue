@@ -569,9 +569,4 @@ function handle2FACancel(): void {
   letter-spacing: 0;
 }
 
-.auth-password-input[type='password']:not(:placeholder-shown) {
-  font-size: 11px;
-  line-height: 1.25rem;
-}
-
 </style>
