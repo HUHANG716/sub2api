@@ -1072,6 +1072,7 @@ func TestAPIContracts(t *testing.T) {
 					"fallback_model_antigravity": "gemini-2.5-pro",
 					"enable_identity_patch": true,
 					"identity_patch_prompt": "",
+					"image_playground_group_id": 0,
 					"ops_monitoring_enabled": false,
 					"ops_realtime_monitoring_enabled": true,
 					"ops_query_mode_default": "auto",
