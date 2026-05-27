@@ -93,7 +93,8 @@ func SecurityHeaders(cfg config.CSPConfig, getFrameSrcOrigins func() []string) g
 		}
 
 		c.Header("X-Content-Type-Options", "nosniff")
-		if isImagePlaygroundAppPath(c) {
+		isImagePlaygroundApp := isImagePlaygroundAppPath(c)
+		if isImagePlaygroundApp {
 			c.Header("X-Frame-Options", "SAMEORIGIN")
 			finalPolicy = replaceDirective(finalPolicy, "frame-ancestors", "'self'")
 		} else {
@@ -118,6 +119,9 @@ func SecurityHeaders(cfg config.CSPConfig, getFrameSrcOrigins func() []string) g
 			}
 		}
 		c.Next()
+		if isImagePlaygroundApp && cfg.Enabled {
+			c.Header("Content-Security-Policy", replaceDirective(c.Writer.Header().Get("Content-Security-Policy"), "frame-ancestors", "'self'"))
+		}
 	}
 }
 

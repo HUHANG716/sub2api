@@ -121,6 +121,10 @@ func (s *FrontendServer) Middleware() gin.HandlerFunc {
 			return
 		}
 
+		if s.tryServeDirectoryIndex(c, cleanPath) {
+			return
+		}
+
 		// For SPA routes, serve index.html with injected settings
 		if !s.fileExists(cleanPath) {
 			s.serveIndexHTML(c)
@@ -154,6 +158,27 @@ func (s *FrontendServer) tryServeOverride(c *gin.Context, cleanPath string) bool
 		return false
 	}
 	c.File(filePath)
+	c.Abort()
+	return true
+}
+
+func (s *FrontendServer) tryServeDirectoryIndex(c *gin.Context, cleanPath string) bool {
+	trimmed := strings.TrimSuffix(cleanPath, "/")
+	if trimmed == cleanPath || trimmed == "" {
+		return false
+	}
+	indexPath := trimmed + "/index.html"
+	if s.tryServeOverride(c, indexPath) {
+		return true
+	}
+	if !s.fileExists(indexPath) {
+		return false
+	}
+
+	requestPath := c.Request.URL.Path
+	c.Request.URL.Path = "/" + indexPath
+	s.fileServer.ServeHTTP(c.Writer, c.Request)
+	c.Request.URL.Path = requestPath
 	c.Abort()
 	return true
 }

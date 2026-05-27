@@ -606,6 +606,27 @@ func TestFrontendServer_Middleware(t *testing.T) {
 		assert.Contains(t, w.Header().Get("Content-Type"), "image/png")
 	})
 
+	t.Run("serves_nested_directory_index_without_spa_fallback", func(t *testing.T) {
+		provider := &mockSettingsProvider{
+			settings: map[string]string{"test": "value"},
+		}
+
+		server, err := NewFrontendServer(provider)
+		require.NoError(t, err)
+
+		router := gin.New()
+		router.Use(server.Middleware())
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/image-playground-app/", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Header().Get("Content-Type"), "text/html")
+		assert.Contains(t, w.Body.String(), "GPT Image Playground")
+		assert.NotContains(t, w.Body.String(), "window.__APP_CONFIG__")
+	})
+
 	t.Run("serves_override_static_files_missing_from_embedded_dist", func(t *testing.T) {
 		provider := &mockSettingsProvider{
 			settings: map[string]string{"test": "value"},

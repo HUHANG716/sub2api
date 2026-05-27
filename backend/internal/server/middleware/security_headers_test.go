@@ -170,6 +170,28 @@ func TestSecurityHeaders(t *testing.T) {
 		assert.NotContains(t, csp, "frame-ancestors 'none'")
 	})
 
+	t.Run("image_playground_static_app_csp_override_survives_later_handlers", func(t *testing.T) {
+		cfg := config.CSPConfig{
+			Enabled: true,
+			Policy:  "default-src 'self'; frame-ancestors 'none'; script-src 'self' __CSP_NONCE__",
+		}
+
+		router := gin.New()
+		router.Use(SecurityHeaders(cfg, nil))
+		router.GET("/image-playground-app/", func(c *gin.Context) {
+			c.Header("Content-Security-Policy", "default-src 'self'; frame-ancestors 'none'")
+			c.String(http.StatusOK, "ok")
+		})
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/image-playground-app/", nil)
+		router.ServeHTTP(w, req)
+
+		csp := w.Header().Get("Content-Security-Policy")
+		assert.Contains(t, csp, "frame-ancestors 'self'")
+		assert.NotContains(t, csp, "frame-ancestors 'none'")
+	})
+
 	t.Run("default_policy_allows_same_origin_frames", func(t *testing.T) {
 		cfg := config.CSPConfig{Enabled: true}
 		middleware := SecurityHeaders(cfg, nil)
