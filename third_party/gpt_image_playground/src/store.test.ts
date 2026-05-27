@@ -786,6 +786,7 @@ describe('data import', () => {
 })
 
 describe('agent draft lifecycle', () => {
+  const imagesProfile = createDefaultOpenAIProfile({ id: 'openai-images', apiKey: 'openai-key', apiMode: 'images' })
   const responsesProfile = createDefaultOpenAIProfile({ id: 'openai-responses', apiKey: 'openai-key', apiMode: 'responses' })
   const draftState = {
     prompt: `参考 ${getSelectedImageMentionLabel(0)} 生成`,
@@ -803,7 +804,7 @@ describe('agent draft lifecycle', () => {
     useStore.setState({
       settings: normalizeSettings({
         ...DEFAULT_SETTINGS,
-        profiles: [responsesProfile],
+        profiles: [imagesProfile, responsesProfile],
         activeProfileId: responsesProfile.id,
       }),
       appMode: 'agent',
@@ -849,6 +850,34 @@ describe('agent draft lifecycle', () => {
     expect(state.maskDraft).toEqual(draftState.maskDraft)
     expect(state.maskEditorImageId).toBe(imageA.id)
     expect(state.agentEditingRoundId).toBeNull()
+  })
+
+  it('switches between preconfigured Images and Responses profiles with the app mode', () => {
+    const unrelatedResponsesProfile = createDefaultOpenAIProfile({
+      id: 'unrelated-responses',
+      apiKey: 'other-key',
+      apiMode: 'responses',
+    })
+    useStore.setState({
+      appMode: 'gallery',
+      settings: normalizeSettings({
+        ...DEFAULT_SETTINGS,
+        profiles: [imagesProfile, unrelatedResponsesProfile, responsesProfile],
+        activeProfileId: imagesProfile.id,
+      }),
+    })
+
+    useStore.getState().setAppMode('agent')
+
+    let state = useStore.getState()
+    expect(state.appMode).toBe('agent')
+    expect(state.settings.activeProfileId).toBe(responsesProfile.id)
+
+    useStore.getState().setAppMode('gallery')
+
+    state = useStore.getState()
+    expect(state.appMode).toBe('gallery')
+    expect(state.settings.activeProfileId).toBe(imagesProfile.id)
   })
 
   it('keeps the gallery draft when switching into agent mode and back', () => {

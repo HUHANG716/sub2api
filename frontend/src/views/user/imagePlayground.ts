@@ -4,6 +4,7 @@ export const IMAGE_PLAYGROUND_STORAGE_KEY = 'image_playground_api_key'
 export const IMAGE_PLAYGROUND_KEY_NAME = 'Image Playground'
 export const IMAGE_PLAYGROUND_APP_PATH = '/image-playground-app/'
 export const IMAGE_PLAYGROUND_MODEL = 'gpt-image-2'
+export const IMAGE_PLAYGROUND_AGENT_MODEL = 'gpt-5.5'
 
 export interface StoredImagePlaygroundKey {
   key: string
@@ -43,13 +44,41 @@ export function buildImagePlaygroundUrl(options: {
 }): string {
   const origin = options.origin.replace(/\/+$/, '')
   const url = new URL(IMAGE_PLAYGROUND_APP_PATH, `${origin}/`)
-  url.searchParams.set('apiUrl', `${origin}/v1`)
-  url.searchParams.set('apiKey', options.apiKey)
-  url.searchParams.set('apiMode', 'images')
+  const settings = {
+    profiles: [
+      {
+        id: 'hahacode-images',
+        name: 'Hahacode Images API',
+        provider: 'openai',
+        baseUrl: `${origin}/v1`,
+        apiKey: options.apiKey,
+        model: IMAGE_PLAYGROUND_MODEL,
+        timeout: 600,
+        apiMode: 'images',
+        codexCli: false,
+        apiProxy: false,
+        streamImages: true,
+        streamPartialImages: 3
+      },
+      {
+        id: 'hahacode-agent',
+        name: 'Hahacode Agent Responses API',
+        provider: 'openai',
+        baseUrl: `${origin}/v1`,
+        apiKey: options.apiKey,
+        model: IMAGE_PLAYGROUND_AGENT_MODEL,
+        timeout: 600,
+        apiMode: 'responses',
+        codexCli: false,
+        apiProxy: false,
+        streamImages: true,
+        streamPartialImages: 3
+      }
+    ],
+    activeProfileId: 'hahacode-images'
+  }
+  url.searchParams.set('settings', JSON.stringify(settings))
   url.searchParams.set('appMode', 'gallery')
-  url.searchParams.set('model', IMAGE_PLAYGROUND_MODEL)
-  url.searchParams.set('streamImages', 'true')
-  url.searchParams.set('streamPartialImages', '3')
   return url.toString()
 }
 

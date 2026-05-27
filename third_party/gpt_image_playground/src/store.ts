@@ -985,6 +985,26 @@ function saveGalleryInputDraft(state: Pick<AppState, 'appMode' | 'galleryInputDr
   return isEmptyAgentInputDraft(draft) ? null : copyAgentInputDraft(draft)
 }
 
+function findOpenAIProfileForMode(settings: AppSettings, apiMode: ApiMode, relatedProfile?: ApiProfile): ApiProfile | null {
+  const candidates = settings.profiles.filter((profile) => profile.provider === 'openai' && profile.apiMode === apiMode)
+  if (relatedProfile) {
+    const related = candidates.find((profile) =>
+      profile.baseUrl.trim().replace(/\/+$/, '') === relatedProfile.baseUrl.trim().replace(/\/+$/, '') &&
+      profile.apiKey.trim() === relatedProfile.apiKey.trim(),
+    )
+    if (related) return related
+  }
+  return candidates[0] ?? null
+}
+
+function activateOpenAIProfileForMode(settings: AppSettings, apiMode: ApiMode): AppSettings {
+  const currentProfile = getActiveApiProfile(settings)
+  if (currentProfile.provider === 'openai' && currentProfile.apiMode === apiMode) return settings
+
+  const profile = findOpenAIProfileForMode(settings, apiMode, currentProfile)
+  return profile ? normalizeSettings({ ...settings, activeProfileId: profile.id }) : settings
+}
+
 function getPersistableGalleryInputDraft(state: AppState) {
   return saveGalleryInputDraft(state)
 }
@@ -1051,8 +1071,10 @@ export const useStore = create<AppState>()(
           const state = get()
           const agentInputDrafts = saveActiveAgentInputDrafts(state)
           const galleryInputDraft = saveGalleryInputDraft(state)
+          const settings = activateOpenAIProfileForMode(normalizeSettings(state.settings), 'images')
           set((state) => ({
             appMode,
+            settings,
             agentInputDrafts,
             galleryInputDraft,
             agentMobileHeaderVisible: true,
@@ -1064,13 +1086,14 @@ export const useStore = create<AppState>()(
         }
 
         const state = get()
-        const settings = normalizeSettings(state.settings)
+        const settings = activateOpenAIProfileForMode(normalizeSettings(state.settings), 'responses')
         const activeProfile = getActiveApiProfile(settings)
 
         if (activeProfile.provider === 'openai' && activeProfile.apiMode === 'responses') {
           const galleryInputDraft = saveGalleryInputDraft(state)
           set((state) => ({
             appMode: 'agent',
+            settings,
             galleryInputDraft,
             agentMobileHeaderVisible: false,
             agentSidebarCollapsed: true,

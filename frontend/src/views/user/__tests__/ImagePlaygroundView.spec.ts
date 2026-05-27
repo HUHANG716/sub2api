@@ -3,6 +3,8 @@ import { flushPromises, mount } from '@vue/test-utils'
 
 import ImagePlaygroundView from '../ImagePlaygroundView.vue'
 import {
+  IMAGE_PLAYGROUND_AGENT_MODEL,
+  IMAGE_PLAYGROUND_MODEL,
   IMAGE_PLAYGROUND_STORAGE_KEY,
   buildImagePlaygroundUrl,
   findConfiguredImagePlaygroundGroup
@@ -157,10 +159,36 @@ describe('image playground helpers', () => {
       origin: 'https://code.example.com',
       apiKey: 'sk-url'
     })
+    const parsed = new URL(url)
+    const settings = JSON.parse(parsed.searchParams.get('settings') ?? '{}')
 
-    expect(url).toBe(
-      'https://code.example.com/image-playground-app/?apiUrl=https%3A%2F%2Fcode.example.com%2Fv1&apiKey=sk-url&apiMode=images&appMode=gallery&model=gpt-image-2&streamImages=true&streamPartialImages=3'
-    )
+    expect(parsed.origin + parsed.pathname).toBe('https://code.example.com/image-playground-app/')
+    expect(parsed.searchParams.get('appMode')).toBe('gallery')
+    expect(settings.activeProfileId).toBe('hahacode-images')
+    expect(settings.profiles).toEqual([
+      expect.objectContaining({
+        id: 'hahacode-images',
+        name: 'Hahacode Images API',
+        provider: 'openai',
+        baseUrl: 'https://code.example.com/v1',
+        apiKey: 'sk-url',
+        model: IMAGE_PLAYGROUND_MODEL,
+        apiMode: 'images',
+        streamImages: true,
+        streamPartialImages: 3
+      }),
+      expect.objectContaining({
+        id: 'hahacode-agent',
+        name: 'Hahacode Agent Responses API',
+        provider: 'openai',
+        baseUrl: 'https://code.example.com/v1',
+        apiKey: 'sk-url',
+        model: IMAGE_PLAYGROUND_AGENT_MODEL,
+        apiMode: 'responses',
+        streamImages: true,
+        streamPartialImages: 3
+      })
+    ])
   })
 })
 
@@ -210,10 +238,15 @@ describe('ImagePlaygroundView', () => {
       group_name: 'OpenAI Images'
     })
     const iframe = wrapper.get('[data-test="image-playground-frame"]')
-    expect(iframe.attributes('src')).toContain('/image-playground-app/?')
-    expect(iframe.attributes('src')).toContain('apiMode=images')
-    expect(iframe.attributes('src')).toContain('appMode=gallery')
-    expect(iframe.attributes('src')).toContain('model=gpt-image-2')
+    const iframeUrl = new URL(iframe.attributes('src'))
+    const iframeSettings = JSON.parse(iframeUrl.searchParams.get('settings') ?? '{}')
+    expect(iframeUrl.pathname).toBe('/image-playground-app/')
+    expect(iframeUrl.searchParams.get('appMode')).toBe('gallery')
+    expect(iframeSettings.activeProfileId).toBe('hahacode-images')
+    expect(iframeSettings.profiles).toEqual([
+      expect.objectContaining({ apiKey: 'sk-created', apiMode: 'images', model: IMAGE_PLAYGROUND_MODEL }),
+      expect.objectContaining({ apiKey: 'sk-created', apiMode: 'responses', model: IMAGE_PLAYGROUND_AGENT_MODEL })
+    ])
     expect(wrapper.get('[data-test="image-playground-estimate"]').text()).toContain('Waiting')
   })
 
@@ -333,7 +366,12 @@ describe('ImagePlaygroundView', () => {
 
     expect(getAvailableGroups).toHaveBeenCalledOnce()
     expect(createKey).not.toHaveBeenCalled()
-    expect(wrapper.get('[data-test="image-playground-frame"]').attributes('src')).toContain('apiKey=sk-stored')
+    const iframeUrl = new URL(wrapper.get('[data-test="image-playground-frame"]').attributes('src'))
+    const iframeSettings = JSON.parse(iframeUrl.searchParams.get('settings') ?? '{}')
+    expect(iframeSettings.profiles).toEqual([
+      expect.objectContaining({ apiKey: 'sk-stored', apiMode: 'images' }),
+      expect.objectContaining({ apiKey: 'sk-stored', apiMode: 'responses' })
+    ])
     expect(wrapper.get('[data-test="image-playground-key-summary"]').text()).toContain('Key #77')
     expect(wrapper.get('[data-test="image-playground-key-summary"]').text()).toContain('Group #11')
   })
