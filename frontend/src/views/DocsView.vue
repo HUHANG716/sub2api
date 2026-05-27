@@ -373,9 +373,9 @@ const tocItems = [
 const brandIcons = {
   ccSwitch: '/landing-support/cc-switch.png',
   claude: '/landing-support/claude-code.svg',
-  codex: '/landing-support/codex.svg',
+  codex: '/landing-support/codex-app.png',
   gemini: '/landing-support/gemini-cli.svg',
-  openai: '/logo.png'
+  openai: '/landing-support/openai.svg'
 } as const
 
 const ccSwitchFlowSteps: FlowStep[] = [
@@ -479,16 +479,16 @@ const toolConfigs = computed<DocsToolConfig[]>(() => [
 const recommendedTool = computed(() => toolConfigs.value.find((tool) => tool.recommended) ?? toolConfigs.value[0])
 const backupToolGroups = computed(() => [
   {
-    title: '直连 CLI',
-    tools: toolConfigs.value.filter((tool) => tool.group === 'cli')
-  },
-  {
     title: 'Codex 配置',
     tools: toolConfigs.value.filter((tool) => tool.group === 'codex')
   },
   {
     title: '通用接口',
     tools: toolConfigs.value.filter((tool) => tool.group === 'generic')
+  },
+  {
+    title: '直连 CLI',
+    tools: toolConfigs.value.filter((tool) => tool.group === 'cli')
   }
 ])
 const manualToolOptions = computed(() => backupToolGroups.value.flatMap((group) => group.tools))
@@ -679,6 +679,8 @@ onMounted(() => {
 .docs-hero {
   display: grid;
   gap: 1rem;
+  max-width: 78rem;
+  margin: 0 auto;
   padding: clamp(1rem, 3vw, 1.8rem);
   border-bottom: 1px solid var(--theme-border);
 }
@@ -777,6 +779,8 @@ onMounted(() => {
 .docs-layout {
   display: grid;
   gap: 1.25rem;
+  max-width: 78rem;
+  margin: 0 auto;
   padding: clamp(1rem, 3vw, 1.8rem);
 }
 

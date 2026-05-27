@@ -7,17 +7,17 @@ export default {
       colors: {
         // 主色调 - Orange 橙色系
         primary: {
-          50: '#fff7ed',
-          100: '#ffedd5',
-          200: '#fed7aa',
-          300: '#fdba74',
-          400: '#fb923c',
-          500: '#f97316',
-          600: '#ea580c',
-          700: '#c2410c',
-          800: '#9a3412',
-          900: '#7c2d12',
-          950: '#431407'
+          50: '#fff8f1',
+          100: '#fde9d7',
+          200: '#f8cfad',
+          300: '#efaa75',
+          400: '#df7f3d',
+          500: '#c65a1e',
+          600: '#a94718',
+          700: '#873719',
+          800: '#6f301a',
+          900: '#5d2a19',
+          950: '#331309'
         },
         // 辅助色 - 深蓝灰
         accent: {
@@ -68,8 +68,8 @@ export default {
       boxShadow: {
         glass: '0 8px 32px rgba(0, 0, 0, 0.08)',
         'glass-sm': '0 4px 16px rgba(0, 0, 0, 0.06)',
-        glow: '0 0 20px rgba(249, 115, 22, 0.25)',
-        'glow-lg': '0 0 40px rgba(249, 115, 22, 0.35)',
+        glow: '0 0 20px rgba(198, 90, 30, 0.22)',
+        'glow-lg': '0 0 40px rgba(198, 90, 30, 0.3)',
         card: '0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06)',
         'card-hover': '0 10px 40px rgba(0, 0, 0, 0.08)',
         'inner-glow': 'inset 0 1px 0 rgba(255, 255, 255, 0.1)'
@@ -117,8 +117,8 @@ export default {
           '100%': { backgroundPosition: '200% 0' }
         },
         glow: {
-          '0%': { boxShadow: '0 0 20px rgba(249, 115, 22, 0.25)' },
-          '100%': { boxShadow: '0 0 30px rgba(249, 115, 22, 0.4)' }
+          '0%': { boxShadow: '0 0 20px rgba(198, 90, 30, 0.22)' },
+          '100%': { boxShadow: '0 0 30px rgba(198, 90, 30, 0.34)' }
         }
       },
       backdropBlur: {

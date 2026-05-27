@@ -126,11 +126,11 @@ onMounted(() => {
   --auth-surface: rgba(31, 31, 31, 0.94);
   --auth-surface-muted: rgba(38, 38, 38, 0.84);
   --auth-border: rgba(255, 255, 255, 0.1);
-  --auth-primary: #f97316;
-  --auth-primary-hover: #fb923c;
-  --auth-primary-soft: rgba(249, 115, 22, 0.18);
-  --auth-accent: #f97316;
-  --auth-accent-soft: rgba(249, 115, 22, 0.12);
+  --auth-primary: #d97732;
+  --auth-primary-hover: #ef9a5c;
+  --auth-primary-soft: rgba(217, 119, 50, 0.14);
+  --auth-accent: #d97732;
+  --auth-accent-soft: rgba(217, 119, 50, 0.12);
   --theme-bg: var(--auth-bg);
   --theme-bg-soft: var(--auth-bg-soft);
   --theme-bg-deep: var(--auth-bg-deep);
@@ -155,7 +155,7 @@ onMounted(() => {
   overflow-x: hidden;
   background:
     radial-gradient(circle at 16% 18%, rgba(170, 181, 198, 0.08), transparent 25rem),
-    radial-gradient(circle at 84% 74%, rgba(249, 115, 22, 0.08), transparent 26rem),
+    radial-gradient(circle at 84% 74%, rgba(217, 119, 50, 0.08), transparent 26rem),
     linear-gradient(180deg, var(--auth-bg-soft) 0%, var(--auth-bg-deep) 100%);
   color-scheme: dark;
   color: #ffffff;
@@ -168,11 +168,11 @@ onMounted(() => {
   --auth-surface: rgba(31, 31, 31, 0.94);
   --auth-surface-muted: rgba(38, 38, 38, 0.84);
   --auth-border: rgba(255, 255, 255, 0.1);
-  --auth-primary: #f97316;
-  --auth-primary-hover: #fb923c;
-  --auth-primary-soft: rgba(249, 115, 22, 0.18);
-  --auth-accent: #f97316;
-  --auth-accent-soft: rgba(249, 115, 22, 0.12);
+  --auth-primary: #d97732;
+  --auth-primary-hover: #ef9a5c;
+  --auth-primary-soft: rgba(217, 119, 50, 0.14);
+  --auth-accent: #d97732;
+  --auth-accent-soft: rgba(217, 119, 50, 0.12);
   --theme-bg: var(--auth-bg);
   --theme-bg-soft: var(--auth-bg-soft);
   --theme-bg-deep: var(--auth-bg-deep);
@@ -194,7 +194,7 @@ onMounted(() => {
   color-scheme: dark;
   background:
     radial-gradient(circle at 16% 18%, rgba(170, 181, 198, 0.08), transparent 25rem),
-    radial-gradient(circle at 84% 74%, rgba(249, 115, 22, 0.08), transparent 26rem),
+    radial-gradient(circle at 84% 74%, rgba(217, 119, 50, 0.08), transparent 26rem),
     linear-gradient(180deg, var(--auth-bg-soft) 0%, var(--auth-bg-deep) 100%);
 }
 

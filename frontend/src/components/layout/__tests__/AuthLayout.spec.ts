@@ -23,6 +23,7 @@ const authViewSources = authViewFiles.map((fileName) => ({
   fileName,
   source: readFileSync(resolve(authViewDir, fileName), 'utf8')
 }))
+const loginViewSource = authViewSources.find(({ fileName }) => fileName === 'LoginView.vue')?.source ?? ''
 
 describe('AuthLayout split variant', () => {
   it('keeps split auth layout available as the default layout', () => {
@@ -65,5 +66,15 @@ describe('AuthLayout split variant', () => {
     expect(layoutSource).toContain('@media (max-width: 1023px)')
     expect(layoutSource).toContain('justify-content: center;')
     expect(layoutSource).toContain('margin-inline: auto;')
+  })
+
+  it('keeps login password mask glyphs on the same size as revealed text', () => {
+    expect(loginViewSource).toContain('auth-password-input')
+    expect(loginViewSource).toContain(".auth-password-input[type='password'] {")
+    expect(loginViewSource).toContain('font-family: ui-sans-serif, system-ui')
+    expect(loginViewSource).toContain('letter-spacing: 0;')
+    expect(loginViewSource).not.toContain(".auth-password-input[type='password']:not(:placeholder-shown)")
+    expect(loginViewSource).not.toContain('font-size: 13px;')
+    expect(loginViewSource).not.toContain(".auth-password-input[type='text']")
   })
 })

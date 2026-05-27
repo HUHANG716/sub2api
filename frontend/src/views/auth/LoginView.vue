@@ -52,7 +52,7 @@
               required
               autocomplete="current-password"
               :disabled="authActionDisabled"
-              class="input pl-11 pr-11"
+              class="input auth-password-input pl-11 pr-11"
               :class="{ 'input-error': errors.password }"
               :placeholder="t('auth.passwordPlaceholder')"
             />
@@ -562,6 +562,11 @@ function handle2FACancel(): void {
 .fade-leave-to {
   opacity: 0;
   transform: translateY(-8px);
+}
+
+.auth-password-input[type='password'] {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: 0;
 }
 
 </style>

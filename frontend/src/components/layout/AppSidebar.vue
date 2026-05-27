@@ -239,11 +239,26 @@
 
       <transition name="dropdown">
         <div v-if="user && accountDropdownOpen" class="dropdown sidebar-account-dropdown">
-          <div class="border-b border-gray-100 px-4 py-3 dark:border-dark-700">
-            <div class="text-sm font-medium text-gray-900 dark:text-white">
-              {{ displayName }}
+          <div class="sidebar-account-dropdown-summary">
+            <div class="sidebar-account-dropdown-avatar">
+              <img
+                v-if="avatarUrl"
+                :src="avatarUrl"
+                :alt="displayName"
+                class="h-full w-full object-cover"
+              >
+              <DefaultHashAvatar
+                v-else
+                :seed="avatarSeed"
+                :label="displayName"
+              />
             </div>
-            <div class="text-xs text-gray-500 dark:text-dark-400">{{ user.email }}</div>
+            <div class="min-w-0 flex-1">
+              <div class="sidebar-account-dropdown-name">
+                {{ displayName }}
+              </div>
+              <div class="sidebar-account-dropdown-email">{{ user.email }}</div>
+            </div>
           </div>
 
           <div class="border-b border-gray-100 px-4 py-2 dark:border-dark-700">
@@ -950,6 +965,50 @@ onBeforeUnmount(() => {
   left: 0.75rem;
   width: min(14rem, calc(100vw - 1.5rem));
   transform-origin: bottom left;
+}
+
+.sidebar-account-dropdown-summary {
+  display: flex;
+  min-height: 5.5rem;
+  align-items: center;
+  gap: 0.85rem;
+  border-bottom: 1px solid var(--theme-border);
+  padding: 1rem;
+}
+
+.sidebar-account-dropdown-avatar {
+  display: flex;
+  height: 3rem;
+  width: 3rem;
+  flex: 0 0 3rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--theme-primary-soft) 72%, var(--theme-surface-muted));
+  color: var(--theme-primary);
+  box-shadow: var(--theme-shadow);
+}
+
+.sidebar-account-dropdown-name,
+.sidebar-account-dropdown-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-account-dropdown-name {
+  color: var(--theme-text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.sidebar-account-dropdown-email {
+  margin-top: 0.25rem;
+  color: var(--theme-text-subtle);
+  font-size: 0.75rem;
+  line-height: 1.25;
 }
 
 .sidebar-section-title {

@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 
 import type { DashboardStats } from '@/types'
 import DashboardView from '../DashboardView.vue'
+
+const dashboardViewSourcePath = path.resolve(process.cwd(), 'src/views/admin/DashboardView.vue')
 
 const { getSnapshotV2, getUserUsageTrend, getUserSpendingRanking } = vi.hoisted(() => ({
   getSnapshotV2: vi.fn(),
@@ -71,6 +75,7 @@ const createDashboardStats = (): DashboardStats => ({
   total_tokens: 0,
   total_cost: 0,
   total_actual_cost: 0,
+  total_account_cost: 0,
   today_requests: 0,
   today_input_tokens: 0,
   today_output_tokens: 0,
@@ -79,6 +84,7 @@ const createDashboardStats = (): DashboardStats => ({
   today_tokens: 0,
   today_cost: 0,
   today_actual_cost: 0,
+  today_account_cost: 0,
   average_duration_ms: 0,
   uptime: 0,
   rpm: 0,
@@ -139,5 +145,54 @@ describe('admin DashboardView', () => {
       end_date: formatLocalDate(now),
       granularity: 'hour'
     }))
+  })
+
+  it('uses distinct semantic accent classes for dashboard stat cards', async () => {
+    const wrapper = mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: true,
+          Select: true,
+          ModelDistributionChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    const accentClasses = [
+      'dashboard-stat-icon-key',
+      'dashboard-stat-icon-account',
+      'dashboard-stat-icon-request',
+      'dashboard-stat-icon-user',
+      'dashboard-stat-icon-today-token',
+      'dashboard-stat-icon-total-token',
+      'dashboard-stat-icon-performance',
+      'dashboard-stat-icon-latency'
+    ]
+
+    accentClasses.forEach((className) => {
+      expect(wrapper.find(`.${className}`).exists()).toBe(true)
+    })
+
+    const iconClasses = wrapper.findAll('.dashboard-stat-icon').map((icon) => icon.classes())
+    const semanticClassCount = iconClasses.filter((classes) =>
+      classes.some((className) => accentClasses.includes(className))
+    )
+
+    expect(semanticClassCount).toHaveLength(8)
+  })
+
+  it('keeps dashboard stat icon accents borderless', () => {
+    const source = readFileSync(dashboardViewSourcePath, 'utf-8')
+    const iconBlock = source.match(/\.dashboard-stat-icon\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(iconBlock).toContain('background:')
+    expect(iconBlock).not.toMatch(/\bborder:/)
   })
 })

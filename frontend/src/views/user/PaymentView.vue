@@ -1,6 +1,6 @@
 <template>
   <AppLayout>
-    <div class="payment-workspace mx-auto max-w-7xl space-y-6">
+    <div class="payment-workspace mx-auto space-y-6">
       <div v-if="loading" class="flex items-center justify-center py-20">
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
       </div>
@@ -209,7 +209,7 @@
                       <span :class="['rounded-md border px-2.5 py-1 text-xs font-semibold', planBadgeClass]">
                         {{ platformLabel(selectedPlan.group_platform || '') }}
                       </span>
-                      <span class="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-dark-700 dark:text-gray-300">
+                      <span class="payment-plan-duration-pill">
                         {{ planValiditySuffix }}
                       </span>
                     </div>
@@ -315,7 +315,7 @@
                 <p class="text-gray-500 dark:text-gray-400">{{ t('payment.noPlans') }}</p>
               </div>
               <div v-else :class="planGridClass">
-                <SubscriptionPlanCard v-for="plan in checkout.plans" :key="plan.id" :plan="plan" :active-subscriptions="activeSubscriptions" @select="selectPlan" />
+                <SubscriptionPlanCard v-for="plan in checkout.plans" :key="plan.id" :plan="plan" :active-subscriptions="activeSubscriptions" :currency="selectedCurrency" @select="selectPlan" />
               </div>
 
               <div v-if="activeSubscriptions.length > 0" class="payment-active-box">
@@ -366,7 +366,7 @@
             </button>
             <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{{ t('payment.selectPlan') }}</h3>
             <div class="space-y-4">
-              <SubscriptionPlanCard v-for="plan in renewalPlans" :key="plan.id" :plan="plan" :active-subscriptions="activeSubscriptions" @select="selectPlanFromModal" />
+              <SubscriptionPlanCard v-for="plan in renewalPlans" :key="plan.id" :plan="plan" :active-subscriptions="activeSubscriptions" :currency="selectedCurrency" @select="selectPlanFromModal" />
             </div>
           </div>
         </div>
@@ -1330,11 +1330,13 @@ onMounted(async () => {
 
 <style scoped>
 .payment-workspace {
+  width: 100%;
+  max-width: 72rem;
   color: var(--theme-text);
 }
 
 .payment-hero {
-  @apply grid gap-5 rounded-lg p-5 lg:grid-cols-[1fr_auto] lg:items-end;
+  @apply grid gap-5 rounded-lg p-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end;
   background: linear-gradient(135deg, color-mix(in srgb, var(--theme-surface-strong) 92%, var(--theme-bg)) 0%, var(--theme-surface) 100%);
   border: 1px solid var(--theme-border);
   box-shadow: var(--theme-shadow);
@@ -1450,7 +1452,7 @@ onMounted(async () => {
 }
 
 .payment-bonus-banner {
-  @apply mt-4 flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center;
+  @apply mt-4 flex flex-col gap-3 rounded-lg border p-4 xl:flex-row xl:items-center;
   background: linear-gradient(135deg, color-mix(in srgb, #16a34a 12%, var(--theme-surface)), color-mix(in srgb, #0ea5e9 10%, var(--theme-surface)));
   border-color: color-mix(in srgb, #16a34a 34%, var(--theme-border));
 }
@@ -1462,7 +1464,7 @@ onMounted(async () => {
 }
 
 .payment-rate-pill {
-  @apply rounded-md border px-2.5 py-1 text-xs font-semibold text-sky-700 dark:text-sky-200 sm:order-last;
+  @apply rounded-md border px-2.5 py-1 text-xs font-semibold text-sky-700 dark:text-sky-200 xl:order-last;
   background: color-mix(in srgb, #0ea5e9 10%, var(--theme-surface));
   border-color: color-mix(in srgb, #0ea5e9 26%, var(--theme-border));
 }
@@ -1556,6 +1558,13 @@ onMounted(async () => {
   @apply rounded-lg p-5;
   background: linear-gradient(135deg, color-mix(in srgb, var(--theme-primary-soft) 44%, var(--theme-surface)) 0%, var(--theme-surface) 70%);
   border: 1px solid var(--theme-border);
+}
+
+.payment-plan-duration-pill {
+  @apply rounded-md px-2.5 py-1 text-xs font-medium;
+  background: var(--theme-surface-muted);
+  border: 1px solid var(--theme-border);
+  color: var(--theme-text-muted);
 }
 
 .payment-plan-spec-grid {
