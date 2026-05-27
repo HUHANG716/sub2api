@@ -36,6 +36,7 @@ var requiredCSPDirectiveValues = []struct {
 }{
 	{"script-src", CloudflareInsightsDomain},
 	{"script-src", StripeDomain},
+	{"frame-src", "'self'"},
 	{"frame-src", StripeDomain},
 	{"script-src", AirwallexStaticDomain},
 	{"script-src", AirwallexCheckoutDomain},
@@ -92,7 +93,12 @@ func SecurityHeaders(cfg config.CSPConfig, getFrameSrcOrigins func() []string) g
 		}
 
 		c.Header("X-Content-Type-Options", "nosniff")
-		c.Header("X-Frame-Options", "DENY")
+		if isImagePlaygroundAppPath(c) {
+			c.Header("X-Frame-Options", "SAMEORIGIN")
+			finalPolicy = replaceDirective(finalPolicy, "frame-ancestors", "'self'")
+		} else {
+			c.Header("X-Frame-Options", "DENY")
+		}
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 		if isAPIRoutePath(c) {
 			c.Next()
@@ -113,6 +119,13 @@ func SecurityHeaders(cfg config.CSPConfig, getFrameSrcOrigins func() []string) g
 		}
 		c.Next()
 	}
+}
+
+func isImagePlaygroundAppPath(c *gin.Context) bool {
+	if c == nil || c.Request == nil || c.Request.URL == nil {
+		return false
+	}
+	return strings.HasPrefix(c.Request.URL.Path, "/image-playground-app/")
 }
 
 func isAPIRoutePath(c *gin.Context) bool {
@@ -194,4 +207,36 @@ func addToDirective(policy, directive, value string) string {
 	// Insert value before the semicolon
 	insertPos := idx + endIdx
 	return policy[:insertPos] + " " + value + policy[insertPos:]
+}
+
+// replaceDirective replaces a complete directive with the provided values.
+// If the directive is absent, it appends the directive to the policy.
+func replaceDirective(policy, directive string, values ...string) string {
+	replacement := strings.TrimSpace(directive + " " + strings.Join(values, " "))
+	if replacement == directive {
+		return policy
+	}
+
+	parts := strings.Split(policy, ";")
+	replaced := false
+	result := make([]string, 0, len(parts)+1)
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+		fields := strings.Fields(trimmed)
+		if len(fields) > 0 && fields[0] == directive {
+			if !replaced {
+				result = append(result, replacement)
+				replaced = true
+			}
+			continue
+		}
+		result = append(result, trimmed)
+	}
+	if !replaced {
+		result = append(result, replacement)
+	}
+	return strings.Join(result, "; ")
 }

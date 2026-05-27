@@ -2,7 +2,7 @@ import type { ApiKey, Group } from '@/types'
 
 export const IMAGE_PLAYGROUND_STORAGE_KEY = 'image_playground_api_key'
 export const IMAGE_PLAYGROUND_KEY_NAME = 'Image Playground'
-export const IMAGE_PLAYGROUND_APP_PATH = '/image-playground-app/index.html'
+export const IMAGE_PLAYGROUND_APP_PATH = '/image-playground-app/'
 export const IMAGE_PLAYGROUND_MODEL = 'gpt-image-2'
 
 export interface StoredImagePlaygroundKey {

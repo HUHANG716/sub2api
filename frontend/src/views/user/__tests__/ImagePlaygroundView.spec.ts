@@ -151,7 +151,7 @@ describe('image playground helpers', () => {
     })
 
     expect(url).toBe(
-      'https://code.example.com/image-playground-app/index.html?apiUrl=https%3A%2F%2Fcode.example.com%2Fv1&apiKey=sk-url&apiMode=images&model=gpt-image-2&streamImages=true&streamPartialImages=3'
+      'https://code.example.com/image-playground-app/?apiUrl=https%3A%2F%2Fcode.example.com%2Fv1&apiKey=sk-url&apiMode=images&model=gpt-image-2&streamImages=true&streamPartialImages=3'
     )
   })
 })
@@ -201,7 +201,7 @@ describe('ImagePlaygroundView', () => {
       group_name: 'OpenAI Images'
     })
     const iframe = wrapper.get('[data-test="image-playground-frame"]')
-    expect(iframe.attributes('src')).toContain('/image-playground-app/index.html?')
+    expect(iframe.attributes('src')).toContain('/image-playground-app/?')
     expect(iframe.attributes('src')).toContain('apiMode=images')
     expect(iframe.attributes('src')).toContain('model=gpt-image-2')
   })

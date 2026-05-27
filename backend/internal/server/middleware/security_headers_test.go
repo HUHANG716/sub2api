@@ -151,6 +151,40 @@ func TestSecurityHeaders(t *testing.T) {
 		assert.Empty(t, GetNonceFromContext(c))
 	})
 
+	t.Run("image_playground_static_app_can_be_embedded_by_same_origin", func(t *testing.T) {
+		cfg := config.CSPConfig{
+			Enabled: true,
+			Policy:  "default-src 'self'; frame-ancestors 'none'; script-src 'self' __CSP_NONCE__",
+		}
+		middleware := SecurityHeaders(cfg, nil)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/image-playground-app/", nil)
+
+		middleware(c)
+
+		csp := w.Header().Get("Content-Security-Policy")
+		assert.Equal(t, "SAMEORIGIN", w.Header().Get("X-Frame-Options"))
+		assert.Contains(t, csp, "frame-ancestors 'self'")
+		assert.NotContains(t, csp, "frame-ancestors 'none'")
+	})
+
+	t.Run("default_policy_allows_same_origin_frames", func(t *testing.T) {
+		cfg := config.CSPConfig{Enabled: true}
+		middleware := SecurityHeaders(cfg, nil)
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/image-playground", nil)
+
+		middleware(c)
+
+		csp := w.Header().Get("Content-Security-Policy")
+		assert.Contains(t, csp, "frame-src")
+		assert.Equal(t, 1, countDirectiveValue(csp, "frame-src", "'self'"))
+	})
+
 	t.Run("csp_enabled_with_nonce_placeholder", func(t *testing.T) {
 		cfg := config.CSPConfig{
 			Enabled: true,
