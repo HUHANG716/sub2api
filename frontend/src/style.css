@@ -6,29 +6,29 @@
 
 @layer base {
   :root {
-    --theme-bg: #f7f9fb;
-    --theme-bg-soft: #eef4f6;
-    --theme-bg-deep: #17202a;
-    --theme-surface: rgba(255, 255, 255, 0.92);
-    --theme-surface-strong: #ffffff;
-    --theme-surface-muted: #f3f7f8;
-    --theme-main-surface: #f7f9fb;
-    --theme-border: rgba(148, 163, 184, 0.12);
-    --theme-border-strong: rgba(100, 116, 139, 0.2);
+    --theme-bg: #efeee8;
+    --theme-bg-soft: #e2dfd6;
+    --theme-bg-deep: #d2d0c5;
+    --theme-surface: rgba(250, 248, 242, 0.94);
+    --theme-surface-strong: #fbfaf5;
+    --theme-surface-muted: rgba(239, 237, 229, 0.92);
+    --theme-main-surface: #efeee8;
+    --theme-border: rgba(117, 110, 96, 0.16);
+    --theme-border-strong: rgba(92, 83, 70, 0.25);
     --theme-text: #0f172a;
     --theme-text-soft: #334155;
     --theme-text-muted: #475569;
     --theme-text-subtle: #64748b;
-    --theme-primary: #f97316;
-    --theme-primary-hover: #ea580c;
-    --theme-primary-soft: rgba(249, 115, 22, 0.12);
-    --theme-accent: #f97316;
-    --theme-accent-soft: rgba(249, 115, 22, 0.12);
-    --theme-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
-    --theme-shadow-hover: 0 1px 0 rgba(15, 23, 42, 0.06);
-    --theme-scrollbar-track: #f7f9fb;
-    --theme-scrollbar-thumb: rgba(100, 116, 139, 0.28);
-    --theme-scrollbar-thumb-hover: rgba(100, 116, 139, 0.46);
+    --theme-primary: #c65a1e;
+    --theme-primary-hover: #a94718;
+    --theme-primary-soft: rgba(198, 90, 30, 0.12);
+    --theme-accent: #c65a1e;
+    --theme-accent-soft: rgba(198, 90, 30, 0.12);
+    --theme-shadow: 0 1px 0 rgba(69, 57, 42, 0.035);
+    --theme-shadow-hover: 0 1px 0 rgba(69, 57, 42, 0.07);
+    --theme-scrollbar-track: #efeee8;
+    --theme-scrollbar-thumb: rgba(92, 83, 70, 0.32);
+    --theme-scrollbar-thumb-hover: rgba(92, 83, 70, 0.5);
   }
 
   .dark {
@@ -45,11 +45,11 @@
     --theme-text-soft: #dfe6ef;
     --theme-text-muted: #c4cfdc;
     --theme-text-subtle: #aeb9c8;
-    --theme-primary: #f97316;
-    --theme-primary-hover: #fb923c;
-    --theme-primary-soft: rgba(249, 115, 22, 0.12);
-    --theme-accent: #f97316;
-    --theme-accent-soft: rgba(249, 115, 22, 0.1);
+    --theme-primary: #d97732;
+    --theme-primary-hover: #ef9a5c;
+    --theme-primary-soft: rgba(217, 119, 50, 0.14);
+    --theme-accent: #d97732;
+    --theme-accent-soft: rgba(217, 119, 50, 0.12);
     --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.045), 0 12px 30px rgba(0, 0, 0, 0.12);
     --theme-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.28);
     --theme-scrollbar-track: #171717;
@@ -138,7 +138,7 @@
     inset: 0;
     pointer-events: none;
     background:
-      linear-gradient(90deg, rgba(170, 181, 198, 0.035) 0%, rgba(15, 23, 42, 0.02) 48%, rgba(249, 115, 22, 0.025) 100%);
+      linear-gradient(90deg, rgba(170, 181, 198, 0.035) 0%, rgba(15, 23, 42, 0.02) 48%, rgba(198, 90, 30, 0.03) 100%);
     opacity: 0.18;
   }
 
@@ -224,12 +224,12 @@
   .btn-primary {
     background: var(--theme-primary);
     @apply text-white;
-    box-shadow: 0 10px 24px rgba(249, 115, 22, 0.2);
+    box-shadow: 0 10px 24px rgba(198, 90, 30, 0.2);
   }
 
   .btn-primary:hover {
     background: var(--theme-primary-hover);
-    box-shadow: 0 12px 28px rgba(249, 115, 22, 0.28);
+    box-shadow: 0 12px 28px rgba(198, 90, 30, 0.28);
   }
 
   .btn-secondary {

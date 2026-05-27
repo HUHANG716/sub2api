@@ -390,7 +390,8 @@ describe('HomeView', () => {
     const scrolledHeaderBlock = source.match(/\.landing-header-scrolled\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const scrolledNavBlock = source.match(/\.landing-header-scrolled nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(headerBlock).not.toMatch(/\bbackground:/)
+    expect(headerBlock).not.toContain('background: var(--theme-surface)')
+    expect(headerBlock).not.toContain('background: var(--theme-surface-strong)')
     expect(headerBlock).not.toMatch(/\bbackdrop-filter:/)
     expect(headerBlock).not.toMatch(/\bbox-shadow:/)
     expect(headerNavBlock).toMatch(/\bbackground:/)
@@ -400,6 +401,19 @@ describe('HomeView', () => {
     expect(scrolledHeaderBlock).not.toMatch(/\bbox-shadow:/)
     expect(scrolledNavBlock).toMatch(/\bbackground:/)
     expect(scrolledNavBlock).toMatch(/\bbox-shadow:/)
+  })
+
+  it('keeps the landing header canvas dark while the nav narrows', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const headerBlock = source.match(/\.landing-header\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const headerNavBlock = source.match(/\.landing-header nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const scrolledHeaderBlock = source.match(/\.landing-header-scrolled\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(headerBlock).toContain('background: var(--landing-bg)')
+    expect(headerBlock).not.toMatch(/\bbackdrop-filter:/)
+    expect(headerBlock).not.toMatch(/\bbox-shadow:/)
+    expect(scrolledHeaderBlock).not.toMatch(/\bbackground:/)
+    expect(headerNavBlock).toContain('background: var(--theme-surface)')
   })
 
   it('isolates the landing page from the global light theme by forcing dark theme variables', () => {
@@ -419,11 +433,16 @@ describe('HomeView', () => {
   it('keeps the landing locale switcher readable without the global dark class', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
     const localeSwitcherBlock = source.match(/\.landing-shell :deep\(\.locale-switcher\)\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const localeTriggerBlock = source.match(/\.landing-shell :deep\(\.locale-trigger\)\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const localeValueBlock = source.match(/\.landing-shell :deep\(\.locale-trigger-value\)\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
     expect(localeSwitcherBlock).toContain('--locale-text: #e2e8f0')
     expect(localeSwitcherBlock).toContain('--locale-text-strong: var(--landing-text-strong)')
     expect(localeSwitcherBlock).toContain('--locale-hover-bg: var(--theme-surface-muted)')
     expect(localeSwitcherBlock).toContain('--locale-active-text: #fed7aa')
+    expect(localeTriggerBlock).toContain('height: auto')
+    expect(localeTriggerBlock).toContain('padding: 0.4rem 0.55rem')
+    expect(localeValueBlock).toContain('line-height: 1.25')
   })
 
   it('uses landing color tokens instead of template-level Tailwind color utilities', () => {
@@ -432,7 +451,7 @@ describe('HomeView', () => {
     expect(source).not.toContain('text-white')
     expect(source).not.toContain('text-slate-300')
     expect(source).not.toContain('text-slate-400')
-    expect(source).toContain('--landing-accent: #f97316')
+    expect(source).toMatch(/--landing-accent:\s*#[0-9a-fA-F]{6}/)
     expect(source).toContain('--landing-text-soft: #e2e8f0')
     expect(source).toContain('color: var(--landing-text-soft)')
     expect(source).toContain('color: var(--landing-accent-soft)')
@@ -550,7 +569,8 @@ describe('HomeView', () => {
     expect(footerBlock).not.toMatch(/\bborder-top:/)
     expect(source).not.toContain('linear-gradient')
     expect(source).not.toContain('radial-gradient')
-    expect(headerBlock).not.toMatch(/\bbackground:/)
+    expect(headerBlock).not.toContain('background: var(--theme-surface)')
+    expect(headerBlock).not.toContain('background: var(--theme-surface-strong)')
     expect(source).toContain('.landing-header-scrolled')
     expect(trustBandBlock).toContain('background: var(--landing-bg)')
     expect(testimonialBlock).toContain('background: var(--landing-bg)')

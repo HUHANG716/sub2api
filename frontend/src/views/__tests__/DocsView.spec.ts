@@ -299,11 +299,19 @@ describe('DocsView', () => {
     const options = wrapper.findAll('[data-testid^="docs-tool-option"]')
     expect(options).toHaveLength(6)
     expect(wrapper.findAll('.docs-tool-option-row')).toHaveLength(5)
+    expect(wrapper.findAll('.docs-tool-option-row').map(option => option.attributes('data-testid'))).toEqual([
+      'docs-tool-option-codex',
+      'docs-tool-option-codex-ws',
+      'docs-tool-option-openai',
+      'docs-tool-option-claude',
+      'docs-tool-option-gemini'
+    ])
     expect(wrapper.findAll('[data-testid="docs-tool-icon"]').length).toBeGreaterThanOrEqual(6)
     expect(wrapper.findAll('.docs-tool-logo img').length).toBeGreaterThanOrEqual(5)
-    expect(wrapper.get('[data-testid="docs-tool-option-codex"] .docs-tool-logo img').attributes('src')).toBe('/landing-support/codex.svg')
-    expect(wrapper.get('[data-testid="docs-tool-option-codex-ws"] .docs-tool-logo img').attributes('src')).toBe('/landing-support/codex.svg')
-    expect(wrapper.get('[data-testid="docs-tool-option-openai"] .docs-tool-logo img').attributes('src')).toBe('/logo.png')
+    expect(wrapper.get('[data-testid="docs-tool-option-codex"] .docs-tool-logo img').attributes('src')).toBe('/landing-support/codex-app.png')
+    expect(wrapper.get('[data-testid="docs-tool-option-codex-ws"] .docs-tool-logo img').attributes('src')).toBe('/landing-support/codex-app.png')
+    expect(wrapper.get('[data-testid="docs-tool-option-openai"] .docs-tool-logo img').attributes('src')).toBe('/landing-support/openai.svg')
+    expect(wrapper.get('[data-testid="docs-tool-option-openai"] .docs-tool-logo img').attributes('alt')).toBe('OpenAI 兼容 Logo')
     expect(wrapper.html()).not.toContain('registry.npmmirror.com')
     expect(wrapper.get('[data-testid="docs-tool-option-codex"] .docs-tool-icon').classes()).not.toContain('tone-light')
     expect(wrapper.get('[data-testid="docs-tool-option-codex-ws"] .docs-tool-icon').classes()).not.toContain('tone-light')
@@ -508,10 +516,16 @@ describe('DocsView', () => {
     expect(source).toContain('.docs-faq-question')
     const sectionRule = source.match(/\.docs-section\s*\{(?<rule>[\s\S]*?)\}/)?.groups?.rule ?? ''
     const toolPanelRule = source.match(/\.docs-tool-panel,\n\.docs-faq article\s*\{(?<rule>[\s\S]*?)\}/)?.groups?.rule ?? ''
+    const heroRule = source.match(/\.docs-hero\s*\{(?<rule>[\s\S]*?)\}/)?.groups?.rule ?? ''
+    const layoutRule = source.match(/\.docs-layout\s*\{(?<rule>[\s\S]*?)\}/)?.groups?.rule ?? ''
     expect(sectionRule).toContain('border: 1px solid var(--theme-border)')
     expect(sectionRule).toContain('border-radius: 0.5rem')
     expect(sectionRule).toContain('background: var(--theme-surface)')
     expect(sectionRule).toContain('padding: clamp(1rem, 3vw, 1.5rem)')
+    expect(heroRule).toContain('max-width: 78rem')
+    expect(heroRule).toContain('margin: 0 auto')
+    expect(layoutRule).toContain('max-width: 78rem')
+    expect(layoutRule).toContain('margin: 0 auto')
     expect(toolPanelRule).not.toContain('background:')
     expect(toolPanelRule).not.toContain('border-radius:')
     expect(source).not.toContain('ccSwitchIntroCards')

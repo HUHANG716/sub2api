@@ -16,6 +16,9 @@ const i18n = createI18n({
         planCard: {
           quota: "Quota",
           rate: "Rate",
+          dailyLimit: "Daily",
+          weeklyLimit: "Weekly",
+          monthlyLimit: "Monthly",
           unlimited: "Unlimited",
         },
         subscribeNow: "Subscribe now",
@@ -38,7 +41,33 @@ const mountPlanCard = (groupPlatform: string) =>
         rate_multiplier: 1,
         validity_days: 30,
         validity_unit: "day",
+        daily_limit_usd: 160,
+        weekly_limit_usd: 800,
+        monthly_limit_usd: 3200,
         supported_model_scopes: ["claude", "gemini_text", "gemini_image"],
+        is_active: true,
+      },
+    },
+    global: { plugins: [i18n] },
+  });
+
+const mountPlanCardWithCurrency = (currency: string) =>
+  mount(SubscriptionPlanCard, {
+    props: {
+      currency,
+      plan: {
+        id: 1,
+        group_id: 10,
+        group_platform: "openai",
+        name: "Pro",
+        price: 59.9,
+        original_price: 66.7,
+        amount: 1000,
+        features: [],
+        rate_multiplier: 1,
+        validity_days: 30,
+        validity_unit: "day",
+        supported_model_scopes: [],
         is_active: true,
       },
     },
@@ -60,5 +89,13 @@ describe("SubscriptionPlanCard", () => {
     expect(text).toContain("Claude");
     expect(text).toContain("Gemini");
     expect(text).toContain("Imagen");
+  });
+
+  it("formats plan prices with the selected payment currency", () => {
+    const text = mountPlanCardWithCurrency("CNY").text();
+
+    expect(text).toContain("¥59.90");
+    expect(text).toContain("¥66.70");
+    expect(text).not.toContain("$59.9");
   });
 });

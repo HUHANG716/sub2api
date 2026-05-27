@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest'
 
 const componentPath = resolve(dirname(fileURLToPath(import.meta.url)), '../AppSidebar.vue')
 const componentSource = readFileSync(componentPath, 'utf8')
+const appHeaderPath = resolve(dirname(fileURLToPath(import.meta.url)), '../AppHeader.vue')
+const appHeaderSource = readFileSync(appHeaderPath, 'utf8')
 const stylePath = resolve(dirname(fileURLToPath(import.meta.url)), '../../../style.css')
 const styleSource = readFileSync(stylePath, 'utf8')
 
@@ -77,6 +79,26 @@ describe('AppSidebar docs entry', () => {
     expect(componentSource).toContain(':href="item.path"')
     expect(componentSource).toContain('target="_blank"')
     expect(componentSource).toContain('rel="noopener noreferrer"')
+  })
+})
+
+describe('AppSidebar account dropdown', () => {
+  it('keeps theme switching in the header instead of the account dropdown', () => {
+    const accountDropdownBlock = componentSource.match(/<div v-if="user && accountDropdownOpen"[\s\S]*?<\/transition>/)?.[0] ?? ''
+
+    expect(appHeaderSource).toContain("import ThemeSwitch from '@/components/common/ThemeSwitch.vue'")
+    expect(appHeaderSource).toContain('<ThemeSwitch />')
+    expect(componentSource).not.toContain("import ThemeSwitch from '@/components/common/ThemeSwitch.vue'")
+    expect(accountDropdownBlock).not.toContain('<ThemeSwitch')
+  })
+
+  it('gives the dropdown profile summary a larger avatar area', () => {
+    const summaryBlock = componentSource.match(/\.sidebar-account-dropdown-summary\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const avatarBlock = componentSource.match(/\.sidebar-account-dropdown-avatar\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(summaryBlock).toContain('min-height: 5.5rem')
+    expect(avatarBlock).toContain('height: 3rem')
+    expect(avatarBlock).toContain('width: 3rem')
   })
 })
 

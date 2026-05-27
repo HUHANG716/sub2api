@@ -64,4 +64,34 @@ describe('payment theme tokens', () => {
     expect(checkoutSources).not.toContain('bg-gray-50 p-4 dark:bg-dark-800')
     expect(checkoutSources).not.toContain('bg-white p-4 shadow-sm dark:bg-dark-800')
   })
+
+  it('keeps the purchase workspace constrained to a payment-specific max width', () => {
+    expect(paymentViewSource).toContain('payment-workspace mx-auto space-y-6')
+    expect(paymentViewSource).not.toContain('payment-workspace mx-auto max-w-7xl')
+
+    const workspaceBlock = paymentViewSource.match(/\.payment-workspace\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    expect(workspaceBlock).toContain('max-width: 72rem;')
+    expect(workspaceBlock).toContain('width: 100%;')
+  })
+
+  it('keeps the payment hero stacked until the heading column has enough room', () => {
+    const heroBlock = paymentViewSource.match(/\.payment-hero\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(heroBlock).not.toContain('lg:grid-cols-[1fr_auto]')
+    expect(heroBlock).toContain('xl:grid-cols-[minmax(0,1fr)_auto]')
+    expect(heroBlock).toContain('xl:items-end')
+  })
+
+  it('keeps the recharge bonus layout stacked until the checkout column is wide enough', () => {
+    const bonusBannerBlock = paymentViewSource.match(/\.payment-bonus-banner\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(bonusBannerBlock).toContain('flex flex-col')
+    expect(bonusBannerBlock).not.toContain('sm:flex-row')
+    expect(bonusBannerBlock).toContain('xl:flex-row')
+    expect(bonusBannerBlock).toContain('xl:items-center')
+
+    const ratePillBlock = paymentViewSource.match(/\.payment-rate-pill\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    expect(ratePillBlock).not.toContain('sm:order-last')
+    expect(ratePillBlock).toContain('xl:order-last')
+  })
 })

@@ -78,28 +78,28 @@
                 </button>
                 <div
                   v-if="showAccountToolsDropdown"
-                  class="absolute right-0 z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] origin-top-right overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800"
+                  class="account-tools-menu"
                 >
                   <div class="max-h-[70vh] overflow-y-auto p-2">
                     <div class="px-2 py-2">
-                      <div class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                      <div class="account-tools-menu-label">
                         {{ t('admin.accounts.dataActions') }}
                       </div>
                     </div>
                     <button class="account-tools-menu-item" @click="openSyncFromCrs">
-                      <span class="account-tools-menu-icon bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">
+                      <span class="account-tools-menu-icon account-tools-menu-icon-primary">
                         <Icon name="sync" size="sm" />
                       </span>
                       <span class="flex-1 text-left">{{ t('admin.accounts.syncFromCrs') }}</span>
                     </button>
                     <button class="account-tools-menu-item" @click="openImportData">
-                      <span class="account-tools-menu-icon bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300">
+                      <span class="account-tools-menu-icon account-tools-menu-icon-warm">
                         <Icon name="upload" size="sm" />
                       </span>
                       <span class="flex-1 text-left">{{ t('admin.accounts.dataImport') }}</span>
                     </button>
                     <button class="account-tools-menu-item" @click="openExportDataDialogFromMenu">
-                      <span class="account-tools-menu-icon bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-300">
+                      <span class="account-tools-menu-icon account-tools-menu-icon-primary">
                         <Icon name="download" size="sm" />
                       </span>
                       <span class="flex-1 text-left">
@@ -113,32 +113,32 @@
                       </span>
                     </button>
 
-                    <div class="my-2 border-t border-gray-100 dark:border-gray-700"></div>
+                    <div class="account-tools-menu-divider"></div>
                     <div class="px-2 py-2">
-                      <div class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                      <div class="account-tools-menu-label">
                         {{ t('admin.accounts.toolActions') }}
                       </div>
                     </div>
                     <button class="account-tools-menu-item" @click="openErrorPassthrough">
-                      <span class="account-tools-menu-icon bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300">
+                      <span class="account-tools-menu-icon account-tools-menu-icon-warm">
                         <Icon name="shield" size="sm" />
                       </span>
                       <span class="flex-1 text-left">{{ t('admin.errorPassthrough.title') }}</span>
                     </button>
                     <button class="account-tools-menu-item" @click="openTLSFingerprintProfiles">
-                      <span class="account-tools-menu-icon bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200">
+                      <span class="account-tools-menu-icon account-tools-menu-icon-neutral">
                         <Icon name="lock" size="sm" />
                       </span>
                       <span class="flex-1 text-left">{{ t('admin.tlsFingerprintProfiles.title') }}</span>
                     </button>
 
-                    <div class="my-2 border-t border-gray-100 dark:border-gray-700"></div>
+                    <div class="account-tools-menu-divider"></div>
                     <div class="px-2 py-2">
                       <div class="flex items-center justify-between gap-3">
-                        <span class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                        <span class="account-tools-menu-label">
                           {{ t('admin.accounts.viewColumns') }}
                         </span>
-                        <Icon name="grid" size="sm" class="text-gray-400" />
+                        <Icon name="grid" size="sm" class="account-tools-menu-label-icon" />
                       </div>
                     </div>
                     <div class="grid grid-cols-1 gap-1">
@@ -146,7 +146,7 @@
                         v-for="col in toggleableColumns"
                         :key="col.key"
                         @click="toggleColumn(col.key)"
-                        class="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                        class="account-tools-column-item"
                       >
                         <span class="truncate">{{ col.label }}</span>
                         <Icon v-if="isColumnVisible(col.key)" name="check" size="sm" class="text-primary-500" />
@@ -1671,11 +1671,98 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.account-tools-menu {
+  position: absolute;
+  right: 0;
+  z-index: 50;
+  width: min(20rem, calc(100vw - 2rem));
+  margin-top: 0.5rem;
+  overflow: hidden;
+  transform-origin: top right;
+  border-radius: 0.75rem;
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  color: var(--theme-text);
+  box-shadow: var(--theme-shadow-hover);
+}
+
+.account-tools-menu-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: var(--theme-text-subtle);
+}
+
+.account-tools-menu-label-icon {
+  color: var(--theme-text-subtle);
+}
+
+.account-tools-menu-divider {
+  margin: 0.5rem 0;
+  border-top: 1px solid var(--theme-border);
+}
+
 .account-tools-menu-item {
-  @apply flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--theme-text-soft);
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.account-tools-menu-item:hover,
+.account-tools-column-item:hover {
+  background: color-mix(in srgb, var(--theme-surface-muted) 82%, var(--theme-primary-soft));
+  color: var(--theme-text);
 }
 
 .account-tools-menu-icon {
-  @apply inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--theme-border);
+  color: var(--theme-primary);
+}
+
+.account-tools-menu-icon-primary {
+  background: color-mix(in srgb, var(--theme-primary-soft) 76%, var(--theme-surface-strong));
+}
+
+.account-tools-menu-icon-warm {
+  color: var(--theme-primary-hover);
+  background: color-mix(in srgb, var(--theme-primary-soft) 54%, var(--theme-surface-muted));
+}
+
+.account-tools-menu-icon-neutral {
+  color: var(--theme-text-muted);
+  background: color-mix(in srgb, var(--theme-surface-muted) 86%, var(--theme-bg-deep));
+}
+
+.account-tools-column-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--theme-text-soft);
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+:global(.dark) .account-tools-menu-icon-neutral {
+  color: var(--theme-text-soft);
 }
 </style>

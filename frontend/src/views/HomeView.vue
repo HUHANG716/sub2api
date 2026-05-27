@@ -494,11 +494,11 @@ onUnmounted(() => {
   --theme-text-soft: #dfe6ef;
   --theme-text-muted: #c4cfdc;
   --theme-text-subtle: #aeb9c8;
-  --theme-primary: #f97316;
-  --theme-primary-hover: #fb923c;
-  --theme-primary-soft: rgba(249, 115, 22, 0.18);
-  --theme-accent: #f97316;
-  --theme-accent-soft: rgba(249, 115, 22, 0.1);
+  --theme-primary: #d97732;
+  --theme-primary-hover: #ef9a5c;
+  --theme-primary-soft: rgba(217, 119, 50, 0.14);
+  --theme-accent: #d97732;
+  --theme-accent-soft: rgba(217, 119, 50, 0.12);
   --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.035);
   --theme-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.22);
   --theme-scrollbar-track: #171717;
@@ -509,7 +509,7 @@ onUnmounted(() => {
 }
 
 :global(.landing-page-active ::selection) {
-  background: var(--landing-accent-selection, rgba(249, 115, 22, 0.28));
+  background: var(--landing-accent-selection, rgba(217, 119, 50, 0.28));
   color: var(--landing-text-inverse, #ffffff);
 }
 
@@ -538,14 +538,14 @@ onUnmounted(() => {
   --landing-muted: #c4cfdc;
   --landing-subtle: #aeb9c8;
   --landing-dim: #8fa0b3;
-  --landing-accent: #f97316;
-  --landing-accent-hover: #fb923c;
-  --landing-accent-soft: #fed7aa;
-  --landing-accent-tint: rgba(249, 115, 22, 0.18);
-  --landing-accent-border: rgba(249, 115, 22, 0.38);
-  --landing-accent-selection: rgba(249, 115, 22, 0.28);
-  --landing-support: #f97316;
-  --landing-support-soft: rgba(249, 115, 22, 0.1);
+  --landing-accent: #d97732;
+  --landing-accent-hover: #ef9a5c;
+  --landing-accent-soft: #f8cfad;
+  --landing-accent-tint: rgba(217, 119, 50, 0.18);
+  --landing-accent-border: rgba(217, 119, 50, 0.36);
+  --landing-accent-selection: rgba(217, 119, 50, 0.28);
+  --landing-support: #d97732;
+  --landing-support-soft: rgba(217, 119, 50, 0.12);
   --landing-control-radius: 0.375rem;
   --landing-nav-control-height: 2.25rem;
   --landing-nav-control-radius: 0.375rem;
@@ -568,11 +568,11 @@ onUnmounted(() => {
   --theme-text-soft: #dfe6ef;
   --theme-text-muted: #c4cfdc;
   --theme-text-subtle: #aeb9c8;
-  --theme-primary: #f97316;
-  --theme-primary-hover: #fb923c;
-  --theme-primary-soft: rgba(249, 115, 22, 0.18);
-  --theme-accent: #f97316;
-  --theme-accent-soft: rgba(249, 115, 22, 0.1);
+  --theme-primary: #d97732;
+  --theme-primary-hover: #ef9a5c;
+  --theme-primary-soft: rgba(217, 119, 50, 0.14);
+  --theme-accent: #d97732;
+  --theme-accent-soft: rgba(217, 119, 50, 0.12);
   --theme-shadow: 0 1px 0 rgba(255, 255, 255, 0.035);
   --theme-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.22);
   color-scheme: dark;
@@ -609,16 +609,18 @@ onUnmounted(() => {
 }
 
 .landing-shell :deep(.locale-trigger) {
+  height: auto;
   min-height: var(--landing-nav-control-height);
   border-color: var(--landing-control-border);
   border-radius: var(--landing-nav-control-radius);
   background: var(--theme-surface-muted);
-  padding: 0 0.55rem;
+  padding: 0.4rem 0.55rem;
   box-shadow: var(--landing-control-shadow);
 }
 
 .landing-shell :deep(.locale-trigger-value) {
   font-size: 0.78rem;
+  line-height: 1.25;
 }
 
 .landing-shell :deep(.locale-trigger-icon) {
@@ -633,6 +635,7 @@ onUnmounted(() => {
   max-width: 100vw;
   overflow-x: clip;
   padding-top: 0;
+  background: var(--landing-bg);
   transition: padding 180ms ease;
 }
 
@@ -1616,7 +1619,7 @@ onUnmounted(() => {
   }
 
   .landing-shell :deep(.locale-trigger) {
-    padding: 0 0.48rem;
+    padding: 0.4rem 0.48rem;
   }
 
   .primary-action {
