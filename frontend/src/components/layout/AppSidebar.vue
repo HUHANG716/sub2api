@@ -101,7 +101,7 @@
               v-else
               :to="item.path"
               class="sidebar-link mb-1"
-              :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-collapsed': sidebarCollapsed }"
+              :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-docs': item.prominent, 'sidebar-link-collapsed': sidebarCollapsed }"
               :title="sidebarCollapsed ? item.label : undefined"
               :id="
                 item.path === '/admin/accounts'
@@ -148,7 +148,7 @@
               v-else
               :to="item.path"
               class="sidebar-link mb-1"
-              :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-collapsed': sidebarCollapsed }"
+              :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-docs': item.prominent, 'sidebar-link-collapsed': sidebarCollapsed }"
               :title="sidebarCollapsed ? item.label : undefined"
               :data-tour="item.path === '/keys' ? 'sidebar-my-keys' : undefined"
               @click="handleMenuItemClick(item.path)"
@@ -183,7 +183,7 @@
               v-else
               :to="item.path"
               class="sidebar-link mb-1"
-              :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-collapsed': sidebarCollapsed }"
+              :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-docs': item.prominent, 'sidebar-link-collapsed': sidebarCollapsed }"
               :title="sidebarCollapsed ? item.label : undefined"
               :data-tour="item.path === '/keys' ? 'sidebar-my-keys' : undefined"
               @click="handleMenuItemClick(item.path)"
@@ -351,7 +351,7 @@ import VersionBadge from '@/components/common/VersionBadge.vue'
 import DefaultHashAvatar from '@/components/common/DefaultHashAvatar.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { sanitizeSvg } from '@/utils/sanitize'
-import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
+import { FeatureFlags, makeImagePlaygroundSidebarFlag, makeSidebarFlag } from '@/utils/featureFlags'
 import { defaultAvatarSeed } from '@/utils/defaultAvatar'
 
 interface NavItem {
@@ -495,6 +495,7 @@ const flagPayment = makeSidebarFlag(FeatureFlags.payment)
 const flagAvailableChannels = makeSidebarFlag(FeatureFlags.availableChannels)
 const flagAffiliate = makeSidebarFlag(FeatureFlags.affiliate)
 const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
+const flagImagePlayground = makeImagePlaygroundSidebarFlag()
 const flagOpsMonitoring = () => adminSettingsStore.opsMonitoringEnabled
 const flagAdminPayment = () => adminSettingsStore.paymentEnabled
 
@@ -512,7 +513,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     { path: '/available-channels', label: t('nav.availableChannels'), icon: ChannelIcon, hideInSimpleMode: true, featureFlag: flagAvailableChannels },
-    { path: '/image-playground', label: t('nav.imagePlayground'), icon: ImagePlaygroundIcon, hideInSimpleMode: true },
+    { path: '/image-playground', label: t('nav.imagePlayground'), icon: ImagePlaygroundIcon, hideInSimpleMode: true, featureFlag: flagImagePlayground },
     { path: '/monitor', label: t('nav.channelStatus'), icon: SignalIcon, featureFlag: flagChannelMonitor },
     { path: '/subscriptions', label: t('nav.mySubscriptions'), icon: CreditCardIcon, hideInSimpleMode: true },
     { path: '/purchase', label: t('nav.buySubscription'), icon: RechargeSubscriptionIcon, hideInSimpleMode: true, featureFlag: flagPayment },

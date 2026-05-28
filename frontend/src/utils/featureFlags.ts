@@ -124,6 +124,18 @@ export const FeatureFlags = {
 export type RegisteredFeatureFlag = keyof typeof FeatureFlags
 
 /**
+ * Image Playground is enabled by selecting a concrete image-capable group in
+ * admin settings. `0`, `null`, or a missing value means the workbench has not
+ * been enabled and its sidebar entry should stay hidden.
+ */
+export function isImagePlaygroundConfigured(
+  settings: Pick<PublicSettings, 'image_playground_group_id'> | null | undefined,
+): boolean {
+  const groupId = Number(settings?.image_playground_group_id ?? 0)
+  return Number.isFinite(groupId) && groupId > 0
+}
+
+/**
  * Read the current value of a flag, honoring the mode's fallback.
  * `true`  → the feature is enabled (menu/route should render).
  * `false` → the feature is disabled (menu/route should hide).
@@ -146,4 +158,8 @@ export function isFeatureFlagEnabled(flag: FeatureFlagDefinition): boolean {
  */
 export function makeSidebarFlag(flag: FeatureFlagDefinition): () => boolean {
   return () => isFeatureFlagEnabled(flag)
+}
+
+export function makeImagePlaygroundSidebarFlag(): () => boolean {
+  return () => isImagePlaygroundConfigured(useAppStore().cachedPublicSettings)
 }

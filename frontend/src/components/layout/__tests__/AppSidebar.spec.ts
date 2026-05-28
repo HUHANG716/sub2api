@@ -82,6 +82,14 @@ describe('AppSidebar docs entry', () => {
   })
 })
 
+describe('AppSidebar image playground entry', () => {
+  it('hides the image playground unless admin selected a workbench group', () => {
+    expect(componentSource).toContain("import { FeatureFlags, makeImagePlaygroundSidebarFlag, makeSidebarFlag } from '@/utils/featureFlags'")
+    expect(componentSource).toContain('const flagImagePlayground = makeImagePlaygroundSidebarFlag()')
+    expect(componentSource).toContain("{ path: '/image-playground', label: t('nav.imagePlayground'), icon: ImagePlaygroundIcon, hideInSimpleMode: true, featureFlag: flagImagePlayground }")
+  })
+})
+
 describe('AppSidebar account dropdown', () => {
   it('keeps theme switching in the header instead of the account dropdown', () => {
     const accountDropdownBlock = componentSource.match(/<div v-if="user && accountDropdownOpen"[\s\S]*?<\/transition>/)?.[0] ?? ''

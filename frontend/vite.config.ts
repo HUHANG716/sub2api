@@ -1,7 +1,8 @@
+import { readFile } from 'node:fs/promises'
 import { defineConfig, loadEnv, Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import checker from 'vite-plugin-checker'
-import { resolve } from 'path'
+import { extname, resolve } from 'path'
 
 /**
  * Vite 插件：开发模式下注入公开配置到 index.html
@@ -34,6 +35,46 @@ function injectPublicSettings(backendUrl: string): Plugin {
   }
 }
 
+function serveImagePlaygroundApp(): Plugin {
+  const appPath = '/image-playground-app'
+  const indexPath = resolve(__dirname, 'public', 'image-playground-app', 'index.html')
+
+  return {
+    name: 'serve-image-playground-app',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const requestUrl = req.url ?? ''
+        const pathname = requestUrl.split('?')[0]
+
+        if (pathname === appPath) {
+          res.statusCode = 302
+          res.setHeader('Location', `${appPath}/${requestUrl.includes('?') ? `?${requestUrl.split('?')[1]}` : ''}`)
+          res.end()
+          return
+        }
+
+        if (!pathname.startsWith(`${appPath}/`) || extname(pathname)) {
+          next()
+          return
+        }
+
+        try {
+          const html = await readFile(indexPath, 'utf8')
+          const transformed = await server.transformIndexHtml(requestUrl, html)
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'text/html; charset=utf-8')
+          res.setHeader('Cache-Control', 'no-cache')
+          res.setHeader('X-Frame-Options', 'SAMEORIGIN')
+          res.end(transformed)
+        } catch (error) {
+          next(error)
+        }
+      })
+    }
+  }
+}
+
 export default defineConfig(({ mode }) => {
   // 加载环境变量
   const env = loadEnv(mode, process.cwd(), '')
@@ -46,7 +87,8 @@ export default defineConfig(({ mode }) => {
       checker({
         vueTsc: true
       }),
-      injectPublicSettings(backendUrl)
+      injectPublicSettings(backendUrl),
+      serveImagePlaygroundApp()
     ],
   resolve: {
     alias: {

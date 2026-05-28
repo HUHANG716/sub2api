@@ -6,15 +6,15 @@
 
 @layer base {
   :root {
-    --theme-bg: #efeee8;
-    --theme-bg-soft: #e2dfd6;
-    --theme-bg-deep: #d2d0c5;
-    --theme-surface: rgba(250, 248, 242, 0.94);
-    --theme-surface-strong: #fbfaf5;
-    --theme-surface-muted: rgba(239, 237, 229, 0.92);
-    --theme-main-surface: #efeee8;
-    --theme-border: rgba(117, 110, 96, 0.16);
-    --theme-border-strong: rgba(92, 83, 70, 0.25);
+    --theme-bg: #e8e6df;
+    --theme-bg-soft: #d9d6cc;
+    --theme-bg-deep: #c9c5b9;
+    --theme-surface: rgba(245, 243, 236, 0.96);
+    --theme-surface-strong: #f6f3ec;
+    --theme-surface-muted: rgba(230, 227, 217, 0.94);
+    --theme-main-surface: #e8e6df;
+    --theme-border: rgba(100, 92, 78, 0.2);
+    --theme-border-strong: rgba(82, 73, 60, 0.32);
     --theme-text: #0f172a;
     --theme-text-soft: #334155;
     --theme-text-muted: #475569;
@@ -744,14 +744,17 @@
   }
 
   .sidebar-link-docs {
+    font-weight: 650;
     color: var(--theme-primary);
-    background: color-mix(in srgb, var(--theme-primary-soft) 62%, var(--theme-surface));
-    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--theme-primary) 76%, transparent);
+    background: color-mix(in srgb, var(--theme-primary-soft) 72%, var(--theme-surface));
+    box-shadow:
+      inset 3px 0 0 color-mix(in srgb, var(--theme-primary) 86%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--theme-primary) 12%, transparent);
   }
 
   .sidebar-link-docs:hover {
     color: var(--theme-primary-hover);
-    background: color-mix(in srgb, var(--theme-primary-soft) 78%, var(--theme-surface-strong));
+    background: color-mix(in srgb, var(--theme-primary-soft) 84%, var(--theme-surface-strong));
   }
 
   .sidebar-link-active {
