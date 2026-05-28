@@ -62,6 +62,21 @@
             <span class="text-purple-600 dark:text-purple-400" :title="t('dashboard.actual')">${{ formatCost(stats?.total_actual_cost || 0) }}</span>
             <span class="text-gray-400 dark:text-gray-500" :title="t('dashboard.standard')"> / ${{ formatCost(stats?.total_cost || 0) }}</span>
           </p>
+          <p
+            v-if="(stats?.today_discount_amount || 0) > 0 || (stats?.total_discount_amount || 0) > 0"
+            class="text-xs font-medium text-emerald-600 dark:text-emerald-400"
+          >
+            {{ t('dashboard.discountSaved') }} ${{ formatCost(stats?.today_discount_amount || 0) }}
+            <span class="text-gray-400 dark:text-gray-500">
+              / ${{ formatCost(stats?.total_discount_amount || 0) }}
+            </span>
+          </p>
+          <p
+            v-if="activeGlobalDiscountLabel"
+            class="mt-1 inline-flex max-w-full items-center rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+          >
+            <span class="truncate">{{ activeGlobalDiscountLabel }}</span>
+          </p>
         </div>
       </div>
     </div>
@@ -222,6 +237,12 @@ const platformLabel = (p: string) => PLATFORM_LABELS[p] ?? p
 const sortedPlatforms = computed(() => {
   const list = props.stats?.by_platform ?? []
   return [...list].sort((a, b) => b.total_actual_cost - a.total_actual_cost)
+})
+
+const activeGlobalDiscountLabel = computed(() => {
+  const discount = props.stats?.global_discount
+  if (!discount?.active) return ''
+  return discount.label?.trim() || ''
 })
 
 // 处理"各平台之和 < 总值"的差值：后端按平台聚合时过滤了无法归属平台的行

@@ -180,6 +180,16 @@ func ActualCost(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldActualCost, v))
 }
 
+// DiscountAmount applies equality check predicate on the "discount_amount" field. It's identical to DiscountAmountEQ.
+func DiscountAmount(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldDiscountAmount, v))
+}
+
+// DiscountRate applies equality check predicate on the "discount_rate" field. It's identical to DiscountRateEQ.
+func DiscountRate(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldDiscountRate, v))
+}
+
 // RateMultiplier applies equality check predicate on the "rate_multiplier" field. It's identical to RateMultiplierEQ.
 func RateMultiplier(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldRateMultiplier, v))
@@ -1408,6 +1418,86 @@ func ActualCostLT(v float64) predicate.UsageLog {
 // ActualCostLTE applies the LTE predicate on the "actual_cost" field.
 func ActualCostLTE(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldLTE(FieldActualCost, v))
+}
+
+// DiscountAmountEQ applies the EQ predicate on the "discount_amount" field.
+func DiscountAmountEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldDiscountAmount, v))
+}
+
+// DiscountAmountNEQ applies the NEQ predicate on the "discount_amount" field.
+func DiscountAmountNEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldDiscountAmount, v))
+}
+
+// DiscountAmountIn applies the In predicate on the "discount_amount" field.
+func DiscountAmountIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldDiscountAmount, vs...))
+}
+
+// DiscountAmountNotIn applies the NotIn predicate on the "discount_amount" field.
+func DiscountAmountNotIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldDiscountAmount, vs...))
+}
+
+// DiscountAmountGT applies the GT predicate on the "discount_amount" field.
+func DiscountAmountGT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldDiscountAmount, v))
+}
+
+// DiscountAmountGTE applies the GTE predicate on the "discount_amount" field.
+func DiscountAmountGTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldDiscountAmount, v))
+}
+
+// DiscountAmountLT applies the LT predicate on the "discount_amount" field.
+func DiscountAmountLT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldDiscountAmount, v))
+}
+
+// DiscountAmountLTE applies the LTE predicate on the "discount_amount" field.
+func DiscountAmountLTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldDiscountAmount, v))
+}
+
+// DiscountRateEQ applies the EQ predicate on the "discount_rate" field.
+func DiscountRateEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldDiscountRate, v))
+}
+
+// DiscountRateNEQ applies the NEQ predicate on the "discount_rate" field.
+func DiscountRateNEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldDiscountRate, v))
+}
+
+// DiscountRateIn applies the In predicate on the "discount_rate" field.
+func DiscountRateIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldDiscountRate, vs...))
+}
+
+// DiscountRateNotIn applies the NotIn predicate on the "discount_rate" field.
+func DiscountRateNotIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldDiscountRate, vs...))
+}
+
+// DiscountRateGT applies the GT predicate on the "discount_rate" field.
+func DiscountRateGT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldDiscountRate, v))
+}
+
+// DiscountRateGTE applies the GTE predicate on the "discount_rate" field.
+func DiscountRateGTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldDiscountRate, v))
+}
+
+// DiscountRateLT applies the LT predicate on the "discount_rate" field.
+func DiscountRateLT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldDiscountRate, v))
+}
+
+// DiscountRateLTE applies the LTE predicate on the "discount_rate" field.
+func DiscountRateLTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldDiscountRate, v))
 }
 
 // RateMultiplierEQ applies the EQ predicate on the "rate_multiplier" field.

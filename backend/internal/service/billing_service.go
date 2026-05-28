@@ -141,6 +141,8 @@ type CostBreakdown struct {
 	CacheReadCost     float64
 	TotalCost         float64
 	ActualCost        float64 // 应用倍率后的实际费用
+	DiscountAmount    float64 // 全局折扣为用户节省的费用
+	DiscountRate      float64 // 全局折扣倍率快照（1 = 无折扣）
 	BillingMode       string  // 计费模式（"token"/"per_request"/"image"），由 CalculateCostUnified 填充
 }
 

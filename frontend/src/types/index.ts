@@ -1198,6 +1198,8 @@ export interface UsageLog {
   cache_read_cost: number
   total_cost: number
   actual_cost: number
+  discount_amount: number
+  discount_rate: number
   rate_multiplier: number
   billing_type: number
 
@@ -1361,6 +1363,7 @@ export interface DashboardStats {
   total_cost: number // 累计标准计费
   total_actual_cost: number // 累计实际扣除
   total_account_cost: number // 累计账号成本
+  total_discount_amount: number
 
   // 今日 Token 使用统计
   today_requests: number
@@ -1372,6 +1375,7 @@ export interface DashboardStats {
   today_cost: number // 今日标准计费
   today_actual_cost: number // 今日实际扣除
   today_account_cost: number // 今日账号成本
+  today_discount_amount: number
 
   // 系统运行统计
   average_duration_ms: number // 平均响应时间
@@ -1391,8 +1395,25 @@ export interface UsageStatsResponse {
   total_tokens: number
   total_cost: number // 标准计费
   total_actual_cost: number // 实际扣除
+  total_discount_amount: number
   average_duration_ms: number
+  global_discount?: GlobalDiscountRuntime
   models?: Record<string, number>
+}
+
+export interface GlobalDiscountRuntime {
+  enabled: boolean
+  active: boolean
+  rule_id?: string
+  discount_rate: number
+  schedule_type: "once" | "daily" | "weekly" | "monthly"
+  starts_at?: string
+  ends_at?: string
+  recurring_start_at?: string
+  recurring_end_at?: string
+  weekdays?: number[]
+  month_days?: number[]
+  label?: string
 }
 
 // ==================== Trend & Chart Types ====================

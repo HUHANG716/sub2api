@@ -1,6 +1,9 @@
 package service
 
-import "strings"
+import (
+	"strings"
+	"time"
+)
 
 func firstNonEmpty(values ...string) string {
 	for _, value := range values {
@@ -223,6 +226,62 @@ type SystemSettings struct {
 
 	// 系统全局默认平台配额（key = platform，nil/缺省 = 不限制）
 	DefaultPlatformQuotas map[string]*DefaultPlatformQuotaSetting `json:"default_platform_quotas"`
+
+	// 全局折扣配置。启用且当前时间落在配置窗口内时，用户实际扣费乘以 discount_rate。
+	GlobalDiscountSettings GlobalDiscountSettings `json:"global_discount_settings"`
+}
+
+type GlobalDiscountSettings struct {
+	Enabled          bool                 `json:"enabled"`
+	Rules            []GlobalDiscountRule `json:"rules,omitempty"`
+	DiscountRate     float64              `json:"discount_rate"`
+	ScheduleType     string               `json:"schedule_type"`
+	StartsAt         string               `json:"starts_at"`
+	EndsAt           string               `json:"ends_at"`
+	RecurringStartAt string               `json:"recurring_start_at"`
+	RecurringEndAt   string               `json:"recurring_end_at"`
+	Weekdays         []int                `json:"weekdays,omitempty"`
+	MonthDays        []int                `json:"month_days,omitempty"`
+	Label            string               `json:"label,omitempty"`
+}
+
+type GlobalDiscountRule struct {
+	ID               string  `json:"id,omitempty"`
+	Enabled          bool    `json:"enabled"`
+	DiscountRate     float64 `json:"discount_rate"`
+	ScheduleType     string  `json:"schedule_type"`
+	StartsAt         string  `json:"starts_at"`
+	EndsAt           string  `json:"ends_at"`
+	RecurringStartAt string  `json:"recurring_start_at"`
+	RecurringEndAt   string  `json:"recurring_end_at"`
+	Weekdays         []int   `json:"weekdays,omitempty"`
+	MonthDays        []int   `json:"month_days,omitempty"`
+	Label            string  `json:"label,omitempty"`
+}
+
+type GlobalDiscountRuntime struct {
+	Enabled          bool       `json:"enabled"`
+	Active           bool       `json:"active"`
+	RuleID           string     `json:"rule_id,omitempty"`
+	DiscountRate     float64    `json:"discount_rate"`
+	ScheduleType     string     `json:"schedule_type"`
+	StartsAt         *time.Time `json:"starts_at,omitempty"`
+	EndsAt           *time.Time `json:"ends_at,omitempty"`
+	RecurringStartAt string     `json:"recurring_start_at,omitempty"`
+	RecurringEndAt   string     `json:"recurring_end_at,omitempty"`
+	Weekdays         []int      `json:"weekdays,omitempty"`
+	MonthDays        []int      `json:"month_days,omitempty"`
+	Label            string     `json:"label,omitempty"`
+}
+
+func DefaultGlobalDiscountSettings() GlobalDiscountSettings {
+	return GlobalDiscountSettings{
+		Enabled:          false,
+		DiscountRate:     1,
+		ScheduleType:     "once",
+		RecurringStartAt: "00:00",
+		RecurringEndAt:   "23:59",
+	}
 }
 
 type DefaultSubscriptionSetting struct {

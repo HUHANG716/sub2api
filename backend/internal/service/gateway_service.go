@@ -8577,6 +8577,9 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 
 	// 计算费用
 	cost := s.calculateRecordUsageCost(ctx, result, apiKey, billingModel, multiplier, imageMultiplier, opts)
+	if s.settingService != nil {
+		applyGlobalDiscountToCost(cost, s.settingService.GetGlobalDiscountRuntime(ctx))
+	}
 
 	// 判断计费方式：订阅模式 vs 余额模式
 	isSubscriptionBilling := subscription != nil && apiKey.Group != nil && apiKey.Group.IsSubscriptionType()
@@ -8843,6 +8846,8 @@ func (s *GatewayService) buildRecordUsageLog(
 		usageLog.CacheReadCost = cost.CacheReadCost
 		usageLog.TotalCost = cost.TotalCost
 		usageLog.ActualCost = cost.ActualCost
+		usageLog.DiscountAmount = cost.DiscountAmount
+		usageLog.DiscountRate = cost.DiscountRate
 	}
 
 	return usageLog

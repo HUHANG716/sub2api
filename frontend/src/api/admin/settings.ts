@@ -16,6 +16,34 @@ export interface DefaultSubscriptionSetting {
   validity_days: number;
 }
 
+export interface GlobalDiscountSettings {
+  enabled: boolean;
+  rules?: GlobalDiscountRule[];
+  discount_rate: number;
+  schedule_type: "once" | "daily" | "weekly" | "monthly";
+  starts_at: string;
+  ends_at: string;
+  recurring_start_at: string;
+  recurring_end_at: string;
+  weekdays?: number[];
+  month_days?: number[];
+  label?: string;
+}
+
+export interface GlobalDiscountRule {
+  id?: string;
+  enabled: boolean;
+  discount_rate: number;
+  schedule_type: "once" | "daily" | "weekly" | "monthly";
+  starts_at: string;
+  ends_at: string;
+  recurring_start_at: string;
+  recurring_end_at: string;
+  weekdays?: number[];
+  month_days?: number[];
+  label?: string;
+}
+
 // ── 平台限额类型 ──────────────────────────────────────────────────
 export type PlatformType = "anthropic" | "openai" | "gemini" | "antigravity"
 export type QuotaWindowType = "daily" | "weekly" | "monthly"
@@ -565,6 +593,7 @@ export interface SystemSettings {
   // Payment configuration
   payment_enabled: boolean;
   risk_control_enabled: boolean;
+  global_discount_settings: GlobalDiscountSettings;
   payment_min_amount: number;
   payment_max_amount: number;
   payment_daily_limit: number;
@@ -799,6 +828,7 @@ export interface UpdateSettingsRequest {
   // Payment configuration
   payment_enabled?: boolean;
   risk_control_enabled?: boolean;
+  global_discount_settings?: GlobalDiscountSettings;
   payment_min_amount?: number;
   payment_max_amount?: number;
   payment_daily_limit?: number;

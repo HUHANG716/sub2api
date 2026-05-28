@@ -362,6 +362,10 @@ const (
 	// sidebar entry is hidden. Defaults to false (opt-in feature).
 	SettingKeyAvailableChannelsEnabled = "available_channels_enabled"
 
+	// SettingKeyGlobalDiscountSettings stores the global billing discount window
+	// config as JSON. When active, user-facing billed costs are reduced globally.
+	SettingKeyGlobalDiscountSettings = "global_discount_settings"
+
 	// =========================
 	// Overload Cooldown (529)
 	// =========================

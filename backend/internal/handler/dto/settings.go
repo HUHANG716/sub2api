@@ -255,6 +255,9 @@ type SystemSettings struct {
 
 	// 系统全局默认平台配额（key = platform，nil/缺省 = 不限制）
 	DefaultPlatformQuotas map[string]*service.DefaultPlatformQuotaSetting `json:"default_platform_quotas,omitempty"`
+
+	// 全局折扣配置
+	GlobalDiscountSettings service.GlobalDiscountSettings `json:"global_discount_settings"`
 }
 
 type DefaultSubscriptionSetting struct {

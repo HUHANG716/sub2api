@@ -24,6 +24,7 @@ type UsageHandler struct {
 	billingService        *service.BillingService
 	modelPricingResolver  *service.ModelPricingResolver
 	userGroupRateResolver *service.UserGroupRateResolver
+	settingService        *service.SettingService
 }
 
 // NewUsageHandler creates a new UsageHandler
@@ -33,14 +34,38 @@ func NewUsageHandler(
 	billingService *service.BillingService,
 	modelPricingResolver *service.ModelPricingResolver,
 	userGroupRateRepo service.UserGroupRateRepository,
+	settingServices ...*service.SettingService,
 ) *UsageHandler {
+	var settings *service.SettingService
+	if len(settingServices) > 0 {
+		settings = settingServices[0]
+	}
 	return &UsageHandler{
 		usageService:          usageService,
 		apiKeyService:         apiKeyService,
 		billingService:        billingService,
 		modelPricingResolver:  modelPricingResolver,
 		userGroupRateResolver: service.NewUserGroupRateResolver(userGroupRateRepo, "handler.usage"),
+		settingService:        settings,
 	}
+}
+
+func ProvideUsageHandler(
+	usageService *service.UsageService,
+	apiKeyService *service.APIKeyService,
+	billingService *service.BillingService,
+	modelPricingResolver *service.ModelPricingResolver,
+	userGroupRateRepo service.UserGroupRateRepository,
+	settingService *service.SettingService,
+) *UsageHandler {
+	return NewUsageHandler(
+		usageService,
+		apiKeyService,
+		billingService,
+		modelPricingResolver,
+		userGroupRateRepo,
+		settingService,
+	)
 }
 
 type imageEstimateRequest struct {
@@ -415,6 +440,10 @@ func (h *UsageHandler) Stats(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
+	if h.settingService != nil {
+		runtime := h.settingService.GetGlobalDiscountRuntime(c.Request.Context())
+		stats.GlobalDiscount = &runtime
+	}
 
 	response.Success(c, stats)
 }
@@ -488,6 +517,10 @@ func (h *UsageHandler) DashboardStats(c *gin.Context) {
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
+	}
+	if h.settingService != nil {
+		runtime := h.settingService.GetGlobalDiscountRuntime(c.Request.Context())
+		stats.GlobalDiscount = &runtime
 	}
 
 	response.Success(c, stats)

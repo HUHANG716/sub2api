@@ -38,6 +38,10 @@ func (s *FrontendServer) InvalidateCache() {}
 // Middleware returns a handler that returns 404 for non-embed builds
 func (s *FrontendServer) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if shouldBypassEmbeddedFrontend(c.Request.URL.Path) {
+			c.Next()
+			return
+		}
 		c.String(http.StatusNotFound, "Frontend not embedded. Build with -tags embed to include frontend.")
 		c.Abort()
 	}
@@ -45,6 +49,10 @@ func (s *FrontendServer) Middleware() gin.HandlerFunc {
 
 func ServeEmbeddedFrontend() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if shouldBypassEmbeddedFrontend(c.Request.URL.Path) {
+			c.Next()
+			return
+		}
 		c.String(http.StatusNotFound, "Frontend not embedded. Build with -tags embed to include frontend.")
 		c.Abort()
 	}

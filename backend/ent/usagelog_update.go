@@ -521,6 +521,48 @@ func (_u *UsageLogUpdate) AddActualCost(v float64) *UsageLogUpdate {
 	return _u
 }
 
+// SetDiscountAmount sets the "discount_amount" field.
+func (_u *UsageLogUpdate) SetDiscountAmount(v float64) *UsageLogUpdate {
+	_u.mutation.ResetDiscountAmount()
+	_u.mutation.SetDiscountAmount(v)
+	return _u
+}
+
+// SetNillableDiscountAmount sets the "discount_amount" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableDiscountAmount(v *float64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetDiscountAmount(*v)
+	}
+	return _u
+}
+
+// AddDiscountAmount adds value to the "discount_amount" field.
+func (_u *UsageLogUpdate) AddDiscountAmount(v float64) *UsageLogUpdate {
+	_u.mutation.AddDiscountAmount(v)
+	return _u
+}
+
+// SetDiscountRate sets the "discount_rate" field.
+func (_u *UsageLogUpdate) SetDiscountRate(v float64) *UsageLogUpdate {
+	_u.mutation.ResetDiscountRate()
+	_u.mutation.SetDiscountRate(v)
+	return _u
+}
+
+// SetNillableDiscountRate sets the "discount_rate" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableDiscountRate(v *float64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetDiscountRate(*v)
+	}
+	return _u
+}
+
+// AddDiscountRate adds value to the "discount_rate" field.
+func (_u *UsageLogUpdate) AddDiscountRate(v float64) *UsageLogUpdate {
+	_u.mutation.AddDiscountRate(v)
+	return _u
+}
+
 // SetRateMultiplier sets the "rate_multiplier" field.
 func (_u *UsageLogUpdate) SetRateMultiplier(v float64) *UsageLogUpdate {
 	_u.mutation.ResetRateMultiplier()
@@ -1119,6 +1161,18 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedActualCost(); ok {
 		_spec.AddField(usagelog.FieldActualCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.DiscountAmount(); ok {
+		_spec.SetField(usagelog.FieldDiscountAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDiscountAmount(); ok {
+		_spec.AddField(usagelog.FieldDiscountAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.DiscountRate(); ok {
+		_spec.SetField(usagelog.FieldDiscountRate, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDiscountRate(); ok {
+		_spec.AddField(usagelog.FieldDiscountRate, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.RateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)
@@ -1867,6 +1921,48 @@ func (_u *UsageLogUpdateOne) AddActualCost(v float64) *UsageLogUpdateOne {
 	return _u
 }
 
+// SetDiscountAmount sets the "discount_amount" field.
+func (_u *UsageLogUpdateOne) SetDiscountAmount(v float64) *UsageLogUpdateOne {
+	_u.mutation.ResetDiscountAmount()
+	_u.mutation.SetDiscountAmount(v)
+	return _u
+}
+
+// SetNillableDiscountAmount sets the "discount_amount" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableDiscountAmount(v *float64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetDiscountAmount(*v)
+	}
+	return _u
+}
+
+// AddDiscountAmount adds value to the "discount_amount" field.
+func (_u *UsageLogUpdateOne) AddDiscountAmount(v float64) *UsageLogUpdateOne {
+	_u.mutation.AddDiscountAmount(v)
+	return _u
+}
+
+// SetDiscountRate sets the "discount_rate" field.
+func (_u *UsageLogUpdateOne) SetDiscountRate(v float64) *UsageLogUpdateOne {
+	_u.mutation.ResetDiscountRate()
+	_u.mutation.SetDiscountRate(v)
+	return _u
+}
+
+// SetNillableDiscountRate sets the "discount_rate" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableDiscountRate(v *float64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetDiscountRate(*v)
+	}
+	return _u
+}
+
+// AddDiscountRate adds value to the "discount_rate" field.
+func (_u *UsageLogUpdateOne) AddDiscountRate(v float64) *UsageLogUpdateOne {
+	_u.mutation.AddDiscountRate(v)
+	return _u
+}
+
 // SetRateMultiplier sets the "rate_multiplier" field.
 func (_u *UsageLogUpdateOne) SetRateMultiplier(v float64) *UsageLogUpdateOne {
 	_u.mutation.ResetRateMultiplier()
@@ -2495,6 +2591,18 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if value, ok := _u.mutation.AddedActualCost(); ok {
 		_spec.AddField(usagelog.FieldActualCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.DiscountAmount(); ok {
+		_spec.SetField(usagelog.FieldDiscountAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDiscountAmount(); ok {
+		_spec.AddField(usagelog.FieldDiscountAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.DiscountRate(); ok {
+		_spec.SetField(usagelog.FieldDiscountRate, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDiscountRate(); ok {
+		_spec.AddField(usagelog.FieldDiscountRate, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.RateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)

@@ -337,6 +337,34 @@ func (_c *UsageLogCreate) SetNillableActualCost(v *float64) *UsageLogCreate {
 	return _c
 }
 
+// SetDiscountAmount sets the "discount_amount" field.
+func (_c *UsageLogCreate) SetDiscountAmount(v float64) *UsageLogCreate {
+	_c.mutation.SetDiscountAmount(v)
+	return _c
+}
+
+// SetNillableDiscountAmount sets the "discount_amount" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableDiscountAmount(v *float64) *UsageLogCreate {
+	if v != nil {
+		_c.SetDiscountAmount(*v)
+	}
+	return _c
+}
+
+// SetDiscountRate sets the "discount_rate" field.
+func (_c *UsageLogCreate) SetDiscountRate(v float64) *UsageLogCreate {
+	_c.mutation.SetDiscountRate(v)
+	return _c
+}
+
+// SetNillableDiscountRate sets the "discount_rate" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableDiscountRate(v *float64) *UsageLogCreate {
+	if v != nil {
+		_c.SetDiscountRate(*v)
+	}
+	return _c
+}
+
 // SetRateMultiplier sets the "rate_multiplier" field.
 func (_c *UsageLogCreate) SetRateMultiplier(v float64) *UsageLogCreate {
 	_c.mutation.SetRateMultiplier(v)
@@ -661,6 +689,14 @@ func (_c *UsageLogCreate) defaults() {
 		v := usagelog.DefaultActualCost
 		_c.mutation.SetActualCost(v)
 	}
+	if _, ok := _c.mutation.DiscountAmount(); !ok {
+		v := usagelog.DefaultDiscountAmount
+		_c.mutation.SetDiscountAmount(v)
+	}
+	if _, ok := _c.mutation.DiscountRate(); !ok {
+		v := usagelog.DefaultDiscountRate
+		_c.mutation.SetDiscountRate(v)
+	}
 	if _, ok := _c.mutation.RateMultiplier(); !ok {
 		v := usagelog.DefaultRateMultiplier
 		_c.mutation.SetRateMultiplier(v)
@@ -774,6 +810,12 @@ func (_c *UsageLogCreate) check() error {
 	}
 	if _, ok := _c.mutation.ActualCost(); !ok {
 		return &ValidationError{Name: "actual_cost", err: errors.New(`ent: missing required field "UsageLog.actual_cost"`)}
+	}
+	if _, ok := _c.mutation.DiscountAmount(); !ok {
+		return &ValidationError{Name: "discount_amount", err: errors.New(`ent: missing required field "UsageLog.discount_amount"`)}
+	}
+	if _, ok := _c.mutation.DiscountRate(); !ok {
+		return &ValidationError{Name: "discount_rate", err: errors.New(`ent: missing required field "UsageLog.discount_rate"`)}
 	}
 	if _, ok := _c.mutation.RateMultiplier(); !ok {
 		return &ValidationError{Name: "rate_multiplier", err: errors.New(`ent: missing required field "UsageLog.rate_multiplier"`)}
@@ -938,6 +980,14 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ActualCost(); ok {
 		_spec.SetField(usagelog.FieldActualCost, field.TypeFloat64, value)
 		_node.ActualCost = value
+	}
+	if value, ok := _c.mutation.DiscountAmount(); ok {
+		_spec.SetField(usagelog.FieldDiscountAmount, field.TypeFloat64, value)
+		_node.DiscountAmount = value
+	}
+	if value, ok := _c.mutation.DiscountRate(); ok {
+		_spec.SetField(usagelog.FieldDiscountRate, field.TypeFloat64, value)
+		_node.DiscountRate = value
 	}
 	if value, ok := _c.mutation.RateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)
@@ -1563,6 +1613,42 @@ func (u *UsageLogUpsert) UpdateActualCost() *UsageLogUpsert {
 // AddActualCost adds v to the "actual_cost" field.
 func (u *UsageLogUpsert) AddActualCost(v float64) *UsageLogUpsert {
 	u.Add(usagelog.FieldActualCost, v)
+	return u
+}
+
+// SetDiscountAmount sets the "discount_amount" field.
+func (u *UsageLogUpsert) SetDiscountAmount(v float64) *UsageLogUpsert {
+	u.Set(usagelog.FieldDiscountAmount, v)
+	return u
+}
+
+// UpdateDiscountAmount sets the "discount_amount" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateDiscountAmount() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldDiscountAmount)
+	return u
+}
+
+// AddDiscountAmount adds v to the "discount_amount" field.
+func (u *UsageLogUpsert) AddDiscountAmount(v float64) *UsageLogUpsert {
+	u.Add(usagelog.FieldDiscountAmount, v)
+	return u
+}
+
+// SetDiscountRate sets the "discount_rate" field.
+func (u *UsageLogUpsert) SetDiscountRate(v float64) *UsageLogUpsert {
+	u.Set(usagelog.FieldDiscountRate, v)
+	return u
+}
+
+// UpdateDiscountRate sets the "discount_rate" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateDiscountRate() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldDiscountRate)
+	return u
+}
+
+// AddDiscountRate adds v to the "discount_rate" field.
+func (u *UsageLogUpsert) AddDiscountRate(v float64) *UsageLogUpsert {
+	u.Add(usagelog.FieldDiscountRate, v)
 	return u
 }
 
@@ -2381,6 +2467,48 @@ func (u *UsageLogUpsertOne) AddActualCost(v float64) *UsageLogUpsertOne {
 func (u *UsageLogUpsertOne) UpdateActualCost() *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.UpdateActualCost()
+	})
+}
+
+// SetDiscountAmount sets the "discount_amount" field.
+func (u *UsageLogUpsertOne) SetDiscountAmount(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetDiscountAmount(v)
+	})
+}
+
+// AddDiscountAmount adds v to the "discount_amount" field.
+func (u *UsageLogUpsertOne) AddDiscountAmount(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddDiscountAmount(v)
+	})
+}
+
+// UpdateDiscountAmount sets the "discount_amount" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateDiscountAmount() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateDiscountAmount()
+	})
+}
+
+// SetDiscountRate sets the "discount_rate" field.
+func (u *UsageLogUpsertOne) SetDiscountRate(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetDiscountRate(v)
+	})
+}
+
+// AddDiscountRate adds v to the "discount_rate" field.
+func (u *UsageLogUpsertOne) AddDiscountRate(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddDiscountRate(v)
+	})
+}
+
+// UpdateDiscountRate sets the "discount_rate" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateDiscountRate() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateDiscountRate()
 	})
 }
 
@@ -3411,6 +3539,48 @@ func (u *UsageLogUpsertBulk) AddActualCost(v float64) *UsageLogUpsertBulk {
 func (u *UsageLogUpsertBulk) UpdateActualCost() *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.UpdateActualCost()
+	})
+}
+
+// SetDiscountAmount sets the "discount_amount" field.
+func (u *UsageLogUpsertBulk) SetDiscountAmount(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetDiscountAmount(v)
+	})
+}
+
+// AddDiscountAmount adds v to the "discount_amount" field.
+func (u *UsageLogUpsertBulk) AddDiscountAmount(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddDiscountAmount(v)
+	})
+}
+
+// UpdateDiscountAmount sets the "discount_amount" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateDiscountAmount() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateDiscountAmount()
+	})
+}
+
+// SetDiscountRate sets the "discount_rate" field.
+func (u *UsageLogUpsertBulk) SetDiscountRate(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetDiscountRate(v)
+	})
+}
+
+// AddDiscountRate adds v to the "discount_rate" field.
+func (u *UsageLogUpsertBulk) AddDiscountRate(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddDiscountRate(v)
+	})
+}
+
+// UpdateDiscountRate sets the "discount_rate" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateDiscountRate() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateDiscountRate()
 	})
 }
 

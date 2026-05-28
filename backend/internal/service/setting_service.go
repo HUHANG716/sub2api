@@ -20,6 +20,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
 	"github.com/imroc/req/v3"
 	"golang.org/x/sync/singleflight"
 )
@@ -141,6 +142,15 @@ const openAICodexUserAgentCacheTTL = 60 * time.Second
 const openAICodexUserAgentErrorTTL = 5 * time.Second
 const openAICodexUserAgentDBTimeout = 5 * time.Second
 
+type cachedGlobalDiscountRuntime struct {
+	settings  GlobalDiscountSettings
+	expiresAt int64 // unix nano
+}
+
+const globalDiscountCacheTTL = 30 * time.Second
+const globalDiscountErrorTTL = 5 * time.Second
+const globalDiscountDBTimeout = 5 * time.Second
+
 // DefaultSubscriptionGroupReader validates group references used by default subscriptions.
 type DefaultSubscriptionGroupReader interface {
 	GetByID(ctx context.Context, id int64) (*Group, error)
@@ -163,6 +173,8 @@ type SettingService struct {
 	antigravityUAVersionSF    singleflight.Group
 	openAICodexUACache        atomic.Value // *cachedOpenAICodexUserAgent
 	openAICodexUASF           singleflight.Group
+	globalDiscountCache       atomic.Value // *cachedGlobalDiscountRuntime
+	globalDiscountSF          singleflight.Group
 }
 
 // DefaultPlatformQuotaSetting 单 platform 三档限额（nil = 沿用上层；0 = 显式禁用；>0 = 上限）
@@ -290,6 +302,529 @@ const (
 	defaultLoginAgreementMode    = "modal"
 	defaultLoginAgreementDate    = "2026-03-31"
 )
+
+func normalizeGlobalDiscountSettings(in GlobalDiscountSettings) (GlobalDiscountSettings, error) {
+	out := DefaultGlobalDiscountSettings()
+	out.Enabled = in.Enabled
+	out.Rules = normalizeGlobalDiscountInputRules(in)
+	if len(out.Rules) > 0 {
+		rules := make([]GlobalDiscountRule, 0, len(out.Rules))
+		for i, rule := range out.Rules {
+			normalized, err := normalizeGlobalDiscountRule(rule, i)
+			if err != nil {
+				return out, err
+			}
+			rules = append(rules, normalized)
+		}
+		out.Rules = rules
+		if err := validateGlobalDiscountRulesMutuallyExclusive(out.Rules); err != nil {
+			return out, err
+		}
+		out = copyFirstGlobalDiscountRuleToLegacyFields(out)
+		return out, nil
+	}
+	rule, err := normalizeGlobalDiscountRule(GlobalDiscountRule{
+		Enabled:          in.Enabled,
+		DiscountRate:     in.DiscountRate,
+		ScheduleType:     in.ScheduleType,
+		StartsAt:         in.StartsAt,
+		EndsAt:           in.EndsAt,
+		RecurringStartAt: in.RecurringStartAt,
+		RecurringEndAt:   in.RecurringEndAt,
+		Weekdays:         in.Weekdays,
+		MonthDays:        in.MonthDays,
+		Label:            in.Label,
+	}, 0)
+	if err != nil {
+		return out, err
+	}
+	out.Rules = []GlobalDiscountRule{rule}
+	out = copyFirstGlobalDiscountRuleToLegacyFields(out)
+	return out, nil
+}
+
+func normalizeGlobalDiscountInputRules(in GlobalDiscountSettings) []GlobalDiscountRule {
+	if len(in.Rules) > 0 {
+		return in.Rules
+	}
+	if !in.Enabled &&
+		in.DiscountRate == 0 &&
+		strings.TrimSpace(in.ScheduleType) == "" &&
+		strings.TrimSpace(in.StartsAt) == "" &&
+		strings.TrimSpace(in.EndsAt) == "" &&
+		strings.TrimSpace(in.RecurringStartAt) == "" &&
+		strings.TrimSpace(in.RecurringEndAt) == "" &&
+		strings.TrimSpace(in.Label) == "" {
+		return nil
+	}
+	return []GlobalDiscountRule{{
+		Enabled:          in.Enabled,
+		DiscountRate:     in.DiscountRate,
+		ScheduleType:     in.ScheduleType,
+		StartsAt:         in.StartsAt,
+		EndsAt:           in.EndsAt,
+		RecurringStartAt: in.RecurringStartAt,
+		RecurringEndAt:   in.RecurringEndAt,
+		Weekdays:         in.Weekdays,
+		MonthDays:        in.MonthDays,
+		Label:            in.Label,
+	}}
+}
+
+func normalizeGlobalDiscountRule(in GlobalDiscountRule, index int) (GlobalDiscountRule, error) {
+	out := GlobalDiscountRule{
+		ID:               strings.TrimSpace(in.ID),
+		Enabled:          in.Enabled,
+		DiscountRate:     1,
+		ScheduleType:     normalizeGlobalDiscountScheduleType(in.ScheduleType),
+		StartsAt:         strings.TrimSpace(in.StartsAt),
+		EndsAt:           strings.TrimSpace(in.EndsAt),
+		RecurringStartAt: strings.TrimSpace(in.RecurringStartAt),
+		RecurringEndAt:   strings.TrimSpace(in.RecurringEndAt),
+		Weekdays:         normalizeGlobalDiscountInts(in.Weekdays, 1, 7),
+		MonthDays:        normalizeGlobalDiscountInts(in.MonthDays, 1, 31),
+		Label:            strings.TrimSpace(in.Label),
+	}
+	if out.ID == "" {
+		out.ID = fmt.Sprintf("rule-%d", index+1)
+	}
+	if in.DiscountRate > 0 {
+		out.DiscountRate = in.DiscountRate
+	}
+	if math.IsNaN(out.DiscountRate) || math.IsInf(out.DiscountRate, 0) || out.DiscountRate <= 0 || out.DiscountRate > 1 {
+		return out, infraerrors.BadRequest("INVALID_GLOBAL_DISCOUNT", "discount rate must be greater than 0 and less than or equal to 1")
+	}
+	if out.Enabled {
+		if err := validateGlobalDiscountRuleSchedule(&out); err != nil {
+			return out, err
+		}
+	}
+	return out, nil
+}
+
+type globalDiscountInterval struct {
+	ruleID    string
+	start     time.Time
+	end       time.Time
+	recurring bool
+	originDay time.Time
+}
+
+func validateGlobalDiscountRulesMutuallyExclusive(rules []GlobalDiscountRule) error {
+	enabledRules := make([]GlobalDiscountRule, 0, len(rules))
+	var minOnce, maxOnce time.Time
+	for _, rule := range rules {
+		if !rule.Enabled {
+			continue
+		}
+		enabledRules = append(enabledRules, rule)
+		if rule.ScheduleType == "once" {
+			start, _ := parseGlobalDiscountTime(rule.StartsAt)
+			end, _ := parseGlobalDiscountTime(rule.EndsAt)
+			if minOnce.IsZero() || start.Before(minOnce) {
+				minOnce = start
+			}
+			if maxOnce.IsZero() || end.After(maxOnce) {
+				maxOnce = end
+			}
+		}
+	}
+	if len(enabledRules) < 2 {
+		return nil
+	}
+
+	loc := timezone.Location()
+	windowStart := time.Date(2026, 1, 1, 0, 0, 0, 0, loc)
+	windowEnd := windowStart.AddDate(1, 1, 0)
+	if !minOnce.IsZero() && !maxOnce.IsZero() {
+		windowStart = minOnce.In(loc).AddDate(0, 0, -2)
+		windowEnd = maxOnce.In(loc).AddDate(0, 0, 2)
+		if windowEnd.Before(windowStart.AddDate(0, 1, 0)) {
+			windowEnd = windowStart.AddDate(0, 1, 0)
+		}
+	}
+
+	intervals := make([]globalDiscountInterval, 0)
+	for _, rule := range enabledRules {
+		intervals = append(intervals, globalDiscountRuleIntervals(rule, windowStart, windowEnd)...)
+	}
+	sort.Slice(intervals, func(i, j int) bool {
+		return intervals[i].start.Before(intervals[j].start)
+	})
+	for i := 1; i < len(intervals); i++ {
+		prev := intervals[i-1]
+		curr := intervals[i]
+		if prev.ruleID == curr.ruleID {
+			continue
+		}
+		if prev.recurring && curr.recurring && !prev.originDay.Equal(curr.originDay) {
+			continue
+		}
+		if prev.start.Before(curr.end) && curr.start.Before(prev.end) {
+			return infraerrors.BadRequest("INVALID_GLOBAL_DISCOUNT", "global discount rules must not overlap")
+		}
+	}
+	return nil
+}
+
+func globalDiscountRuleIntervals(rule GlobalDiscountRule, windowStart, windowEnd time.Time) []globalDiscountInterval {
+	if rule.ScheduleType == "once" {
+		start, startErr := parseGlobalDiscountTime(rule.StartsAt)
+		end, endErr := parseGlobalDiscountTime(rule.EndsAt)
+		if startErr != nil || endErr != nil || !end.After(start) {
+			return nil
+		}
+		if end.After(windowStart) && start.Before(windowEnd) {
+			return []globalDiscountInterval{{ruleID: rule.ID, start: start, end: end}}
+		}
+		return nil
+	}
+
+	startMin, ok := parseGlobalDiscountClockMinutes(rule.RecurringStartAt)
+	if !ok {
+		return nil
+	}
+	endMin, ok := parseGlobalDiscountClockMinutes(rule.RecurringEndAt)
+	if !ok || startMin == endMin {
+		return nil
+	}
+
+	loc := timezone.Location()
+	startDay := timezone.StartOfDay(windowStart.In(loc)).AddDate(0, 0, -1)
+	endDay := timezone.StartOfDay(windowEnd.In(loc)).AddDate(0, 0, 1)
+	intervals := make([]globalDiscountInterval, 0)
+	for day := startDay; !day.After(endDay); day = day.AddDate(0, 0, 1) {
+		if !globalDiscountRuleAppliesOnDay(rule, day) {
+			continue
+		}
+		start := day.Add(time.Duration(startMin) * time.Minute)
+		end := day.Add(time.Duration(endMin) * time.Minute)
+		if endMin <= startMin {
+			end = end.AddDate(0, 0, 1)
+		}
+		if end.After(windowStart) && start.Before(windowEnd) {
+			intervals = append(intervals, globalDiscountInterval{
+				ruleID:    rule.ID,
+				start:     start,
+				end:       end,
+				recurring: true,
+				originDay: day,
+			})
+		}
+	}
+	return intervals
+}
+
+func globalDiscountRuleAppliesOnDay(rule GlobalDiscountRule, day time.Time) bool {
+	switch rule.ScheduleType {
+	case "daily":
+		return true
+	case "weekly":
+		return containsInt(rule.Weekdays, globalDiscountWeekday(day))
+	case "monthly":
+		return containsInt(rule.MonthDays, day.Day())
+	default:
+		return false
+	}
+}
+
+func copyFirstGlobalDiscountRuleToLegacyFields(settings GlobalDiscountSettings) GlobalDiscountSettings {
+	if len(settings.Rules) == 0 {
+		return settings
+	}
+	rule := settings.Rules[0]
+	settings.DiscountRate = rule.DiscountRate
+	settings.ScheduleType = rule.ScheduleType
+	settings.StartsAt = rule.StartsAt
+	settings.EndsAt = rule.EndsAt
+	settings.RecurringStartAt = rule.RecurringStartAt
+	settings.RecurringEndAt = rule.RecurringEndAt
+	settings.Weekdays = append([]int(nil), rule.Weekdays...)
+	settings.MonthDays = append([]int(nil), rule.MonthDays...)
+	settings.Label = rule.Label
+	return settings
+}
+
+func normalizeGlobalDiscountScheduleType(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "daily", "weekly", "monthly":
+		return strings.ToLower(strings.TrimSpace(raw))
+	default:
+		return "once"
+	}
+}
+
+func normalizeGlobalDiscountInts(values []int, min, max int) []int {
+	if len(values) == 0 {
+		return nil
+	}
+	seen := make(map[int]struct{}, len(values))
+	out := make([]int, 0, len(values))
+	for _, value := range values {
+		if value < min || value > max {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		out = append(out, value)
+	}
+	sort.Ints(out)
+	return out
+}
+
+func validateGlobalDiscountRuleSchedule(out *GlobalDiscountRule) error {
+	if out == nil {
+		return infraerrors.BadRequest("INVALID_GLOBAL_DISCOUNT", "discount settings are required")
+	}
+	switch out.ScheduleType {
+	case "once":
+		if out.StartsAt == "" || out.EndsAt == "" {
+			return infraerrors.BadRequest("INVALID_GLOBAL_DISCOUNT", "discount start and end time are required when enabled")
+		}
+		start, err := parseGlobalDiscountTime(out.StartsAt)
+		if err != nil {
+			return infraerrors.BadRequest("INVALID_GLOBAL_DISCOUNT", "discount start time must be RFC3339")
+		}
+		end, err := parseGlobalDiscountTime(out.EndsAt)
+		if err != nil {
+			return infraerrors.BadRequest("INVALID_GLOBAL_DISCOUNT", "discount end time must be RFC3339")
+		}
+		if !end.After(start) {
+			return infraerrors.BadRequest("INVALID_GLOBAL_DISCOUNT", "discount end time must be after start time")
+		}
+		out.StartsAt = start.UTC().Format(time.RFC3339)
+		out.EndsAt = end.UTC().Format(time.RFC3339)
+	default:
+		start, err := normalizeGlobalDiscountClock(out.RecurringStartAt)
+		if err != nil {
+			return infraerrors.BadRequest("INVALID_GLOBAL_DISCOUNT", "recurring discount start time must be HH:mm")
+		}
+		end, err := normalizeGlobalDiscountClock(out.RecurringEndAt)
+		if err != nil {
+			return infraerrors.BadRequest("INVALID_GLOBAL_DISCOUNT", "recurring discount end time must be HH:mm")
+		}
+		if start == end {
+			return infraerrors.BadRequest("INVALID_GLOBAL_DISCOUNT", "recurring discount start and end time must be different")
+		}
+		out.RecurringStartAt = start
+		out.RecurringEndAt = end
+		if out.ScheduleType == "weekly" && len(out.Weekdays) == 0 {
+			return infraerrors.BadRequest("INVALID_GLOBAL_DISCOUNT", "at least one weekday is required for weekly discount")
+		}
+		if out.ScheduleType == "monthly" && len(out.MonthDays) == 0 {
+			return infraerrors.BadRequest("INVALID_GLOBAL_DISCOUNT", "at least one month day is required for monthly discount")
+		}
+	}
+	return nil
+}
+
+func normalizeGlobalDiscountClock(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", errors.New("empty clock")
+	}
+	t, err := time.Parse("15:04", raw)
+	if err != nil {
+		return "", err
+	}
+	return t.Format("15:04"), nil
+}
+
+func parseGlobalDiscountSettings(raw string) GlobalDiscountSettings {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return DefaultGlobalDiscountSettings()
+	}
+	var settings GlobalDiscountSettings
+	if err := json.Unmarshal([]byte(raw), &settings); err != nil {
+		return DefaultGlobalDiscountSettings()
+	}
+	normalized, err := normalizeGlobalDiscountSettings(settings)
+	if err != nil {
+		return DefaultGlobalDiscountSettings()
+	}
+	return normalized
+}
+
+func parseGlobalDiscountTime(raw string) (time.Time, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return time.Time{}, errors.New("empty time")
+	}
+	if t, err := time.Parse(time.RFC3339, raw); err == nil {
+		return t, nil
+	}
+	if t, err := time.Parse("2006-01-02T15:04", raw); err == nil {
+		return t, nil
+	}
+	return time.Time{}, fmt.Errorf("invalid time %q", raw)
+}
+
+func globalDiscountRuntime(settings GlobalDiscountSettings, now time.Time) GlobalDiscountRuntime {
+	settings, _ = normalizeGlobalDiscountSettings(settings)
+	if !settings.Enabled {
+		return GlobalDiscountRuntime{
+			Enabled:      false,
+			DiscountRate: 1,
+			ScheduleType: "once",
+		}
+	}
+	var best *GlobalDiscountRuntime
+	bestDuration := time.Duration(0)
+	for _, rule := range settings.Rules {
+		runtime := globalDiscountRuleRuntime(rule, now)
+		runtime.Enabled = settings.Enabled && rule.Enabled
+		runtime.Active = globalDiscountActive(runtime, now)
+		if runtime.Active {
+			duration := globalDiscountRuleDuration(runtime)
+			if best == nil || duration < bestDuration {
+				candidate := runtime
+				best = &candidate
+				bestDuration = duration
+			}
+		}
+	}
+	if best != nil {
+		return *best
+	}
+	runtime := GlobalDiscountRuntime{
+		Enabled:      settings.Enabled,
+		DiscountRate: 1,
+		ScheduleType: "once",
+	}
+	if len(settings.Rules) > 0 {
+		runtime = globalDiscountRuleRuntime(settings.Rules[0], now)
+		runtime.Enabled = settings.Enabled && settings.Rules[0].Enabled
+		runtime.Active = false
+	}
+	return runtime
+}
+
+func globalDiscountRuleDuration(runtime GlobalDiscountRuntime) time.Duration {
+	if runtime.ScheduleType == "" || runtime.ScheduleType == "once" {
+		if runtime.StartsAt != nil && runtime.EndsAt != nil && runtime.EndsAt.After(*runtime.StartsAt) {
+			return runtime.EndsAt.Sub(*runtime.StartsAt)
+		}
+		return 365 * 24 * time.Hour
+	}
+	startMin, ok := parseGlobalDiscountClockMinutes(runtime.RecurringStartAt)
+	if !ok {
+		return 365 * 24 * time.Hour
+	}
+	endMin, ok := parseGlobalDiscountClockMinutes(runtime.RecurringEndAt)
+	if !ok {
+		return 365 * 24 * time.Hour
+	}
+	delta := endMin - startMin
+	if delta <= 0 {
+		delta += 24 * 60
+	}
+	return time.Duration(delta) * time.Minute
+}
+
+func globalDiscountRuleRuntime(rule GlobalDiscountRule, now time.Time) GlobalDiscountRuntime {
+	runtime := GlobalDiscountRuntime{
+		Enabled:          rule.Enabled,
+		RuleID:           rule.ID,
+		DiscountRate:     rule.DiscountRate,
+		ScheduleType:     rule.ScheduleType,
+		RecurringStartAt: rule.RecurringStartAt,
+		RecurringEndAt:   rule.RecurringEndAt,
+		Weekdays:         append([]int(nil), rule.Weekdays...),
+		MonthDays:        append([]int(nil), rule.MonthDays...),
+		Label:            rule.Label,
+	}
+	if rule.StartsAt != "" {
+		if t, err := parseGlobalDiscountTime(rule.StartsAt); err == nil {
+			tt := t.UTC()
+			runtime.StartsAt = &tt
+		}
+	}
+	if rule.EndsAt != "" {
+		if t, err := parseGlobalDiscountTime(rule.EndsAt); err == nil {
+			tt := t.UTC()
+			runtime.EndsAt = &tt
+		}
+	}
+	runtime.Active = globalDiscountActive(runtime, now)
+	return runtime
+}
+
+func globalDiscountActive(runtime GlobalDiscountRuntime, now time.Time) bool {
+	if !runtime.Enabled || runtime.DiscountRate <= 0 || runtime.DiscountRate >= 1 {
+		return false
+	}
+	if runtime.ScheduleType == "" || runtime.ScheduleType == "once" {
+		return runtime.StartsAt != nil &&
+			runtime.EndsAt != nil &&
+			!now.Before(*runtime.StartsAt) &&
+			now.Before(*runtime.EndsAt)
+	}
+	return globalDiscountRecurringActive(runtime, now)
+}
+
+func globalDiscountRecurringActive(runtime GlobalDiscountRuntime, now time.Time) bool {
+	startMin, ok := parseGlobalDiscountClockMinutes(runtime.RecurringStartAt)
+	if !ok {
+		return false
+	}
+	endMin, ok := parseGlobalDiscountClockMinutes(runtime.RecurringEndAt)
+	if !ok || startMin == endMin {
+		return false
+	}
+	local := now.In(timezone.Location())
+	localMin := local.Hour()*60 + local.Minute()
+	switch runtime.ScheduleType {
+	case "daily":
+		return clockWindowContains(startMin, endMin, localMin)
+	case "weekly":
+		today := globalDiscountWeekday(local)
+		yesterday := globalDiscountWeekday(local.AddDate(0, 0, -1))
+		return (containsInt(runtime.Weekdays, today) && clockWindowContains(startMin, endMin, localMin)) ||
+			(startMin > endMin && containsInt(runtime.Weekdays, yesterday) && localMin < endMin)
+	case "monthly":
+		today := local.Day()
+		yesterday := local.AddDate(0, 0, -1).Day()
+		return (containsInt(runtime.MonthDays, today) && clockWindowContains(startMin, endMin, localMin)) ||
+			(startMin > endMin && containsInt(runtime.MonthDays, yesterday) && localMin < endMin)
+	default:
+		return false
+	}
+}
+
+func parseGlobalDiscountClockMinutes(raw string) (int, bool) {
+	t, err := time.Parse("15:04", strings.TrimSpace(raw))
+	if err != nil {
+		return 0, false
+	}
+	return t.Hour()*60 + t.Minute(), true
+}
+
+func clockWindowContains(startMin, endMin, currentMin int) bool {
+	if startMin < endMin {
+		return currentMin >= startMin && currentMin < endMin
+	}
+	return currentMin >= startMin || currentMin < endMin
+}
+
+func globalDiscountWeekday(t time.Time) int {
+	weekday := int(t.Weekday())
+	if weekday == 0 {
+		return 7
+	}
+	return weekday
+}
+
+func containsInt(values []int, target int) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
+}
 
 func normalizeLoginAgreementMode(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
@@ -922,6 +1457,72 @@ func (s *SettingService) GetAvailableChannelsRuntime(ctx context.Context) Availa
 	return AvailableChannelsRuntime{
 		Enabled: vals[SettingKeyAvailableChannelsEnabled] == "true",
 	}
+}
+
+func (s *SettingService) GetGlobalDiscountRuntime(ctx context.Context) GlobalDiscountRuntime {
+	fallback := globalDiscountRuntime(DefaultGlobalDiscountSettings(), time.Now())
+	if s == nil || s.settingRepo == nil {
+		return fallback
+	}
+	if cached, ok := s.globalDiscountCache.Load().(*cachedGlobalDiscountRuntime); ok && cached != nil {
+		if time.Now().UnixNano() < cached.expiresAt {
+			return globalDiscountRuntime(cached.settings, time.Now())
+		}
+	}
+
+	result, _, _ := s.globalDiscountSF.Do("global_discount_settings", func() (any, error) {
+		if cached, ok := s.globalDiscountCache.Load().(*cachedGlobalDiscountRuntime); ok && cached != nil {
+			if time.Now().UnixNano() < cached.expiresAt {
+				return cached.settings, nil
+			}
+		}
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		dbCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), globalDiscountDBTimeout)
+		defer cancel()
+		raw, err := s.settingRepo.GetValue(dbCtx, SettingKeyGlobalDiscountSettings)
+		if err != nil && !errors.Is(err, ErrSettingNotFound) {
+			slog.Warn("failed to get global discount setting", "error", err)
+			s.globalDiscountCache.Store(&cachedGlobalDiscountRuntime{
+				settings:  DefaultGlobalDiscountSettings(),
+				expiresAt: time.Now().Add(globalDiscountErrorTTL).UnixNano(),
+			})
+			return DefaultGlobalDiscountSettings(), nil
+		}
+		settings := parseGlobalDiscountSettings(raw)
+		s.globalDiscountCache.Store(&cachedGlobalDiscountRuntime{
+			settings:  settings,
+			expiresAt: time.Now().Add(globalDiscountCacheTTL).UnixNano(),
+		})
+		return settings, nil
+	})
+	if settings, ok := result.(GlobalDiscountSettings); ok {
+		return globalDiscountRuntime(settings, time.Now())
+	}
+	return fallback
+}
+
+func ApplyGlobalDiscountToCost(cost *CostBreakdown, discount GlobalDiscountRuntime) {
+	if cost == nil || !discount.Active || discount.DiscountRate <= 0 || discount.DiscountRate >= 1 {
+		if cost != nil && cost.DiscountRate == 0 {
+			cost.DiscountRate = 1
+		}
+		return
+	}
+	originalActualCost := cost.ActualCost
+	if originalActualCost <= 0 {
+		cost.DiscountRate = discount.DiscountRate
+		return
+	}
+	discounted := originalActualCost * discount.DiscountRate
+	cost.ActualCost = discounted
+	cost.DiscountAmount = originalActualCost - discounted
+	cost.DiscountRate = discount.DiscountRate
+}
+
+func applyGlobalDiscountToCost(cost *CostBreakdown, discount GlobalDiscountRuntime) {
+	ApplyGlobalDiscountToCost(cost, discount)
 }
 
 // GetAntigravityUserAgentVersion 返回 Antigravity 上游请求使用的版本号。
@@ -1807,6 +2408,16 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	// 风控中心功能开关
 	updates[SettingKeyRiskControlEnabled] = strconv.FormatBool(settings.RiskControlEnabled)
 
+	discountSettings, err := normalizeGlobalDiscountSettings(settings.GlobalDiscountSettings)
+	if err != nil {
+		return nil, err
+	}
+	discountJSON, err := json.Marshal(discountSettings)
+	if err != nil {
+		return nil, fmt.Errorf("marshal global discount settings: %w", err)
+	}
+	updates[SettingKeyGlobalDiscountSettings] = string(discountJSON)
+
 	// 生图工作台分组；0 表示未配置。
 	if settings.ImagePlaygroundGroupID < 0 {
 		settings.ImagePlaygroundGroupID = 0
@@ -1979,6 +2590,11 @@ func (s *SettingService) refreshCachedSettings(settings *SystemSettings) {
 	openAIAdvancedSchedulerSettingCache.Store(&cachedOpenAIAdvancedSchedulerSetting{
 		enabled:   settings.OpenAIAdvancedSchedulerEnabled,
 		expiresAt: time.Now().Add(openAIAdvancedSchedulerSettingCacheTTL).UnixNano(),
+	})
+	s.globalDiscountSF.Forget("global_discount_settings")
+	s.globalDiscountCache.Store(&cachedGlobalDiscountRuntime{
+		settings:  settings.GlobalDiscountSettings,
+		expiresAt: time.Now().Add(globalDiscountCacheTTL).UnixNano(),
 	})
 	if s.cfg != nil {
 		s.cfg.SetTrustForwardedIPForAPIKeyACL(settings.APIKeyACLTrustForwardedIP)
@@ -2712,6 +3328,8 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		// Available channels feature (default disabled; opt-in)
 		SettingKeyAvailableChannelsEnabled: "false",
 
+		SettingKeyGlobalDiscountSettings: `{"enabled":false,"discount_rate":1,"schedule_type":"once","starts_at":"","ends_at":"","recurring_start_at":"00:00","recurring_end_at":"23:59"}`,
+
 		// Affiliate (邀请返利) feature (default disabled; opt-in)
 		SettingKeyAffiliateEnabled: "false",
 
@@ -2791,6 +3409,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		CustomMenuItems:                  settings[SettingKeyCustomMenuItems],
 		CustomEndpoints:                  settings[SettingKeyCustomEndpoints],
 		BackendModeEnabled:               settings[SettingKeyBackendModeEnabled] == "true",
+		GlobalDiscountSettings:           parseGlobalDiscountSettings(settings[SettingKeyGlobalDiscountSettings]),
 	}
 	result.TableDefaultPageSize, result.TablePageSizeOptions = parseTablePreferences(
 		settings[SettingKeyTableDefaultPageSize],

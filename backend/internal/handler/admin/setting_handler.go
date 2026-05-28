@@ -298,6 +298,8 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		AvailableChannelsEnabled: settings.AvailableChannelsEnabled,
 
 		AffiliateEnabled: settings.AffiliateEnabled,
+
+		GlobalDiscountSettings: settings.GlobalDiscountSettings,
 	}
 
 	// OpenAI fast policy (stored under a dedicated setting key)
@@ -638,6 +640,9 @@ type UpdateSettingsRequest struct {
 
 	// Available Channels feature switch (user-facing)
 	AvailableChannelsEnabled *bool `json:"available_channels_enabled"`
+
+	// 全局折扣配置
+	GlobalDiscountSettings *service.GlobalDiscountSettings `json:"global_discount_settings"`
 
 	// Affiliate (邀请返利) feature switch
 	AffiliateEnabled *bool `json:"affiliate_enabled"`
@@ -1745,6 +1750,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.AvailableChannelsEnabled
 		}(),
+		GlobalDiscountSettings: func() service.GlobalDiscountSettings {
+			if req.GlobalDiscountSettings != nil {
+				return *req.GlobalDiscountSettings
+			}
+			return previousSettings.GlobalDiscountSettings
+		}(),
 		AffiliateEnabled: func() bool {
 			if req.AffiliateEnabled != nil {
 				return *req.AffiliateEnabled
@@ -2087,6 +2098,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		AvailableChannelsEnabled: updatedSettings.AvailableChannelsEnabled,
 
 		AffiliateEnabled: updatedSettings.AffiliateEnabled,
+
+		GlobalDiscountSettings: updatedSettings.GlobalDiscountSettings,
 
 		RiskControlEnabled: updatedSettings.RiskControlEnabled,
 

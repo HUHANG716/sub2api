@@ -5511,6 +5511,9 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		).Warn("openai_usage.pricing_missing_record_zero_cost", zap.Error(err))
 		cost = &CostBreakdown{BillingMode: string(BillingModeToken)}
 	}
+	if s.settingService != nil {
+		applyGlobalDiscountToCost(cost, s.settingService.GetGlobalDiscountRuntime(ctx))
+	}
 
 	// Determine billing type
 	isSubscriptionBilling := subscription != nil && apiKey.Group != nil && apiKey.Group.IsSubscriptionType()
@@ -5562,6 +5565,8 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		usageLog.CacheReadCost = cost.CacheReadCost
 		usageLog.TotalCost = cost.TotalCost
 		usageLog.ActualCost = cost.ActualCost
+		usageLog.DiscountAmount = cost.DiscountAmount
+		usageLog.DiscountRate = cost.DiscountRate
 	}
 	if result.ImageCount > 0 {
 		usageLog.RateMultiplier = imageMultiplier
