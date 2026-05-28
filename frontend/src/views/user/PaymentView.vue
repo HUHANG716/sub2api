@@ -717,7 +717,7 @@ function formatQuickAmountCreditBadge(baseCredit: number, bonus: number) {
   return {
     label: t('payment.quickAmountCreditLabel'),
     total: `$${totalCredit.toFixed(2)}`,
-    bonus: `+ $${bonus.toFixed(2)} ${t('payment.quickAmountBonusSuffix')}`,
+    bonus: t('payment.quickAmountBonusIncluded', { bonus: bonus.toFixed(2) }),
   }
 }
 
