@@ -64,14 +64,16 @@ describe('AppSidebar active state styles', () => {
 })
 
 describe('AppSidebar docs entry', () => {
-  it('adds a prominent internal docs link at the end of self navigation', () => {
-    const docsEntry = "{ path: '/docs', label: t('nav.docs'), icon: DocumentIcon, prominent: true }"
+  it('adds a regular internal docs link at the end of self navigation', () => {
+    const docsEntry = "{ path: '/docs', label: t('nav.docs'), icon: DocumentIcon }"
 
     expect(componentSource).toContain(docsEntry)
     expect(componentSource.indexOf("...customMenuItemsForUser.value.map")).toBeLessThan(
       componentSource.indexOf(docsEntry)
     )
     expect(componentSource).not.toContain("path: docUrl.value, label: t('nav.docs')")
+    expect(componentSource).not.toContain('sidebar-link-docs')
+    expect(styleSource).not.toContain('.sidebar-link-docs')
   })
 
   it('renders external sidebar nav items as links instead of router links', () => {

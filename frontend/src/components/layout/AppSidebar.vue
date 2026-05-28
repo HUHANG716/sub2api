@@ -88,7 +88,7 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 class="sidebar-link mb-1"
-                :class="{ 'sidebar-link-docs': item.prominent, 'sidebar-link-collapsed': sidebarCollapsed }"
+                :class="{ 'sidebar-link-collapsed': sidebarCollapsed }"
                 :title="sidebarCollapsed ? item.label : undefined"
                 @click="handleMenuItemClick(item.path)"
               >
@@ -101,7 +101,7 @@
               v-else
               :to="item.path"
               class="sidebar-link mb-1"
-              :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-docs': item.prominent, 'sidebar-link-collapsed': sidebarCollapsed }"
+              :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-collapsed': sidebarCollapsed }"
               :title="sidebarCollapsed ? item.label : undefined"
               :id="
                 item.path === '/admin/accounts'
@@ -136,7 +136,7 @@
               target="_blank"
               rel="noopener noreferrer"
               class="sidebar-link mb-1"
-              :class="{ 'sidebar-link-docs': item.prominent, 'sidebar-link-collapsed': sidebarCollapsed }"
+              :class="{ 'sidebar-link-collapsed': sidebarCollapsed }"
               :title="sidebarCollapsed ? item.label : undefined"
               @click="handleMenuItemClick(item.path)"
             >
@@ -148,7 +148,7 @@
               v-else
               :to="item.path"
               class="sidebar-link mb-1"
-              :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-docs': item.prominent, 'sidebar-link-collapsed': sidebarCollapsed }"
+              :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-collapsed': sidebarCollapsed }"
               :title="sidebarCollapsed ? item.label : undefined"
               :data-tour="item.path === '/keys' ? 'sidebar-my-keys' : undefined"
               @click="handleMenuItemClick(item.path)"
@@ -171,7 +171,7 @@
               target="_blank"
               rel="noopener noreferrer"
               class="sidebar-link mb-1"
-              :class="{ 'sidebar-link-docs': item.prominent, 'sidebar-link-collapsed': sidebarCollapsed }"
+              :class="{ 'sidebar-link-collapsed': sidebarCollapsed }"
               :title="sidebarCollapsed ? item.label : undefined"
               @click="handleMenuItemClick(item.path)"
             >
@@ -183,7 +183,7 @@
               v-else
               :to="item.path"
               class="sidebar-link mb-1"
-              :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-docs': item.prominent, 'sidebar-link-collapsed': sidebarCollapsed }"
+              :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-collapsed': sidebarCollapsed }"
               :title="sidebarCollapsed ? item.label : undefined"
               :data-tour="item.path === '/keys' ? 'sidebar-my-keys' : undefined"
               @click="handleMenuItemClick(item.path)"
@@ -361,7 +361,6 @@ interface NavItem {
   iconSvg?: string
   hideInSimpleMode?: boolean
   external?: boolean
-  prominent?: boolean
   children?: NavItem[]
   /**
    * When true, the parent item only toggles the expand/collapse state and
@@ -527,7 +526,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
       icon: null,
       iconSvg: item.icon_svg,
     })),
-    { path: '/docs', label: t('nav.docs'), icon: DocumentIcon, prominent: true },
+    { path: '/docs', label: t('nav.docs'), icon: DocumentIcon },
   )
   return items
 }
