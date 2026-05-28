@@ -153,6 +153,15 @@ func TestIsMigrationChecksumCompatible(t *testing.T) {
 		}
 	})
 
+	t.Run("147历史checksum可兼容legacy image size修复", func(t *testing.T) {
+		ok := isMigrationChecksumCompatible(
+			"147_normalize_balance_recharge_ratio.sql",
+			"a5d0dd1cfd3d045c29f626291e88c35d89d1c427bd1d93cd02aefb4cd64bd52f",
+			"f51fe29147b7bfe89900b7ead6a6cb14e1cba876a8f9936a9251ae375c2047f3",
+		)
+		require.True(t, ok)
+	})
+
 	t.Run("119未知checksum不兼容", func(t *testing.T) {
 		ok := isMigrationChecksumCompatible(
 			"119_enforce_payment_orders_out_trade_no_unique.sql",

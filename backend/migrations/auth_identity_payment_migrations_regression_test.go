@@ -191,6 +191,8 @@ func TestMigration147NormalizesRechargeRatioWithoutTouchingRealPaymentAmounts(t 
 	require.Contains(t, sql, "WHERE type IN ('balance', 'admin_balance')")
 	require.Contains(t, sql, "UPDATE user_affiliate_ledger")
 	require.Contains(t, sql, "balance_after = balance_after / v_ratio")
+	require.Contains(t, sql, "image_size = 'mixed'")
+	require.Contains(t, sql, "image_size_source = COALESCE(image_size_source, 'legacy')")
 	require.Contains(t, sql, "UPDATE usage_logs")
 	require.Contains(t, sql, "actual_cost = actual_cost / v_ratio")
 	require.Contains(t, sql, "discount_amount = discount_amount / v_ratio")
