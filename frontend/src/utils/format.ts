@@ -5,30 +5,46 @@
 
 import { i18n, getLocale } from '@/i18n'
 
+function translateTime(key: string, params: Record<string, number> | undefined, fallback: string): string {
+  const value = params ? i18n.global.t(key, params) : i18n.global.t(key)
+  return value === key ? fallback : value
+}
+
 /**
  * 格式化相对时间
  * @param date 日期字符串或 Date 对象
  * @returns 相对时间字符串，如 "5m ago", "2h ago", "3d ago"
  */
 export function formatRelativeTime(date: string | Date | null | undefined): string {
-  if (!date) return i18n.global.t('common.time.never')
+  const locale = getLocale()
+  const isZh = locale === 'zh'
+  const never = isZh ? '从未' : 'Never'
+  const justNow = isZh ? '刚刚' : 'Just now'
+
+  if (!date) return translateTime('common.time.never', undefined, never)
 
   const now = new Date()
   const past = new Date(date)
   const diffMs = now.getTime() - past.getTime()
 
   // 处理未来时间或无效日期
-  if (diffMs < 0 || isNaN(diffMs)) return i18n.global.t('common.time.never')
+  if (diffMs < 0 || isNaN(diffMs)) return translateTime('common.time.never', undefined, never)
 
   const diffSecs = Math.floor(diffMs / 1000)
   const diffMins = Math.floor(diffSecs / 60)
   const diffHours = Math.floor(diffMins / 60)
   const diffDays = Math.floor(diffHours / 24)
 
-  if (diffDays > 0) return i18n.global.t('common.time.daysAgo', { n: diffDays })
-  if (diffHours > 0) return i18n.global.t('common.time.hoursAgo', { n: diffHours })
-  if (diffMins > 0) return i18n.global.t('common.time.minutesAgo', { n: diffMins })
-  return i18n.global.t('common.time.justNow')
+  if (diffDays > 0) {
+    return translateTime('common.time.daysAgo', { n: diffDays }, isZh ? `${diffDays}天前` : `${diffDays}d ago`)
+  }
+  if (diffHours > 0) {
+    return translateTime('common.time.hoursAgo', { n: diffHours }, isZh ? `${diffHours}小时前` : `${diffHours}h ago`)
+  }
+  if (diffMins > 0) {
+    return translateTime('common.time.minutesAgo', { n: diffMins }, isZh ? `${diffMins}分钟前` : `${diffMins}m ago`)
+  }
+  return translateTime('common.time.justNow', undefined, justNow)
 }
 
 /**

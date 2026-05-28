@@ -64,5 +64,11 @@ declare module 'vue-router' {
      * i18n key for the page description
      */
     descriptionKey?: string
+
+    /**
+     * Whether the route should use a flush workspace layout inside AppLayout
+     * @default false
+     */
+    workspaceLayout?: boolean
   }
 }

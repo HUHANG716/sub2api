@@ -244,11 +244,20 @@ type SystemSettings struct {
 	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
 
+	// Image playground admin-configured group
+	ImagePlaygroundGroupID int64 `json:"image_playground_group_id"`
+
 	// Affiliate (邀请返利) feature switch
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 
 	// OpenAI fast/flex policy
 	OpenAIFastPolicySettings *OpenAIFastPolicySettings `json:"openai_fast_policy_settings,omitempty"`
+
+	// 系统全局默认平台配额（key = platform，nil/缺省 = 不限制）
+	DefaultPlatformQuotas map[string]*service.DefaultPlatformQuotaSetting `json:"default_platform_quotas,omitempty"`
+
+	// 全局折扣配置
+	GlobalDiscountSettings service.GlobalDiscountSettings `json:"global_discount_settings"`
 }
 
 type DefaultSubscriptionSetting struct {
@@ -313,6 +322,8 @@ type PublicSettings struct {
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 
 	RiskControlEnabled bool `json:"risk_control_enabled"`
+
+	ImagePlaygroundGroupID int64 `json:"image_playground_group_id"`
 }
 
 type LoginAgreementDocument struct {

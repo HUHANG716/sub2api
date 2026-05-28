@@ -233,6 +233,7 @@ export interface PublicSettings {
   channel_monitor_default_interval_seconds: number
   available_channels_enabled: boolean
   affiliate_enabled: boolean
+  image_playground_group_id?: number | null
 }
 
 export interface AuthResponse {
@@ -548,9 +549,15 @@ export interface AdminGroup extends Group {
   // OpenAI Messages 调度配置（仅 openai 平台使用）
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
+  models_list_config?: ModelsListConfig
 
   // 分组排序
   sort_order: number
+}
+
+export interface ModelsListConfig {
+  enabled: boolean
+  models: string[]
 }
 
 export interface ApiKey {
@@ -632,6 +639,13 @@ export interface CreateGroupRequest {
   fallback_group_id_on_invalid_request?: number | null
   mcp_xml_inject?: boolean
   supported_model_scopes?: string[]
+  models_list_config?: ModelsListConfig
+  allow_messages_dispatch?: boolean
+  default_mapped_model?: string
+  messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
+  model_routing?: Record<string, number[]> | null
+  model_routing_enabled?: boolean
+  rpm_limit?: number
   require_oauth_only?: boolean
   require_privacy_set?: boolean
   // 从指定分组复制账号
@@ -660,6 +674,13 @@ export interface UpdateGroupRequest {
   fallback_group_id_on_invalid_request?: number | null
   mcp_xml_inject?: boolean
   supported_model_scopes?: string[]
+  models_list_config?: ModelsListConfig
+  allow_messages_dispatch?: boolean
+  default_mapped_model?: string
+  messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
+  model_routing?: Record<string, number[]> | null
+  model_routing_enabled?: boolean
+  rpm_limit?: number
   require_oauth_only?: boolean
   require_privacy_set?: boolean
   copy_accounts_from_group_ids?: number[]
@@ -1197,6 +1218,8 @@ export interface UsageLog {
   cache_read_cost: number
   total_cost: number
   actual_cost: number
+  discount_amount: number
+  discount_rate: number
   rate_multiplier: number
   billing_type: number
 
@@ -1360,6 +1383,7 @@ export interface DashboardStats {
   total_cost: number // 累计标准计费
   total_actual_cost: number // 累计实际扣除
   total_account_cost: number // 累计账号成本
+  total_discount_amount: number
 
   // 今日 Token 使用统计
   today_requests: number
@@ -1371,6 +1395,7 @@ export interface DashboardStats {
   today_cost: number // 今日标准计费
   today_actual_cost: number // 今日实际扣除
   today_account_cost: number // 今日账号成本
+  today_discount_amount: number
 
   // 系统运行统计
   average_duration_ms: number // 平均响应时间
@@ -1390,8 +1415,25 @@ export interface UsageStatsResponse {
   total_tokens: number
   total_cost: number // 标准计费
   total_actual_cost: number // 实际扣除
+  total_discount_amount: number
   average_duration_ms: number
+  global_discount?: GlobalDiscountRuntime
   models?: Record<string, number>
+}
+
+export interface GlobalDiscountRuntime {
+  enabled: boolean
+  active: boolean
+  rule_id?: string
+  discount_rate: number
+  schedule_type: "once" | "daily" | "weekly" | "monthly"
+  starts_at?: string
+  ends_at?: string
+  recurring_start_at?: string
+  recurring_end_at?: string
+  weekdays?: number[]
+  month_days?: number[]
+  label?: string
 }
 
 // ==================== Trend & Chart Types ====================
@@ -1854,3 +1896,11 @@ export interface UpdateScheduledTestPlanRequest {
 
 // Payment types
 export type { SubscriptionPlan, PaymentOrder, CheckoutInfoResponse } from './payment'
+
+export type {
+  PlatformQuotaItem,
+  PlatformQuotaUpdateItem,
+  PlatformQuotaPlatform,
+  PlatformQuotaWindow,
+  PlatformQuotasResponse,
+} from '@/api/admin/users'

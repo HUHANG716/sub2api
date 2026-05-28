@@ -1,6 +1,9 @@
 package service
 
-import "strings"
+import (
+	"strings"
+	"time"
+)
 
 func firstNonEmpty(values ...string) string {
 	for _, value := range values {
@@ -145,6 +148,7 @@ type SystemSettings struct {
 	DefaultConcurrency           int
 	DefaultBalance               float64
 	RiskControlEnabled           bool
+	ImagePlaygroundGroupID       int64
 	AffiliateEnabled             bool
 	AffiliateRebateRate          float64
 	AffiliateRebateFreezeHours   int
@@ -219,6 +223,65 @@ type SystemSettings struct {
 	// 账号限额通知
 	AccountQuotaNotifyEnabled bool
 	AccountQuotaNotifyEmails  []NotifyEmailEntry
+
+	// 系统全局默认平台配额（key = platform，nil/缺省 = 不限制）
+	DefaultPlatformQuotas map[string]*DefaultPlatformQuotaSetting `json:"default_platform_quotas"`
+
+	// 全局折扣配置。启用且当前时间落在配置窗口内时，用户实际扣费乘以 discount_rate。
+	GlobalDiscountSettings GlobalDiscountSettings `json:"global_discount_settings"`
+}
+
+type GlobalDiscountSettings struct {
+	Enabled          bool                 `json:"enabled"`
+	Rules            []GlobalDiscountRule `json:"rules,omitempty"`
+	DiscountRate     float64              `json:"discount_rate"`
+	ScheduleType     string               `json:"schedule_type"`
+	StartsAt         string               `json:"starts_at"`
+	EndsAt           string               `json:"ends_at"`
+	RecurringStartAt string               `json:"recurring_start_at"`
+	RecurringEndAt   string               `json:"recurring_end_at"`
+	Weekdays         []int                `json:"weekdays,omitempty"`
+	MonthDays        []int                `json:"month_days,omitempty"`
+	Label            string               `json:"label,omitempty"`
+}
+
+type GlobalDiscountRule struct {
+	ID               string  `json:"id,omitempty"`
+	Enabled          bool    `json:"enabled"`
+	DiscountRate     float64 `json:"discount_rate"`
+	ScheduleType     string  `json:"schedule_type"`
+	StartsAt         string  `json:"starts_at"`
+	EndsAt           string  `json:"ends_at"`
+	RecurringStartAt string  `json:"recurring_start_at"`
+	RecurringEndAt   string  `json:"recurring_end_at"`
+	Weekdays         []int   `json:"weekdays,omitempty"`
+	MonthDays        []int   `json:"month_days,omitempty"`
+	Label            string  `json:"label,omitempty"`
+}
+
+type GlobalDiscountRuntime struct {
+	Enabled          bool       `json:"enabled"`
+	Active           bool       `json:"active"`
+	RuleID           string     `json:"rule_id,omitempty"`
+	DiscountRate     float64    `json:"discount_rate"`
+	ScheduleType     string     `json:"schedule_type"`
+	StartsAt         *time.Time `json:"starts_at,omitempty"`
+	EndsAt           *time.Time `json:"ends_at,omitempty"`
+	RecurringStartAt string     `json:"recurring_start_at,omitempty"`
+	RecurringEndAt   string     `json:"recurring_end_at,omitempty"`
+	Weekdays         []int      `json:"weekdays,omitempty"`
+	MonthDays        []int      `json:"month_days,omitempty"`
+	Label            string     `json:"label,omitempty"`
+}
+
+func DefaultGlobalDiscountSettings() GlobalDiscountSettings {
+	return GlobalDiscountSettings{
+		Enabled:          false,
+		DiscountRate:     1,
+		ScheduleType:     "once",
+		RecurringStartAt: "00:00",
+		RecurringEndAt:   "23:59",
+	}
 }
 
 type DefaultSubscriptionSetting struct {
@@ -289,6 +352,9 @@ type PublicSettings struct {
 
 	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
+
+	// 生图工作台使用的管理员配置分组；0 表示未配置。
+	ImagePlaygroundGroupID int64 `json:"image_playground_group_id"`
 }
 
 type LoginAgreementDocument struct {

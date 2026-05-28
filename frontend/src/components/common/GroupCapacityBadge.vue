@@ -4,7 +4,7 @@
     <div class="flex items-center gap-1">
       <span
         :class="[
-          'capacity-badge inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium',
+          'capacity-badge inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold',
           capacityClass(concurrencyUsed, concurrencyMax)
         ]"
       >
@@ -21,7 +21,7 @@
     <div v-if="sessionsMax > 0" class="flex items-center gap-1">
       <span
         :class="[
-          'capacity-badge inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium',
+          'capacity-badge inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold',
           capacityClass(sessionsUsed, sessionsMax)
         ]"
       >
@@ -38,7 +38,7 @@
     <div v-if="rpmMax > 0" class="flex items-center gap-1">
       <span
         :class="[
-          'capacity-badge inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium',
+          'capacity-badge inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold',
           capacityClass(rpmUsed, rpmMax)
         ]"
       >
@@ -85,28 +85,37 @@ function capacityClass(used: number, max: number): string {
 
 <style scoped>
 .capacity-badge {
-  background: color-mix(in srgb, var(--theme-surface-muted) 88%, var(--theme-bg));
-  color: var(--theme-text-muted);
-  box-shadow: inset 0 0 0 1px var(--theme-border);
+  background: color-mix(in srgb, var(--theme-surface-muted) 78%, var(--theme-bg-deep));
+  color: var(--theme-text-soft);
+  box-shadow: inset 0 0 0 1px var(--theme-border-strong);
 }
 
 .capacity-badge__separator {
-  color: var(--theme-text-subtle);
-  opacity: 0.72;
+  color: var(--theme-text-muted);
+  opacity: 0.9;
 }
 
 .capacity-badge--idle {
-  background: color-mix(in srgb, var(--theme-surface-muted) 88%, var(--theme-bg));
-  color: var(--theme-text-muted);
+  background: color-mix(in srgb, var(--theme-surface-muted) 74%, var(--theme-bg-deep));
+  color: var(--theme-text-soft);
 }
 
 .capacity-badge--active {
-  background: color-mix(in srgb, var(--theme-primary-soft) 72%, var(--theme-surface-muted));
-  color: var(--theme-primary);
+  background: color-mix(in srgb, var(--theme-primary-soft) 82%, #e2d4c6);
+  color: color-mix(in srgb, var(--theme-primary) 82%, #512b16);
 }
 
 .capacity-badge--full {
-  background: color-mix(in srgb, #ef4444 16%, var(--theme-surface-muted));
-  color: color-mix(in srgb, #ef4444 82%, var(--theme-text));
+  background: color-mix(in srgb, #ef4444 22%, var(--theme-surface-muted));
+  color: color-mix(in srgb, #dc2626 84%, var(--theme-text));
+}
+
+.dark .capacity-badge {
+  box-shadow: inset 0 0 0 1px var(--theme-border);
+}
+
+.dark .capacity-badge--active {
+  background: color-mix(in srgb, var(--theme-primary-soft) 72%, var(--theme-surface-muted));
+  color: var(--theme-primary);
 }
 </style>

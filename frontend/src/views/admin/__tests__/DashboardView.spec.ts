@@ -1,12 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
-
 import type { DashboardStats } from '@/types'
 import DashboardView from '../DashboardView.vue'
-
-const dashboardViewSourcePath = path.resolve(process.cwd(), 'src/views/admin/DashboardView.vue')
 
 const { getSnapshotV2, getUserUsageTrend, getUserSpendingRanking } = vi.hoisted(() => ({
   getSnapshotV2: vi.fn(),
@@ -147,7 +142,7 @@ describe('admin DashboardView', () => {
     }))
   })
 
-  it('uses distinct semantic accent classes for dashboard stat cards', async () => {
+  it('uses user-dashboard style colored icon blocks for dashboard stat cards', async () => {
     const wrapper = mount(DashboardView, {
       global: {
         stubs: {
@@ -166,33 +161,20 @@ describe('admin DashboardView', () => {
     await flushPromises()
 
     const accentClasses = [
-      'dashboard-stat-icon-key',
-      'dashboard-stat-icon-account',
-      'dashboard-stat-icon-request',
-      'dashboard-stat-icon-user',
-      'dashboard-stat-icon-today-token',
-      'dashboard-stat-icon-total-token',
-      'dashboard-stat-icon-performance',
-      'dashboard-stat-icon-latency'
+      'bg-blue-100',
+      'bg-indigo-100',
+      'bg-green-100',
+      'bg-amber-100',
+      'bg-purple-100',
+      'bg-cyan-100',
+      'bg-violet-100',
+      'bg-rose-100'
     ]
 
     accentClasses.forEach((className) => {
       expect(wrapper.find(`.${className}`).exists()).toBe(true)
     })
 
-    const iconClasses = wrapper.findAll('.dashboard-stat-icon').map((icon) => icon.classes())
-    const semanticClassCount = iconClasses.filter((classes) =>
-      classes.some((className) => accentClasses.includes(className))
-    )
-
-    expect(semanticClassCount).toHaveLength(8)
-  })
-
-  it('keeps dashboard stat icon accents borderless', () => {
-    const source = readFileSync(dashboardViewSourcePath, 'utf-8')
-    const iconBlock = source.match(/\.dashboard-stat-icon\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
-
-    expect(iconBlock).toContain('background:')
-    expect(iconBlock).not.toMatch(/\bborder:/)
+    expect(wrapper.find('.dashboard-stat-card').exists()).toBe(false)
   })
 })

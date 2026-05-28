@@ -365,11 +365,12 @@ describe('HomeView', () => {
     expect(wrapper.get('.landing-header').classes()).not.toContain('landing-header-scrolled')
   })
 
-  it('narrows only the landing nav after scroll while keeping page sections unconstrained', () => {
+  it('narrows the landing nav while keeping main sections on a shared max-width container', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
     const headerNavBlock = source.match(/\.landing-header nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const scrolledHeaderBlock = source.match(/\.landing-header-scrolled\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const scrolledNavBlock = source.match(/\.landing-header-scrolled nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const landingContainerBlock = source.match(/\.landing-container\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
     expect(headerNavBlock).toContain('width: var(--landing-header-width)')
     expect(headerNavBlock).toContain('background: var(--theme-surface)')
@@ -379,8 +380,16 @@ describe('HomeView', () => {
     expect(scrolledHeaderBlock).toContain('--landing-header-width: min(72rem, calc(100vw - 1.5rem))')
     expect(scrolledNavBlock).toContain('background: var(--theme-surface-strong)')
     expect(scrolledNavBlock).toContain('border-color: var(--theme-border-strong)')
+    expect(scrolledNavBlock).toContain('border-right: 0')
+    expect(scrolledNavBlock).toContain('border-left: 0')
     expect(scrolledNavBlock).toContain('border-radius: 0.9rem')
     expect(source).not.toContain('max-w-7xl')
+    expect(landingContainerBlock).toContain('width: min(100%, 78rem)')
+    expect(landingContainerBlock).toContain('margin: 0 auto')
+    expect(source).toContain('<div class="landing-container grid gap-12')
+    expect(source).toContain('<div class="landing-container trust-strip">')
+    expect(source).toContain('<div class="landing-container">')
+    expect(source).toContain('<div class="landing-container grid gap-10')
   })
 
   it('keeps the visible landing nav shell on the narrowing nav instead of the full-width header', () => {
@@ -403,13 +412,13 @@ describe('HomeView', () => {
     expect(scrolledNavBlock).toMatch(/\bbox-shadow:/)
   })
 
-  it('keeps the landing header canvas dark while the nav narrows', () => {
+  it('keeps the landing header canvas transparent while the nav narrows', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
     const headerBlock = source.match(/\.landing-header\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const headerNavBlock = source.match(/\.landing-header nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const scrolledHeaderBlock = source.match(/\.landing-header-scrolled\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(headerBlock).toContain('background: var(--landing-bg)')
+    expect(headerBlock).not.toMatch(/\bbackground:/)
     expect(headerBlock).not.toMatch(/\bbackdrop-filter:/)
     expect(headerBlock).not.toMatch(/\bbox-shadow:/)
     expect(scrolledHeaderBlock).not.toMatch(/\bbackground:/)
@@ -455,6 +464,42 @@ describe('HomeView', () => {
     expect(source).toContain('--landing-text-soft: #e2e8f0')
     expect(source).toContain('color: var(--landing-text-soft)')
     expect(source).toContain('color: var(--landing-accent-soft)')
+  })
+
+  it('calibrates the landing surfaces with finer dark layers and quieter shadows', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const landingShellBlock = source.match(/\.landing-shell\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const heroConsoleBlock = source.match(/\.hero-console\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const testimonialCardBlock = source.match(/\.testimonial-card\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(landingShellBlock).toContain('--landing-surface-raised: #292929')
+    expect(landingShellBlock).toContain('--landing-surface-soft: rgba(255, 255, 255, 0.035)')
+    expect(landingShellBlock).toContain('--landing-hairline: rgba(255, 255, 255, 0.055)')
+    expect(landingShellBlock).toContain('--landing-control-shadow: 0 1px 0 rgba(255, 255, 255, 0.055) inset')
+    expect(heroConsoleBlock).toContain('border: 1px solid var(--landing-border-strong)')
+    expect(heroConsoleBlock).toContain('background: var(--landing-surface-raised)')
+    expect(heroConsoleBlock).toContain('box-shadow:')
+    expect(heroConsoleBlock).not.toContain('0 18px 42px rgba(2, 6, 23, 0.18)')
+    expect(testimonialCardBlock).toContain('border: 1px solid var(--landing-hairline)')
+    expect(testimonialCardBlock).not.toContain('0 18px 42px rgba(2, 6, 23, 0.2)')
+  })
+
+  it('uses a calmer type scale and weights for the preserve redesign', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const heroTitleBlock = source.match(/\.hero-copy h1\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const heroBrandBlock = source.match(/\.hero-brand-title\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const sectionTitleBlock = source.match(/\.section-heading h2\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const supportTitleBlock = source.match(/\.support-showcase-title\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const trustValueBlock = source.match(/\.trust-card strong\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(heroTitleBlock).toContain('font-size: clamp(2.45rem, 5vw, 4.45rem)')
+    expect(heroTitleBlock).toContain('font-weight: 820')
+    expect(heroTitleBlock).toContain('line-height: 1.03')
+    expect(heroBrandBlock).toContain('color: color-mix(in srgb, var(--landing-text-strong) 92%, var(--landing-accent-soft))')
+    expect(sectionTitleBlock).toContain('font-size: clamp(2rem, 4.5vw, 3.85rem)')
+    expect(sectionTitleBlock).toContain('font-weight: 780')
+    expect(supportTitleBlock).toContain('font-weight: 780')
+    expect(trustValueBlock).toContain('font-weight: 780')
   })
 
   it('themes scrollbars through theme variables so the gutter follows the active canvas', () => {
@@ -528,7 +573,7 @@ describe('HomeView', () => {
     const supportPlatformBlock = source.match(/\.support-platform-chip\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const supportIconBackedBlock = source.match(/\.support-icon-frame-backed\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(supportShowcaseBlock).toContain('background: color-mix(in srgb, var(--theme-surface) 72%, var(--landing-bg))')
+    expect(supportShowcaseBlock).toContain('background: color-mix(in srgb, var(--theme-surface) 58%, var(--landing-bg))')
     expect(supportShowcaseBlock).toContain('border-top: 1px solid var(--theme-border)')
     expect(supportShowcaseBlock).toContain('border-bottom: 1px solid var(--theme-border)')
     expect(supportPanelBlock).toContain('color: var(--theme-text)')
@@ -537,13 +582,31 @@ describe('HomeView', () => {
     expect(supportPanelBlock).not.toMatch(/\bbox-shadow:/)
     expect(supportPanelBlock).not.toMatch(/\bborder:/)
     expect(supportTitleAccentBlock).toContain('color: var(--theme-primary-hover)')
-    expect(supportPlatformBlock).toContain('background: var(--theme-surface-strong)')
+    expect(supportPlatformBlock).toContain('background: var(--landing-surface-soft)')
     expect(supportPlatformBlock).toContain('border: 1px solid var(--theme-border-strong)')
     expect(supportIconBackedBlock).toContain('var(--theme-text)')
     expect(supportIconBackedBlock).toContain('var(--theme-surface-strong)')
     expect(source).not.toContain('background: #d5d5d5')
     expect(source).not.toContain('background: #aca89f')
     expect(source).not.toContain('color: #000000')
+  })
+
+  it('turns trust stats and compatibility chips into lighter product rails', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const trustBandBlock = source.match(/\.trust-band\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const trustStripBlock = source.match(/\.trust-strip\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const trustCardDividerBlock = source.match(/\.trust-card \+ \.trust-card::before\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const supportProviderChipBlock = source.match(/\.support-provider-chip\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const supportPlatformChipBlock = source.match(/\.support-platform-chip\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(trustBandBlock).toContain('padding-top: clamp(1.5rem, 3vw, 2.5rem)')
+    expect(trustStripBlock).toContain('border: 1px solid var(--landing-hairline)')
+    expect(trustStripBlock).toContain('background: var(--landing-surface-soft)')
+    expect(trustCardDividerBlock).toContain('background: var(--landing-hairline)')
+    expect(supportProviderChipBlock).toContain('border: 1px solid var(--landing-hairline)')
+    expect(supportProviderChipBlock).toContain('background: var(--landing-surface-soft)')
+    expect(supportPlatformChipBlock).toContain('min-height: 3.35rem')
+    expect(supportPlatformChipBlock).toContain('background: var(--landing-surface-soft)')
   })
 
   it('shows the home page logo without a framed brand mark', () => {

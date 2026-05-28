@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"log"
 	"sync/atomic"
 	"time"
 
@@ -61,24 +60,14 @@ func SetupRouter(
 		return nil
 	}))
 
-	// Serve embedded frontend with settings injection if available
-	if web.HasEmbeddedFrontend() {
-		frontendServer, err := web.NewFrontendServer(settingService)
-		if err != nil {
-			log.Printf("Warning: Failed to create frontend server with settings injection: %v, using legacy mode", err)
-			r.Use(web.ServeEmbeddedFrontend())
-			settingService.SetOnUpdateCallback(refreshFrameOrigins)
-		} else {
-			// Register combined callback: invalidate HTML cache + refresh frame origins
-			settingService.SetOnUpdateCallback(func() {
-				frontendServer.InvalidateCache()
-				refreshFrameOrigins()
-			})
-			r.Use(frontendServer.Middleware())
-		}
-	} else {
-		settingService.SetOnUpdateCallback(refreshFrameOrigins)
-	}
+	r.Use(web.ServeFrontend(settingService, func(invalidateFrontendCache func()) {
+		settingService.SetOnUpdateCallback(func() {
+			if invalidateFrontendCache != nil {
+				invalidateFrontendCache()
+			}
+			refreshFrameOrigins()
+		})
+	}))
 
 	// 注册路由
 	registerRoutes(r, handlers, jwtAuth, adminAuth, apiKeyAuth, apiKeyService, subscriptionService, opsService, settingService, cfg, redisClient)

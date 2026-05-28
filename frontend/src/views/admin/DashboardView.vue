@@ -12,8 +12,8 @@
           <!-- Total API Keys -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="dashboard-stat-icon dashboard-stat-icon-key">
-                <Icon name="key" size="md" class="dashboard-stat-glyph" :stroke-width="2" />
+              <div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
+                <Icon name="key" size="md" class="text-blue-600 dark:text-blue-400" :stroke-width="2" />
               </div>
               <div>
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -22,7 +22,7 @@
                 <p class="text-xl font-bold text-gray-900 dark:text-white">
                   {{ stats.total_api_keys }}
                 </p>
-                <p class="dashboard-stat-positive text-xs">
+                <p class="text-xs text-green-600 dark:text-green-400">
                   {{ stats.active_api_keys }} {{ t('common.active') }}
                 </p>
               </div>
@@ -32,8 +32,8 @@
           <!-- Service Accounts -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="dashboard-stat-icon dashboard-stat-icon-account">
-                <Icon name="server" size="md" class="dashboard-stat-glyph" :stroke-width="2" />
+              <div class="rounded-lg bg-indigo-100 p-2 dark:bg-indigo-900/30">
+                <Icon name="server" size="md" class="text-indigo-600 dark:text-indigo-400" :stroke-width="2" />
               </div>
               <div>
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -43,7 +43,7 @@
                   {{ stats.total_accounts }}
                 </p>
                 <p class="text-xs">
-                  <span class="dashboard-stat-positive"
+                  <span class="text-green-600 dark:text-green-400"
                     >{{ stats.normal_accounts }} {{ t('common.active') }}</span
                   >
                   <span v-if="stats.error_accounts > 0" class="ml-1 text-red-500"
@@ -57,8 +57,8 @@
           <!-- Today Requests -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="dashboard-stat-icon dashboard-stat-icon-request">
-                <Icon name="chart" size="md" class="dashboard-stat-glyph" :stroke-width="2" />
+              <div class="rounded-lg bg-green-100 p-2 dark:bg-green-900/30">
+                <Icon name="chart" size="md" class="text-green-600 dark:text-green-400" :stroke-width="2" />
               </div>
               <div>
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -77,14 +77,14 @@
           <!-- New Users Today -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="dashboard-stat-icon dashboard-stat-icon-user">
-                <Icon name="userPlus" size="md" class="dashboard-stat-glyph" :stroke-width="2" />
+              <div class="rounded-lg bg-amber-100 p-2 dark:bg-amber-900/30">
+                <Icon name="userPlus" size="md" class="text-amber-600 dark:text-amber-400" :stroke-width="2" />
               </div>
               <div>
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
                   {{ t('admin.dashboard.users') }}
                 </p>
-                <p class="dashboard-stat-value-accent text-xl font-bold">
+                <p class="text-xl font-bold text-amber-600 dark:text-amber-400">
                   +{{ stats.today_new_users }}
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
@@ -100,8 +100,8 @@
           <!-- Today Tokens -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="dashboard-stat-icon dashboard-stat-icon-today-token">
-                <Icon name="cube" size="md" class="dashboard-stat-glyph" :stroke-width="2" />
+              <div class="rounded-lg bg-purple-100 p-2 dark:bg-purple-900/30">
+                <Icon name="cube" size="md" class="text-purple-600 dark:text-purple-400" :stroke-width="2" />
               </div>
               <div>
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -112,7 +112,7 @@
                 </p>
                 <p class="text-xs">
                   <span
-                    class="dashboard-stat-positive"
+                    class="text-purple-600 dark:text-purple-400"
                     :title="t('admin.dashboard.actual')"
                     >${{ formatCost(stats.today_actual_cost) }}</span
                   >
@@ -136,8 +136,8 @@
           <!-- Total Tokens -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="dashboard-stat-icon dashboard-stat-icon-total-token">
-                <Icon name="database" size="md" class="dashboard-stat-glyph" :stroke-width="2" />
+              <div class="rounded-lg bg-cyan-100 p-2 dark:bg-cyan-900/30">
+                <Icon name="database" size="md" class="text-cyan-600 dark:text-cyan-400" :stroke-width="2" />
               </div>
               <div>
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -148,7 +148,7 @@
                 </p>
                 <p class="text-xs">
                   <span
-                    class="dashboard-stat-positive"
+                    class="text-cyan-600 dark:text-cyan-400"
                     :title="t('admin.dashboard.actual')"
                     >${{ formatCost(stats.total_actual_cost) }}</span
                   >
@@ -172,8 +172,8 @@
           <!-- Performance (RPM/TPM) -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="dashboard-stat-icon dashboard-stat-icon-performance">
-                <Icon name="bolt" size="md" class="dashboard-stat-glyph" :stroke-width="2" />
+              <div class="rounded-lg bg-violet-100 p-2 dark:bg-violet-900/30">
+                <Icon name="bolt" size="md" class="text-violet-600 dark:text-violet-400" :stroke-width="2" />
               </div>
               <div class="flex-1">
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -186,7 +186,7 @@
                   <span class="text-xs text-gray-500 dark:text-gray-400">RPM</span>
                 </div>
                 <div class="flex items-baseline gap-2">
-                  <p class="dashboard-stat-value-accent text-sm font-semibold">
+                  <p class="text-sm font-semibold text-violet-600 dark:text-violet-400">
                     {{ formatTokens(stats.tpm) }}
                   </p>
                   <span class="text-xs text-gray-500 dark:text-gray-400">TPM</span>
@@ -198,8 +198,8 @@
           <!-- Avg Response Time -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
-              <div class="dashboard-stat-icon dashboard-stat-icon-latency">
-                <Icon name="clock" size="md" class="dashboard-stat-glyph" :stroke-width="2" />
+              <div class="rounded-lg bg-rose-100 p-2 dark:bg-rose-900/30">
+                <Icon name="clock" size="md" class="text-rose-600 dark:text-rose-400" :stroke-width="2" />
               </div>
               <div>
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -696,73 +696,3 @@ onMounted(() => {
   loadDashboardStats()
 })
 </script>
-
-<style scoped>
-.dashboard-stat-icon {
-  --dashboard-stat-accent: var(--theme-primary);
-  --dashboard-stat-accent-soft: var(--theme-primary-soft);
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.625rem;
-  color: var(--dashboard-stat-accent);
-  background: color-mix(in srgb, var(--dashboard-stat-accent-soft) 58%, var(--theme-surface-strong));
-}
-
-.dashboard-stat-icon-key {
-  --dashboard-stat-accent: #d97732;
-  --dashboard-stat-accent-soft: rgba(217, 119, 50, 0.18);
-}
-
-.dashboard-stat-icon-account {
-  --dashboard-stat-accent: #7dd3fc;
-  --dashboard-stat-accent-soft: rgba(125, 211, 252, 0.12);
-}
-
-.dashboard-stat-icon-request {
-  --dashboard-stat-accent: #ef9a5c;
-  --dashboard-stat-accent-soft: rgba(239, 154, 92, 0.16);
-}
-
-.dashboard-stat-icon-user {
-  --dashboard-stat-accent: #f59e0b;
-  --dashboard-stat-accent-soft: rgba(245, 158, 11, 0.14);
-}
-
-.dashboard-stat-icon-today-token {
-  --dashboard-stat-accent: #a78bfa;
-  --dashboard-stat-accent-soft: rgba(167, 139, 250, 0.13);
-}
-
-.dashboard-stat-icon-total-token {
-  --dashboard-stat-accent: #22d3ee;
-  --dashboard-stat-accent-soft: rgba(34, 211, 238, 0.12);
-}
-
-.dashboard-stat-icon-performance {
-  --dashboard-stat-accent: #facc15;
-  --dashboard-stat-accent-soft: rgba(250, 204, 21, 0.13);
-}
-
-.dashboard-stat-icon-latency {
-  --dashboard-stat-accent: #c4cfdc;
-  --dashboard-stat-accent-soft: rgba(196, 207, 220, 0.1);
-}
-
-.dashboard-stat-glyph {
-  color: currentColor;
-}
-
-.dashboard-stat-positive,
-.dashboard-stat-value-accent {
-  color: var(--theme-primary);
-}
-
-:global(.dark) .dashboard-stat-positive,
-:global(.dark) .dashboard-stat-value-accent {
-  color: var(--theme-primary-hover);
-}
-</style>

@@ -59,6 +59,7 @@ type DashboardStats struct {
 	TotalCost                float64 `json:"total_cost"`         // 累计标准计费
 	TotalActualCost          float64 `json:"total_actual_cost"`  // 累计实际扣除
 	TotalAccountCost         float64 `json:"total_account_cost"` // 累计账号成本
+	TotalDiscountAmount      float64 `json:"total_discount_amount"`
 
 	// 今日 Token 使用统计
 	TodayRequests            int64   `json:"today_requests"`
@@ -226,6 +227,7 @@ type UserDashboardStats struct {
 	TotalTokens              int64   `json:"total_tokens"`
 	TotalCost                float64 `json:"total_cost"`        // 累计标准计费
 	TotalActualCost          float64 `json:"total_actual_cost"` // 累计实际扣除
+	TotalDiscountAmount      float64 `json:"total_discount_amount"`
 
 	// 今日 Token 使用统计
 	TodayRequests            int64   `json:"today_requests"`
@@ -236,6 +238,8 @@ type UserDashboardStats struct {
 	TodayTokens              int64   `json:"today_tokens"`
 	TodayCost                float64 `json:"today_cost"`        // 今日标准计费
 	TodayActualCost          float64 `json:"today_actual_cost"` // 今日实际扣除
+	TodayDiscountAmount      float64 `json:"today_discount_amount"`
+	GlobalDiscount           any     `json:"global_discount,omitempty"`
 
 	// 性能统计
 	AverageDurationMs float64 `json:"average_duration_ms"`
@@ -278,18 +282,19 @@ type UsageLogFilters struct {
 
 // UsageStats represents usage statistics
 type UsageStats struct {
-	TotalRequests     int64          `json:"total_requests"`
-	TotalInputTokens  int64          `json:"total_input_tokens"`
-	TotalOutputTokens int64          `json:"total_output_tokens"`
-	TotalCacheTokens  int64          `json:"total_cache_tokens"`
-	TotalTokens       int64          `json:"total_tokens"`
-	TotalCost         float64        `json:"total_cost"`
-	TotalActualCost   float64        `json:"total_actual_cost"`
-	TotalAccountCost  *float64       `json:"total_account_cost,omitempty"`
-	AverageDurationMs float64        `json:"average_duration_ms"`
-	Endpoints         []EndpointStat `json:"endpoints,omitempty"`
-	UpstreamEndpoints []EndpointStat `json:"upstream_endpoints,omitempty"`
-	EndpointPaths     []EndpointStat `json:"endpoint_paths,omitempty"`
+	TotalRequests       int64          `json:"total_requests"`
+	TotalInputTokens    int64          `json:"total_input_tokens"`
+	TotalOutputTokens   int64          `json:"total_output_tokens"`
+	TotalCacheTokens    int64          `json:"total_cache_tokens"`
+	TotalTokens         int64          `json:"total_tokens"`
+	TotalCost           float64        `json:"total_cost"`
+	TotalActualCost     float64        `json:"total_actual_cost"`
+	TotalAccountCost    *float64       `json:"total_account_cost,omitempty"`
+	TotalDiscountAmount float64        `json:"total_discount_amount"`
+	AverageDurationMs   float64        `json:"average_duration_ms"`
+	Endpoints           []EndpointStat `json:"endpoints,omitempty"`
+	UpstreamEndpoints   []EndpointStat `json:"upstream_endpoints,omitempty"`
+	EndpointPaths       []EndpointStat `json:"endpoint_paths,omitempty"`
 }
 
 // PlatformUsage 表示某用户/某 API key 在单个"有效平台"维度的用量明细。

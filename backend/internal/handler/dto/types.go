@@ -138,6 +138,7 @@ type AdminGroup struct {
 	// OpenAI Messages 调度配置（仅 openai 平台使用）
 	DefaultMappedModel          string                                   `json:"default_mapped_model"`
 	MessagesDispatchModelConfig domain.OpenAIMessagesDispatchModelConfig `json:"messages_dispatch_model_config"`
+	ModelsListConfig            domain.GroupModelsListConfig             `json:"models_list_config"`
 
 	// 支持的模型系列（仅 antigravity 平台使用）
 	SupportedModelScopes    []string       `json:"supported_model_scopes"`
@@ -449,6 +450,8 @@ type UsageLog struct {
 	CacheReadCost     float64 `json:"cache_read_cost"`
 	TotalCost         float64 `json:"total_cost"`
 	ActualCost        float64 `json:"actual_cost"`
+	DiscountAmount    float64 `json:"discount_amount"`
+	DiscountRate      float64 `json:"discount_rate"`
 	RateMultiplier    float64 `json:"rate_multiplier"`
 
 	BillingType  int8   `json:"billing_type"`

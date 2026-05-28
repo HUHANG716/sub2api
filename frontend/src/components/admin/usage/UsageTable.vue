@@ -141,11 +141,43 @@
 
         <template #cell-cost="{ row }">
           <div class="text-sm">
-            <div class="flex items-center gap-1.5">
-              <span class="font-medium text-green-600 dark:text-green-400">${{ row.actual_cost?.toFixed(6) || '0.000000' }}</span>
+            <div class="flex items-start gap-1.5">
+              <div class="min-w-0 space-y-0.5">
+                <div class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                  <span
+                    v-if="hasUsageDiscount(row)"
+                    class="text-gray-400 line-through dark:text-gray-500"
+                  >
+                    ${{ preDiscountCost(row).toFixed(6) }}
+                  </span>
+                  <span class="font-medium text-green-600 dark:text-green-400">
+                    {{ t('usage.paidAmount') }} ${{ row.actual_cost?.toFixed(6) || '0.000000' }}
+                  </span>
+                  <span
+                    v-if="hasUsageDiscount(row)"
+                    class="rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                  >
+                    {{ t('usage.globalDiscountApplied') }}
+                  </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
+                  <span class="text-gray-500 dark:text-gray-400">
+                    {{ t('usage.baseCost') }} ${{ row.total_cost?.toFixed(6) || '0.000000' }}
+                  </span>
+                  <span
+                    v-if="hasUsageRateMultiplier(row)"
+                    class="text-gray-500 dark:text-gray-400"
+                  >
+                    {{ t('usage.rate') }} {{ formatMultiplier(row.rate_multiplier || 1) }}x
+                  </span>
+                </div>
+                <div v-if="row.account_rate_multiplier != null" class="text-[11px] text-orange-500 dark:text-orange-400">
+                  {{ t('usage.accountBilled') }} ${{ accountBilled(row).toFixed(6) }}
+                </div>
+              </div>
               <!-- Cost Detail Tooltip -->
               <div
-                class="group relative"
+                class="group relative mt-0.5"
                 @mouseenter="showTooltip($event, row)"
                 @mouseleave="hideTooltip"
               >
@@ -153,9 +185,6 @@
                   <Icon name="infoCircle" size="xs" class="text-gray-400 group-hover:text-blue-500 dark:text-gray-500 dark:group-hover:text-blue-400" />
                 </div>
               </div>
-            </div>
-            <div v-if="row.account_rate_multiplier != null" class="mt-0.5 text-[11px] text-orange-500 dark:text-orange-400">
-              A ${{ accountBilled(row).toFixed(6) }}
             </div>
           </div>
         </template>
@@ -343,15 +372,23 @@
             <span class="font-semibold text-cyan-300">{{ getUsageServiceTierLabel(tooltipData?.service_tier, t) }}</span>
           </div>
           <div class="flex items-center justify-between gap-6">
-            <span class="text-gray-400">{{ t('usage.rate') }}</span>
-            <span class="font-semibold text-blue-400">{{ formatMultiplier(tooltipData?.rate_multiplier || 1) }}x</span>
-          </div>
-          <div class="flex items-center justify-between gap-6">
-            <span class="text-gray-400">{{ t('usage.original') }}</span>
+            <span class="text-gray-400">{{ t('usage.baseCost') }}</span>
             <span class="font-medium text-white">${{ tooltipData?.total_cost?.toFixed(6) || '0.000000' }}</span>
           </div>
           <div class="flex items-center justify-between gap-6">
-            <span class="text-gray-400">{{ t('usage.userBilled') }}</span>
+            <span class="text-gray-400">{{ t('usage.rate') }}</span>
+            <span class="font-semibold text-blue-400">{{ formatMultiplier(tooltipData?.rate_multiplier || 1) }}x</span>
+          </div>
+          <div v-if="tooltipData && (hasUsageDiscount(tooltipData) || hasUsageRateMultiplier(tooltipData))" class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">{{ t('usage.beforeDiscountCost') }}</span>
+            <span class="font-medium text-white">${{ preDiscountCost(tooltipData).toFixed(6) }}</span>
+          </div>
+          <div v-if="tooltipData && tooltipData.discount_amount > 0" class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">{{ t('usage.globalDiscountDeduction') }}</span>
+            <span class="font-semibold text-emerald-300">-${{ tooltipData.discount_amount.toFixed(6) }}</span>
+          </div>
+          <div class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">{{ t('usage.paidAmount') }}</span>
             <span class="font-semibold text-green-400">${{ tooltipData?.actual_cost?.toFixed(6) || '0.000000' }}</span>
           </div>
           <!-- Account billing (separated from user billing) -->
@@ -398,6 +435,18 @@ function accountBilled(row: { total_cost?: number | null; account_stats_cost?: n
   const base = row.account_stats_cost != null ? row.account_stats_cost : (row.total_cost ?? 0)
   const result = base * (row.account_rate_multiplier ?? 1)
   return Number.isNaN(result) ? 0 : result
+}
+
+function hasUsageDiscount(row: Pick<AdminUsageLog, 'discount_amount'> | null | undefined): boolean {
+  return (row?.discount_amount ?? 0) > 0
+}
+
+function hasUsageRateMultiplier(row: Pick<AdminUsageLog, 'rate_multiplier'> | null | undefined): boolean {
+  return Math.abs((row?.rate_multiplier ?? 1) - 1) > 0.000001
+}
+
+function preDiscountCost(row: Pick<AdminUsageLog, 'actual_cost' | 'discount_amount'>): number {
+  return (row.actual_cost ?? 0) + (row.discount_amount ?? 0)
 }
 
 function imageUnitPrice(row: AdminUsageLog | null): number {

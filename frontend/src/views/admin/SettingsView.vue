@@ -3262,6 +3262,71 @@
                   </div>
                 </div>
               </div>
+
+              <!-- ★ 新增：系统全局默认平台限额矩阵 -->
+              <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
+                <div class="mb-3">
+                  <label class="font-medium text-gray-900 dark:text-white">
+                    {{ t("admin.settings.defaults.defaultPlatformQuotas") }}
+                  </label>
+                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ t("admin.settings.defaults.defaultPlatformQuotasHint") }}
+                  </p>
+                  <p class="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
+                    {{ t("admin.settings.defaults.platformQuotaNotice") }}
+                  </p>
+                </div>
+                <div class="overflow-x-auto">
+                  <table class="min-w-full text-sm">
+                    <thead>
+                      <tr class="text-left text-xs text-gray-500 dark:text-gray-400">
+                        <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.platform") }}</th>
+                        <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.daily") }}</th>
+                        <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.weekly") }}</th>
+                        <th class="pb-2 font-medium">{{ t("admin.settings.platformQuota.monthly") }}</th>
+                      </tr>
+                    </thead>
+                    <tbody class="space-y-2">
+                      <tr v-for="p in (['anthropic', 'openai', 'gemini', 'antigravity'] as const)" :key="p" class="align-top">
+                        <td class="pr-4 py-1">
+                          <span class="font-mono text-xs text-gray-700 dark:text-gray-300">{{ p }}</span>
+                        </td>
+                        <td class="pr-4 py-1">
+                          <input
+                            v-model.number="form.default_platform_quotas[p]!.daily"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            class="input h-8 w-28 text-sm"
+                            :placeholder="t('admin.settings.platformQuota.placeholder')"
+                          />
+                        </td>
+                        <td class="pr-4 py-1">
+                          <input
+                            v-model.number="form.default_platform_quotas[p]!.weekly"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            class="input h-8 w-28 text-sm"
+                            :placeholder="t('admin.settings.platformQuota.placeholder')"
+                          />
+                        </td>
+                        <td class="py-1">
+                          <input
+                            v-model.number="form.default_platform_quotas[p]!.monthly"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            class="input h-8 w-28 text-sm"
+                            :placeholder="t('admin.settings.platformQuota.placeholder')"
+                          />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <!-- /全局平台限额矩阵 -->
             </div>
           </div>
 
@@ -3535,6 +3600,68 @@
                         </div>
                       </div>
                     </div>
+
+                    <!-- ★ 新增：auth source 平台限额覆盖区块 -->
+                    <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
+                      <div class="mb-3">
+                        <label class="font-medium text-gray-900 dark:text-white">
+                          {{ t("admin.settings.authSourceDefaults.platformQuotasOverride") }}
+                        </label>
+                        <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                          {{ t("admin.settings.authSourceDefaults.platformQuotasOverrideHint") }}
+                        </p>
+                      </div>
+                      <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                          <thead>
+                            <tr class="text-left text-xs text-gray-500 dark:text-gray-400">
+                              <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.platform") }}</th>
+                              <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.daily") }}</th>
+                              <th class="pb-2 pr-4 font-medium">{{ t("admin.settings.platformQuota.weekly") }}</th>
+                              <th class="pb-2 font-medium">{{ t("admin.settings.platformQuota.monthly") }}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr v-for="p in (['anthropic', 'openai', 'gemini', 'antigravity'] as const)" :key="`${authSource.source}-pq-${p}`" class="align-top">
+                              <td class="pr-4 py-1">
+                                <span class="font-mono text-xs text-gray-700 dark:text-gray-300">{{ p }}</span>
+                              </td>
+                              <td class="pr-4 py-1">
+                                <input
+                                  v-model.number="authSourceDefaults[authSource.source].platform_quotas[p]!.daily"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  class="input h-8 w-28 text-sm"
+                                  :placeholder="t('admin.settings.platformQuota.placeholder')"
+                                />
+                              </td>
+                              <td class="pr-4 py-1">
+                                <input
+                                  v-model.number="authSourceDefaults[authSource.source].platform_quotas[p]!.weekly"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  class="input h-8 w-28 text-sm"
+                                  :placeholder="t('admin.settings.platformQuota.placeholder')"
+                                />
+                              </td>
+                              <td class="py-1">
+                                <input
+                                  v-model.number="authSourceDefaults[authSource.source].platform_quotas[p]!.monthly"
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  class="input h-8 w-28 text-sm"
+                                  :placeholder="t('admin.settings.platformQuota.placeholder')"
+                                />
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <!-- /auth source 平台限额覆盖区块 -->
                   </div>
                 </div>
               </div>
@@ -4807,6 +4934,158 @@
               </button>
             </div>
           </div>
+
+          <div class="card">
+            <div
+              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+            >
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    {{ t("admin.settings.payment.globalDiscountTitle") }}
+                  </h2>
+                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ t("admin.settings.payment.globalDiscountHint") }}
+                  </p>
+                </div>
+                <Toggle v-model="form.global_discount_settings.enabled" />
+              </div>
+            </div>
+            <div class="space-y-4 p-6">
+              <div class="flex justify-end">
+                <button type="button" class="btn btn-secondary btn-sm" @click="addGlobalDiscountRule">
+                  {{ localText("添加折扣规则", "Add discount rule") }}
+                </button>
+              </div>
+
+              <div
+                v-for="(rule, index) in form.global_discount_settings.rules"
+                :key="rule.id || index"
+                class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-dark-700"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                    <Toggle v-model="rule.enabled" />
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">
+                      {{ rule.label || localText(`折扣规则 ${index + 1}`, `Discount rule ${index + 1}`) }}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm text-red-600 dark:text-red-400"
+                    :disabled="(form.global_discount_settings.rules || []).length <= 1"
+                    @click="removeGlobalDiscountRule(index)"
+                  >
+                    {{ t("common.delete") }}
+                  </button>
+                </div>
+                <div class="grid gap-3 md:grid-cols-5">
+                  <div>
+                    <label class="input-label">{{ t("admin.settings.payment.globalDiscountLabel") }}</label>
+                    <input
+                      v-model="rule.label"
+                      type="text"
+                      class="input"
+                      :placeholder="t('admin.settings.payment.globalDiscountLabelPlaceholder')"
+                    />
+                  </div>
+                  <div>
+                    <label class="input-label">{{ t("admin.settings.payment.globalDiscountRate") }}</label>
+                    <input
+                      v-model.number="rule.discount_rate"
+                      type="number"
+                      class="input"
+                      min="0.01"
+                      max="1"
+                      step="0.01"
+                    />
+                  </div>
+                  <div>
+                    <label class="input-label">{{ localText("频率", "Frequency") }}</label>
+                    <select v-model="rule.schedule_type" class="input">
+                      <option value="once">{{ localText("一次性", "One-time") }}</option>
+                      <option value="daily">{{ localText("每天", "Daily") }}</option>
+                      <option value="weekly">{{ localText("每周", "Weekly") }}</option>
+                      <option value="monthly">{{ localText("每月", "Monthly") }}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="input-label">
+                      {{
+                        rule.schedule_type === "once"
+                          ? t("admin.settings.payment.globalDiscountStartsAt")
+                          : localText("开始于", "Starts at")
+                      }}
+                    </label>
+                    <input
+                      v-if="rule.schedule_type === 'once'"
+                      :value="toDatetimeLocal(rule.starts_at)"
+                      type="datetime-local"
+                      class="input"
+                      @input="rule.starts_at = fromDatetimeLocal(($event.target as HTMLInputElement).value)"
+                    />
+                    <input
+                      v-else
+                      v-model="rule.recurring_start_at"
+                      type="time"
+                      class="input"
+                    />
+                  </div>
+                  <div>
+                    <label class="input-label">
+                      {{
+                        rule.schedule_type === "once"
+                          ? t("admin.settings.payment.globalDiscountEndsAt")
+                          : localText("持续到", "Runs until")
+                      }}
+                    </label>
+                    <input
+                      v-if="rule.schedule_type === 'once'"
+                      :value="toDatetimeLocal(rule.ends_at)"
+                      type="datetime-local"
+                      class="input"
+                      @input="rule.ends_at = fromDatetimeLocal(($event.target as HTMLInputElement).value)"
+                    />
+                    <input
+                      v-else
+                      v-model="rule.recurring_end_at"
+                      type="time"
+                      class="input"
+                    />
+                    <p
+                      v-if="rule.schedule_type !== 'once' && globalDiscountRuleCrossesMidnight(rule)"
+                      class="mt-1 text-xs font-medium text-emerald-700 dark:text-emerald-300"
+                    >
+                      {{ localText("次日", "Next day") }}
+                    </p>
+                  </div>
+                </div>
+                <div v-if="rule.schedule_type === 'weekly'" class="flex flex-wrap gap-2">
+                  <label
+                    v-for="day in globalDiscountWeekdayOptions"
+                    :key="day.value"
+                    class="inline-flex items-center gap-1 rounded border border-gray-200 bg-gray-50 px-2 py-1 text-sm text-gray-700 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-200"
+                  >
+                    <input v-model="rule.weekdays" type="checkbox" :value="day.value" />
+                    {{ day.label }}
+                  </label>
+                </div>
+                <div v-if="rule.schedule_type === 'monthly'" class="flex flex-wrap gap-2">
+                  <label
+                    v-for="day in globalDiscountMonthDayOptions"
+                    :key="day"
+                    class="inline-flex items-center gap-1 rounded border border-gray-200 bg-gray-50 px-2 py-1 text-sm text-gray-700 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-200"
+                  >
+                    <input v-model="rule.month_days" type="checkbox" :value="day" />
+                    {{ day }}
+                  </label>
+                </div>
+                <p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                  {{ globalDiscountRulePreview(rule) }}
+                </p>
+              </div>
+            </div>
+          </div>
 	        </div>
 	        <!-- /Tab: General -->
 
@@ -5014,6 +5293,43 @@
 
 	        <!-- Tab: Features (功能开关) -->
         <div v-show="activeTab === 'features'" class="space-y-6">
+
+        <div class="card">
+          <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ t('admin.settings.features.imagePlayground.title') }}
+            </h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ t('admin.settings.features.imagePlayground.description') }}
+            </p>
+          </div>
+          <div class="space-y-3 p-6">
+            <label class="input-label">
+              {{ t('admin.settings.features.imagePlayground.groupLabel') }}
+            </label>
+            <select
+              v-model.number="form.image_playground_group_id"
+              class="input"
+              data-test="image-playground-admin-group-select"
+            >
+              <option :value="0">
+                {{ t('admin.settings.features.imagePlayground.groupPlaceholder') }}
+              </option>
+              <option
+                v-for="group in imagePlaygroundGroups"
+                :key="group.id"
+                :value="group.id"
+              >
+                {{ group.name }} (#{{ group.id }})
+              </option>
+            </select>
+            <p class="text-xs text-gray-400">
+              {{ imagePlaygroundGroups.length > 0
+                ? t('admin.settings.features.imagePlayground.groupHint')
+                : t('admin.settings.features.imagePlayground.noGroups') }}
+            </p>
+          </div>
+        </div>
 
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
@@ -6607,6 +6923,8 @@ import { adminAPI } from "@/api";
 import {
   appendAuthSourceDefaultsToUpdateRequest,
   buildAuthSourceDefaultsState,
+  normalizePlatformQuotasMap,
+  sanitizePlatformQuotasMap,
   defaultWeChatConnectScopesForMode,
   deriveWeChatConnectStoredMode,
   normalizeDefaultSubscriptionSettings,
@@ -6618,11 +6936,14 @@ import type {
   SystemSettings,
   UpdateSettingsRequest,
   DefaultSubscriptionSetting,
+  DefaultPlatformQuotasMap,
   OpenAIFastPolicyRule,
   WeChatConnectMode,
   WebSearchEmulationConfig,
   WebSearchProviderConfig,
   WebSearchTestResult,
+  GlobalDiscountSettings,
+  GlobalDiscountRule,
 } from "@/api/admin/settings";
 import type {
   AdminGroup,
@@ -6771,6 +7092,7 @@ const adminApiKeyMasked = ref("");
 const adminApiKeyOperating = ref(false);
 const newAdminApiKey = ref("");
 const subscriptionGroups = ref<AdminGroup[]>([]);
+const imagePlaygroundGroups = ref<AdminGroup[]>([]);
 
 // Overload Cooldown (529) 状态
 const overloadCooldownLoading = ref(true);
@@ -6912,6 +7234,9 @@ type SettingsForm = Omit<
   google_oauth_client_secret: string;
   force_email_on_third_party_signup: boolean;
   openai_advanced_scheduler_enabled: boolean;
+  // 系统全局平台限额 map；form 内始终归一化为全 4 平台对象（模板非空绑定依赖此不变量）
+  default_platform_quotas: DefaultPlatformQuotasMap;
+  global_discount_settings: GlobalDiscountSettings;
 };
 
 const form = reactive<SettingsForm>({
@@ -6928,6 +7253,7 @@ const form = reactive<SettingsForm>({
   login_agreement_updated_at: "2026-03-31",
   login_agreement_documents: defaultLoginAgreementDocuments(),
   default_balance: 0,
+  default_platform_quotas: normalizePlatformQuotasMap() as DefaultPlatformQuotasMap,
   affiliate_rebate_rate: 20,
   affiliate_rebate_freeze_hours: 0,
   affiliate_rebate_duration_days: 0,
@@ -6947,6 +7273,18 @@ const form = reactive<SettingsForm>({
   hide_ccs_import_button: false,
   payment_enabled: false,
   risk_control_enabled: false,
+  global_discount_settings: {
+    enabled: false,
+    discount_rate: 1,
+    schedule_type: "once",
+    starts_at: "",
+    ends_at: "",
+    recurring_start_at: "00:00",
+    recurring_end_at: "23:59",
+    weekdays: [],
+    month_days: [],
+    label: "",
+  },
   payment_min_amount: 1,
   payment_max_amount: 10000,
   payment_daily_limit: 50000,
@@ -7122,6 +7460,8 @@ const form = reactive<SettingsForm>({
   channel_monitor_default_interval_seconds: 60,
   // Available Channels feature switch
   available_channels_enabled: false,
+  // Image Playground group selected by admin; 0 means disabled/unconfigured.
+  image_playground_group_id: 0,
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: false,
 });
@@ -7161,6 +7501,200 @@ const validateBalanceBonusTiers = (
     seen.add(tier.min_amount);
   }
   return null;
+};
+
+const defaultGlobalDiscountSettings = (): GlobalDiscountSettings => ({
+  enabled: false,
+  rules: [defaultGlobalDiscountRule()],
+  discount_rate: 1,
+  schedule_type: "once",
+  starts_at: "",
+  ends_at: "",
+  recurring_start_at: "00:00",
+  recurring_end_at: "23:59",
+  weekdays: [],
+  month_days: [],
+  label: "",
+});
+
+const defaultGlobalDiscountRule = (): GlobalDiscountRule => ({
+  id: `discount-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  enabled: true,
+  discount_rate: 1,
+  schedule_type: "daily",
+  starts_at: "",
+  ends_at: "",
+  recurring_start_at: "22:00",
+  recurring_end_at: "03:00",
+  weekdays: [],
+  month_days: [],
+  label: "",
+});
+
+const normalizeGlobalDiscountSettings = (
+  settings?: Partial<GlobalDiscountSettings> | null,
+): GlobalDiscountSettings => {
+  const scheduleType = ["once", "daily", "weekly", "monthly"].includes(
+    String(settings?.schedule_type || ""),
+  )
+    ? settings?.schedule_type
+    : "once";
+  const normalizeNumberList = (values?: number[]) =>
+    Array.from(
+      new Set(
+        (values || [])
+          .map((value) => Math.floor(Number(value)))
+          .filter((value) => Number.isFinite(value)),
+      ),
+    ).sort((a, b) => a - b);
+  const legacyRule: GlobalDiscountRule = {
+    id: "rule-1",
+    enabled: Boolean(settings?.enabled),
+    discount_rate: Number(settings?.discount_rate) > 0 ? Number(settings?.discount_rate) : 1,
+    schedule_type: scheduleType as GlobalDiscountRule["schedule_type"],
+    starts_at: settings?.starts_at || "",
+    ends_at: settings?.ends_at || "",
+    recurring_start_at: settings?.recurring_start_at || "00:00",
+    recurring_end_at: settings?.recurring_end_at || "23:59",
+    weekdays: normalizeNumberList(settings?.weekdays),
+    month_days: normalizeNumberList(settings?.month_days),
+    label: settings?.label || "",
+  };
+  const rules = (settings?.rules && settings.rules.length > 0 ? settings.rules : [legacyRule]).map(
+    (rule, index) => ({
+      ...defaultGlobalDiscountRule(),
+      ...rule,
+      id: rule.id || `rule-${index + 1}`,
+      discount_rate: Number(rule.discount_rate) > 0 ? Number(rule.discount_rate) : 1,
+      schedule_type: ["once", "daily", "weekly", "monthly"].includes(String(rule.schedule_type || ""))
+        ? rule.schedule_type
+        : "once",
+      recurring_start_at: rule.recurring_start_at || "00:00",
+      recurring_end_at: rule.recurring_end_at || "23:59",
+      weekdays: normalizeNumberList(rule.weekdays),
+      month_days: normalizeNumberList(rule.month_days),
+      label: rule.label || "",
+    }),
+  ) as GlobalDiscountRule[];
+  const firstRule = rules[0] || legacyRule;
+  return {
+    ...defaultGlobalDiscountSettings(),
+    ...settings,
+    rules,
+    schedule_type: scheduleType as GlobalDiscountSettings["schedule_type"],
+    discount_rate: firstRule.discount_rate,
+    starts_at: firstRule.starts_at,
+    ends_at: firstRule.ends_at,
+    recurring_start_at: firstRule.recurring_start_at,
+    recurring_end_at: firstRule.recurring_end_at,
+    weekdays: firstRule.weekdays,
+    month_days: firstRule.month_days,
+    label: firstRule.label || "",
+  };
+};
+
+const addGlobalDiscountRule = () => {
+  form.global_discount_settings.rules = [
+    ...(form.global_discount_settings.rules || []),
+    defaultGlobalDiscountRule(),
+  ];
+};
+
+const removeGlobalDiscountRule = (index: number) => {
+  if ((form.global_discount_settings.rules || []).length <= 1) return;
+  if (!form.global_discount_settings.rules) return;
+  form.global_discount_settings.rules.splice(index, 1);
+};
+
+const globalDiscountWeekdayOptions = computed(() => [
+  { value: 1, label: localText("周一", "Mon") },
+  { value: 2, label: localText("周二", "Tue") },
+  { value: 3, label: localText("周三", "Wed") },
+  { value: 4, label: localText("周四", "Thu") },
+  { value: 5, label: localText("周五", "Fri") },
+  { value: 6, label: localText("周六", "Sat") },
+  { value: 7, label: localText("周日", "Sun") },
+]);
+
+const globalDiscountMonthDayOptions = Array.from({ length: 31 }, (_, index) => index + 1);
+
+const parseDiscountClockMinutes = (value?: string): number | null => {
+  const match = /^(\d{2}):(\d{2})$/.exec(value || "");
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  return hours * 60 + minutes;
+};
+
+const globalDiscountRuleCrossesMidnight = (rule: GlobalDiscountRule) => {
+  if (rule.schedule_type === "once") return false;
+  const start = parseDiscountClockMinutes(rule.recurring_start_at);
+  const end = parseDiscountClockMinutes(rule.recurring_end_at);
+  return start !== null && end !== null && end <= start;
+};
+
+const formatDiscountRecurringPreview = (
+  rule: GlobalDiscountRule,
+  prefixZh: string,
+  prefixEn: string,
+  rate: number,
+): string => {
+  const start = rule.recurring_start_at || "00:00";
+  const end = rule.recurring_end_at || "23:59";
+  if (globalDiscountRuleCrossesMidnight(rule)) {
+    return localText(
+      `${prefixZh} ${start} 开始，次日 ${end} 结束，优惠 ${rate}%`,
+      `${prefixEn} starts at ${start}, ends next day at ${end}, ${rate}% off`,
+    );
+  }
+  return localText(
+    `${prefixZh} ${start} 开始，当日 ${end} 结束，优惠 ${rate}%`,
+    `${prefixEn} starts at ${start}, ends same day at ${end}, ${rate}% off`,
+  );
+};
+
+const toDatetimeLocal = (value?: string | null): string => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.slice(0, 16);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+};
+
+const fromDatetimeLocal = (value: string): string => {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toISOString();
+};
+
+const globalDiscountRulePreview = (rule: GlobalDiscountRule): string => {
+  if (!rule.enabled) {
+    return localText("此规则未启用", "This rule is off");
+  }
+  const rate = Math.round((1 - Number(rule.discount_rate || 1)) * 100);
+  if (rule.schedule_type !== "once") {
+    if (rule.schedule_type === "daily") {
+      return formatDiscountRecurringPreview(rule, "每天", "Daily", rate);
+    }
+    if (rule.schedule_type === "weekly") {
+      return formatDiscountRecurringPreview(rule, "每周选中日期", "Weekly on selected days", rate);
+    }
+    return formatDiscountRecurringPreview(rule, "每月选中日期", "Monthly on selected days", rate);
+  }
+  const now = Date.now();
+  const start = rule.starts_at ? new Date(rule.starts_at).getTime() : Number.NaN;
+  const end = rule.ends_at ? new Date(rule.ends_at).getTime() : Number.NaN;
+  if (Number.isNaN(start) || Number.isNaN(end)) {
+    return localText("请填写有效的开始和结束时间", "Enter a valid start and end time");
+  }
+  if (now < start) {
+    return localText(`未开始，预计优惠 ${rate}%`, `Upcoming, ${rate}% off`);
+  }
+  if (now >= end) {
+    return localText(`已结束，优惠 ${rate}%`, `Ended, ${rate}% off`);
+  }
+  return localText(`进行中，优惠 ${rate}%`, `Active, ${rate}% off`);
 };
 
 const addBalanceBonusTier = () => {
@@ -7780,7 +8314,11 @@ async function loadSettings() {
             content_md: doc.content_md || "",
           }))
         : defaultLoginAgreementDocuments();
+    form.global_discount_settings = normalizeGlobalDiscountSettings(
+      settings.global_discount_settings,
+    );
     Object.assign(authSourceDefaults, buildAuthSourceDefaultsState(settings));
+    form.default_platform_quotas = normalizePlatformQuotasMap(settings.default_platform_quotas);
     form.backend_mode_enabled = settings.backend_mode_enabled;
     form.default_subscriptions = normalizeDefaultSubscriptionSettings(
       settings.default_subscriptions,
@@ -7897,6 +8435,20 @@ async function loadSubscriptionGroups() {
     );
   } catch (_error: unknown) {
     subscriptionGroups.value = [];
+  }
+}
+
+async function loadImagePlaygroundGroups() {
+  try {
+    const groups = await adminAPI.groups.getAll("openai");
+    imagePlaygroundGroups.value = groups.filter(
+      (group) =>
+        group.platform === "openai" &&
+        group.status === "active" &&
+        group.allow_image_generation === true,
+    );
+  } catch (_error: unknown) {
+    imagePlaygroundGroups.value = [];
   }
 }
 
@@ -8269,6 +8821,13 @@ async function saveSettings() {
       // Payment configuration
       payment_enabled: form.payment_enabled,
       risk_control_enabled: form.risk_control_enabled,
+      global_discount_settings: normalizeGlobalDiscountSettings(
+        form.global_discount_settings,
+      ),
+      image_playground_group_id:
+        Number(form.image_playground_group_id) > 0
+          ? Math.floor(Number(form.image_playground_group_id))
+          : 0,
       payment_min_amount: Number(form.payment_min_amount) || 0,
       payment_max_amount: Number(form.payment_max_amount) || 0,
       payment_daily_limit: Number(form.payment_daily_limit) || 0,
@@ -8348,6 +8907,7 @@ async function saveSettings() {
       };
     }
 
+    payload.default_platform_quotas = sanitizePlatformQuotasMap(form.default_platform_quotas);
     appendAuthSourceDefaultsToUpdateRequest(payload, authSourceDefaults);
 
     const updated = await adminAPI.settings.updateSettings(payload);
@@ -8358,6 +8918,10 @@ async function saveSettings() {
       }
     }
     Object.assign(authSourceDefaults, buildAuthSourceDefaultsState(updated));
+    form.default_platform_quotas = normalizePlatformQuotasMap(updated.default_platform_quotas);
+    form.global_discount_settings = normalizeGlobalDiscountSettings(
+      updated.global_discount_settings,
+    );
     registrationEmailSuffixWhitelistTags.value =
       normalizeRegistrationEmailSuffixDomains(
         updated.registration_email_suffix_whitelist,
@@ -9229,6 +9793,7 @@ async function handleDeleteProvider() {
 onMounted(() => {
   loadSettings();
   loadSubscriptionGroups();
+  loadImagePlaygroundGroups();
   loadAdminApiKey();
   loadOverloadCooldownSettings();
   loadRateLimit429CooldownSettings();

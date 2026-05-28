@@ -25,12 +25,23 @@ func NewFrontendServer(settingsProvider PublicSettingsProvider) (*FrontendServer
 	return nil, errors.New("frontend not embedded")
 }
 
+func ServeFrontend(settingsProvider PublicSettingsProvider, registerOnUpdateCallback func(func())) gin.HandlerFunc {
+	if registerOnUpdateCallback != nil {
+		registerOnUpdateCallback(nil)
+	}
+	return ServeEmbeddedFrontend()
+}
+
 // InvalidateCache is a no-op for non-embed builds
 func (s *FrontendServer) InvalidateCache() {}
 
 // Middleware returns a handler that returns 404 for non-embed builds
 func (s *FrontendServer) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if shouldBypassEmbeddedFrontend(c.Request.URL.Path) {
+			c.Next()
+			return
+		}
 		c.String(http.StatusNotFound, "Frontend not embedded. Build with -tags embed to include frontend.")
 		c.Abort()
 	}
@@ -38,6 +49,10 @@ func (s *FrontendServer) Middleware() gin.HandlerFunc {
 
 func ServeEmbeddedFrontend() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if shouldBypassEmbeddedFrontend(c.Request.URL.Path) {
+			c.Next()
+			return
+		}
 		c.String(http.StatusNotFound, "Frontend not embedded. Build with -tags embed to include frontend.")
 		c.Abort()
 	}

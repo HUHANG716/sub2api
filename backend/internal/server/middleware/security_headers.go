@@ -36,6 +36,7 @@ var requiredCSPDirectiveValues = []struct {
 }{
 	{"script-src", CloudflareInsightsDomain},
 	{"script-src", StripeDomain},
+	{"frame-src", "'self'"},
 	{"frame-src", StripeDomain},
 	{"script-src", AirwallexStaticDomain},
 	{"script-src", AirwallexCheckoutDomain},
@@ -92,16 +93,24 @@ func SecurityHeaders(cfg config.CSPConfig, getFrameSrcOrigins func() []string) g
 		}
 
 		c.Header("X-Content-Type-Options", "nosniff")
-		c.Header("X-Frame-Options", "DENY")
+		isImagePlaygroundApp := isImagePlaygroundAppPath(c)
+		isImagePlaygroundShell := isImagePlaygroundShellPath(c)
+		if isImagePlaygroundApp {
+			c.Header("X-Frame-Options", "SAMEORIGIN")
+			finalPolicy = replaceDirective(finalPolicy, "frame-ancestors", "'self'")
+		} else {
+			c.Header("X-Frame-Options", "DENY")
+		}
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 		if isAPIRoutePath(c) {
 			c.Next()
 			return
 		}
 
-		if cfg.Enabled {
+		if cfg.Enabled || isImagePlaygroundApp || isImagePlaygroundShell {
 			// Generate nonce for this request
 			nonce, err := GenerateNonce()
+			finalPolicy = ensureImagePlaygroundCSP(finalPolicy, isImagePlaygroundApp, isImagePlaygroundShell)
 			if err != nil {
 				// crypto/rand 失败时降级为无 nonce 的 CSP 策略
 				log.Printf("[SecurityHeaders] %v — 降级为无 nonce 的 CSP", err)
@@ -112,7 +121,24 @@ func SecurityHeaders(cfg config.CSPConfig, getFrameSrcOrigins func() []string) g
 			}
 		}
 		c.Next()
+		if isImagePlaygroundApp && cfg.Enabled {
+			c.Header("Content-Security-Policy", replaceDirective(c.Writer.Header().Get("Content-Security-Policy"), "frame-ancestors", "'self'"))
+		}
 	}
+}
+
+func isImagePlaygroundAppPath(c *gin.Context) bool {
+	if c == nil || c.Request == nil || c.Request.URL == nil {
+		return false
+	}
+	return strings.HasPrefix(c.Request.URL.Path, "/image-playground-app/")
+}
+
+func isImagePlaygroundShellPath(c *gin.Context) bool {
+	if c == nil || c.Request == nil || c.Request.URL == nil {
+		return false
+	}
+	return c.Request.URL.Path == "/image-playground"
 }
 
 func isAPIRoutePath(c *gin.Context) bool {
@@ -125,6 +151,19 @@ func isAPIRoutePath(c *gin.Context) bool {
 		strings.HasPrefix(path, "/antigravity/") ||
 		strings.HasPrefix(path, "/responses") ||
 		strings.HasPrefix(path, "/images")
+}
+
+func ensureImagePlaygroundCSP(policy string, isAppPath, isShellPath bool) string {
+	if !isAppPath && !isShellPath {
+		return policy
+	}
+	if !directiveHasValue(policy, "frame-src", "'self'") {
+		policy = addToDirective(policy, "frame-src", "'self'")
+	}
+	if isAppPath {
+		return replaceDirective(policy, "frame-ancestors", "'self'")
+	}
+	return replaceDirective(policy, "frame-ancestors", "'none'")
 }
 
 // enhanceCSPPolicy 确保 CSP 策略包含 nonce 支持和支付 SDK 必需域名。
@@ -194,4 +233,36 @@ func addToDirective(policy, directive, value string) string {
 	// Insert value before the semicolon
 	insertPos := idx + endIdx
 	return policy[:insertPos] + " " + value + policy[insertPos:]
+}
+
+// replaceDirective replaces a complete directive with the provided values.
+// If the directive is absent, it appends the directive to the policy.
+func replaceDirective(policy, directive string, values ...string) string {
+	replacement := strings.TrimSpace(directive + " " + strings.Join(values, " "))
+	if replacement == directive {
+		return policy
+	}
+
+	parts := strings.Split(policy, ";")
+	replaced := false
+	result := make([]string, 0, len(parts)+1)
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+		fields := strings.Fields(trimmed)
+		if len(fields) > 0 && fields[0] == directive {
+			if !replaced {
+				result = append(result, replacement)
+				replaced = true
+			}
+			continue
+		}
+		result = append(result, trimmed)
+	}
+	if !replaced {
+		result = append(result, replacement)
+	}
+	return strings.Join(result, "; ")
 }

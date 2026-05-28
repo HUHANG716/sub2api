@@ -21,7 +21,8 @@ import (
 
 const (
 	// NonceHTMLPlaceholder is the placeholder for nonce in HTML script tags
-	NonceHTMLPlaceholder = "__CSP_NONCE_VALUE__"
+	NonceHTMLPlaceholder    = "__CSP_NONCE_VALUE__"
+	imagePlaygroundEmbedCSP = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; frame-src 'self'; worker-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
 )
 
 //go:embed all:dist
@@ -74,6 +75,20 @@ func NewFrontendServer(settingsProvider PublicSettingsProvider) (*FrontendServer
 	}, nil
 }
 
+func ServeFrontend(settingsProvider PublicSettingsProvider, registerOnUpdateCallback func(func())) gin.HandlerFunc {
+	server, err := NewFrontendServer(settingsProvider)
+	if err != nil {
+		if registerOnUpdateCallback != nil {
+			registerOnUpdateCallback(nil)
+		}
+		return ServeEmbeddedFrontend()
+	}
+	if registerOnUpdateCallback != nil {
+		registerOnUpdateCallback(server.InvalidateCache)
+	}
+	return server.Middleware()
+}
+
 // InvalidateCache invalidates the HTML cache (call when settings change)
 func (s *FrontendServer) InvalidateCache() {
 	if s != nil && s.cache != nil {
@@ -102,8 +117,14 @@ func (s *FrontendServer) Middleware() gin.HandlerFunc {
 			return
 		}
 
+		applyImagePlaygroundEmbedHeaders(c, path)
+
 		// Try local override first
 		if s.tryServeOverride(c, cleanPath) {
+			return
+		}
+
+		if s.tryServeDirectoryIndex(c, cleanPath) {
 			return
 		}
 
@@ -117,6 +138,14 @@ func (s *FrontendServer) Middleware() gin.HandlerFunc {
 		s.fileServer.ServeHTTP(c.Writer, c.Request)
 		c.Abort()
 	}
+}
+
+func applyImagePlaygroundEmbedHeaders(c *gin.Context, requestPath string) {
+	if !strings.HasPrefix(requestPath, "/image-playground-app/") {
+		return
+	}
+	c.Header("X-Frame-Options", "SAMEORIGIN")
+	c.Header("Content-Security-Policy", imagePlaygroundEmbedCSP)
 }
 
 func (s *FrontendServer) fileExists(path string) bool {
@@ -140,6 +169,28 @@ func (s *FrontendServer) tryServeOverride(c *gin.Context, cleanPath string) bool
 		return false
 	}
 	c.File(filePath)
+	c.Abort()
+	return true
+}
+
+func (s *FrontendServer) tryServeDirectoryIndex(c *gin.Context, cleanPath string) bool {
+	trimmed := strings.TrimSuffix(cleanPath, "/")
+	if trimmed == cleanPath || trimmed == "" {
+		return false
+	}
+	indexPath := trimmed + "/index.html"
+	if s.tryServeOverride(c, indexPath) {
+		return true
+	}
+	if !s.fileExists(indexPath) {
+		return false
+	}
+
+	content, err := fs.ReadFile(s.distFS, indexPath)
+	if err != nil {
+		return false
+	}
+	c.Data(http.StatusOK, "text/html; charset=utf-8", content)
 	c.Abort()
 	return true
 }
@@ -309,6 +360,8 @@ func ServeEmbeddedFrontend() gin.HandlerFunc {
 			cleanPath = "index.html"
 		}
 
+		applyImagePlaygroundEmbedHeaders(c, path)
+
 		if file, err := distFS.Open(cleanPath); err == nil {
 			_ = file.Close()
 			// Try local override first
@@ -337,20 +390,6 @@ func tryServeOverrideFile(c *gin.Context, overrideDir, cleanPath string) bool {
 	c.File(filePath)
 	c.Abort()
 	return true
-}
-
-func shouldBypassEmbeddedFrontend(path string) bool {
-	trimmed := strings.TrimSpace(path)
-	return strings.HasPrefix(trimmed, "/api/") ||
-		strings.HasPrefix(trimmed, "/v1/") ||
-		strings.HasPrefix(trimmed, "/v1beta/") ||
-		strings.HasPrefix(trimmed, "/backend-api/") ||
-		strings.HasPrefix(trimmed, "/antigravity/") ||
-		strings.HasPrefix(trimmed, "/setup/") ||
-		trimmed == "/health" ||
-		trimmed == "/responses" ||
-		strings.HasPrefix(trimmed, "/responses/") ||
-		strings.HasPrefix(trimmed, "/images/")
 }
 
 func serveIndexHTML(c *gin.Context, fsys fs.FS) {

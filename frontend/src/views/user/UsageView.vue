@@ -62,6 +62,12 @@
                 <span class="line-through">${{ (usageStats?.total_cost || 0).toFixed(4) }}</span>
                 {{ t('usage.standardCost') }}
               </p>
+              <p
+                v-if="(usageStats?.total_discount_amount || 0) > 0"
+                class="text-xs font-medium text-emerald-600 dark:text-emerald-400"
+              >
+                {{ t('usage.discountSaved') }} ${{ (usageStats?.total_discount_amount || 0).toFixed(4) }}
+              </p>
             </div>
           </div>
         </div>
@@ -83,6 +89,12 @@
             </div>
           </div>
         </div>
+        </div>
+        <div
+          v-if="activeGlobalDiscountLabel"
+          class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-900/10 dark:text-emerald-200"
+        >
+          {{ activeGlobalDiscountLabel }}
         </div>
       </template>
 
@@ -278,10 +290,37 @@
           </template>
 
           <template #cell-cost="{ row }">
-            <div class="flex items-center gap-1.5 text-sm">
-              <span class="font-medium text-green-600 dark:text-green-400">
-                ${{ row.actual_cost.toFixed(6) }}
-              </span>
+            <div class="flex items-start gap-1.5 text-sm">
+              <div class="min-w-0 space-y-0.5">
+                <div class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                  <span
+                    v-if="hasUsageDiscount(row)"
+                    class="text-gray-400 line-through dark:text-gray-500"
+                  >
+                    ${{ preDiscountCost(row).toFixed(6) }}
+                  </span>
+                  <span class="font-semibold text-green-600 dark:text-green-400">
+                    {{ t('usage.paidAmount') }} ${{ row.actual_cost.toFixed(6) }}
+                  </span>
+                  <span
+                    v-if="hasUsageDiscount(row)"
+                    class="rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                  >
+                    {{ t('usage.globalDiscountApplied') }}
+                  </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+                  <span class="text-gray-500 dark:text-gray-400">
+                    {{ t('usage.baseCost') }} ${{ row.total_cost.toFixed(6) }}
+                  </span>
+                  <span
+                    v-if="hasUsageRateMultiplier(row)"
+                    class="text-gray-500 dark:text-gray-400"
+                  >
+                    {{ t('usage.rate') }} {{ formatMultiplier(row.rate_multiplier || 1) }}x
+                  </span>
+                </div>
+              </div>
               <!-- Cost Detail Tooltip -->
               <div
                 class="group relative"
@@ -512,17 +551,25 @@
             <span class="font-semibold text-cyan-300">{{ getUsageServiceTierLabel(tooltipData?.service_tier, t) }}</span>
           </div>
           <div class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">{{ t('usage.baseCost') }}</span>
+            <span class="font-medium text-white">${{ tooltipData?.total_cost.toFixed(6) }}</span>
+          </div>
+          <div class="flex items-center justify-between gap-6">
             <span class="text-gray-400">{{ t('usage.rate') }}</span>
             <span class="font-semibold text-blue-400"
               >{{ formatMultiplier(tooltipData?.rate_multiplier || 1) }}x</span
             >
           </div>
-          <div class="flex items-center justify-between gap-6">
-            <span class="text-gray-400">{{ t('usage.original') }}</span>
-            <span class="font-medium text-white">${{ tooltipData?.total_cost.toFixed(6) }}</span>
+          <div v-if="tooltipData && (hasUsageDiscount(tooltipData) || hasUsageRateMultiplier(tooltipData))" class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">{{ t('usage.beforeDiscountCost') }}</span>
+            <span class="font-medium text-white">${{ tooltipData ? preDiscountCost(tooltipData).toFixed(6) : '0.000000' }}</span>
+          </div>
+          <div v-if="tooltipData && tooltipData.discount_amount > 0" class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">{{ t('usage.globalDiscountDeduction') }}</span>
+            <span class="font-semibold text-emerald-300">-${{ tooltipData.discount_amount.toFixed(6) }}</span>
           </div>
           <div class="flex items-center justify-between gap-6 border-t border-gray-700 pt-1.5">
-            <span class="text-gray-400">{{ t('usage.billed') }}</span>
+            <span class="text-gray-400">{{ t('usage.paidAmount') }}</span>
             <span class="font-semibold text-green-400"
               >${{ tooltipData?.actual_cost.toFixed(6) }}</span
             >
@@ -670,6 +717,24 @@ const formatDuration = (ms: number): string => {
   if (ms < 1000) return `${ms.toFixed(0)}ms`
   return `${(ms / 1000).toFixed(2)}s`
 }
+
+const hasUsageDiscount = (row: Pick<UsageLog, 'discount_amount'> | null | undefined): boolean => {
+  return (row?.discount_amount ?? 0) > 0
+}
+
+const hasUsageRateMultiplier = (row: Pick<UsageLog, 'rate_multiplier'> | null | undefined): boolean => {
+  return Math.abs((row?.rate_multiplier ?? 1) - 1) > 0.000001
+}
+
+const preDiscountCost = (row: Pick<UsageLog, 'actual_cost' | 'discount_amount'>): number => {
+  return (row.actual_cost ?? 0) + (row.discount_amount ?? 0)
+}
+
+const activeGlobalDiscountLabel = computed(() => {
+  const discount = usageStats.value?.global_discount
+  if (!discount?.active) return ''
+  return discount.label?.trim() || ''
+})
 
 const imageUnitPrice = (row: UsageLog | null): number => {
   if (!row || row.image_count <= 0) return 0
@@ -907,6 +972,8 @@ const exportToCSV = async () => {
       'Cache Read Tokens',
       'Cache Creation Tokens',
       'Rate Multiplier',
+      'Discount Saved',
+      'Discount Rate',
       'Billed Cost',
       'Original Cost',
       'First Token (ms)',
@@ -926,6 +993,8 @@ const exportToCSV = async () => {
         log.cache_read_tokens,
         log.cache_creation_tokens,
         log.rate_multiplier,
+        (log.discount_amount || 0).toFixed(8),
+        log.discount_rate || 1,
         log.actual_cost.toFixed(8),
         log.total_cost.toFixed(8),
         log.first_token_ms ?? '',

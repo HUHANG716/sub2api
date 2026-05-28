@@ -88,7 +88,7 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 class="sidebar-link mb-1"
-                :class="{ 'sidebar-link-docs': item.prominent, 'sidebar-link-collapsed': sidebarCollapsed }"
+                :class="{ 'sidebar-link-collapsed': sidebarCollapsed }"
                 :title="sidebarCollapsed ? item.label : undefined"
                 @click="handleMenuItemClick(item.path)"
               >
@@ -136,7 +136,7 @@
               target="_blank"
               rel="noopener noreferrer"
               class="sidebar-link mb-1"
-              :class="{ 'sidebar-link-docs': item.prominent, 'sidebar-link-collapsed': sidebarCollapsed }"
+              :class="{ 'sidebar-link-collapsed': sidebarCollapsed }"
               :title="sidebarCollapsed ? item.label : undefined"
               @click="handleMenuItemClick(item.path)"
             >
@@ -171,7 +171,7 @@
               target="_blank"
               rel="noopener noreferrer"
               class="sidebar-link mb-1"
-              :class="{ 'sidebar-link-docs': item.prominent, 'sidebar-link-collapsed': sidebarCollapsed }"
+              :class="{ 'sidebar-link-collapsed': sidebarCollapsed }"
               :title="sidebarCollapsed ? item.label : undefined"
               @click="handleMenuItemClick(item.path)"
             >
@@ -351,7 +351,7 @@ import VersionBadge from '@/components/common/VersionBadge.vue'
 import DefaultHashAvatar from '@/components/common/DefaultHashAvatar.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { sanitizeSvg } from '@/utils/sanitize'
-import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
+import { FeatureFlags, makeImagePlaygroundSidebarFlag, makeSidebarFlag } from '@/utils/featureFlags'
 import { defaultAvatarSeed } from '@/utils/defaultAvatar'
 
 interface NavItem {
@@ -361,7 +361,6 @@ interface NavItem {
   iconSvg?: string
   hideInSimpleMode?: boolean
   external?: boolean
-  prominent?: boolean
   children?: NavItem[]
   /**
    * When true, the parent item only toggles the expand/collapse state and
@@ -438,6 +437,7 @@ type SidebarIconName =
   | 'userPlus'
   | 'database'
   | 'cube'
+  | 'sparkles'
   | 'wallet'
   | 'dollar'
   | 'cloud'
@@ -468,6 +468,7 @@ const UserIcon = createSidebarIcon('userCircle')
 const UsersIcon = createSidebarIcon('userPlus')
 const FolderIcon = createSidebarIcon('database')
 const ChannelIcon = createSidebarIcon('cube')
+const ImagePlaygroundIcon = createSidebarIcon('sparkles')
 const CreditCardIcon = createSidebarIcon('wallet')
 const RechargeSubscriptionIcon = createSidebarIcon('dollar')
 const GlobeIcon = createSidebarIcon('cloud')
@@ -493,6 +494,7 @@ const flagPayment = makeSidebarFlag(FeatureFlags.payment)
 const flagAvailableChannels = makeSidebarFlag(FeatureFlags.availableChannels)
 const flagAffiliate = makeSidebarFlag(FeatureFlags.affiliate)
 const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
+const flagImagePlayground = makeImagePlaygroundSidebarFlag()
 const flagOpsMonitoring = () => adminSettingsStore.opsMonitoringEnabled
 const flagAdminPayment = () => adminSettingsStore.paymentEnabled
 
@@ -510,6 +512,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     { path: '/available-channels', label: t('nav.availableChannels'), icon: ChannelIcon, hideInSimpleMode: true, featureFlag: flagAvailableChannels },
+    { path: '/image-playground', label: t('nav.imagePlayground'), icon: ImagePlaygroundIcon, hideInSimpleMode: true, featureFlag: flagImagePlayground },
     { path: '/monitor', label: t('nav.channelStatus'), icon: SignalIcon, featureFlag: flagChannelMonitor },
     { path: '/subscriptions', label: t('nav.mySubscriptions'), icon: CreditCardIcon, hideInSimpleMode: true },
     { path: '/purchase', label: t('nav.buySubscription'), icon: RechargeSubscriptionIcon, hideInSimpleMode: true, featureFlag: flagPayment },
@@ -523,7 +526,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
       icon: null,
       iconSvg: item.icon_svg,
     })),
-    { path: '/docs', label: t('nav.docs'), icon: DocumentIcon, prominent: true },
+    { path: '/docs', label: t('nav.docs'), icon: DocumentIcon },
   )
   return items
 }

@@ -64,14 +64,16 @@ describe('AppSidebar active state styles', () => {
 })
 
 describe('AppSidebar docs entry', () => {
-  it('adds a prominent internal docs link at the end of self navigation', () => {
-    const docsEntry = "{ path: '/docs', label: t('nav.docs'), icon: DocumentIcon, prominent: true }"
+  it('adds a regular internal docs link at the end of self navigation', () => {
+    const docsEntry = "{ path: '/docs', label: t('nav.docs'), icon: DocumentIcon }"
 
     expect(componentSource).toContain(docsEntry)
     expect(componentSource.indexOf("...customMenuItemsForUser.value.map")).toBeLessThan(
       componentSource.indexOf(docsEntry)
     )
     expect(componentSource).not.toContain("path: docUrl.value, label: t('nav.docs')")
+    expect(componentSource).not.toContain('sidebar-link-docs')
+    expect(styleSource).not.toContain('.sidebar-link-docs')
   })
 
   it('renders external sidebar nav items as links instead of router links', () => {
@@ -79,6 +81,14 @@ describe('AppSidebar docs entry', () => {
     expect(componentSource).toContain(':href="item.path"')
     expect(componentSource).toContain('target="_blank"')
     expect(componentSource).toContain('rel="noopener noreferrer"')
+  })
+})
+
+describe('AppSidebar image playground entry', () => {
+  it('hides the image playground unless admin selected a workbench group', () => {
+    expect(componentSource).toContain("import { FeatureFlags, makeImagePlaygroundSidebarFlag, makeSidebarFlag } from '@/utils/featureFlags'")
+    expect(componentSource).toContain('const flagImagePlayground = makeImagePlaygroundSidebarFlag()')
+    expect(componentSource).toContain("{ path: '/image-playground', label: t('nav.imagePlayground'), icon: ImagePlaygroundIcon, hideInSimpleMode: true, featureFlag: flagImagePlayground }")
   })
 })
 

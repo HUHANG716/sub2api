@@ -20,6 +20,7 @@ const showInfo = vi.hoisted(() => vi.fn())
 const showWarning = vi.hoisted(() => vi.fn())
 const getCheckoutInfo = vi.hoisted(() => vi.fn())
 const bridgeInvoke = vi.hoisted(() => vi.fn())
+const translateMock = vi.hoisted(() => vi.fn((key: string) => key))
 
 vi.mock('vue-router', async () => {
   const actual = await vi.importActual<typeof import('vue-router')>('vue-router')
@@ -39,7 +40,7 @@ vi.mock('vue-i18n', async () => {
   return {
     ...actual,
     useI18n: () => ({
-      t: (key: string) => key,
+      t: translateMock,
     }),
   }
 })
@@ -432,6 +433,7 @@ describe('PaymentView recharge bonus preview', () => {
     showError.mockReset()
     showInfo.mockReset()
     showWarning.mockReset()
+    translateMock.mockClear()
     window.localStorage.clear()
   })
 
@@ -545,9 +547,11 @@ describe('PaymentView recharge bonus preview', () => {
 
     const amountInput = wrapper.get('.amount-input-stub')
     expect(JSON.parse(amountInput.attributes('data-badges') || '{}')).toMatchObject({
-      100: { total: '$200.00', bonus: '+ $100.00 payment.quickAmountBonusSuffix' },
-      500: { total: '$550.00', bonus: '+ $50.00 payment.quickAmountBonusSuffix' },
+      100: { total: '$200.00', bonus: 'payment.quickAmountBonusIncluded' },
+      500: { total: '$550.00', bonus: 'payment.quickAmountBonusIncluded' },
     })
+    expect(translateMock).toHaveBeenCalledWith('payment.quickAmountBonusIncluded', { bonus: '100.00' })
+    expect(translateMock).toHaveBeenCalledWith('payment.quickAmountBonusIncluded', { bonus: '50.00' })
     expect(JSON.parse(amountInput.attributes('data-badges') || '{}')).not.toHaveProperty('10')
 
     await amountInput.trigger('click')
