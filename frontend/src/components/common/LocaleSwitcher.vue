@@ -4,8 +4,8 @@
       data-testid="locale-switcher-trigger"
       type="button"
       @click="toggleDropdown"
-      :disabled="switching"
       class="locale-trigger"
+      :class="{ 'locale-trigger-icon-only': iconOnly }"
       :aria-label="t('locale.switchTo')"
       aria-haspopup="menu"
       :aria-expanded="isOpen"
@@ -14,15 +14,16 @@
       <span class="locale-trigger-icon" aria-hidden="true">
         <Icon name="globe" size="sm" />
       </span>
-      <span class="locale-trigger-value">{{ currentLocaleLabel }}</span>
+      <span class="locale-trigger-value" :class="{ 'locale-trigger-value-hidden': iconOnly }">
+        {{ currentLocaleLabel }}
+      </span>
       <Icon
-        v-if="!switching"
+        v-if="!switching && !iconOnly"
         name="chevronDown"
         size="xs"
         class="locale-chevron"
         :class="{ 'rotate-180': isOpen }"
       />
-      <span v-else class="locale-spinner" :aria-label="t('locale.loading')"></span>
     </button>
 
     <transition name="dropdown">
@@ -38,7 +39,6 @@
           :key="locale.code"
           :data-testid="`locale-option-${locale.code}`"
           type="button"
-          :disabled="switching"
           @click="selectLocale(locale.code)"
           class="locale-option"
           :class="{ 'is-active': locale.code === currentLocaleCode }"
@@ -58,6 +58,10 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import { setLocale, availableLocales } from '@/i18n'
+
+defineProps<{
+  iconOnly?: boolean
+}>()
 
 const { locale, t } = useI18n()
 
@@ -160,18 +164,24 @@ onBeforeUnmount(() => {
   outline-offset: 3px;
 }
 
-.locale-trigger:disabled {
-  cursor: wait;
-  opacity: 0.72;
-}
-
 .locale-trigger-icon {
   display: inline-flex;
   height: 1rem;
   width: 1rem;
   align-items: center;
   justify-content: center;
-  color: #f97316;
+  color: currentColor;
+}
+
+.locale-trigger-icon-only {
+  width: 2.25rem;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+}
+
+.locale-trigger-value-hidden {
+  display: none;
 }
 
 .locale-trigger-value {
@@ -187,15 +197,6 @@ onBeforeUnmount(() => {
 .locale-chevron {
   color: var(--theme-text-muted);
   transition: transform 180ms ease;
-}
-
-.locale-spinner {
-  height: 0.85rem;
-  width: 0.85rem;
-  border: 2px solid rgba(249, 115, 22, 0.22);
-  border-top-color: #f97316;
-  border-radius: 999px;
-  animation: locale-spin 700ms linear infinite;
 }
 
 .locale-menu {
@@ -254,12 +255,6 @@ onBeforeUnmount(() => {
 .locale-option-check {
   flex: 0 0 auto;
   color: #f97316;
-}
-
-@keyframes locale-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .dropdown-enter-active,

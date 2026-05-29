@@ -102,6 +102,11 @@ describe('AppSidebar account dropdown', () => {
     expect(accountDropdownBlock).not.toContain('<ThemeSwitch')
   })
 
+  it('uses an icon-only neutral language switcher in the header', () => {
+    expect(appHeaderSource).toContain('<LocaleSwitcher icon-only />')
+    expect(appHeaderSource).not.toContain('<LocaleSwitcher />')
+  })
+
   it('gives the dropdown profile summary a larger avatar area', () => {
     const summaryBlock = componentSource.match(/\.sidebar-account-dropdown-summary\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const avatarBlock = componentSource.match(/\.sidebar-account-dropdown-avatar\s*\{[\s\S]*?\n\}/)?.[0] ?? ''

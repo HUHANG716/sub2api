@@ -48,7 +48,7 @@
         <AnnouncementBell v-if="user" />
 
         <!-- Language Switcher -->
-        <LocaleSwitcher />
+        <LocaleSwitcher icon-only />
 
         <!-- Theme Switch -->
         <ThemeSwitch />

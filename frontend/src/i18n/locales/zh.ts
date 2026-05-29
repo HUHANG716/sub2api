@@ -34,11 +34,11 @@ export default {
         contact: '联系我们'
       },
       hero: {
-        eyebrow: 'AI Code Workspace',
-        line1: '重构您的',
-        line2: 'AI 编程体验',
-        subtitle: '稳定、清晰、适合团队协作的 AI 编程平台。',
-        description: '把 AI 编程、使用管理与团队协作整合到一个软件平台，让团队专注产品本身。',
+        eyebrow: 'AI API Gateway',
+        line1: '一个入口',
+        line2: '接入主流 AI 模型',
+        subtitle: 'OpenAI 兼容接口，统一接入 Claude、GPT、Gemini 等模型。',
+        description: '一个 API Key 连接 Claude Code、Codex、Gemini CLI 等开发工具，密钥、用量和账单都在同一处管理。',
         pointsLabel: '服务亮点',
         points: {
           workspace: {
@@ -1777,6 +1777,7 @@ export default {
       cacheToday: '今日缓存',
       performance: '性能指标',
       avgResponse: '平均响应',
+      currentConcurrency: '当前并发',
       averageTime: '平均时间',
       timeRange: '时间范围',
       granularity: '粒度',

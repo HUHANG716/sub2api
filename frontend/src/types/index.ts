@@ -1399,6 +1399,7 @@ export interface DashboardStats {
 
   // 系统运行统计
   average_duration_ms: number // 平均响应时间
+  current_total_concurrency: number // 当前账号侧总并发
   uptime: number // 系统运行时间(秒)
 
   // 性能指标

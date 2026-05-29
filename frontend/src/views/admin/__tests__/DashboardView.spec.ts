@@ -57,6 +57,7 @@ const createDashboardStats = (): DashboardStats => ({
   stats_stale: false,
   total_api_keys: 0,
   active_api_keys: 0,
+  current_total_concurrency: 7,
   total_accounts: 0,
   normal_accounts: 0,
   error_accounts: 0,
@@ -176,5 +177,27 @@ describe('admin DashboardView', () => {
     })
 
     expect(wrapper.find('.dashboard-stat-card').exists()).toBe(false)
+  })
+
+  it('renders current concurrency in the top stat cards', async () => {
+    const wrapper = mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: true,
+          Select: true,
+          ModelDistributionChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('admin.dashboard.currentConcurrency')
+    expect(wrapper.text()).toContain('7')
   })
 })

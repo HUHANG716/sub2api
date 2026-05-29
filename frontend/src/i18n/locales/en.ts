@@ -34,11 +34,11 @@ export default {
         contact: 'Contact'
       },
       hero: {
-        eyebrow: 'AI Code Workspace',
-        line1: 'Rebuild your',
-        line2: 'AI coding workflow',
-        subtitle: 'A stable, clear AI coding platform built for team collaboration.',
-        description: 'Bring AI coding, usage management, and team collaboration into one software platform so your team can stay focused on the product.',
+        eyebrow: 'AI API Gateway',
+        line1: 'One endpoint',
+        line2: 'for leading AI models',
+        subtitle: 'An OpenAI-compatible gateway for Claude, GPT, Gemini, and more.',
+        description: 'Connect Claude Code, Codex, Gemini CLI, and other developer tools with one API key while keeping keys, usage, and billing in one place.',
         pointsLabel: 'Service highlights',
         points: {
           workspace: {
@@ -1760,6 +1760,7 @@ export default {
       cacheToday: 'Cache (Today)',
       performance: 'Performance',
       avgResponse: 'Avg Response',
+      currentConcurrency: 'Current Concurrency',
       active: 'active',
       ok: 'ok',
       err: 'err',

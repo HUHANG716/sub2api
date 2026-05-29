@@ -1,6 +1,10 @@
 import { mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import LocaleSwitcher from '../LocaleSwitcher.vue'
+
+const localeSwitcherSourcePath = path.resolve(process.cwd(), 'src/components/common/LocaleSwitcher.vue')
 
 const localeState = vi.hoisted(() => ({ value: 'en' }))
 const setLocaleMock = vi.hoisted(() => vi.fn())
@@ -73,5 +77,41 @@ describe('LocaleSwitcher', () => {
     await wrapper.get('[data-testid="locale-option-zh"]').trigger('click')
 
     expect(setLocaleMock).toHaveBeenCalledWith('zh')
+  })
+
+  it('can render as an icon-only neutral header control', () => {
+    const wrapper = mount(LocaleSwitcher, {
+      props: {
+        iconOnly: true
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    const trigger = wrapper.get('[data-testid="locale-switcher-trigger"]')
+    expect(trigger.classes()).toContain('locale-trigger-icon-only')
+    expect(wrapper.get('.locale-trigger-value').classes()).toContain('locale-trigger-value-hidden')
+    expect(wrapper.find('.locale-chevron').exists()).toBe(false)
+    expect(wrapper.find('.locale-spinner').exists()).toBe(false)
+  })
+
+  it('does not include a visible loading affordance while changing locale', () => {
+    const wrapper = mount(LocaleSwitcher, {
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    expect(wrapper.html()).not.toContain('locale-spinner')
+    expect(wrapper.html()).not.toContain('Changing language...')
+
+    const source = readFileSync(localeSwitcherSourcePath, 'utf-8')
+    expect(source).not.toContain('locale-spinner')
+    expect(source).not.toContain('locale-spin')
   })
 })

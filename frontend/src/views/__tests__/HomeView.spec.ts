@@ -56,11 +56,11 @@ vi.mock('vue-i18n', async (importOriginal) => {
           'home.modern.nav.testimonials': '用户评价',
           'home.modern.nav.faq': '常见问题',
           'home.modern.nav.contact': '联系我们',
-          'home.modern.hero.eyebrow': 'AI Code Workspace',
-          'home.modern.hero.line1': '重构您的',
-          'home.modern.hero.line2': 'AI 编程体验',
-          'home.modern.hero.subtitle': '稳定、清晰、适合团队协作的 AI 编程平台。',
-          'home.modern.hero.description': '把 AI 编程、使用管理与团队协作整合到一个软件平台，让团队专注产品本身。',
+          'home.modern.hero.eyebrow': 'AI API Gateway',
+          'home.modern.hero.line1': '一个入口',
+          'home.modern.hero.line2': '接入主流 AI 模型',
+          'home.modern.hero.subtitle': 'OpenAI 兼容接口，统一接入 Claude、GPT、Gemini 等模型。',
+          'home.modern.hero.description': '一个 API Key 连接 Claude Code、Codex、Gemini CLI 等开发工具，密钥、用量和账单都在同一处管理。',
           'home.modern.hero.pointsLabel': '服务亮点',
           'home.modern.hero.points.workspace.title': '高效工作台',
           'home.modern.hero.points.workspace.text': '统一管理 AI 编码任务、密钥与使用体验',
@@ -234,7 +234,7 @@ describe('HomeView', () => {
     expect(wrapper.findAll('.support-platform-chip .support-icon-frame-backed')).toHaveLength(3)
   })
 
-  it('shows the docs label in the landing header instead of relying on an icon-only link', () => {
+  it('keeps compact dashboard and docs entrances in the landing header', () => {
     const wrapper = mount(HomeView, {
       global: {
         stubs: {
@@ -248,11 +248,51 @@ describe('HomeView', () => {
       }
     })
 
-    const docsLink = wrapper.get('.landing-docs-action')
+    const headerActions = wrapper.get('.landing-header-actions')
+    const heroLinks = wrapper.findAll('.hero-button')
+    const headerDocsLink = headerActions.get('.landing-docs-action')
+    const headerPrimaryLink = headerActions.get('.primary-action')
 
-    expect(docsLink.text()).toContain('查看文档')
-    expect(docsLink.attributes('href')).toBe('/docs')
-    expect(docsLink.classes()).not.toContain('icon-action')
+    expect(headerDocsLink.text()).toContain('查看文档')
+    expect(headerDocsLink.attributes('href')).toBe('/docs')
+    expect(headerPrimaryLink.text().trim()).not.toBe('')
+    expect(headerPrimaryLink.attributes('href')).toBe('/login')
+    expect(heroLinks).toHaveLength(2)
+    expect(heroLinks[0].text().trim()).not.toBe('')
+    expect(heroLinks[0].attributes('href')).toBe('/login')
+    expect(heroLinks[1].text()).toContain('查看文档')
+    expect(heroLinks[1].attributes('href')).toBe('/docs')
+  })
+
+  it('keeps restored landing header actions compact and secondary to the hero CTAs', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const docsActionBlock = source.match(/\.landing-docs-action\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const primaryActionBlock = source.match(/\.primary-action\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const mobileBlock = source.match(/@media \(max-width: 640px\)\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(docsActionBlock).toContain('min-height: var(--landing-nav-control-height)')
+    expect(docsActionBlock).toContain('padding: 0 0.62rem')
+    expect(docsActionBlock).toContain('background: transparent')
+    expect(primaryActionBlock).toContain('padding: 0 0.78rem')
+    expect(primaryActionBlock).toContain('font-size: 0.8125rem')
+    expect(mobileBlock).toContain('.landing-docs-action')
+    expect(mobileBlock).toContain('display: none')
+  })
+
+  it('keeps hero action icons vertically centered with their labels', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const heroButtonBlocks = Array.from(source.matchAll(/\.hero-button\s*\{[\s\S]*?\n\}/g), (match) => match[0])
+    const heroButtonBlock = heroButtonBlocks.find((block) => block.includes('min-height: 3.125rem')) ?? ''
+    const heroButtonIconBlock = source.match(/\.hero-button :deep\(svg\)\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const heroButtonTextBlock = source.match(/\.hero-button span\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(source).toContain('<span>{{ isAuthenticated ? t(\'home.goToDashboard\') : t(\'home.getStarted\') }}</span>')
+    expect(source).toContain('<span>{{ t(\'home.viewDocs\') }}</span>')
+    expect(heroButtonBlock).toContain('align-items: center')
+    expect(heroButtonBlock).toContain('line-height: 1')
+    expect(heroButtonIconBlock).toContain('display: block')
+    expect(heroButtonIconBlock).toContain('flex: 0 0 auto')
+    expect(heroButtonTextBlock).toContain('line-height: 1')
   })
 
   it('keeps the hero terminal preview simple without dashboard metric panels', () => {
@@ -386,7 +426,7 @@ describe('HomeView', () => {
     expect(source).not.toContain('max-w-7xl')
     expect(landingContainerBlock).toContain('width: min(100%, 78rem)')
     expect(landingContainerBlock).toContain('margin: 0 auto')
-    expect(source).toContain('<div class="landing-container grid gap-12')
+    expect(source).toContain('<div class="landing-container grid gap-10')
     expect(source).toContain('<div class="landing-container trust-strip">')
     expect(source).toContain('<div class="landing-container">')
     expect(source).toContain('<div class="landing-container grid gap-10')
@@ -439,19 +479,28 @@ describe('HomeView', () => {
     expect(source).toContain('landing-page-active')
   })
 
-  it('keeps the landing locale switcher readable without the global dark class', () => {
+  it('uses an icon-only landing locale switcher without the global dark class', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
     const localeSwitcherBlock = source.match(/\.landing-shell :deep\(\.locale-switcher\)\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const localeTriggerBlock = source.match(/\.landing-shell :deep\(\.locale-trigger\)\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
-    const localeValueBlock = source.match(/\.landing-shell :deep\(\.locale-trigger-value\)\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const localeTriggerIconBlock = source.match(/\.landing-shell :deep\(\.locale-trigger-icon\)\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const localeHiddenBlock = source.match(/\.landing-shell :deep\(\.locale-trigger-value\),\n\.landing-shell :deep\(\.locale-chevron\)\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
     expect(localeSwitcherBlock).toContain('--locale-text: #e2e8f0')
     expect(localeSwitcherBlock).toContain('--locale-text-strong: var(--landing-text-strong)')
     expect(localeSwitcherBlock).toContain('--locale-hover-bg: var(--theme-surface-muted)')
-    expect(localeSwitcherBlock).toContain('--locale-active-text: #fed7aa')
-    expect(localeTriggerBlock).toContain('height: auto')
-    expect(localeTriggerBlock).toContain('padding: 0.4rem 0.55rem')
-    expect(localeValueBlock).toContain('line-height: 1.25')
+    expect(localeSwitcherBlock).toContain('--locale-active-text: var(--landing-text-strong)')
+    expect(localeTriggerBlock).toContain('width: var(--landing-nav-control-height)')
+    expect(localeTriggerBlock).toContain('min-width: var(--landing-nav-control-height)')
+    expect(localeTriggerBlock).toContain('border: 0')
+    expect(localeTriggerBlock).toContain('background: transparent')
+    expect(localeTriggerBlock).toContain('padding: 0')
+    expect(localeTriggerBlock).toContain('box-shadow: none')
+    expect(localeTriggerIconBlock).toContain('display: grid')
+    expect(localeTriggerIconBlock).toContain('place-items: center')
+    expect(localeTriggerIconBlock).toContain('color: var(--landing-text-soft)')
+    expect(localeTriggerIconBlock).not.toContain('var(--landing-support)')
+    expect(localeHiddenBlock).toContain('display: none')
   })
 
   it('uses landing color tokens instead of template-level Tailwind color utilities', () => {
@@ -492,9 +541,9 @@ describe('HomeView', () => {
     const supportTitleBlock = source.match(/\.support-showcase-title\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const trustValueBlock = source.match(/\.trust-card strong\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(heroTitleBlock).toContain('font-size: clamp(2.45rem, 5vw, 4.45rem)')
+    expect(heroTitleBlock).toContain('font-size: clamp(2.35rem, 4.35vw, 3.65rem)')
     expect(heroTitleBlock).toContain('font-weight: 820')
-    expect(heroTitleBlock).toContain('line-height: 1.03')
+    expect(heroTitleBlock).toContain('line-height: 1.06')
     expect(heroBrandBlock).toContain('color: color-mix(in srgb, var(--landing-text-strong) 92%, var(--landing-accent-soft))')
     expect(sectionTitleBlock).toContain('font-size: clamp(2rem, 4.5vw, 3.85rem)')
     expect(sectionTitleBlock).toContain('font-weight: 780')
@@ -530,13 +579,18 @@ describe('HomeView', () => {
     expect(landingShellBlock).toContain("'Microsoft YaHei'")
   })
 
-  it('keeps the fixed dark landing theme softer than pure black', () => {
+  it('keeps the fixed dark landing theme aligned with the console dark tokens', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
 
     expect(source).not.toContain('#0a0a0a')
     expect(source).not.toContain('#111111')
+    expect(source).not.toContain('#181614')
+    expect(source).not.toContain('#2a2622')
+    expect(source).not.toContain('#ece4d8')
+    expect(source).not.toContain('rgba(185, 168, 150')
     expect(source).toContain('#171717')
     expect(source).toContain('#242424')
+    expect(source).toContain('#e2e8f0')
   })
 
   it('removes the old staggered feature card section', () => {
@@ -595,13 +649,15 @@ describe('HomeView', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
     const trustBandBlock = source.match(/\.trust-band\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const trustStripBlock = source.match(/\.trust-strip\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const trustCardBlock = source.match(/\.trust-card\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const trustCardDividerBlock = source.match(/\.trust-card \+ \.trust-card::before\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const supportProviderChipBlock = source.match(/\.support-provider-chip\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const supportPlatformChipBlock = source.match(/\.support-platform-chip\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(trustBandBlock).toContain('padding-top: clamp(1.5rem, 3vw, 2.5rem)')
+    expect(trustBandBlock).toContain('padding-top: clamp(0.75rem, 1.6vw, 1.4rem)')
     expect(trustStripBlock).toContain('border: 1px solid var(--landing-hairline)')
     expect(trustStripBlock).toContain('background: var(--landing-surface-soft)')
+    expect(trustCardBlock).toContain('min-height: 5.6rem')
     expect(trustCardDividerBlock).toContain('background: var(--landing-hairline)')
     expect(supportProviderChipBlock).toContain('border: 1px solid var(--landing-hairline)')
     expect(supportProviderChipBlock).toContain('background: var(--landing-surface-soft)')
@@ -653,5 +709,22 @@ describe('HomeView', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
 
     expect(source).toMatch(/@media \(max-width: 640px\)[\s\S]*?\.hero-copy h1 span\s*\{[\s\S]*?white-space:\s*normal;/)
+  })
+
+  it('keeps the landing hero compact enough to connect with the stats rail', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const heroTemplate = source.match(/<section class="hero-section[\s\S]*?<\/section>/)?.[0] ?? ''
+    const heroSectionBlock = source.match(/\.hero-section\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const heroConsoleBlock = source.match(/\.hero-console\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const commandPanelBlock = source.match(/\.command-panel\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(heroTemplate).toContain('gap-10')
+    expect(heroSectionBlock).toContain('padding-top: clamp(3rem, 5vw, 4.35rem)')
+    expect(heroSectionBlock).toContain('padding-bottom: clamp(2rem, 4vw, 3.25rem)')
+    expect(heroSectionBlock).toContain('min-height: auto')
+    expect(heroConsoleBlock).toContain('max-width: 56rem')
+    expect(heroConsoleBlock).toContain('justify-self: end')
+    expect(commandPanelBlock).toContain('min-height: clamp(10.5rem, 26vw, 13rem)')
+    expect(commandPanelBlock).toContain('font-size: clamp(0.82rem, 1.35vw, 1rem)')
   })
 })
