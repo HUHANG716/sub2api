@@ -4,13 +4,8 @@ import App from './App.vue'
 import router from './router'
 import i18n, { initI18n } from './i18n'
 import { useAppStore } from '@/stores/app'
+import { initThemeClass } from '@/utils/themeBootstrap'
 import './style.css'
-
-function initThemeClass() {
-  const savedTheme = localStorage.getItem('theme')
-  const shouldUseDark = savedTheme !== 'light'
-  document.documentElement.classList.toggle('dark', shouldUseDark)
-}
 
 async function bootstrap() {
   // Apply theme class globally before app mount to keep all routes consistent.

@@ -1,10 +1,6 @@
 import { mount } from '@vue/test-utils'
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import LocaleSwitcher from '../LocaleSwitcher.vue'
-
-const localeSwitcherSourcePath = path.resolve(process.cwd(), 'src/components/common/LocaleSwitcher.vue')
 
 const localeState = vi.hoisted(() => ({ value: 'en' }))
 const setLocaleMock = vi.hoisted(() => vi.fn())
@@ -110,8 +106,6 @@ describe('LocaleSwitcher', () => {
     expect(wrapper.html()).not.toContain('locale-spinner')
     expect(wrapper.html()).not.toContain('Changing language...')
 
-    const source = readFileSync(localeSwitcherSourcePath, 'utf-8')
-    expect(source).not.toContain('locale-spinner')
-    expect(source).not.toContain('locale-spin')
+    expect(wrapper.find('.locale-chevron').exists()).toBe(true)
   })
 })

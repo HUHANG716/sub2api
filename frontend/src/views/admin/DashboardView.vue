@@ -686,7 +686,7 @@ const loadDashboardStats = async () => {
 
 const loadChartData = async () => {
   await Promise.all([
-    loadDashboardSnapshot(false),
+    loadDashboardSnapshot(true),
     loadUsersTrend(),
     loadUserSpendingRanking()
   ])
