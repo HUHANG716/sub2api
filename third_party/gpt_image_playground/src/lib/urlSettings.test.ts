@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createDefaultFalProfile,
   createDefaultOpenAIProfile,
@@ -6,9 +6,61 @@ import {
   DEFAULT_SETTINGS,
   normalizeSettings,
 } from './apiProfiles'
-import { buildSettingsFromUrlParams, clearUrlSettingParams, getAppModeFromUrlParams, hasUrlSettingParams } from './urlSettings'
+import {
+  PRODUCT_EMBED_SETTINGS_STORAGE_KEY,
+  buildSettingsFromUrlParams,
+  clearUrlSettingParams,
+  getAppModeFromUrlParams,
+  hasUrlSettingParams,
+} from './urlSettings'
 
 describe('URL settings params', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('imports product embed settings from session storage without URL key material', () => {
+    const sessionValues = new Map<string, string>()
+    vi.stubGlobal('window', {
+      sessionStorage: {
+        getItem: (key: string) => sessionValues.get(key) ?? null,
+        setItem: (key: string, value: string) => sessionValues.set(key, value),
+      },
+    })
+    window.sessionStorage.setItem(PRODUCT_EMBED_SETTINGS_STORAGE_KEY, JSON.stringify({
+      profiles: [{
+        id: 'product-openai',
+        name: 'Product OpenAI',
+        provider: 'openai',
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'sk-product',
+        model: 'gpt-image-2',
+        timeout: 600,
+        apiMode: 'images',
+        codexCli: false,
+        apiProxy: false,
+        streamImages: true,
+        streamPartialImages: 3,
+      }],
+      activeProfileId: 'product-openai',
+    }))
+
+    const params = new URLSearchParams('embed=product&appMode=gallery')
+    const next = normalizeSettings({
+      ...DEFAULT_SETTINGS,
+      ...buildSettingsFromUrlParams(DEFAULT_SETTINGS, params),
+    })
+
+    expect(hasUrlSettingParams(params)).toBe(true)
+    expect(next.activeProfileId).toBe('product-openai')
+    expect(next.profiles[0]).toMatchObject({
+      id: 'product-openai',
+      baseUrl: 'https://api.example.com/v1',
+      apiKey: 'sk-product',
+      apiMode: 'images',
+    })
+  })
+
   it('creates and activates a new OpenAI profile for legacy URL params', () => {
     const current = normalizeSettings(DEFAULT_SETTINGS)
     const next = normalizeSettings({
@@ -116,7 +168,7 @@ describe('URL settings params', () => {
   })
 
   it('clears known URL setting params without touching unrelated params', () => {
-    const params = new URLSearchParams('apiUrl=https://api.example.com/v1&apiKey=test-key&appMode=gallery&model=test-model&streamImages=false&streamPartialImages=3&foo=bar')
+    const params = new URLSearchParams('apiUrl=https://api.example.com/v1&apiKey=test-key&appMode=gallery&embed=product&model=test-model&streamImages=false&streamPartialImages=3&foo=bar')
 
     expect(hasUrlSettingParams(params)).toBe(true)
     clearUrlSettingParams(params)

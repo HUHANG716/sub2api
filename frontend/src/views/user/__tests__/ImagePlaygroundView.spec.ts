@@ -5,6 +5,7 @@ import ImagePlaygroundView from '../ImagePlaygroundView.vue'
 import {
   IMAGE_PLAYGROUND_AGENT_MODEL,
   IMAGE_PLAYGROUND_MODEL,
+  IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY,
   IMAGE_PLAYGROUND_STORAGE_KEY,
   buildImagePlaygroundUrl,
   findConfiguredImagePlaygroundGroup
@@ -174,10 +175,13 @@ describe('image playground helpers', () => {
       apiKey: 'sk-url'
     })
     const parsed = new URL(url)
-    const settings = JSON.parse(parsed.searchParams.get('settings') ?? '{}')
+    const settings = JSON.parse(window.sessionStorage.getItem(IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY) ?? '{}')
 
     expect(parsed.origin + parsed.pathname).toBe('https://code.example.com/image-playground-app/')
     expect(parsed.searchParams.get('appMode')).toBe('gallery')
+    expect(parsed.searchParams.get('embed')).toBe('product')
+    expect(parsed.searchParams.get('settings')).toBeNull()
+    expect(url).not.toContain('sk-url')
     expect(settings.activeProfileId).toBe('hahacode-images')
     expect(settings.profiles).toEqual([
       expect.objectContaining({
@@ -222,6 +226,7 @@ describe('ImagePlaygroundView', () => {
     listKeys.mockReset()
     listKeys.mockResolvedValue(makeKeyList([]))
     window.localStorage.clear()
+    window.sessionStorage.clear()
     consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
   })
 
@@ -263,9 +268,12 @@ describe('ImagePlaygroundView', () => {
     })
     const iframe = wrapper.get('[data-test="image-playground-frame"]')
     const iframeUrl = new URL(iframe.attributes('src'))
-    const iframeSettings = JSON.parse(iframeUrl.searchParams.get('settings') ?? '{}')
+    const iframeSettings = JSON.parse(window.sessionStorage.getItem(IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY) ?? '{}')
     expect(iframeUrl.pathname).toBe('/image-playground-app/')
     expect(iframeUrl.searchParams.get('appMode')).toBe('gallery')
+    expect(iframeUrl.searchParams.get('embed')).toBe('product')
+    expect(iframeUrl.searchParams.get('settings')).toBeNull()
+    expect(iframe.attributes('src')).not.toContain('sk-created')
     expect(iframeSettings.activeProfileId).toBe('hahacode-images')
     expect(iframeSettings.profiles).toEqual([
       expect.objectContaining({ apiKey: 'sk-created', apiMode: 'images', model: IMAGE_PLAYGROUND_MODEL }),
@@ -407,7 +415,9 @@ describe('ImagePlaygroundView', () => {
     expect(listKeys).not.toHaveBeenCalled()
     expect(createKey).not.toHaveBeenCalled()
     const iframeUrl = new URL(wrapper.get('[data-test="image-playground-frame"]').attributes('src'))
-    const iframeSettings = JSON.parse(iframeUrl.searchParams.get('settings') ?? '{}')
+    const iframeSettings = JSON.parse(window.sessionStorage.getItem(IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY) ?? '{}')
+    expect(iframeUrl.searchParams.get('settings')).toBeNull()
+    expect(wrapper.get('[data-test="image-playground-frame"]').attributes('src')).not.toContain('sk-stored')
     expect(iframeSettings.profiles).toEqual([
       expect.objectContaining({ apiKey: 'sk-stored', apiMode: 'images' }),
       expect.objectContaining({ apiKey: 'sk-stored', apiMode: 'responses' })
@@ -442,7 +452,9 @@ describe('ImagePlaygroundView', () => {
       group_name: 'OpenAI Images'
     })
     const iframeUrl = new URL(wrapper.get('[data-test="image-playground-frame"]').attributes('src'))
-    const iframeSettings = JSON.parse(iframeUrl.searchParams.get('settings') ?? '{}')
+    const iframeSettings = JSON.parse(window.sessionStorage.getItem(IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY) ?? '{}')
+    expect(iframeUrl.searchParams.get('settings')).toBeNull()
+    expect(wrapper.get('[data-test="image-playground-frame"]').attributes('src')).not.toContain('sk-existing')
     expect(iframeSettings.profiles).toEqual([
       expect.objectContaining({ apiKey: 'sk-existing', apiMode: 'images' }),
       expect.objectContaining({ apiKey: 'sk-existing', apiMode: 'responses' })
