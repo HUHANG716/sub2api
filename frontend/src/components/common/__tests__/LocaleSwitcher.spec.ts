@@ -74,4 +74,38 @@ describe('LocaleSwitcher', () => {
 
     expect(setLocaleMock).toHaveBeenCalledWith('zh')
   })
+
+  it('can render as an icon-only neutral header control', () => {
+    const wrapper = mount(LocaleSwitcher, {
+      props: {
+        iconOnly: true
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    const trigger = wrapper.get('[data-testid="locale-switcher-trigger"]')
+    expect(trigger.classes()).toContain('locale-trigger-icon-only')
+    expect(wrapper.get('.locale-trigger-value').classes()).toContain('locale-trigger-value-hidden')
+    expect(wrapper.find('.locale-chevron').exists()).toBe(false)
+    expect(wrapper.find('.locale-spinner').exists()).toBe(false)
+  })
+
+  it('does not include a visible loading affordance while changing locale', () => {
+    const wrapper = mount(LocaleSwitcher, {
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    expect(wrapper.html()).not.toContain('locale-spinner')
+    expect(wrapper.html()).not.toContain('Changing language...')
+
+    expect(wrapper.find('.locale-chevron').exists()).toBe(true)
+  })
 })

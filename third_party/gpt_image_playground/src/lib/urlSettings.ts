@@ -1,5 +1,6 @@
 import type { ApiMode, AppMode, AppSettings } from '../types'
 import { normalizeBaseUrl } from './devProxy'
+import { isProductEmbedMode } from './productEmbed'
 import {
   createDefaultOpenAIProfile,
   DEFAULT_IMAGES_MODEL,
@@ -10,7 +11,8 @@ import {
   normalizeStreamPartialImages,
 } from './apiProfiles'
 
-const URL_SETTING_KEYS = ['settings', 'apiUrl', 'apiKey', 'codexCli', 'apiMode', 'appMode', 'model', 'streamImages', 'streamPartialImages']
+const URL_SETTING_KEYS = ['settings', 'apiUrl', 'apiKey', 'codexCli', 'apiMode', 'appMode', 'model', 'streamImages', 'streamPartialImages', 'embed']
+export const PRODUCT_EMBED_SETTINGS_STORAGE_KEY = 'hahacode.imagePlayground.settings'
 
 function getProfileDedupKey(profile: Pick<AppSettings['profiles'][number], 'provider' | 'baseUrl' | 'apiKey' | 'model' | 'apiMode' | 'streamImages' | 'streamPartialImages'>) {
   return JSON.stringify([
@@ -56,6 +58,19 @@ function getUrlSettingsPayload(searchParams: URLSearchParams): unknown | null {
   }
 }
 
+function getProductEmbedSettingsPayload(searchParams: URLSearchParams): unknown | null {
+  if (!isProductEmbedMode(`?${searchParams.toString()}`) || typeof window === 'undefined') return null
+
+  const raw = window.sessionStorage.getItem(PRODUCT_EMBED_SETTINGS_STORAGE_KEY)
+  if (!raw) return null
+
+  try {
+    return pickUrlSettingsPayload(JSON.parse(raw))
+  } catch {
+    return null
+  }
+}
+
 function activateFirstImportedProfile(settings: AppSettings, importedSettings: unknown): AppSettings {
   if (!importedSettings || typeof importedSettings !== 'object' || Array.isArray(importedSettings)) return settings
 
@@ -88,7 +103,8 @@ export function getAppModeFromUrlParams(searchParams: URLSearchParams): AppMode 
 }
 
 export function buildSettingsFromUrlParams(currentSettings: Partial<AppSettings> | unknown, searchParams: URLSearchParams): Partial<AppSettings> {
-  const importedSettings = getUrlSettingsPayload(searchParams)
+  const productEmbedSettings = getProductEmbedSettingsPayload(searchParams)
+  const importedSettings = productEmbedSettings ?? getUrlSettingsPayload(searchParams)
   const apiUrlParam = searchParams.get('apiUrl')
   const apiKeyParam = searchParams.get('apiKey')
   const codexCliParam = searchParams.get('codexCli')
@@ -101,7 +117,13 @@ export function buildSettingsFromUrlParams(currentSettings: Partial<AppSettings>
   const hasLegacyOpenAIParams = apiUrlParam !== null || apiKeyParam !== null || codexCliParam !== null || apiMode !== undefined || modelParam !== null || streamImagesParam !== null || streamPartialImagesParam !== null
   const settings = importedSettings == null
     ? normalizeSettings(currentSettings)
-    : activateFirstImportedProfile(mergeImportedSettings(currentSettings, importedSettings), importedSettings)
+    : productEmbedSettings != null
+      ? activateFirstImportedProfile(normalizeSettings(importedSettings), importedSettings)
+      : activateFirstImportedProfile(mergeImportedSettings(currentSettings, importedSettings), importedSettings)
+
+  if (productEmbedSettings != null) {
+    return settings
+  }
 
   if (hasLegacyOpenAIParams) {
     const profileApiMode = apiMode ?? 'images'

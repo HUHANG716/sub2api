@@ -316,6 +316,14 @@ BEGIN
        OR aff_frozen_quota_after IS NOT NULL
        OR aff_history_quota_after IS NOT NULL;
 
+    -- Old image billing rows may predate the image_size constraint. Updating
+    -- cost fields below rechecks the row, so normalize unknown legacy sizes first.
+    UPDATE usage_logs
+    SET image_size = 'mixed',
+        image_size_source = COALESCE(image_size_source, 'legacy')
+    WHERE image_count > 0
+      AND (image_size IS NULL OR image_size NOT IN ('1K', '2K', '4K', 'mixed'));
+
     UPDATE usage_logs
     SET actual_cost = actual_cost / v_ratio,
         discount_amount = discount_amount / v_ratio,

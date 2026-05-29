@@ -867,7 +867,11 @@ func TestOpenAIResponsesWebSocket_ContentModerationBlocksFirstFrame(t *testing.T
 		require.Equal(t, coderws.StatusPolicyViolation, closeErr.Code)
 		require.Contains(t, closeErr.Reason, "内容审计测试阻断")
 	}
-	logs := repo.logSnapshot()
+	var logs []service.ContentModerationLog
+	require.Eventually(t, func() bool {
+		logs = repo.logSnapshot()
+		return len(logs) == 1
+	}, time.Second, 10*time.Millisecond)
 	require.Len(t, logs, 1)
 	require.True(t, logs[0].Flagged)
 	require.Equal(t, service.ContentModerationActionBlock, logs[0].Action)

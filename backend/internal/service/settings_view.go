@@ -199,6 +199,7 @@ type SystemSettings struct {
 	RewriteMessageCacheControl         bool   // 是否改写 messages[*].content[*].cache_control（默认 false）
 	AntigravityUserAgentVersion        string // Antigravity 上游 User-Agent 版本号；空值使用配置/默认值
 	OpenAICodexUserAgent               string // OpenAI Codex 上游完整 User-Agent；空值使用内置默认
+	OpenAIAllowClaudeCodeCodexPlugin   bool   // 全局开关：是否额外放行 Claude Code 的 Codex 插件（默认 false）
 
 	// Web Search Emulation
 	WebSearchEmulationEnabled bool // 是否启用 web search 模拟
@@ -355,6 +356,9 @@ type PublicSettings struct {
 
 	// 生图工作台使用的管理员配置分组；0 表示未配置。
 	ImagePlaygroundGroupID int64 `json:"image_playground_group_id"`
+
+	// 当前生效的全局折扣活动；仅在活动窗口内公开给前端展示。
+	GlobalDiscount *GlobalDiscountRuntime `json:"global_discount,omitempty"`
 }
 
 type LoginAgreementDocument struct {

@@ -1,51 +1,51 @@
 <template>
   <div class="card">
-    <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('dashboard.quickActions') }}</h2>
+    <div class="dashboard-panel-header px-6 py-4">
+      <h2 class="dashboard-panel-title text-lg font-semibold">{{ t('dashboard.quickActions') }}</h2>
     </div>
     <div class="space-y-3 p-4">
-      <button @click="router.push('/keys')" class="group flex w-full items-center gap-4 rounded-xl bg-gray-50 p-4 text-left transition-all duration-200 hover:bg-gray-100 dark:bg-dark-800/50 dark:hover:bg-dark-800">
-        <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-primary-100 transition-transform group-hover:scale-105 dark:bg-primary-900/30">
-          <Icon name="key" size="lg" class="text-primary-600 dark:text-primary-400" />
+      <button @click="router.push('/keys')" class="dashboard-action-row group flex w-full items-center gap-4 rounded-xl p-4 text-left transition-all duration-200">
+        <div class="dashboard-action-icon dashboard-action-icon-primary flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105">
+          <Icon name="key" size="lg" />
         </div>
         <div class="min-w-0 flex-1">
-          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ t('dashboard.createApiKey') }}</p>
-          <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('dashboard.generateNewKey') }}</p>
+          <p class="dashboard-panel-title text-sm font-medium">{{ t('dashboard.createApiKey') }}</p>
+          <p class="dashboard-panel-muted text-xs">{{ t('dashboard.generateNewKey') }}</p>
         </div>
         <Icon
           name="chevronRight"
           size="md"
-          class="text-gray-400 transition-colors group-hover:text-primary-500 dark:text-dark-500"
+          class="dashboard-action-chevron transition-colors"
         />
       </button>
 
-      <button @click="router.push('/usage')" class="group flex w-full items-center gap-4 rounded-xl bg-gray-50 p-4 text-left transition-all duration-200 hover:bg-gray-100 dark:bg-dark-800/50 dark:hover:bg-dark-800">
-        <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-100 transition-transform group-hover:scale-105 dark:bg-emerald-900/30">
-          <Icon name="chart" size="lg" class="text-emerald-600 dark:text-emerald-400" />
+      <button @click="router.push('/usage')" class="dashboard-action-row group flex w-full items-center gap-4 rounded-xl p-4 text-left transition-all duration-200">
+        <div class="dashboard-action-icon dashboard-action-icon-green flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105">
+          <Icon name="chart" size="lg" />
         </div>
         <div class="min-w-0 flex-1">
-          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ t('dashboard.viewUsage') }}</p>
-          <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('dashboard.checkDetailedLogs') }}</p>
+          <p class="dashboard-panel-title text-sm font-medium">{{ t('dashboard.viewUsage') }}</p>
+          <p class="dashboard-panel-muted text-xs">{{ t('dashboard.checkDetailedLogs') }}</p>
         </div>
         <Icon
           name="chevronRight"
           size="md"
-          class="text-gray-400 transition-colors group-hover:text-emerald-500 dark:text-dark-500"
+          class="dashboard-action-chevron transition-colors"
         />
       </button>
 
-      <button @click="router.push('/redeem')" class="group flex w-full items-center gap-4 rounded-xl bg-gray-50 p-4 text-left transition-all duration-200 hover:bg-gray-100 dark:bg-dark-800/50 dark:hover:bg-dark-800">
-        <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-amber-100 transition-transform group-hover:scale-105 dark:bg-amber-900/30">
-          <Icon name="gift" size="lg" class="text-amber-600 dark:text-amber-400" />
+      <button @click="router.push('/redeem')" class="dashboard-action-row group flex w-full items-center gap-4 rounded-xl p-4 text-left transition-all duration-200">
+        <div class="dashboard-action-icon dashboard-action-icon-amber flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105">
+          <Icon name="gift" size="lg" />
         </div>
         <div class="min-w-0 flex-1">
-          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ t('dashboard.redeemCode') }}</p>
-          <p class="text-xs text-gray-500 dark:text-dark-400">{{ t('dashboard.addBalanceWithCode') }}</p>
+          <p class="dashboard-panel-title text-sm font-medium">{{ t('dashboard.redeemCode') }}</p>
+          <p class="dashboard-panel-muted text-xs">{{ t('dashboard.addBalanceWithCode') }}</p>
         </div>
         <Icon
           name="chevronRight"
           size="md"
-          class="text-gray-400 transition-colors group-hover:text-amber-500 dark:text-dark-500"
+          class="dashboard-action-chevron transition-colors"
         />
       </button>
     </div>
@@ -59,3 +59,50 @@ import Icon from '@/components/icons/Icon.vue'
 const router = useRouter()
 const { t } = useI18n()
 </script>
+
+<style scoped>
+.dashboard-panel-header {
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.dashboard-panel-title {
+  color: var(--theme-text);
+}
+
+.dashboard-panel-muted {
+  color: var(--theme-text-subtle);
+}
+
+.dashboard-action-row {
+  background: color-mix(in srgb, var(--theme-surface-muted) 72%, var(--theme-surface));
+  border: 1px solid transparent;
+}
+
+.dashboard-action-row:hover {
+  background: color-mix(in srgb, var(--theme-surface-muted) 86%, var(--theme-accent-soft));
+  border-color: var(--theme-border);
+}
+
+.dashboard-action-icon-primary {
+  background: var(--theme-primary-soft);
+  color: var(--theme-primary);
+}
+
+.dashboard-action-icon-green {
+  background: color-mix(in srgb, #10b981 16%, var(--theme-surface));
+  color: #059669;
+}
+
+.dashboard-action-icon-amber {
+  background: color-mix(in srgb, #f59e0b 18%, var(--theme-surface));
+  color: #d97706;
+}
+
+.dashboard-action-chevron {
+  color: var(--theme-text-subtle);
+}
+
+.dashboard-action-row:hover .dashboard-action-chevron {
+  color: var(--theme-primary);
+}
+</style>

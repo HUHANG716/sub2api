@@ -34,11 +34,11 @@ export default {
         contact: 'Contact'
       },
       hero: {
-        eyebrow: 'AI Code Workspace',
-        line1: 'Rebuild your',
-        line2: 'AI coding workflow',
-        subtitle: 'A stable, clear AI coding platform built for team collaboration.',
-        description: 'Bring AI coding, usage management, and team collaboration into one software platform so your team can stay focused on the product.',
+        eyebrow: 'AI API Gateway',
+        line1: 'One endpoint',
+        line2: 'for leading AI models',
+        subtitle: 'An OpenAI-compatible gateway for Claude, GPT, Gemini, and more.',
+        description: 'Connect Claude Code, Codex, Gemini CLI, and other developer tools with one API key while keeping keys, usage, and billing in one place.',
         pointsLabel: 'Service highlights',
         points: {
           workspace: {
@@ -1008,7 +1008,11 @@ export default {
     title: 'Image Playground',
     description: 'Create, edit, and manage images through this site\'s OpenAI image group.',
     loading: 'Preparing image playground...',
-    regenerateKey: 'Regenerate key',
+    regenerateKey: 'Regenerate API Key',
+    renewConfirmTitle: 'Regenerate image API Key',
+    renewManualConfirmDescription: 'This will regenerate the dedicated API Key for the image playground and reload the current workspace. Continue?',
+    renewExpiredConfirmDescription: 'The image playground API Key has expired. Regenerate it before continuing?',
+    renewConfirmAction: 'Regenerate',
     estimatedCost: 'Est. cost',
     estimateWaiting: 'Waiting',
     estimateLoading: 'Calculating',
@@ -1760,6 +1764,7 @@ export default {
       cacheToday: 'Cache (Today)',
       performance: 'Performance',
       avgResponse: 'Avg Response',
+      currentConcurrency: 'Current Concurrency',
       active: 'active',
       ok: 'ok',
       err: 'err',
@@ -3726,10 +3731,21 @@ export default {
           'Automatic passthrough is currently enabled: it only affects HTTP passthrough and does not disable WS mode.',
         responsesMode: 'Responses API support',
         responsesModeDesc:
-          'Only applies to OpenAI API Key accounts. Auto follows probe results; force modes override probing.',
+          'Only applies to the OpenAI API Key text forwarding path. Auto follows probe results; force modes override probing.',
         responsesModeAuto: 'Auto',
         responsesModeForceResponses: 'Force Responses',
         responsesModeForceChatCompletions: 'Force Chat Completions',
+        responsesModeTextDisabledHint:
+          'Not applicable when the Responses / Chat Completions endpoint is not enabled.',
+        endpointCapabilities: 'Endpoint capabilities',
+        endpointCapabilitiesDesc:
+          'Used by account routing. The text endpoint follows the Responses API support setting above and is shown as Responses, Chat Completions, or auto mode; Embeddings independently controls /v1/embeddings.',
+        capabilityResponses: 'Responses',
+        capabilityTextAuto: 'Responses / Chat Completions (Auto)',
+        capabilityResponsesAuto: 'Responses (auto probe)',
+        capabilityChatCompletions: 'Chat Completions',
+        capabilityChatCompletionsAuto: 'Chat Completions (auto probe)',
+        capabilityEmbeddings: 'Embeddings',
         responsesStatusAutoSupported: 'Auto probe: Responses',
         responsesStatusAutoUnsupported: 'Auto probe: Chat Completions',
         responsesStatusAutoUnknown: 'Auto probe: unknown',
@@ -3738,6 +3754,9 @@ export default {
         codexCLIOnly: 'Codex official clients only',
         codexCLIOnlyDesc:
           'Only applies to OpenAI OAuth. When enabled, only Codex official client families are allowed; when disabled, the gateway bypasses this restriction and keeps existing behavior.',
+        codexCLIOnlyAllowClaudeCode: "Also allow Claude Code's Codex plugin",
+        codexCLIOnlyAllowClaudeCodeDesc:
+          'Only takes effect when the switch above is on. Additionally allows requests from the Claude Code Codex plugin (exact match on originator=Claude Code) without weakening blocking of other non-official clients.',
         codexImageGenerationBridge: 'Codex image-generation bridge',
         codexImageGenerationBridgeDesc:
           'Account policy takes precedence over channel and global settings. Only controls whether Codex requests through the /responses text endpoint receive the image_generation tool; standalone image-generation endpoints are unaffected.',
@@ -3838,6 +3857,12 @@ export default {
         'When enabled, warmup requests like title generation will return mock responses without consuming upstream tokens',
       autoPauseOnExpired: 'Auto Pause On Expired',
       autoPauseOnExpiredDesc: 'When enabled, the account will auto pause scheduling after it expires',
+	  autoPause5hThreshold: '5h Usage Threshold (%)',
+	  autoPause7dThreshold: '7d Usage Threshold (%)',
+	  autoPauseThresholdHint: 'Leave empty or set 0 to use the global default threshold (configured in Ops settings); set a value to override the global default. Reaching the threshold only skips the account during scheduling and does not modify schedulable.',
+	  autoPause5hDisabled: 'Disable 5h auto-pause',
+	  autoPause7dDisabled: 'Disable 7d auto-pause',
+	  autoPauseDisabledHint: 'When enabled, this account is never auto-paused (even if a global default threshold is configured).',
       // Quota control (Anthropic OAuth/SetupToken only)
       quotaControl: {
         title: 'Quota Control',
@@ -5553,6 +5578,11 @@ export default {
         aggregation: 'Pre-aggregation Tasks',
         enableAggregation: 'Enable Pre-aggregation',
         aggregationHint: 'Pre-aggregation improves query performance for long time windows',
+        openaiQuotaAutoPause: 'OpenAI Account Quota Auto-pause',
+        openaiQuotaAutoPauseHint: 'When an OpenAI account reaches its 5h / 7d usage threshold, the scheduler skips it automatically and resumes once the window rolls over. Per-account thresholds take precedence over this global default.',
+        openaiQuotaAutoPauseDefault5h: 'Default 5h usage threshold (%)',
+        openaiQuotaAutoPauseDefault7d: 'Default 7d usage threshold (%)',
+        openaiQuotaAutoPauseThresholdHint: 'Value 0-100; leave blank or 0 to disable the global default threshold.',
         errorFiltering: 'Error Filtering',
         ignoreCountTokensErrors: 'Ignore count_tokens errors',
         ignoreCountTokensErrorsHint: 'When enabled, errors from count_tokens requests will not be written to the error log.',
@@ -5583,7 +5613,8 @@ export default {
           slaMinPercentRange: 'SLA minimum percentage must be between 0 and 100',
           ttftP99MaxRange: 'TTFT P99 maximum must be a number ≥ 0',
           requestErrorRateMaxRange: 'Request error rate maximum must be between 0 and 100',
-          upstreamErrorRateMaxRange: 'Upstream error rate maximum must be between 0 and 100'
+          upstreamErrorRateMaxRange: 'Upstream error rate maximum must be between 0 and 100',
+          openaiQuotaAutoPauseRange: 'OpenAI quota auto-pause threshold must be between 0 and 100'
         }
       },
       concurrency: {
@@ -5985,6 +6016,9 @@ export default {
         openaiCodexUserAgent: 'OpenAI Codex UA',
         openaiCodexUserAgentPlaceholder: 'codex-tui/0.125.0 (Ubuntu 22.4.0; x86_64) xterm-256color (codex-tui; 0.125.0)',
         openaiCodexUserAgentHint: 'Used to bypass Cloudflare browser-UA challenges on the OpenAI upstream. Only applies when the client User-Agent is detected as a browser (Mozilla/...). Leave empty to use the built-in default.',
+        openaiAllowClaudeCodeCodexPlugin: "Allow using the Codex plugin in Claude Code",
+        openaiAllowClaudeCodeCodexPluginDesc:
+          "Global switch; only affects OpenAI OAuth accounts that have 'Codex official clients only' enabled. When on, all such accounts additionally allow requests from the Claude Code Codex plugin (exact match on originator=Claude Code) without per-account config; upstream requests remain pass-through.",
       },
       webSearchEmulation: {
         title: 'Web Search Emulation',

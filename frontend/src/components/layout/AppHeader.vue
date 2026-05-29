@@ -1,6 +1,6 @@
 <template>
   <header class="app-main-header sticky top-0 z-30">
-    <div class="flex h-16 items-center justify-between px-4 md:px-6">
+    <div class="relative flex h-16 items-center justify-between px-4 md:px-6">
       <!-- Left: Mobile Menu Toggle + Page Title -->
       <div class="flex items-center gap-4">
         <button
@@ -19,6 +19,15 @@
             {{ pageDescription }}
           </p>
         </div>
+      </div>
+
+      <div
+        v-if="discountCampaignText"
+        class="header-discount-campaign"
+        :title="discountCampaignText"
+      >
+        <Icon name="sparkles" size="sm" />
+        <span>{{ discountCampaignText }}</span>
       </div>
 
       <!-- Right: Quick actions + Announcements + Language + Theme + Subscriptions -->
@@ -48,7 +57,7 @@
         <AnnouncementBell v-if="user" />
 
         <!-- Language Switcher -->
-        <LocaleSwitcher />
+        <LocaleSwitcher icon-only />
 
         <!-- Theme Switch -->
         <ThemeSwitch />
@@ -108,6 +117,17 @@ const pageDescription = computed(() => {
   return (route.meta.description as string) || ''
 })
 
+const activeGlobalDiscount = computed(() => {
+  const discount = appStore.cachedPublicSettings?.global_discount
+  if (!discount?.active) return null
+  return discount
+})
+
+const discountCampaignText = computed(() => {
+  const discount = activeGlobalDiscount.value
+  return discount?.label?.trim() || ''
+})
+
 function toggleMobileSidebar() {
   appStore.toggleMobileSidebar()
 }
@@ -157,10 +177,51 @@ function toggleMobileSidebar() {
   color: var(--theme-primary);
 }
 
+.header-discount-campaign {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: none;
+  max-width: min(34rem, calc(100% - 28rem));
+  min-height: 2rem;
+  transform: translate(-50%, -50%);
+  align-items: center;
+  gap: 0.375rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, #10b981 34%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, #10b981 13%, var(--theme-main-surface));
+  color: #059669;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.25;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.dark .header-discount-campaign {
+  border-color: color-mix(in srgb, #34d399 38%, transparent);
+  background: color-mix(in srgb, #10b981 16%, var(--theme-main-surface));
+  color: #6ee7b7;
+}
+
+.header-discount-campaign span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 @media (min-width: 640px) {
   .header-link {
     padding-left: 0.125rem;
     padding-right: 0.125rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .header-discount-campaign {
+    display: inline-flex;
   }
 }
 </style>

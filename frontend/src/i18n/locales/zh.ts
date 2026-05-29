@@ -34,11 +34,11 @@ export default {
         contact: '联系我们'
       },
       hero: {
-        eyebrow: 'AI Code Workspace',
-        line1: '重构您的',
-        line2: 'AI 编程体验',
-        subtitle: '稳定、清晰、适合团队协作的 AI 编程平台。',
-        description: '把 AI 编程、使用管理与团队协作整合到一个软件平台，让团队专注产品本身。',
+        eyebrow: 'AI API Gateway',
+        line1: '一个入口',
+        line2: '接入主流 AI 模型',
+        subtitle: 'OpenAI 兼容接口，统一接入 Claude、GPT、Gemini 等模型。',
+        description: '一个 API Key 连接 Claude Code、Codex、Gemini CLI 等开发工具，密钥、用量和账单都在同一处管理。',
         pointsLabel: '服务亮点',
         points: {
           workspace: {
@@ -1007,7 +1007,11 @@ export default {
     title: '生图工作台',
     description: '使用当前站点的 OpenAI 生图分组创建、编辑和管理图片。',
     loading: '正在准备生图工作台...',
-    regenerateKey: '重新生成密钥',
+    regenerateKey: '重新生成 API Key',
+    renewConfirmTitle: '重新生成生图 API Key',
+    renewManualConfirmDescription: '将重新生成生图工作台专用 API Key，并重新加载当前工作台。是否继续？',
+    renewExpiredConfirmDescription: '当前生图工作台 API Key 已失效，需要重新生成后才能继续使用。是否现在重新生成？',
+    renewConfirmAction: '重新生成',
     estimatedCost: '预计消费',
     estimateWaiting: '待参数',
     estimateLoading: '计算中',
@@ -1777,6 +1781,7 @@ export default {
       cacheToday: '今日缓存',
       performance: '性能指标',
       avgResponse: '平均响应',
+      currentConcurrency: '当前并发',
       averageTime: '平均时间',
       timeRange: '时间范围',
       granularity: '粒度',
@@ -3872,10 +3877,20 @@ export default {
         responsesWebsocketsV2PassthroughHint: '当前已开启自动透传：仅影响 HTTP 透传链路，不影响 WS mode。',
         responsesMode: 'Responses API 支持',
         responsesModeDesc:
-          '仅对 OpenAI API Key 生效。自动跟随探测结果，强制模式会覆盖自动探测。',
+          '仅对 OpenAI API Key 的文本转发链路生效。自动跟随探测结果，强制模式会覆盖自动探测。',
         responsesModeAuto: '自动',
         responsesModeForceResponses: '强制 Responses',
         responsesModeForceChatCompletions: '强制 Chat Completions',
+        responsesModeTextDisabledHint: '未启用 Responses / Chat Completions 端点时，此设置不适用。',
+        endpointCapabilities: '端点能力',
+        endpointCapabilitiesDesc:
+          '用于调度筛选。文本端点会跟随上方 Responses API 支持显示为 Responses、Chat Completions 或自动模式；Embeddings 独立控制 /v1/embeddings。',
+        capabilityResponses: 'Responses',
+        capabilityTextAuto: 'Responses / Chat Completions（自动）',
+        capabilityResponsesAuto: 'Responses（自动探测）',
+        capabilityChatCompletions: 'Chat Completions',
+        capabilityChatCompletionsAuto: 'Chat Completions（自动探测）',
+        capabilityEmbeddings: 'Embeddings',
         responsesStatusAutoSupported: '自动探测：Responses',
         responsesStatusAutoUnsupported: '自动探测：Chat Completions',
         responsesStatusAutoUnknown: '自动探测：未探测',
@@ -3883,6 +3898,8 @@ export default {
         responsesStatusForcedChatCompletions: '已强制 Chat Completions',
         codexCLIOnly: '仅允许 Codex 官方客户端',
         codexCLIOnlyDesc: '仅对 OpenAI OAuth 生效。开启后仅允许 Codex 官方客户端家族访问；关闭后完全绕过并保持原逻辑。',
+        codexCLIOnlyAllowClaudeCode: '额外放行 Claude Code 的 Codex 插件',
+        codexCLIOnlyAllowClaudeCodeDesc: '仅在上方开关开启时生效。额外放行通过 Claude Code 的 Codex 插件发起的请求（精确匹配 originator=Claude Code），不影响对其他非官方客户端的拦截。',
         codexImageGenerationBridge: 'Codex 图片生成桥接',
         codexImageGenerationBridgeDesc:
           '账号级策略优先于渠道和全局配置。仅控制 Codex 走 /responses 文本端点时是否注入 image_generation 工具；不影响独立图片生成接口。',
@@ -3978,6 +3995,12 @@ export default {
       interceptWarmupRequestsDesc: '启用后，标题生成等预热请求将返回 mock 响应，不消耗上游 token',
       autoPauseOnExpired: '过期自动暂停调度',
       autoPauseOnExpiredDesc: '启用后，账号过期将自动暂停调度',
+	  autoPause5hThreshold: '5h 用量阈值(%)',
+	  autoPause7dThreshold: '7d 用量阈值(%)',
+	  autoPauseThresholdHint: '留空或填 0 表示使用全局默认阈值（在运维设置中配置）；填具体值则覆盖全局默认。达到阈值后仅在调度时跳过账号，不修改 schedulable。',
+	  autoPause5hDisabled: '禁用 5h 自动暂停',
+	  autoPause7dDisabled: '禁用 7d 自动暂停',
+	  autoPauseDisabledHint: '开启后该账号永不进入自动暂停（即使全局默认阈值已配置）。',
       // Quota control (Anthropic OAuth/SetupToken only)
       quotaControl: {
         title: '配额控制',
@@ -5714,6 +5737,11 @@ export default {
         aggregation: '预聚合任务',
         enableAggregation: '启用预聚合任务',
         aggregationHint: '预聚合可提升长时间窗口查询性能',
+        openaiQuotaAutoPause: 'OpenAI 账号配额自动暂停',
+        openaiQuotaAutoPauseHint: '当 OpenAI 账号 5h / 7d 用量达到阈值时，调度会自动跳过该账号；窗口滚动后自动恢复。账号级阈值优先于此全局默认值。',
+        openaiQuotaAutoPauseDefault5h: '默认 5h 用量阈值 (%)',
+        openaiQuotaAutoPauseDefault7d: '默认 7d 用量阈值 (%)',
+        openaiQuotaAutoPauseThresholdHint: '取值 0-100，留空或 0 表示不启用全局默认阈值。',
         errorFiltering: '错误过滤',
         ignoreCountTokensErrors: '忽略 count_tokens 错误',
         ignoreCountTokensErrorsHint: '启用后，count_tokens 请求的错误将不会写入错误日志。',
@@ -5745,7 +5773,8 @@ export default {
           slaMinPercentRange: 'SLA最低百分比必须在0-100之间',
           ttftP99MaxRange: 'TTFT P99最大值必须大于等于0',
           requestErrorRateMaxRange: '请求错误率最大值必须在0-100之间',
-          upstreamErrorRateMaxRange: '上游错误率最大值必须在0-100之间'
+          upstreamErrorRateMaxRange: '上游错误率最大值必须在0-100之间',
+          openaiQuotaAutoPauseRange: 'OpenAI 配额自动暂停阈值必须在 0-100 之间'
         }
       },
       concurrency: {
@@ -6141,6 +6170,9 @@ export default {
         openaiCodexUserAgent: 'OpenAI Codex UA',
         openaiCodexUserAgentPlaceholder: 'codex-tui/0.125.0 (Ubuntu 22.4.0; x86_64) xterm-256color (codex-tui; 0.125.0)',
         openaiCodexUserAgentHint: '用于规避 OpenAI 上游 Cloudflare 对浏览器 UA 的访问质询。仅在检测到客户端 User-Agent 为浏览器（Mozilla/...）时生效，其他客户端原样透传。留空使用内置默认值。',
+        openaiAllowClaudeCodeCodexPlugin: '允许在 Claude Code 中使用 Codex 插件',
+        openaiAllowClaudeCodeCodexPluginDesc:
+          '全局开关，仅对已开启「仅允许 Codex 官方客户端」的 OpenAI OAuth 账号生效。开启后，所有此类账号都额外放行通过 Claude Code 的 Codex 插件发起的请求（精确匹配 originator=Claude Code），无需逐账号配置；上游请求仍保持透传。',
       },
       webSearchEmulation: {
         title: 'Web Search 模拟',

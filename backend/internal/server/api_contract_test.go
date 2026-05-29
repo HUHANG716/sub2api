@@ -522,6 +522,7 @@ func TestAPIContracts(t *testing.T) {
 					"total_tokens": 53,
 					"total_cost": 0.75,
 					"total_actual_cost": 0.75,
+					"total_discount_amount": 0,
 					"average_duration_ms": 200
 				}
 			}`,
@@ -585,6 +586,8 @@ func TestAPIContracts(t *testing.T) {
 							"cache_read_cost": 0,
 						"total_cost": 0.5,
 						"actual_cost": 0.5,
+						"discount_amount": 0,
+						"discount_rate": 0,
 						"rate_multiplier": 1,
 						"billing_type": 0,
 							"stream": true,
@@ -762,6 +765,15 @@ func TestAPIContracts(t *testing.T) {
 						"google_oauth_client_secret_configured": false,
 						"google_oauth_redirect_url": "",
 						"google_oauth_frontend_redirect_url": "/auth/oauth/callback",
+						"global_discount_settings": {
+							"enabled": false,
+							"discount_rate": 1,
+							"schedule_type": "once",
+							"starts_at": "",
+							"ends_at": "",
+							"recurring_start_at": "00:00",
+							"recurring_end_at": "23:59"
+						},
 						"ops_monitoring_enabled": false,
 						"ops_realtime_monitoring_enabled": true,
 						"ops_query_mode_default": "auto",
@@ -857,6 +869,7 @@ func TestAPIContracts(t *testing.T) {
 					"payment_visible_method_wxpay_enabled": false,
 					"openai_advanced_scheduler_enabled": true,
 					"openai_codex_user_agent":           "",
+					"openai_allow_claude_code_codex_plugin": false,
 					"openai_fast_policy_settings": {
 						"rules": []
 					},
@@ -1030,6 +1043,15 @@ func TestAPIContracts(t *testing.T) {
 					"github_oauth_client_secret_configured": false,
 					"github_oauth_redirect_url": "",
 					"github_oauth_frontend_redirect_url": "/auth/oauth/callback",
+					"global_discount_settings": {
+						"enabled": false,
+						"discount_rate": 1,
+						"schedule_type": "once",
+						"starts_at": "",
+						"ends_at": "",
+						"recurring_start_at": "00:00",
+						"recurring_end_at": "23:59"
+					},
 					"google_oauth_enabled": false,
 					"google_oauth_client_id": "",
 					"google_oauth_client_secret_configured": false,
@@ -1095,6 +1117,7 @@ func TestAPIContracts(t *testing.T) {
 					"payment_visible_method_wxpay_enabled": false,
 					"openai_advanced_scheduler_enabled": false,
 					"openai_codex_user_agent":           "",
+					"openai_allow_claude_code_codex_plugin": false,
 					"openai_fast_policy_settings": {
 						"rules": []
 					},

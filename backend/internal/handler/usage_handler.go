@@ -146,6 +146,9 @@ func (h *UsageHandler) ImageEstimate(c *gin.Context) {
 	}
 
 	cost, pricingSource := h.calculateImageEstimate(c, model, group, sizeTier, count, multiplier)
+	if h.settingService != nil {
+		service.ApplyGlobalDiscountToCost(cost, h.settingService.GetGlobalDiscountRuntime(c.Request.Context()))
+	}
 	unitCost := 0.0
 	if count > 0 {
 		unitCost = cost.TotalCost / float64(count)

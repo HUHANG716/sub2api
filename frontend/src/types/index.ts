@@ -234,6 +234,7 @@ export interface PublicSettings {
   available_channels_enabled: boolean
   affiliate_enabled: boolean
   image_playground_group_id?: number | null
+  global_discount?: GlobalDiscountRuntime | null
 }
 
 export interface AuthResponse {
@@ -998,6 +999,7 @@ export interface CodexUsageSnapshot {
 
 export type OpenAICompactMode = 'auto' | 'force_on' | 'force_off'
 export type OpenAIResponsesMode = 'auto' | 'force_responses' | 'force_chat_completions'
+export type OpenAIEndpointCapability = 'chat_completions' | 'embeddings'
 
 export interface OpenAICompactState {
   openai_compact_mode?: OpenAICompactMode
@@ -1399,6 +1401,7 @@ export interface DashboardStats {
 
   // 系统运行统计
   average_duration_ms: number // 平均响应时间
+  current_total_concurrency: number // 当前账号侧总并发
   uptime: number // 系统运行时间(秒)
 
   // 性能指标

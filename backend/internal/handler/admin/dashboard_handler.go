@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"strconv"
@@ -19,16 +20,59 @@ import (
 type DashboardHandler struct {
 	dashboardService   *service.DashboardService
 	aggregationService *service.DashboardAggregationService
+	concurrencyService *service.ConcurrencyService
+	accountRepo        service.AccountRepository
 	startTime          time.Time // Server start time for uptime calculation
 }
 
 // NewDashboardHandler creates a new admin dashboard handler
-func NewDashboardHandler(dashboardService *service.DashboardService, aggregationService *service.DashboardAggregationService) *DashboardHandler {
+func NewDashboardHandler(dashboardService *service.DashboardService, aggregationService *service.DashboardAggregationService, concurrencyService *service.ConcurrencyService, accountRepo service.AccountRepository) *DashboardHandler {
 	return &DashboardHandler{
 		dashboardService:   dashboardService,
 		aggregationService: aggregationService,
+		concurrencyService: concurrencyService,
+		accountRepo:        accountRepo,
 		startTime:          time.Now(),
 	}
+}
+
+func (h *DashboardHandler) currentTotalConcurrency(ctx context.Context) int {
+	if h == nil || h.accountRepo == nil || h.concurrencyService == nil {
+		return 0
+	}
+	accounts, err := h.accountRepo.ListSchedulable(ctx)
+	if err != nil || len(accounts) == 0 {
+		return 0
+	}
+
+	accountIDs := make([]int64, 0, len(accounts))
+	seen := make(map[int64]struct{}, len(accounts))
+	for _, account := range accounts {
+		if account.ID <= 0 {
+			continue
+		}
+		if _, ok := seen[account.ID]; ok {
+			continue
+		}
+		seen[account.ID] = struct{}{}
+		accountIDs = append(accountIDs, account.ID)
+	}
+	if len(accountIDs) == 0 {
+		return 0
+	}
+
+	concurrencyByAccount, err := h.concurrencyService.GetAccountConcurrencyBatch(ctx, accountIDs)
+	if err != nil {
+		return 0
+	}
+
+	total := 0
+	for _, count := range concurrencyByAccount {
+		if count > 0 {
+			total += count
+		}
+	}
+	return total
 }
 
 // parseTimeRange parses start_date, end_date query parameters
@@ -114,8 +158,9 @@ func (h *DashboardHandler) GetStats(c *gin.Context) {
 		"today_actual_cost":           stats.TodayActualCost, // 今日实际扣除
 
 		// 系统运行统计
-		"average_duration_ms": stats.AverageDurationMs,
-		"uptime":              uptime,
+		"average_duration_ms":       stats.AverageDurationMs,
+		"current_total_concurrency": h.currentTotalConcurrency(c.Request.Context()),
+		"uptime":                    uptime,
 
 		// 性能指标
 		"rpm": stats.Rpm,

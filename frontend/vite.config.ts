@@ -35,7 +35,7 @@ function injectPublicSettings(backendUrl: string): Plugin {
   }
 }
 
-function serveImagePlaygroundApp(): Plugin {
+function serveImagePlaygroundApp(options: { useDevProxy?: boolean } = {}): Plugin {
   const appPath = '/image-playground-app'
   const indexPath = resolve(__dirname, 'public', 'image-playground-app', 'index.html')
 
@@ -51,6 +51,11 @@ function serveImagePlaygroundApp(): Plugin {
           res.statusCode = 302
           res.setHeader('Location', `${appPath}/${requestUrl.includes('?') ? `?${requestUrl.split('?')[1]}` : ''}`)
           res.end()
+          return
+        }
+
+        if (options.useDevProxy) {
+          next()
           return
         }
 
@@ -80,6 +85,30 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const backendUrl = env.VITE_DEV_PROXY_TARGET || 'http://127.0.0.1:8080'
   const devPort = Number(env.VITE_DEV_PORT || 3000)
+  const imagePlaygroundDevUrl = env.VITE_IMAGE_PLAYGROUND_DEV_URL?.trim().replace(/\/+$/, '')
+  const devProxy = {
+    '/api': {
+      target: backendUrl,
+      changeOrigin: true
+    },
+    '/v1': {
+      target: backendUrl,
+      changeOrigin: true
+    },
+    '/setup': {
+      target: backendUrl,
+      changeOrigin: true
+    },
+    ...(imagePlaygroundDevUrl
+      ? {
+          '/image-playground-app': {
+            target: imagePlaygroundDevUrl,
+            changeOrigin: true,
+            ws: true
+          }
+        }
+      : {})
+  }
 
   return {
     plugins: [
@@ -88,7 +117,7 @@ export default defineConfig(({ mode }) => {
         vueTsc: true
       }),
       injectPublicSettings(backendUrl),
-      serveImagePlaygroundApp()
+      serveImagePlaygroundApp({ useDevProxy: !!imagePlaygroundDevUrl })
     ],
   resolve: {
     alias: {
@@ -151,20 +180,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: '0.0.0.0',
       port: devPort,
-      proxy: {
-        '/api': {
-          target: backendUrl,
-          changeOrigin: true
-        },
-        '/v1': {
-          target: backendUrl,
-          changeOrigin: true
-        },
-        '/setup': {
-          target: backendUrl,
-          changeOrigin: true
-        }
-      }
+      proxy: devProxy
     }
   }
 })

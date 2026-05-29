@@ -100,6 +100,7 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		RiskControlEnabled: settings.RiskControlEnabled,
 
 		ImagePlaygroundGroupID: settings.ImagePlaygroundGroupID,
+		GlobalDiscount:         settings.GlobalDiscount,
 	})
 }
 

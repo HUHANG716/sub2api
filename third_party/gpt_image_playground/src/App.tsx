@@ -6,6 +6,7 @@ import { mergeImportedSettings } from './lib/apiProfiles'
 import { getCustomProviderConfigUrl, loadCustomProviderSettingsFromUrl } from './lib/customProviderConfigUrl'
 import { useDockerApiUrlMigrationNotice } from './hooks/useDockerApiUrlMigrationNotice'
 import { useParentImageEstimateSync } from './hooks/useParentImageEstimateSync'
+import { isProductEmbedMode, rememberProductEmbedMode } from './lib/productEmbed'
 import Header from './components/Header'
 import SearchBar from './components/SearchBar'
 import TaskGrid from './components/TaskGrid'
@@ -32,6 +33,8 @@ export default function App() {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search)
+    const productEmbed = isProductEmbedMode()
+    if (productEmbed) rememberProductEmbedMode()
     const nextSettings = buildSettingsFromUrlParams(useStore.getState().settings, searchParams)
     const appModeFromUrl = getAppModeFromUrlParams(searchParams)
 
@@ -48,7 +51,7 @@ export default function App() {
       window.history.replaceState(null, '', nextUrl)
     }
 
-    const customProviderConfigUrl = getCustomProviderConfigUrl()
+    const customProviderConfigUrl = productEmbed ? '' : getCustomProviderConfigUrl()
     if (customProviderConfigUrl && !customProviderConfigUrlImportStarted) {
       customProviderConfigUrlImportStarted = true
       void loadCustomProviderSettingsFromUrl(customProviderConfigUrl)

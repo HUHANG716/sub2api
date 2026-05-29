@@ -59,17 +59,19 @@
           @sort="handleSort"
         >
           <template #cell-key="{ value, row }">
-            <div class="flex items-center gap-2">
-              <code class="code text-xs">
+            <div class="flex min-w-[132px] items-center gap-2">
+              <code
+                class="select-all rounded-md border border-gray-200/70 bg-gray-50/80 px-2 py-1 font-mono text-[13px] font-medium leading-none tracking-normal text-gray-700 dark:border-dark-600/70 dark:bg-dark-800/60 dark:text-gray-200"
+              >
                 {{ maskApiKey(value) }}
               </code>
               <button
                 @click="copyToClipboard(value, row.id)"
-                class="rounded-lg p-1 transition-colors hover:bg-gray-100 dark:hover:bg-dark-700"
+                class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-transparent transition-colors hover:border-gray-200 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 dark:hover:border-dark-600 dark:hover:bg-dark-700"
                 :class="
                   copiedKeyId === row.id
-                    ? 'text-green-500'
-                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-200'
                 "
                 :title="copiedKeyId === row.id ? t('keys.copied') : t('keys.copyToClipboard')"
               >

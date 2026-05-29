@@ -1,6 +1,7 @@
 import type { ApiKey, Group } from '@/types'
 
 export const IMAGE_PLAYGROUND_STORAGE_KEY = 'image_playground_api_key'
+export const IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY = 'hahacode.imagePlayground.settings'
 export const IMAGE_PLAYGROUND_KEY_NAME = 'Image Playground'
 export const IMAGE_PLAYGROUND_APP_PATH = '/image-playground-app/'
 export const IMAGE_PLAYGROUND_MODEL = 'gpt-image-2'
@@ -41,6 +42,7 @@ export function storedKeyMatchesGroup(
 export function buildImagePlaygroundUrl(options: {
   origin: string
   apiKey: string
+  refreshToken?: string
 }): string {
   const origin = options.origin.replace(/\/+$/, '')
   const url = new URL(IMAGE_PLAYGROUND_APP_PATH, `${origin}/`)
@@ -77,8 +79,10 @@ export function buildImagePlaygroundUrl(options: {
     ],
     activeProfileId: 'hahacode-images'
   }
-  url.searchParams.set('settings', JSON.stringify(settings))
+  window.sessionStorage.setItem(IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY, JSON.stringify(settings))
   url.searchParams.set('appMode', 'gallery')
+  url.searchParams.set('embed', 'product')
+  if (options.refreshToken) url.searchParams.set('refresh', options.refreshToken)
   return url.toString()
 }
 

@@ -48,7 +48,7 @@ const formatLocalDate = (date: Date): string => {
   return `${year}-${month}-${day}`
 }
 
-const createDashboardStats = (): DashboardStats => ({
+const createDashboardStats = (overrides: Partial<DashboardStats> = {}): DashboardStats => ({
   total_users: 0,
   today_new_users: 0,
   active_users: 0,
@@ -57,6 +57,7 @@ const createDashboardStats = (): DashboardStats => ({
   stats_stale: false,
   total_api_keys: 0,
   active_api_keys: 0,
+  current_total_concurrency: 7,
   total_accounts: 0,
   normal_accounts: 0,
   error_accounts: 0,
@@ -83,7 +84,25 @@ const createDashboardStats = (): DashboardStats => ({
   average_duration_ms: 0,
   uptime: 0,
   rpm: 0,
-  tpm: 0
+  tpm: 0,
+  ...overrides
+})
+
+const mountDashboardView = () => mount(DashboardView, {
+  global: {
+    stubs: {
+      AppLayout: { template: '<div><slot /></div>' },
+      LoadingSpinner: true,
+      Icon: true,
+      DateRangePicker: {
+        template: '<button data-test="date-range-picker" @click="$emit(\'change\', { startDate: \'2026-05-28\', endDate: \'2026-05-29\', preset: null })" />'
+      },
+      Select: true,
+      ModelDistributionChart: true,
+      TokenUsageTrend: true,
+      Line: true
+    }
+  }
 })
 
 describe('admin DashboardView', () => {
@@ -114,20 +133,7 @@ describe('admin DashboardView', () => {
   })
 
   it('uses last 24 hours as default dashboard range', async () => {
-    mount(DashboardView, {
-      global: {
-        stubs: {
-          AppLayout: { template: '<div><slot /></div>' },
-          LoadingSpinner: true,
-          Icon: true,
-          DateRangePicker: true,
-          Select: true,
-          ModelDistributionChart: true,
-          TokenUsageTrend: true,
-          Line: true
-        }
-      }
-    })
+    mountDashboardView()
 
     await flushPromises()
 
@@ -143,20 +149,7 @@ describe('admin DashboardView', () => {
   })
 
   it('uses user-dashboard style colored icon blocks for dashboard stat cards', async () => {
-    const wrapper = mount(DashboardView, {
-      global: {
-        stubs: {
-          AppLayout: { template: '<div><slot /></div>' },
-          LoadingSpinner: true,
-          Icon: true,
-          DateRangePicker: true,
-          Select: true,
-          ModelDistributionChart: true,
-          TokenUsageTrend: true,
-          Line: true
-        }
-      }
-    })
+    const wrapper = mountDashboardView()
 
     await flushPromises()
 
@@ -176,5 +169,41 @@ describe('admin DashboardView', () => {
     })
 
     expect(wrapper.find('.dashboard-stat-card').exists()).toBe(false)
+  })
+
+  it('renders current concurrency in the top stat cards', async () => {
+    const wrapper = mountDashboardView()
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('admin.dashboard.currentConcurrency')
+    expect(wrapper.text()).toContain('7')
+  })
+
+  it('refreshes current concurrency when chart filters reload the snapshot', async () => {
+    getSnapshotV2
+      .mockResolvedValueOnce({
+        stats: createDashboardStats({ current_total_concurrency: 7 }),
+        trend: [],
+        models: []
+      })
+      .mockResolvedValueOnce({
+        stats: createDashboardStats({ current_total_concurrency: 11 }),
+        trend: [],
+        models: []
+      })
+
+    const wrapper = mountDashboardView()
+
+    await flushPromises()
+    expect(wrapper.text()).toContain('7')
+
+    await wrapper.get('[data-test="date-range-picker"]').trigger('click')
+    await flushPromises()
+
+    expect(getSnapshotV2).toHaveBeenLastCalledWith(expect.objectContaining({
+      include_stats: true
+    }))
+    expect(wrapper.text()).toContain('11')
   })
 })

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useStore, submitTask, submitAgentMessage, stopAgentResponse, addImageFromFile, createInputImageFromFile, deleteImageIfUnreferenced, updateTaskInStore, removeMultipleTasks, getCachedImage, ensureImageCached, getActiveAgentRounds } from '../store'
 import { DEFAULT_PARAMS } from '../types'
 import { getActiveApiProfile, normalizeSettings } from '../lib/apiProfiles'
+import { isProductEmbedMode } from '../lib/productEmbed'
 import { DEFAULT_FAL_IMAGE_SIZE, getChangedParams, getOutputImageLimitForSettings, normalizeParamsForSettings } from '../lib/paramCompatibility'
 import { getAtImageQuery, getImageMentionLabel, getPromptIndexFromVisibleIndex, getPromptMentionParts, getSelectedImageMentionLabel, getSelectedTextMentionLabel, imageMentionMatches, insertImageMentionAtVisibleRange, insertTextMentionAtVisibleRange, isCursorInSelectedImageMention, stripImageMentionMarkers } from '../lib/promptImageMentions'
 import { normalizeImageSize } from '../lib/size'
@@ -387,6 +388,7 @@ function AtImageOptionThumb({ option }: { option: AtImageOption }) {
 export default function InputBar() {
   const prompt = useStore((s) => s.prompt)
   const appMode = useStore((s) => s.appMode)
+  const productEmbed = isProductEmbedMode()
   const setPrompt = useStore((s) => s.setPrompt)
   const inputImages = useStore((s) => s.inputImages)
   const addInputImage = useStore((s) => s.addInputImage)
@@ -2186,13 +2188,13 @@ export default function InputBar() {
                 >
                   <ButtonTooltip visible={(activeAgentIsRunning || !hasSubmitApiConfig) && submitHover} text={submitTooltipText} />
                   <button
-                    onClick={() => activeAgentIsRunning ? stopActiveAgentResponse() : hasSubmitApiConfig ? submitCurrentMode() : setShowSettings(true)}
-                    disabled={activeAgentIsRunning ? false : hasSubmitApiConfig ? !canSubmit : false}
+                    onClick={() => activeAgentIsRunning ? stopActiveAgentResponse() : hasSubmitApiConfig ? submitCurrentMode() : productEmbed ? undefined : setShowSettings(true)}
+                    disabled={activeAgentIsRunning ? false : hasSubmitApiConfig ? !canSubmit : true}
                     className={`p-2.5 rounded-xl transition-all shadow-sm hover:shadow ${
                       activeAgentIsRunning
                         ? 'bg-red-500 text-white hover:bg-red-600'
                         : !hasSubmitApiConfig
-                        ? 'bg-gray-300 dark:bg-white/[0.06] text-white cursor-pointer'
+                        ? 'bg-gray-300 dark:bg-white/[0.06] text-white cursor-not-allowed'
                         : 'bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-white/[0.04] disabled:opacity-50 disabled:cursor-not-allowed'
                     }`}
                     aria-label={submitButtonAriaLabel}
@@ -2294,14 +2296,14 @@ export default function InputBar() {
                 >
                   <ButtonTooltip visible={(activeAgentIsRunning || !hasSubmitApiConfig) && submitHover} text={submitTooltipText} />
                   <button
-                    onClick={() => activeAgentIsRunning ? stopActiveAgentResponse() : hasSubmitApiConfig ? submitCurrentMode() : setShowSettings(true)}
-                    disabled={activeAgentIsRunning ? false : hasSubmitApiConfig ? !canSubmit : false}
+                    onClick={() => activeAgentIsRunning ? stopActiveAgentResponse() : hasSubmitApiConfig ? submitCurrentMode() : productEmbed ? undefined : setShowSettings(true)}
+                    disabled={activeAgentIsRunning ? false : hasSubmitApiConfig ? !canSubmit : true}
                     aria-label={submitButtonAriaLabel}
                     className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm ${
                       activeAgentIsRunning
                         ? 'bg-red-500 text-white hover:bg-red-600'
                         : !hasSubmitApiConfig
-                        ? 'bg-gray-300 dark:bg-white/[0.06] text-white cursor-pointer'
+                        ? 'bg-gray-300 dark:bg-white/[0.06] text-white cursor-not-allowed'
                         : 'bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-white/[0.04] disabled:opacity-50 disabled:cursor-not-allowed'
                     }`}
                   >

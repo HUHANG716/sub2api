@@ -30,7 +30,7 @@
         </div>
 
         <div class="landing-header-actions flex items-center gap-2">
-          <LocaleSwitcher />
+          <LocaleSwitcher icon-only />
           <router-link
             to="/docs"
             class="landing-docs-action"
@@ -51,7 +51,7 @@
 
     <main>
       <section class="hero-section px-5 pb-16 pt-14 sm:px-6 sm:pb-20 sm:pt-20 lg:px-8">
-        <div class="landing-container grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+        <div class="landing-container grid gap-10 lg:grid-cols-[0.88fr_1.12fr] lg:items-center">
           <div class="hero-copy">
             <p class="eyebrow">{{ t('home.modern.hero.eyebrow') }}</p>
             <h1>
@@ -66,11 +66,11 @@
 
             <div class="mt-8 flex flex-col gap-3 sm:flex-row">
               <router-link :to="isAuthenticated ? dashboardPath : '/login'" class="hero-button">
-                {{ isAuthenticated ? t('home.goToDashboard') : t('home.getStarted') }}
+                <span>{{ isAuthenticated ? t('home.goToDashboard') : t('home.getStarted') }}</span>
                 <Icon name="arrowRight" size="sm" />
               </router-link>
               <router-link to="/docs" class="hero-button secondary">
-                {{ t('home.viewDocs') }}
+                <span>{{ t('home.viewDocs') }}</span>
                 <Icon name="book" size="sm" />
               </router-link>
             </div>
@@ -613,26 +613,33 @@ onUnmounted(() => {
   --locale-code-bg: rgba(148, 163, 184, 0.14);
   --locale-hover-bg: var(--theme-surface-muted);
   --locale-active-bg: var(--landing-accent-tint);
-  --locale-active-text: #fed7aa;
+  --locale-active-text: var(--landing-text-strong);
 }
 
 .landing-shell :deep(.locale-trigger) {
-  height: auto;
+  height: var(--landing-nav-control-height);
+  width: var(--landing-nav-control-height);
   min-height: var(--landing-nav-control-height);
-  border-color: var(--landing-control-border);
-  border-radius: var(--landing-nav-control-radius);
-  background: var(--theme-surface-muted);
-  padding: 0.4rem 0.55rem;
-  box-shadow: var(--landing-control-shadow);
+  min-width: var(--landing-nav-control-height);
+  gap: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
 }
 
-.landing-shell :deep(.locale-trigger-value) {
-  font-size: 0.78rem;
-  line-height: 1.25;
+.landing-shell :deep(.locale-trigger-value),
+.landing-shell :deep(.locale-chevron) {
+  display: none;
 }
 
 .landing-shell :deep(.locale-trigger-icon) {
-  color: var(--landing-support);
+  display: grid;
+  place-items: center;
+  height: 1rem;
+  width: 1rem;
+  color: var(--landing-text-soft);
 }
 
 .landing-header {
@@ -659,7 +666,7 @@ onUnmounted(() => {
   padding-bottom: 0.625rem;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.05) inset,
-    0 10px 26px rgba(2, 6, 23, 0.18);
+    0 10px 26px rgba(2, 6, 23, 0.22);
   transition:
     padding 180ms ease,
     width 240ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -692,7 +699,7 @@ onUnmounted(() => {
   background: var(--theme-surface-strong);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 12px 28px rgba(2, 6, 23, 0.24);
+    0 12px 28px rgba(2, 6, 23, 0.28);
   pointer-events: auto;
 }
 
@@ -788,15 +795,16 @@ onUnmounted(() => {
 
 .landing-docs-action {
   min-height: var(--landing-nav-control-height);
-  max-width: 8.5rem;
+  max-width: 7.5rem;
+  gap: 0.38rem;
+  border: 1px solid var(--landing-control-border);
   border-radius: var(--landing-nav-control-radius);
-  border: 1px solid color-mix(in srgb, var(--landing-support) 34%, var(--landing-control-border));
-  background: color-mix(in srgb, var(--landing-support) 10%, var(--theme-surface-muted));
-  padding: 0 0.7rem;
-  color: var(--landing-support);
+  background: transparent;
+  padding: 0 0.62rem;
+  color: var(--landing-text-soft);
   font-size: 0.8125rem;
-  font-weight: 800;
-  line-height: 1.15;
+  font-weight: 760;
+  line-height: 1;
   white-space: nowrap;
 }
 
@@ -806,9 +814,15 @@ onUnmounted(() => {
   text-overflow: ellipsis;
 }
 
+.landing-docs-action :deep(svg) {
+  display: block;
+  flex: 0 0 auto;
+}
+
 .landing-docs-action:hover {
-  border-color: color-mix(in srgb, var(--landing-support) 58%, transparent);
-  background: color-mix(in srgb, var(--landing-support) 16%, var(--theme-surface-strong));
+  border-color: color-mix(in srgb, var(--landing-support) 42%, transparent);
+  color: var(--landing-support);
+  background: var(--theme-surface-muted);
   box-shadow: var(--landing-control-shadow-hover);
 }
 
@@ -832,11 +846,11 @@ onUnmounted(() => {
   border-radius: var(--landing-nav-control-radius);
   border: 1px solid var(--landing-accent-border);
   background: var(--landing-button-bg);
-  padding: 0 0.8rem;
+  padding: 0 0.78rem;
   color: var(--landing-text-inverse);
   font-size: 0.8125rem;
-  font-weight: 700;
-  line-height: 1.15;
+  font-weight: 760;
+  line-height: 1;
   text-align: center;
   white-space: nowrap;
 }
@@ -851,9 +865,10 @@ onUnmounted(() => {
   position: relative;
   isolation: isolate;
   max-width: 100vw;
+  min-height: auto;
   overflow-x: clip;
-  padding-top: clamp(4rem, 7vw, 5.75rem);
-  padding-bottom: clamp(5rem, 8vw, 7rem);
+  padding-top: clamp(3rem, 5vw, 4.35rem);
+  padding-bottom: clamp(2rem, 4vw, 3.25rem);
 }
 
 .hero-section > div {
@@ -876,13 +891,13 @@ onUnmounted(() => {
 }
 
 .hero-copy h1 {
-  margin-top: 0.9rem;
-  max-width: 42rem;
+  margin-top: 0.78rem;
+  max-width: 36.5rem;
   color: var(--landing-text-strong);
-  font-size: clamp(2.45rem, 5vw, 4.45rem);
+  font-size: clamp(2.35rem, 4.35vw, 3.65rem);
   font-weight: 820;
   letter-spacing: 0;
-  line-height: 1.03;
+  line-height: 1.06;
 }
 
 .hero-copy h1 span {
@@ -905,11 +920,11 @@ onUnmounted(() => {
 }
 
 .hero-lede {
-  margin-top: 1.25rem;
-  max-width: 34rem;
+  margin-top: 1.05rem;
+  max-width: 32rem;
   color: var(--landing-text-soft);
   font-size: 1rem;
-  line-height: 1.68;
+  line-height: 1.62;
 }
 
 .hero-lede span {
@@ -919,6 +934,7 @@ onUnmounted(() => {
 .hero-button {
   min-height: 3.125rem;
   min-width: 0;
+  align-items: center;
   gap: 0.625rem;
   border: 1px solid var(--landing-accent-border);
   border-radius: calc(var(--landing-control-radius) + 0.125rem);
@@ -927,8 +943,17 @@ onUnmounted(() => {
   color: var(--landing-text-inverse);
   font-size: 0.9375rem;
   font-weight: 800;
-  line-height: 1.25;
+  line-height: 1;
   text-align: center;
+}
+
+.hero-button span {
+  line-height: 1;
+}
+
+.hero-button :deep(svg) {
+  display: block;
+  flex: 0 0 auto;
 }
 
 .hero-button:hover {
@@ -957,13 +982,16 @@ onUnmounted(() => {
 
 .hero-console {
   position: relative;
+  justify-self: end;
+  width: 100%;
+  max-width: 56rem;
   min-width: 0;
   border: 1px solid var(--landing-border-strong);
   border-radius: 0.75rem;
   background: var(--landing-surface-raised);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 14px 32px rgba(2, 6, 23, 0.16);
+    0 14px 32px rgba(2, 6, 23, 0.22);
   overflow: visible;
 }
 
@@ -972,7 +1000,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.45rem;
   border-bottom: 1px solid var(--landing-border);
-  padding: 1rem;
+  padding: 0.8rem 0.9rem;
 }
 
 .console-topbar span {
@@ -980,7 +1008,7 @@ onUnmounted(() => {
   width: 0.7rem;
   border-radius: 999px;
   background: #ff5f57;
-  box-shadow: inset 0 0 0 1px rgba(2, 6, 23, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(2, 6, 23, 0.26);
 }
 
 .console-topbar span:nth-child(2) {
@@ -993,16 +1021,16 @@ onUnmounted(() => {
 
 .console-grid {
   min-width: 0;
-  padding: clamp(0.85rem, 4vw, 1.45rem);
+  padding: clamp(0.75rem, 2.4vw, 1.15rem);
 }
 
 .command-panel {
   min-width: 0;
-  min-height: clamp(12.75rem, 44vw, 15.4rem);
-  padding: clamp(0.85rem, 4vw, 1.45rem);
+  min-height: clamp(10.5rem, 26vw, 13rem);
+  padding: clamp(0.85rem, 2.6vw, 1.25rem);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: clamp(0.78rem, 2.8vw, 1.15rem);
-  line-height: 1.7;
+  font-size: clamp(0.82rem, 1.35vw, 1rem);
+  line-height: 1.62;
 }
 
 .terminal-line {
@@ -1017,7 +1045,7 @@ onUnmounted(() => {
 }
 
 .terminal-line + .terminal-line {
-  margin-top: 0.8rem;
+  margin-top: 0.65rem;
 }
 
 .terminal-prompt {
@@ -1090,8 +1118,8 @@ onUnmounted(() => {
 
 .trust-band {
   background: var(--landing-bg);
-  padding-top: clamp(1.5rem, 3vw, 2.5rem);
-  padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+  padding-top: clamp(0.75rem, 1.6vw, 1.4rem);
+  padding-bottom: clamp(1.35rem, 2.8vw, 2.15rem);
 }
 
 .trust-strip {
@@ -1105,9 +1133,9 @@ onUnmounted(() => {
 }
 
 .trust-card {
-  min-height: 6.75rem;
+  min-height: 5.6rem;
   min-width: 0;
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.25rem;
   position: relative;
 }
 
@@ -1124,7 +1152,7 @@ onUnmounted(() => {
 .trust-card strong {
   display: block;
   color: var(--landing-text-strong);
-  font-size: clamp(1.8rem, 3.4vw, 2.65rem);
+  font-size: clamp(1.55rem, 2.8vw, 2.25rem);
   font-weight: 780;
   letter-spacing: 0;
 }
@@ -1224,7 +1252,7 @@ onUnmounted(() => {
   background: color-mix(in srgb, var(--theme-text) 88%, var(--theme-surface-strong));
   box-shadow:
     0 1px 0 color-mix(in srgb, var(--theme-text) 24%, transparent) inset,
-    0 10px 22px rgba(2, 6, 23, 0.16);
+    0 10px 22px rgba(2, 6, 23, 0.2);
 }
 
 .support-icon-frame img {
@@ -1374,7 +1402,7 @@ onUnmounted(() => {
   background: var(--landing-surface-soft);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.045) inset,
-    0 10px 24px rgba(2, 6, 23, 0.13);
+    0 10px 24px rgba(2, 6, 23, 0.18);
 }
 
 .testimonial-card:nth-child(4n + 2) {
@@ -1652,14 +1680,12 @@ onUnmounted(() => {
     gap: 0.4rem;
   }
 
-  .landing-shell :deep(.locale-trigger) {
-    padding: 0.4rem 0.48rem;
+  .landing-docs-action {
+    display: none;
   }
 
   .primary-action {
-    max-width: 5.75rem;
     padding: 0 0.62rem;
-    white-space: normal;
   }
 
   .hero-button {
@@ -1746,18 +1772,8 @@ onUnmounted(() => {
     padding-left: 0.55rem;
   }
 
-  .landing-shell :deep(.locale-trigger-value),
-  .landing-shell :deep(.locale-chevron) {
-    display: none;
-  }
-
   .icon-action {
     display: none;
-  }
-
-  .primary-action {
-    max-width: 4.8rem;
-    font-size: 0.76rem;
   }
 
   .hero-section {

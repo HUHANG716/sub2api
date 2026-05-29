@@ -19,7 +19,8 @@ var dashboardSnapshotV2Cache = newSnapshotCache(30 * time.Second)
 
 type dashboardSnapshotV2Stats struct {
 	usagestats.DashboardStats
-	Uptime int64 `json:"uptime"`
+	CurrentTotalConcurrency int   `json:"current_total_concurrency"`
+	Uptime                  int64 `json:"uptime"`
 }
 
 type dashboardSnapshotV2Response struct {
@@ -132,16 +133,37 @@ func (h *DashboardHandler) GetSnapshotV2(c *gin.Context) {
 		response.Error(c, 500, err.Error())
 		return
 	}
-	if cached.ETag != "" {
-		c.Header("ETag", cached.ETag)
+	payload := h.withRealtimeSnapshotV2Stats(c.Request.Context(), cached.Payload, includeStats)
+	etag := cached.ETag
+	if includeStats {
+		etag = buildETagFromAny(payload)
+	}
+	if etag != "" {
+		c.Header("ETag", etag)
 		c.Header("Vary", "If-None-Match")
-		if ifNoneMatchMatched(c.GetHeader("If-None-Match"), cached.ETag) {
+		if ifNoneMatchMatched(c.GetHeader("If-None-Match"), etag) {
 			c.Status(http.StatusNotModified)
 			return
 		}
 	}
 	c.Header("X-Snapshot-Cache", cacheStatusValue(hit))
-	response.Success(c, cached.Payload)
+	response.Success(c, payload)
+}
+
+func (h *DashboardHandler) withRealtimeSnapshotV2Stats(ctx context.Context, payload any, includeStats bool) any {
+	if !includeStats {
+		return payload
+	}
+	resp, ok := payload.(*dashboardSnapshotV2Response)
+	if !ok || resp == nil || resp.Stats == nil {
+		return payload
+	}
+
+	respCopy := *resp
+	statsCopy := *resp.Stats
+	statsCopy.CurrentTotalConcurrency = h.currentTotalConcurrency(ctx)
+	respCopy.Stats = &statsCopy
+	return &respCopy
 }
 
 func (h *DashboardHandler) buildSnapshotV2Response(
