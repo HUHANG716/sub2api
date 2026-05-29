@@ -18,21 +18,21 @@ import (
 
 // DashboardHandler handles admin dashboard statistics
 type DashboardHandler struct {
-	dashboardService    *service.DashboardService
-	aggregationService  *service.DashboardAggregationService
-	concurrencyService  *service.ConcurrencyService
-	accountRepo         service.AccountRepository
-	startTime           time.Time // Server start time for uptime calculation
+	dashboardService   *service.DashboardService
+	aggregationService *service.DashboardAggregationService
+	concurrencyService *service.ConcurrencyService
+	accountRepo        service.AccountRepository
+	startTime          time.Time // Server start time for uptime calculation
 }
 
 // NewDashboardHandler creates a new admin dashboard handler
 func NewDashboardHandler(dashboardService *service.DashboardService, aggregationService *service.DashboardAggregationService, concurrencyService *service.ConcurrencyService, accountRepo service.AccountRepository) *DashboardHandler {
 	return &DashboardHandler{
-		dashboardService:    dashboardService,
-		aggregationService:  aggregationService,
-		concurrencyService:  concurrencyService,
-		accountRepo:         accountRepo,
-		startTime:           time.Now(),
+		dashboardService:   dashboardService,
+		aggregationService: aggregationService,
+		concurrencyService: concurrencyService,
+		accountRepo:        accountRepo,
+		startTime:          time.Now(),
 	}
 }
 

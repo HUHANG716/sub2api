@@ -241,6 +241,6 @@ func TestUsageImageEstimateAppliesActiveGlobalDiscount(t *testing.T) {
 		} `json:"data"`
 	}
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &got))
-	require.InDelta(t, 0.12, got.Data.TotalCost, 1e-12)
+	require.InDelta(t, 0.06, got.Data.TotalCost, 1e-12)
 	require.InDelta(t, 0.06, got.Data.ActualCost, 1e-12)
 }

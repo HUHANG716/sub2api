@@ -49,6 +49,29 @@ func TestApplyGlobalDiscountToCostDefaultsInactiveRate(t *testing.T) {
 	}
 }
 
+func TestApplyGlobalDiscountToCostUsesActualCost(t *testing.T) {
+	cost := &CostBreakdown{
+		TotalCost:  0.12,
+		ActualCost: 0.12,
+	}
+
+	ApplyGlobalDiscountToCost(cost, GlobalDiscountRuntime{
+		Enabled:      true,
+		Active:       true,
+		DiscountRate: 0.5,
+	})
+
+	if math.Abs(cost.ActualCost-0.06) > 1e-12 {
+		t.Fatalf("ActualCost = %v, want 0.06", cost.ActualCost)
+	}
+	if math.Abs(cost.TotalCost-0.12) > 1e-12 {
+		t.Fatalf("TotalCost = %v, want 0.12", cost.TotalCost)
+	}
+	if math.Abs(cost.DiscountAmount-0.06) > 1e-12 {
+		t.Fatalf("DiscountAmount = %v, want 0.06", cost.DiscountAmount)
+	}
+}
+
 func TestGlobalDiscountRuntimeDailySchedule(t *testing.T) {
 	runtime := globalDiscountRuntime(GlobalDiscountSettings{
 		Enabled:          true,
