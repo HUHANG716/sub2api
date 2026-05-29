@@ -1007,7 +1007,7 @@ export default {
     title: '生图工作台',
     description: '使用当前站点的 OpenAI 生图分组创建、编辑和管理图片。',
     loading: '正在准备生图工作台...',
-    regenerateKey: '重新生成密钥',
+    regenerateKey: '刷新授权',
     estimatedCost: '预计消费',
     estimateWaiting: '待参数',
     estimateLoading: '计算中',

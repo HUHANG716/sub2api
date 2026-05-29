@@ -85,7 +85,7 @@ import { keysAPI, usageAPI, userGroupsAPI } from '@/api'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useAppStore } from '@/stores/app'
-import type { Group, PublicSettings } from '@/types'
+import type { ApiKey, Group, PublicSettings } from '@/types'
 import {
   IMAGE_PLAYGROUND_KEY_NAME,
   buildImagePlaygroundUrl,
@@ -152,6 +152,42 @@ function setReady(stored: StoredImagePlaygroundKey) {
   state.value = 'ready'
 }
 
+function isReusablePlaygroundKey(apiKey: ApiKey | null | undefined, groupId: number): apiKey is ApiKey {
+  return (
+    !!apiKey &&
+    apiKey.name === IMAGE_PLAYGROUND_KEY_NAME &&
+    apiKey.group_id === groupId &&
+    apiKey.status === 'active' &&
+    typeof apiKey.key === 'string' &&
+    apiKey.key.trim() !== ''
+  )
+}
+
+function saveAndUseKey(apiKey: ApiKey, group: Group) {
+  const saved = writeStoredImagePlaygroundKey(apiKey, group)
+  setReady(saved)
+}
+
+async function verifyStoredKey(stored: StoredImagePlaygroundKey | null, group: Group): Promise<ApiKey | null> {
+  if (!storedKeyMatchesGroup(stored, group.id)) {
+    return null
+  }
+
+  const apiKey = await keysAPI.getById(stored.key_id)
+  return isReusablePlaygroundKey(apiKey, group.id) ? apiKey : null
+}
+
+async function findExistingPlaygroundKey(group: Group): Promise<ApiKey | null> {
+  const response = await keysAPI.list(1, 20, {
+    search: IMAGE_PLAYGROUND_KEY_NAME,
+    status: 'active',
+    group_id: group.id,
+    sort_by: 'created_at',
+    sort_order: 'desc'
+  })
+  return response.items.find((apiKey) => isReusablePlaygroundKey(apiKey, group.id)) ?? null
+}
+
 async function getConfiguredGroupId(): Promise<number> {
   const cached = appStore.cachedPublicSettings as PublicSettings | null
   const settings = cached ?? await appStore.fetchPublicSettings()
@@ -204,11 +240,24 @@ async function preparePlayground() {
 
     const stored = readStoredImagePlaygroundKey()
     if (storedKeyMatchesGroup(stored, configuredGroupId)) {
-      setReady(stored)
+      const verifiedKey = await verifyStoredKey(stored, group)
+      if (verifiedKey) {
+        saveAndUseKey(verifiedKey, group)
+        return
+      }
+      clearStoredImagePlaygroundKey()
+      storedKey.value = null
+    } else {
+      clearStoredImagePlaygroundKey()
+      storedKey.value = null
+    }
+
+    const existingKey = await findExistingPlaygroundKey(group)
+    if (existingKey) {
+      saveAndUseKey(existingKey, group)
       return
     }
 
-    clearStoredImagePlaygroundKey()
     await createKeyForGroup(group)
   } catch (error) {
     console.error('Failed to prepare image playground:', error)

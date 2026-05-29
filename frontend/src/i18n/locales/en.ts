@@ -1008,7 +1008,7 @@ export default {
     title: 'Image Playground',
     description: 'Create, edit, and manage images through this site\'s OpenAI image group.',
     loading: 'Preparing image playground...',
-    regenerateKey: 'Regenerate key',
+    regenerateKey: 'Refresh access',
     estimatedCost: 'Est. cost',
     estimateWaiting: 'Waiting',
     estimateLoading: 'Calculating',
