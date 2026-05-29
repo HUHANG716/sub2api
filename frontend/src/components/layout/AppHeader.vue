@@ -125,11 +125,7 @@ const activeGlobalDiscount = computed(() => {
 
 const discountCampaignText = computed(() => {
   const discount = activeGlobalDiscount.value
-  if (!discount) return ''
-  const label = discount.label?.trim()
-  if (label) return label
-  const percent = Math.round((1 - discount.discount_rate) * 100)
-  return t('nav.discountCampaign', { percent })
+  return discount?.label?.trim() || ''
 })
 
 function toggleMobileSidebar() {
@@ -192,16 +188,22 @@ function toggleMobileSidebar() {
   align-items: center;
   gap: 0.375rem;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--theme-accent) 28%, transparent);
+  border: 1px solid color-mix(in srgb, #10b981 34%, transparent);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--theme-accent) 10%, var(--theme-main-surface));
-  color: var(--theme-accent);
+  background: color-mix(in srgb, #10b981 13%, var(--theme-main-surface));
+  color: #059669;
   padding: 0.25rem 0.75rem;
   font-size: 0.8125rem;
   font-weight: 700;
   line-height: 1.25;
   pointer-events: none;
   white-space: nowrap;
+}
+
+.dark .header-discount-campaign {
+  border-color: color-mix(in srgb, #34d399 38%, transparent);
+  background: color-mix(in srgb, #10b981 16%, var(--theme-main-surface));
+  color: #6ee7b7;
 }
 
 .header-discount-campaign span {
@@ -217,7 +219,7 @@ function toggleMobileSidebar() {
   }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .header-discount-campaign {
     display: inline-flex;
   }

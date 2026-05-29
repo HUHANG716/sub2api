@@ -1358,7 +1358,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		imagePlaygroundGroupID = v
 	}
 	var globalDiscount *GlobalDiscountRuntime
-	if runtime := s.GetGlobalDiscountRuntime(ctx); runtime.Active {
+	if runtime := s.GetGlobalDiscountRuntime(ctx); runtime.Active || strings.TrimSpace(runtime.Label) != "" {
 		globalDiscount = &runtime
 	}
 

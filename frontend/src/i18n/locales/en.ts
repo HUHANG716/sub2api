@@ -694,7 +694,6 @@ export default {
     buySubscription: 'Recharge / Subscription',
     docs: 'Docs',
     myOrders: 'My Orders',
-    discountCampaign: 'Limited-time discount active, {percent}% off',
     orderManagement: 'Orders',
     paymentDashboard: 'Payment Dashboard',
     paymentConfig: 'Payment Config',
