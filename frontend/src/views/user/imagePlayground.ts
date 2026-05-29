@@ -42,6 +42,7 @@ export function storedKeyMatchesGroup(
 export function buildImagePlaygroundUrl(options: {
   origin: string
   apiKey: string
+  refreshToken?: string
 }): string {
   const origin = options.origin.replace(/\/+$/, '')
   const url = new URL(IMAGE_PLAYGROUND_APP_PATH, `${origin}/`)
@@ -81,6 +82,7 @@ export function buildImagePlaygroundUrl(options: {
   window.sessionStorage.setItem(IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY, JSON.stringify(settings))
   url.searchParams.set('appMode', 'gallery')
   url.searchParams.set('embed', 'product')
+  if (options.refreshToken) url.searchParams.set('refresh', options.refreshToken)
   return url.toString()
 }
 

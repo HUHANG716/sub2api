@@ -31,7 +31,11 @@ const messages: Record<string, string> = {
   'imagePlayground.title': 'Image Playground',
   'imagePlayground.description': 'Create and edit images through your OpenAI image group.',
   'imagePlayground.loading': 'Preparing image playground...',
-  'imagePlayground.regenerateKey': 'Refresh access',
+  'imagePlayground.regenerateKey': 'Regenerate API Key',
+  'imagePlayground.renewConfirmTitle': 'Regenerate image API Key',
+  'imagePlayground.renewManualConfirmDescription': 'This will regenerate the dedicated API Key for the image playground and reload the current workspace. Continue?',
+  'imagePlayground.renewExpiredConfirmDescription': 'The image playground API Key has expired. Regenerate it before continuing?',
+  'imagePlayground.renewConfirmAction': 'Regenerate',
   'imagePlayground.estimatedCost': 'Est. cost',
   'imagePlayground.estimateWaiting': 'Waiting',
   'imagePlayground.estimateLoading': 'Calculating',
@@ -242,7 +246,8 @@ describe('ImagePlaygroundView', () => {
       global: {
         stubs: {
           AppLayout: BaseLayoutStub,
-          Icon: true
+          Icon: true,
+          ConfirmDialog: true
         }
       }
     })
@@ -272,6 +277,7 @@ describe('ImagePlaygroundView', () => {
     expect(iframeUrl.pathname).toBe('/image-playground-app/')
     expect(iframeUrl.searchParams.get('appMode')).toBe('gallery')
     expect(iframeUrl.searchParams.get('embed')).toBe('product')
+    expect(iframeUrl.searchParams.get('refresh')).toBe('1')
     expect(iframeUrl.searchParams.get('settings')).toBeNull()
     expect(iframe.attributes('src')).not.toContain('sk-created')
     expect(iframeSettings.activeProfileId).toBe('hahacode-images')
@@ -302,7 +308,8 @@ describe('ImagePlaygroundView', () => {
       global: {
         stubs: {
           AppLayout: BaseLayoutStub,
-          Icon: true
+          Icon: true,
+          ConfirmDialog: true
         }
       }
     })
@@ -639,14 +646,76 @@ describe('ImagePlaygroundView', () => {
     await wrapper.get('[data-test="image-playground-regenerate"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.get('[data-test="image-playground-regenerate"]').text()).toContain('Refresh access')
+    expect(wrapper.get('[data-test="image-playground-regenerate"]').text()).toContain('Regenerate API Key')
+    expect(wrapper.findComponent({ name: 'ConfirmDialog' }).props('show')).toBe(true)
     expect(getKeyById).not.toHaveBeenCalled()
     expect(createKey).not.toHaveBeenCalled()
+    await wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm')
+    await flushPromises()
+
     expect(JSON.parse(window.localStorage.getItem(IMAGE_PLAYGROUND_STORAGE_KEY) || '{}')).toMatchObject({
       key: 'sk-existing',
       key_id: 88,
       group_id: 11
     })
+    expect(new URL(wrapper.get('[data-test="image-playground-frame"]').attributes('src')).searchParams.get('refresh')).toBe('2')
+  })
+
+  it('asks before creating a new key when the stored key was deleted', async () => {
+    window.localStorage.setItem(IMAGE_PLAYGROUND_STORAGE_KEY, JSON.stringify({
+      key: 'sk-deleted',
+      key_id: 77,
+      group_id: 11,
+      created_at: '2026-05-27T00:00:00.000Z'
+    }))
+    getAvailableGroups.mockResolvedValue([makeGroup({ id: 11, name: 'OpenAI Images' })])
+    getKeyById.mockRejectedValue({ status: 404, message: 'not found' })
+    listKeys.mockResolvedValue(makeKeyList([]))
+    createKey.mockResolvedValue(makeApiKey({ id: 99, key: 'sk-new', group_id: 11 }))
+
+    const wrapper = mount(ImagePlaygroundView, {
+      global: {
+        stubs: {
+          AppLayout: BaseLayoutStub,
+          Icon: true,
+          ConfirmDialog: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    expect(getKeyById).toHaveBeenCalledWith(77)
+    expect(wrapper.findComponent({ name: 'ConfirmDialog' }).props('show')).toBe(true)
+    expect(wrapper.findComponent({ name: 'ConfirmDialog' }).props('message')).toContain('expired')
+    expect(listKeys).not.toHaveBeenCalled()
+    expect(createKey).not.toHaveBeenCalled()
+    expect(window.localStorage.getItem(IMAGE_PLAYGROUND_STORAGE_KEY)).toContain('sk-deleted')
+
+    await wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm')
+    await flushPromises()
+
+    expect(listKeys).toHaveBeenCalledWith(1, 20, expect.objectContaining({
+      search: 'Image Playground',
+      status: 'active',
+      group_id: 11
+    }))
+    expect(createKey).toHaveBeenCalledWith('Image Playground', 11)
+    expect(JSON.parse(window.localStorage.getItem(IMAGE_PLAYGROUND_STORAGE_KEY) || '{}')).toMatchObject({
+      key: 'sk-new',
+      key_id: 99,
+      group_id: 11,
+      group_name: 'OpenAI Images'
+    })
+    const iframe = wrapper.get('[data-test="image-playground-frame"]')
+    const iframeUrl = new URL(iframe.attributes('src'))
+    const iframeSettings = JSON.parse(window.sessionStorage.getItem(IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY) ?? '{}')
+    expect(iframeUrl.searchParams.get('refresh')).toBe('1')
+    expect(iframe.attributes('src')).not.toContain('sk-new')
+    expect(iframeSettings.profiles).toEqual([
+      expect.objectContaining({ apiKey: 'sk-new', apiMode: 'images' }),
+      expect.objectContaining({ apiKey: 'sk-new', apiMode: 'responses' })
+    ])
   })
 
   it('shows a retryable failure state when stored key verification fails', async () => {

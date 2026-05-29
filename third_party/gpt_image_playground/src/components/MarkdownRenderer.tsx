@@ -1,6 +1,7 @@
 import { memo, useEffect, useState } from 'react'
 import type { Components, StreamdownTranslations } from 'streamdown'
 import type { Components as ReactMarkdownComponents } from 'react-markdown'
+import { isProductEmbedMode } from '../lib/productEmbed'
 
 type MarkdownRendererProps = {
   content: string
@@ -34,6 +35,7 @@ function safeUrl(url: string) {
 
 const markdownComponents: Components = {
   a({ children, href, node: _node, ...props }) {
+    if (isProductEmbedMode()) return <span {...props}>{children}</span>
     const shouldOpenBlank = Boolean(href && href !== '#blocked')
     return (
       <a
@@ -50,6 +52,7 @@ const markdownComponents: Components = {
 
 const legacyMarkdownComponents: ReactMarkdownComponents = {
   a({ children, href, ...props }) {
+    if (isProductEmbedMode()) return <span {...props}>{children}</span>
     const safeHref = safeUrl(href ?? '')
     const shouldOpenBlank = safeHref !== '#blocked'
     return (
@@ -147,9 +150,15 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
   streaming = false,
   className = '',
 }: MarkdownRendererProps) {
+  const productEmbed = isProductEmbedMode()
   const [renderer, setRenderer] = useState<MarkdownRendererState>({ type: 'loading' })
 
   useEffect(() => {
+    if (productEmbed) {
+      setRenderer({ type: 'plain' })
+      return
+    }
+
     let disposed = false
 
     loadMarkdownRenderer().then((nextRenderer) => {
@@ -159,7 +168,7 @@ const MarkdownRenderer = memo(function MarkdownRenderer({
     return () => {
       disposed = true
     }
-  }, [])
+  }, [productEmbed])
 
   if (renderer.type === 'legacy') {
     const { ReactMarkdown, remarkGfm } = renderer.module

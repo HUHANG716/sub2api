@@ -13,6 +13,7 @@ import {
   getAppModeFromUrlParams,
   hasUrlSettingParams,
 } from './urlSettings'
+import { PRODUCT_EMBED_MODE_STORAGE_KEY, isProductEmbedMode, rememberProductEmbedMode } from './productEmbed'
 
 describe('URL settings params', () => {
   afterEach(() => {
@@ -58,6 +59,63 @@ describe('URL settings params', () => {
       baseUrl: 'https://api.example.com/v1',
       apiKey: 'sk-product',
       apiMode: 'images',
+    })
+  })
+
+  it('keeps product embed mode after URL params are cleared', () => {
+    const sessionValues = new Map<string, string>()
+    vi.stubGlobal('window', {
+      location: { search: '' },
+      sessionStorage: {
+        getItem: (key: string) => sessionValues.get(key) ?? null,
+        setItem: (key: string, value: string) => sessionValues.set(key, value),
+      },
+    })
+
+    expect(isProductEmbedMode('?embed=product')).toBe(true)
+    rememberProductEmbedMode()
+    expect(window.sessionStorage.getItem(PRODUCT_EMBED_MODE_STORAGE_KEY)).toBe('true')
+    expect(isProductEmbedMode('')).toBe(true)
+  })
+
+  it('ignores URL API overrides when product embed settings are present', () => {
+    const sessionValues = new Map<string, string>()
+    vi.stubGlobal('window', {
+      sessionStorage: {
+        getItem: (key: string) => sessionValues.get(key) ?? null,
+        setItem: (key: string, value: string) => sessionValues.set(key, value),
+      },
+    })
+    window.sessionStorage.setItem(PRODUCT_EMBED_SETTINGS_STORAGE_KEY, JSON.stringify({
+      profiles: [{
+        id: 'product-openai',
+        name: 'Product OpenAI',
+        provider: 'openai',
+        baseUrl: 'https://product.example.com/v1',
+        apiKey: 'sk-product',
+        model: 'gpt-image-2',
+        timeout: 600,
+        apiMode: 'images',
+        codexCli: false,
+        apiProxy: false,
+      }],
+      activeProfileId: 'product-openai',
+    }))
+
+    const next = normalizeSettings({
+      ...DEFAULT_SETTINGS,
+      ...buildSettingsFromUrlParams(
+        DEFAULT_SETTINGS,
+        new URLSearchParams('embed=product&apiUrl=https://evil.example.com/v1&apiKey=sk-evil&model=evil-model'),
+      ),
+    })
+
+    expect(next.profiles).toHaveLength(1)
+    expect(next.activeProfileId).toBe('product-openai')
+    expect(next.profiles[0]).toMatchObject({
+      baseUrl: 'https://product.example.com/v1',
+      apiKey: 'sk-product',
+      model: 'gpt-image-2',
     })
   })
 

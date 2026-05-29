@@ -42,7 +42,7 @@
         <Icon name="sparkles" size="lg" />
         <h2>{{ t('imagePlayground.missingConfiguredGroupTitle') }}</h2>
         <p>{{ t('imagePlayground.missingConfiguredGroupDescription') }}</p>
-        <button type="button" class="btn btn-primary" @click="preparePlayground">
+        <button type="button" class="btn btn-primary" @click="preparePlayground()">
           {{ t('imagePlayground.retry') }}
         </button>
       </section>
@@ -51,7 +51,7 @@
         <Icon name="exclamationTriangle" size="lg" />
         <h2>{{ t('imagePlayground.unavailableConfiguredGroupTitle') }}</h2>
         <p>{{ t('imagePlayground.unavailableConfiguredGroupDescription') }}</p>
-        <button type="button" class="btn btn-primary" @click="preparePlayground">
+        <button type="button" class="btn btn-primary" @click="preparePlayground()">
           {{ t('imagePlayground.retry') }}
         </button>
       </section>
@@ -60,7 +60,7 @@
         <Icon name="exclamationTriangle" size="lg" />
         <h2>{{ t('imagePlayground.createFailedTitle') }}</h2>
         <p>{{ t('imagePlayground.createFailedDescription') }}</p>
-        <button type="button" class="btn btn-primary" @click="preparePlayground">
+        <button type="button" class="btn btn-primary" @click="preparePlayground()">
           {{ t('imagePlayground.retry') }}
         </button>
       </section>
@@ -74,6 +74,16 @@
         allow="clipboard-read; clipboard-write"
         referrerpolicy="same-origin"
       ></iframe>
+
+      <ConfirmDialog
+        :show="renewConfirmVisible"
+        :title="t('imagePlayground.renewConfirmTitle')"
+        :message="renewConfirmMessage"
+        :confirm-text="t('imagePlayground.renewConfirmAction')"
+        :cancel-text="t('common.cancel')"
+        @confirm="confirmRenewAccess"
+        @cancel="cancelRenewAccess"
+      />
     </div>
   </AppLayout>
 </template>
@@ -84,6 +94,7 @@ import { useI18n } from 'vue-i18n'
 import { keysAPI, usageAPI, userGroupsAPI } from '@/api'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import { useAppStore } from '@/stores/app'
 import type { ApiKey, Group, PublicSettings } from '@/types'
 import {
@@ -100,6 +111,8 @@ import {
 
 type PlaygroundState = 'loading' | 'ready' | 'missing-config' | 'unavailable-group' | 'failed'
 type EstimateState = 'idle' | 'loading' | 'ready' | 'failed'
+type PrepareReason = 'initial' | 'confirmed-renew'
+type RenewReason = 'manual' | 'expired'
 
 interface PlaygroundParamsMessage {
   type?: string
@@ -123,6 +136,11 @@ const activeGroup = ref<Group | null>(null)
 const estimateState = ref<EstimateState>('idle')
 const estimateCost = ref<number | null>(null)
 const estimateAbort = ref<AbortController | null>(null)
+const iframeRefreshCounter = ref(0)
+const renewConfirmVisible = ref(false)
+const pendingRenewReason = ref<RenewReason>('manual')
+const pendingRenewGroup = ref<Group | null>(null)
+const pendingRenewStoredKey = ref<StoredImagePlaygroundKey | null>(null)
 
 const currentKeyLabel = computed(() =>
   storedKey.value ? `Key #${storedKey.value.key_id}` : ''
@@ -143,11 +161,19 @@ const estimateLabel = computed(() => {
   return `$${estimateCost.value.toFixed(4)}`
 })
 
+const renewConfirmMessage = computed(() =>
+  pendingRenewReason.value === 'expired'
+    ? t('imagePlayground.renewExpiredConfirmDescription')
+    : t('imagePlayground.renewManualConfirmDescription')
+)
+
 function setReady(stored: StoredImagePlaygroundKey) {
   storedKey.value = stored
+  iframeRefreshCounter.value += 1
   iframeSrc.value = buildImagePlaygroundUrl({
     origin: window.location.origin,
-    apiKey: stored.key
+    apiKey: stored.key,
+    refreshToken: String(iframeRefreshCounter.value)
   })
   state.value = 'ready'
 }
@@ -168,13 +194,24 @@ function saveAndUseKey(apiKey: ApiKey, group: Group) {
   setReady(saved)
 }
 
-async function verifyStoredKey(stored: StoredImagePlaygroundKey | null, group: Group): Promise<ApiKey | null> {
+async function verifyStoredKey(stored: StoredImagePlaygroundKey | null, group: Group): Promise<{
+  key: ApiKey | null
+  missing: boolean
+}> {
   if (!storedKeyMatchesGroup(stored, group.id)) {
-    return null
+    return { key: null, missing: false }
   }
 
-  const apiKey = await keysAPI.getById(stored.key_id)
-  return isReusablePlaygroundKey(apiKey, group.id) ? apiKey : null
+  try {
+    const apiKey = await keysAPI.getById(stored.key_id)
+    return { key: isReusablePlaygroundKey(apiKey, group.id) ? apiKey : null, missing: false }
+  } catch (error) {
+    const status = typeof error === 'object' && error !== null && 'status' in error
+      ? Number((error as { status?: unknown }).status)
+      : 0
+    if (status === 404) return { key: null, missing: true }
+    throw error
+  }
 }
 
 async function findExistingPlaygroundKey(group: Group): Promise<ApiKey | null> {
@@ -212,7 +249,16 @@ async function createKeyForGroup(group: Group) {
   }
 }
 
-async function preparePlayground() {
+function requestRenewAccess(reason: RenewReason, group: Group, stored: StoredImagePlaygroundKey | null = null) {
+  pendingRenewReason.value = reason
+  pendingRenewGroup.value = group
+  pendingRenewStoredKey.value = stored
+  renewConfirmVisible.value = true
+  loading.value = false
+  state.value = iframeSrc.value ? 'ready' : 'failed'
+}
+
+async function preparePlayground(reason: PrepareReason = 'initial') {
   loading.value = true
   state.value = 'loading'
   iframeSrc.value = ''
@@ -240,9 +286,14 @@ async function preparePlayground() {
 
     const stored = readStoredImagePlaygroundKey()
     if (storedKeyMatchesGroup(stored, configuredGroupId)) {
-      const verifiedKey = await verifyStoredKey(stored, group)
-      if (verifiedKey) {
-        saveAndUseKey(verifiedKey, group)
+      const verified = await verifyStoredKey(stored, group)
+      if (verified.key) {
+        saveAndUseKey(verified.key, group)
+        return
+      }
+
+      if (verified.missing && reason !== 'confirmed-renew') {
+        requestRenewAccess('expired', group, stored)
         return
       }
       clearStoredImagePlaygroundKey()
@@ -311,9 +362,35 @@ function handlePlaygroundMessage(event: MessageEvent) {
 }
 
 async function regenerateKey() {
+  const group = activeGroup.value
+  if (group) {
+    requestRenewAccess('manual', group, storedKey.value)
+    return
+  }
+  await preparePlayground('initial')
+}
+
+async function confirmRenewAccess() {
+  renewConfirmVisible.value = false
   clearStoredImagePlaygroundKey()
+  if (pendingRenewStoredKey.value && storedKey.value?.key_id === pendingRenewStoredKey.value.key_id) {
+    storedKey.value = null
+    iframeSrc.value = ''
+  }
+  const group = pendingRenewGroup.value
+  pendingRenewGroup.value = null
+  pendingRenewStoredKey.value = null
   storedKey.value = null
-  await preparePlayground()
+  if (group) activeGroup.value = group
+  await preparePlayground('confirmed-renew')
+}
+
+function cancelRenewAccess() {
+  renewConfirmVisible.value = false
+  pendingRenewGroup.value = null
+  pendingRenewStoredKey.value = null
+  loading.value = false
+  if (!iframeSrc.value) state.value = 'failed'
 }
 
 onMounted(() => {

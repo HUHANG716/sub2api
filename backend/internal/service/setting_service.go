@@ -1357,6 +1357,10 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 	if v, err := strconv.ParseInt(strings.TrimSpace(settings[SettingKeyImagePlaygroundGroupID]), 10, 64); err == nil && v > 0 {
 		imagePlaygroundGroupID = v
 	}
+	var globalDiscount *GlobalDiscountRuntime
+	if runtime := s.GetGlobalDiscountRuntime(ctx); runtime.Active {
+		globalDiscount = &runtime
+	}
 
 	return &PublicSettings{
 		RegistrationEnabled:              settings[SettingKeyRegistrationEnabled] == "true",
@@ -1415,6 +1419,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		RiskControlEnabled: settings[SettingKeyRiskControlEnabled] == "true",
 
 		ImagePlaygroundGroupID: imagePlaygroundGroupID,
+		GlobalDiscount:         globalDiscount,
 	}, nil
 }
 
@@ -1778,12 +1783,13 @@ type PublicSettingsInjectionPayload struct {
 	// Feature flags — MUST match the opt-in/opt-out registry in
 	// frontend/src/utils/featureFlags.ts. Missing a field here is the bug
 	// that hid the "可用渠道" menu on page refresh.
-	ChannelMonitorEnabled                bool  `json:"channel_monitor_enabled"`
-	ChannelMonitorDefaultIntervalSeconds int   `json:"channel_monitor_default_interval_seconds"`
-	AvailableChannelsEnabled             bool  `json:"available_channels_enabled"`
-	AffiliateEnabled                     bool  `json:"affiliate_enabled"`
-	RiskControlEnabled                   bool  `json:"risk_control_enabled"`
-	ImagePlaygroundGroupID               int64 `json:"image_playground_group_id"`
+	ChannelMonitorEnabled                bool                   `json:"channel_monitor_enabled"`
+	ChannelMonitorDefaultIntervalSeconds int                    `json:"channel_monitor_default_interval_seconds"`
+	AvailableChannelsEnabled             bool                   `json:"available_channels_enabled"`
+	AffiliateEnabled                     bool                   `json:"affiliate_enabled"`
+	RiskControlEnabled                   bool                   `json:"risk_control_enabled"`
+	ImagePlaygroundGroupID               int64                  `json:"image_playground_group_id"`
+	GlobalDiscount                       *GlobalDiscountRuntime `json:"global_discount,omitempty"`
 }
 
 // GetPublicSettingsForInjection returns public settings in a format suitable for HTML injection.
@@ -1847,6 +1853,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		AffiliateEnabled:                     settings.AffiliateEnabled,
 		RiskControlEnabled:                   settings.RiskControlEnabled,
 		ImagePlaygroundGroupID:               settings.ImagePlaygroundGroupID,
+		GlobalDiscount:                       settings.GlobalDiscount,
 	}, nil
 }
 

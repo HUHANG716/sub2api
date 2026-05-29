@@ -356,6 +356,9 @@ type PublicSettings struct {
 
 	// 生图工作台使用的管理员配置分组；0 表示未配置。
 	ImagePlaygroundGroupID int64 `json:"image_playground_group_id"`
+
+	// 当前生效的全局折扣活动；仅在活动窗口内公开给前端展示。
+	GlobalDiscount *GlobalDiscountRuntime `json:"global_discount,omitempty"`
 }
 
 type LoginAgreementDocument struct {

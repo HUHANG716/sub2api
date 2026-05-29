@@ -360,6 +360,7 @@ export const useAppStore = defineStore('app', () => {
         risk_control_enabled: false,
         affiliate_enabled: false,
         image_playground_group_id: 0,
+        global_discount: null,
       }
     }
 

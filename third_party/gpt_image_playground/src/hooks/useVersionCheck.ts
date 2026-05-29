@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { isProductEmbedMode } from '../lib/productEmbed'
 
 const REPO = 'CookSleep/gpt_image_playground'
 const API_URL = `https://api.github.com/repos/${REPO}/releases/latest`
@@ -34,6 +35,8 @@ export function useVersionCheck() {
   )
 
   useEffect(() => {
+    if (isProductEmbedMode()) return
+
     let cancelled = false
 
     fetch(API_URL, { headers: { Accept: 'application/vnd.github.v3+json' } })

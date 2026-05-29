@@ -4,7 +4,9 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/stretchr/testify/require"
@@ -19,7 +21,10 @@ func (s *settingPublicRepoStub) Get(ctx context.Context, key string) (*Setting, 
 }
 
 func (s *settingPublicRepoStub) GetValue(ctx context.Context, key string) (string, error) {
-	panic("unexpected GetValue call")
+	if value, ok := s.values[key]; ok {
+		return value, nil
+	}
+	return "", ErrSettingNotFound
 }
 
 func (s *settingPublicRepoStub) Set(ctx context.Context, key, value string) error {
@@ -102,6 +107,23 @@ func TestSettingService_GetPublicSettings_ExposesImagePlaygroundGroupID(t *testi
 	settings, err := svc.GetPublicSettings(context.Background())
 	require.NoError(t, err)
 	require.EqualValues(t, 16, settings.ImagePlaygroundGroupID)
+}
+
+func TestSettingService_GetPublicSettings_ExposesActiveGlobalDiscount(t *testing.T) {
+	start := time.Now().Add(-time.Hour).UTC().Format(time.RFC3339)
+	end := time.Now().Add(time.Hour).UTC().Format(time.RFC3339)
+	svc := NewSettingService(&settingPublicRepoStub{
+		values: map[string]string{
+			SettingKeyGlobalDiscountSettings: fmt.Sprintf(`{"enabled":true,"rules":[{"id":"promo","enabled":true,"discount_rate":0.8,"schedule_type":"once","starts_at":%q,"ends_at":%q,"label":"限时八折"}]}`, start, end),
+		},
+	}, &config.Config{})
+
+	settings, err := svc.GetPublicSettings(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, settings.GlobalDiscount)
+	require.True(t, settings.GlobalDiscount.Active)
+	require.Equal(t, "限时八折", settings.GlobalDiscount.Label)
+	require.InDelta(t, 0.8, settings.GlobalDiscount.DiscountRate, 0.000001)
 }
 
 func TestSettingService_GetPublicSettings_ExposesWeChatOAuthModeCapabilities(t *testing.T) {

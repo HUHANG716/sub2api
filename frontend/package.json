@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.ts",
+    "dev:image-playground": "node tools/dev-with-image-playground.mjs",
     "fonts:landing": "node tools/generate-landing-font-subset.mjs",
     "images:playground": "node tools/build-image-playground.mjs",
     "prebuild": "pnpm run fonts:landing && pnpm run images:playground",

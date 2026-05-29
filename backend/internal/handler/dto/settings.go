@@ -324,7 +324,8 @@ type PublicSettings struct {
 
 	RiskControlEnabled bool `json:"risk_control_enabled"`
 
-	ImagePlaygroundGroupID int64 `json:"image_playground_group_id"`
+	ImagePlaygroundGroupID int64                          `json:"image_playground_group_id"`
+	GlobalDiscount         *service.GlobalDiscountRuntime `json:"global_discount,omitempty"`
 }
 
 type LoginAgreementDocument struct {
