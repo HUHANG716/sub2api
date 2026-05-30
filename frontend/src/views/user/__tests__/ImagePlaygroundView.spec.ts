@@ -33,6 +33,9 @@ const messages: Record<string, string> = {
   'imagePlayground.loading': 'Preparing image playground...',
   'imagePlayground.regenerateKey': 'Regenerate API Key',
   'imagePlayground.renewConfirmTitle': 'Regenerate image API Key',
+  'imagePlayground.createConfirmTitle': 'Create image API Key',
+  'imagePlayground.createConfirmDescription': 'The image playground needs a dedicated API Key for your configured image group. Create it now?',
+  'imagePlayground.createConfirmAction': 'Create Key',
   'imagePlayground.renewManualConfirmDescription': 'This will regenerate the dedicated API Key for the image playground and reload the current workspace. Continue?',
   'imagePlayground.renewExpiredConfirmDescription': 'The image playground API Key has expired. Regenerate it before continuing?',
   'imagePlayground.renewConfirmAction': 'Regenerate',
@@ -238,7 +241,7 @@ describe('ImagePlaygroundView', () => {
     consoleError.mockRestore()
   })
 
-  it('automatically creates a dedicated key for the admin configured group', async () => {
+  it('asks before creating a dedicated key for the admin configured group', async () => {
     getAvailableGroups.mockResolvedValue([makeGroup({ id: 11, name: 'OpenAI Images' })])
     createKey.mockResolvedValue(makeApiKey({ id: 42, key: 'sk-created', group_id: 11 }))
 
@@ -263,6 +266,15 @@ describe('ImagePlaygroundView', () => {
       sort_by: 'created_at',
       sort_order: 'desc'
     })
+    expect(createKey).not.toHaveBeenCalled()
+    expect(wrapper.findComponent({ name: 'ConfirmDialog' }).props('show')).toBe(true)
+    expect(wrapper.findComponent({ name: 'ConfirmDialog' }).props('title')).toBe('Create image API Key')
+    expect(wrapper.findComponent({ name: 'ConfirmDialog' }).props('message')).toContain('dedicated API Key')
+    expect(wrapper.findComponent({ name: 'ConfirmDialog' }).props('confirmText')).toBe('Create Key')
+
+    await wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm')
+    await flushPromises()
+
     expect(createKey).toHaveBeenCalledWith('Image Playground', 11)
     const stored = JSON.parse(window.localStorage.getItem(IMAGE_PLAYGROUND_STORAGE_KEY) || '{}')
     expect(stored).toMatchObject({
@@ -286,6 +298,32 @@ describe('ImagePlaygroundView', () => {
       expect.objectContaining({ apiKey: 'sk-created', apiMode: 'responses', model: IMAGE_PLAYGROUND_AGENT_MODEL })
     ])
     expect(wrapper.get('[data-test="image-playground-estimate"]').text()).toContain('Waiting')
+  })
+
+  it('does not create a dedicated key when the first-time create confirmation is cancelled', async () => {
+    getAvailableGroups.mockResolvedValue([makeGroup({ id: 11, name: 'OpenAI Images' })])
+    createKey.mockResolvedValue(makeApiKey({ id: 42, key: 'sk-created', group_id: 11 }))
+
+    const wrapper = mount(ImagePlaygroundView, {
+      global: {
+        stubs: {
+          AppLayout: BaseLayoutStub,
+          Icon: true,
+          ConfirmDialog: true
+        }
+      }
+    })
+
+    await flushPromises()
+    expect(wrapper.findComponent({ name: 'ConfirmDialog' }).props('show')).toBe(true)
+
+    await wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('cancel')
+    await flushPromises()
+
+    expect(createKey).not.toHaveBeenCalled()
+    expect(window.localStorage.getItem(IMAGE_PLAYGROUND_STORAGE_KEY)).toBeNull()
+    expect(wrapper.find('[data-test="image-playground-frame"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Unable to prepare image key')
   })
 
   it('shows estimated image cost from iframe parameter messages', async () => {
@@ -314,6 +352,8 @@ describe('ImagePlaygroundView', () => {
       }
     })
 
+    await flushPromises()
+    await wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm')
     await flushPromises()
     window.dispatchEvent(new MessageEvent('message', {
       origin: window.location.origin,
@@ -348,7 +388,8 @@ describe('ImagePlaygroundView', () => {
       global: {
         stubs: {
           AppLayout: BaseLayoutStub,
-          Icon: true
+          Icon: true,
+          ConfirmDialog: true
         }
       }
     })
@@ -356,7 +397,7 @@ describe('ImagePlaygroundView', () => {
     await flushPromises()
 
     expect(appState.fetchPublicSettings).toHaveBeenCalledOnce()
-    expect(createKey).toHaveBeenCalledWith('Image Playground', 11)
+    expect(createKey).not.toHaveBeenCalled()
   })
 
   it('renders the playground as a flush workspace instead of a framed card', async () => {
@@ -555,15 +596,20 @@ describe('ImagePlaygroundView', () => {
     ]))
     createKey.mockResolvedValue(makeApiKey({ id: 64, key: 'sk-created', group_id: 11 }))
 
-    mount(ImagePlaygroundView, {
+    const wrapper = mount(ImagePlaygroundView, {
       global: {
         stubs: {
           AppLayout: BaseLayoutStub,
-          Icon: true
+          Icon: true,
+          ConfirmDialog: true
         }
       }
     })
 
+    await flushPromises()
+    expect(createKey).not.toHaveBeenCalled()
+
+    await wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm')
     await flushPromises()
 
     expect(createKey).toHaveBeenCalledWith('Image Playground', 11)

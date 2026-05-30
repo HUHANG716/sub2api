@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { RouterView, useRouter, useRoute } from 'vue-router'
-import { onMounted, onBeforeUnmount, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import Toast from '@/components/common/Toast.vue'
 import NavigationProgress from '@/components/common/NavigationProgress.vue'
 import { resolveDocumentTitle } from '@/router/title'
 import AnnouncementPopup from '@/components/common/AnnouncementPopup.vue'
+import ImagePlaygroundView from '@/views/user/ImagePlaygroundView.vue'
 import { useAppStore, useAuthStore, useSubscriptionStore, useAnnouncementStore } from '@/stores'
 import { getSetupStatus } from '@/api/setup'
 
@@ -14,6 +15,16 @@ const appStore = useAppStore()
 const authStore = useAuthStore()
 const subscriptionStore = useSubscriptionStore()
 const announcementStore = useAnnouncementStore()
+const imagePlaygroundMounted = ref(false)
+const isImagePlaygroundRoute = computed(() => route.name === 'ImagePlayground' || route.path === '/image-playground')
+
+watch(
+  isImagePlaygroundRoute,
+  (active) => {
+    if (active) imagePlaygroundMounted.value = true
+  },
+  { immediate: true }
+)
 
 /**
  * Update favicon dynamically
@@ -113,7 +124,8 @@ onMounted(async () => {
 
 <template>
   <NavigationProgress />
-  <RouterView />
+  <RouterView v-if="!isImagePlaygroundRoute" />
+  <ImagePlaygroundView v-if="imagePlaygroundMounted" v-show="isImagePlaygroundRoute" />
   <Toast />
   <AnnouncementPopup />
 </template>

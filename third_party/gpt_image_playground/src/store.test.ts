@@ -914,6 +914,46 @@ describe('agent draft lifecycle', () => {
     expect(state.inputImages).toEqual([imageB])
   })
 
+  it('does not mark running image tasks as interrupted when switching app modes', () => {
+    useStore.setState({
+      appMode: 'gallery',
+      tasks: [
+        {
+          id: 'running-image-task',
+          prompt: 'a running image task',
+          params: DEFAULT_PARAMS,
+          apiProvider: 'openai',
+          apiProfileId: imagesProfile.id,
+          apiProfileName: imagesProfile.name,
+          apiMode: 'images',
+          apiModel: imagesProfile.model,
+          inputImageIds: [],
+          outputImages: [],
+          status: 'running',
+          error: null,
+          createdAt: 10,
+          finishedAt: null,
+          elapsed: null,
+        },
+      ],
+      settings: normalizeSettings({
+        ...DEFAULT_SETTINGS,
+        profiles: [imagesProfile, responsesProfile],
+        activeProfileId: imagesProfile.id,
+      }),
+    })
+
+    useStore.getState().setAppMode('agent')
+    useStore.getState().setAppMode('gallery')
+
+    const task = useStore.getState().tasks.find((item) => item.id === 'running-image-task')
+    expect(task).toMatchObject({
+      status: 'running',
+      error: null,
+      finishedAt: null,
+    })
+  })
+
   it('persists the gallery draft while agent mode is active', () => {
     const galleryPrompt = 'gallery draft'
     useStore.setState({

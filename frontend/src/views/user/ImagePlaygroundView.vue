@@ -77,9 +77,9 @@
 
       <ConfirmDialog
         :show="renewConfirmVisible"
-        :title="t('imagePlayground.renewConfirmTitle')"
+        :title="confirmDialogTitle"
         :message="renewConfirmMessage"
-        :confirm-text="t('imagePlayground.renewConfirmAction')"
+        :confirm-text="confirmDialogAction"
         :cancel-text="t('common.cancel')"
         @confirm="confirmRenewAccess"
         @cancel="cancelRenewAccess"
@@ -111,8 +111,8 @@ import {
 
 type PlaygroundState = 'loading' | 'ready' | 'missing-config' | 'unavailable-group' | 'failed'
 type EstimateState = 'idle' | 'loading' | 'ready' | 'failed'
-type PrepareReason = 'initial' | 'confirmed-renew'
-type RenewReason = 'manual' | 'expired'
+type PrepareReason = 'initial' | 'confirmed-renew' | 'confirmed-create'
+type RenewReason = 'manual' | 'expired' | 'create'
 
 interface PlaygroundParamsMessage {
   type?: string
@@ -162,9 +162,23 @@ const estimateLabel = computed(() => {
 })
 
 const renewConfirmMessage = computed(() =>
-  pendingRenewReason.value === 'expired'
+  pendingRenewReason.value === 'create'
+    ? t('imagePlayground.createConfirmDescription')
+    : pendingRenewReason.value === 'expired'
     ? t('imagePlayground.renewExpiredConfirmDescription')
     : t('imagePlayground.renewManualConfirmDescription')
+)
+
+const confirmDialogTitle = computed(() =>
+  pendingRenewReason.value === 'create'
+    ? t('imagePlayground.createConfirmTitle')
+    : t('imagePlayground.renewConfirmTitle')
+)
+
+const confirmDialogAction = computed(() =>
+  pendingRenewReason.value === 'create'
+    ? t('imagePlayground.createConfirmAction')
+    : t('imagePlayground.renewConfirmAction')
 )
 
 function setReady(stored: StoredImagePlaygroundKey) {
@@ -309,6 +323,11 @@ async function preparePlayground(reason: PrepareReason = 'initial') {
       return
     }
 
+    if (reason === 'initial') {
+      requestRenewAccess('create', group)
+      return
+    }
+
     await createKeyForGroup(group)
   } catch (error) {
     console.error('Failed to prepare image playground:', error)
@@ -378,11 +397,12 @@ async function confirmRenewAccess() {
     iframeSrc.value = ''
   }
   const group = pendingRenewGroup.value
+  const reason = pendingRenewReason.value
   pendingRenewGroup.value = null
   pendingRenewStoredKey.value = null
   storedKey.value = null
   if (group) activeGroup.value = group
-  await preparePlayground('confirmed-renew')
+  await preparePlayground(reason === 'create' ? 'confirmed-create' : 'confirmed-renew')
 }
 
 function cancelRenewAccess() {
