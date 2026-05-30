@@ -227,6 +227,50 @@ describe('mask draft lifecycle in store actions', () => {
   })
 })
 
+describe('template mode input draft behavior', () => {
+  beforeEach(() => {
+    useStore.setState({
+      appMode: 'gallery',
+      settings: { ...DEFAULT_SETTINGS },
+      prompt: '画廊里的提示词',
+      inputImages: [],
+      maskDraft: null,
+      maskEditorImageId: null,
+      galleryInputDraft: null,
+      agentInputDrafts: {},
+      activeAgentConversationId: null,
+      selectedTaskIds: ['task-a'],
+      agentMobileHeaderVisible: false,
+      agentEditingRoundId: 'round-a',
+      showToast: vi.fn(),
+      setConfirmDialog: vi.fn(),
+    })
+  })
+
+  it('keeps the current gallery prompt when switching into templates mode', () => {
+    useStore.getState().setAppMode('templates')
+
+    const state = useStore.getState()
+    expect(state.appMode).toBe('templates')
+    expect(state.prompt).toBe('画廊里的提示词')
+    expect(state.galleryInputDraft?.prompt).toBe('画廊里的提示词')
+    expect(state.selectedTaskIds).toEqual([])
+    expect(state.agentMobileHeaderVisible).toBe(true)
+    expect(state.agentEditingRoundId).toBeNull()
+  })
+
+  it('returns from templates to gallery without clearing the selected template prompt', () => {
+    useStore.getState().setAppMode('templates')
+    useStore.getState().setPrompt('模板提示词')
+    useStore.getState().setAppMode('gallery')
+
+    const state = useStore.getState()
+    expect(state.appMode).toBe('gallery')
+    expect(state.prompt).toBe('模板提示词')
+    expect(state.galleryInputDraft?.prompt).toBe('模板提示词')
+  })
+})
+
 describe('interrupted OpenAI running tasks', () => {
   it('marks legacy and OpenAI running tasks as interrupted', () => {
     const now = 10_000

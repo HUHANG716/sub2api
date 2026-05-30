@@ -765,6 +765,31 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 	s.Require().Equal(wantTpm, stats.Tpm, "Tpm mismatch")
 }
 
+func (s *UsageLogRepoSuite) TestDashboardStats_TotalUserBalanceExcludesSoftDeletedUsers() {
+	baseStats, err := s.repo.GetDashboardStats(s.ctx)
+	s.Require().NoError(err, "GetDashboardStats base")
+
+	mustCreateUser(s.T(), s.client, &service.User{
+		Email:   "balance-active-1@example.com",
+		Balance: 12.50,
+	})
+	mustCreateUser(s.T(), s.client, &service.User{
+		Email:   "balance-active-2@example.com",
+		Balance: -2.25,
+	})
+	deletedUser := mustCreateUser(s.T(), s.client, &service.User{
+		Email:   "balance-deleted@example.com",
+		Balance: 99.00,
+	})
+	_, err = s.client.User.UpdateOneID(deletedUser.ID).SetDeletedAt(time.Now()).Save(s.ctx)
+	s.Require().NoError(err, "soft delete balance user")
+
+	stats, err := s.repo.GetDashboardStats(s.ctx)
+	s.Require().NoError(err, "GetDashboardStats")
+
+	s.Require().InDelta(baseStats.TotalUserBalance+10.25, stats.TotalUserBalance, 0.000001)
+}
+
 func (s *UsageLogRepoSuite) TestDashboardStatsWithRange_Fallback() {
 	now := time.Now().UTC()
 	todayStart := truncateToDayUTC(now)

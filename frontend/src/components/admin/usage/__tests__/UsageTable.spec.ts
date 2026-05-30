@@ -18,8 +18,10 @@ const messages: Record<string, string> = {
   'usage.serviceTierFlex': 'Flex',
   'usage.serviceTierStandard': 'Standard',
   'usage.rate': 'Rate',
+  'usage.actualRate': 'Actual rate',
   'usage.accountMultiplier': 'Account rate',
   'usage.original': 'Original',
+  'usage.paidAmount': 'Paid',
   'usage.userBilled': 'User billed',
   'usage.accountBilled': 'Account billed',
   'usage.imageUnit': ' images',
@@ -153,12 +155,56 @@ describe('admin UsageTable tooltip', () => {
     expect(text).toContain('Rate')
     expect(text).toContain('1.00x')
     expect(text).toContain('Account rate')
-    expect(text).toContain('User billed')
+    expect(text).toContain('Paid')
     expect(text).toContain('Account billed')
     expect(text).toContain('$0.092883')
     expect(text).toContain('$5.0000 / 1M tokens')
     expect(text).toContain('$30.0000 / 1M tokens')
     expect(text).toContain('$0.069568')
+  })
+
+  it('shows actual rate after discount in the cost row and tooltip', async () => {
+    const row = {
+      request_id: 'req-admin-discounted-rate',
+      actual_cost: 0.114955,
+      total_cost: 0.440442,
+      discount_amount: 0.012773,
+      discount_rate: 0.9,
+      account_rate_multiplier: 1,
+      rate_multiplier: 0.29,
+      service_tier: null,
+      input_cost: 0,
+      output_cost: 0,
+      cache_creation_cost: 0,
+      cache_read_cost: 0,
+      input_tokens: 0,
+      output_tokens: 0,
+    }
+
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [row],
+        loading: false,
+        columns: [],
+      },
+      global: {
+        stubs: {
+          DataTable: DataTableStub,
+          EmptyState: true,
+          Icon: true,
+          Teleport: true,
+        },
+      },
+    })
+
+    expect(wrapper.text()).toContain('Actual rate 0.26x')
+
+    const tooltipTriggers = wrapper.findAll('.group.relative')
+    await tooltipTriggers[tooltipTriggers.length - 1].trigger('mouseenter')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Actual rate')
+    expect(wrapper.text()).toContain('0.26x')
   })
 
   it('shows requested and upstream models separately for admin rows', () => {

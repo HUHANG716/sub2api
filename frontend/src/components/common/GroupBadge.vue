@@ -14,7 +14,7 @@
       <template v-if="hasCustomRate">
         <!-- 原倍率删除线 + 专属倍率高亮 -->
         <span class="line-through opacity-50 mr-0.5">{{ rateMultiplier }}x</span>
-        <span class="font-bold">{{ userRateMultiplier }}x</span>
+        <span class="font-bold">{{ activeRateLabel }}</span>
       </template>
       <template v-else>
         {{ labelText }}
@@ -35,6 +35,7 @@ interface Props {
   subscriptionType?: SubscriptionType
   rateMultiplier?: number
   userRateMultiplier?: number | null // 用户专属倍率
+  globalDiscountRate?: number | null
   showRate?: boolean
   daysRemaining?: number | null // 剩余天数（订阅类型时使用）
   /**
@@ -50,10 +51,12 @@ const props = withDefaults(defineProps<Props>(), {
   showRate: true,
   daysRemaining: null,
   userRateMultiplier: null,
+  globalDiscountRate: null,
   alwaysShowRate: false
 })
 
-const { t } = useI18n()
+const i18n = useI18n()
+const { t } = i18n
 
 const isSubscription = computed(() => props.subscriptionType === 'subscription')
 
@@ -67,6 +70,55 @@ const hasCustomRate = computed(() => {
   )
 })
 
+const activeRate = computed(() => hasCustomRate.value
+  ? props.userRateMultiplier as number
+  : props.rateMultiplier
+)
+
+const hasGlobalDiscount = computed(() => {
+  const discountRate = props.globalDiscountRate
+  return typeof discountRate === 'number'
+    && Number.isFinite(discountRate)
+    && discountRate > 0
+    && discountRate < 1
+})
+
+function formatRate(value: number): string {
+  return String(Number(value.toPrecision(10)))
+}
+
+function formatDiscount(value: number): string {
+  return String(Number((value * 10).toPrecision(10)))
+}
+
+function formatPercentOff(value: number): string {
+  return String(Number(((1 - value) * 100).toPrecision(10)))
+}
+
+const globalDiscountLabel = computed(() => {
+  if (!hasGlobalDiscount.value) return ''
+  const locale = String(i18n.locale?.value ?? 'zh')
+  if (locale.startsWith('en')) {
+    return t('keys.globalDiscountPercentOffLabel', {
+      percent: formatPercentOff(props.globalDiscountRate as number),
+    })
+  }
+  return t('keys.globalDiscountRateLabel', {
+    discount: formatDiscount(props.globalDiscountRate as number),
+  })
+})
+
+const activeRateLabel = computed(() => {
+  const rate = activeRate.value
+  if (rate === undefined) return ''
+  if (!hasGlobalDiscount.value) return `${formatRate(rate)}x`
+  return t('keys.effectiveRateWithDiscount', {
+    base: formatRate(rate),
+    effective: formatRate(rate * (props.globalDiscountRate as number)),
+    discountLabel: globalDiscountLabel.value,
+  })
+})
+
 // 是否显示右侧标签
 const showLabel = computed(() => {
   if (!props.showRate) return false
@@ -78,7 +130,7 @@ const showLabel = computed(() => {
 
 // Label text
 const labelText = computed(() => {
-  const rateLabel = props.rateMultiplier !== undefined ? `${props.rateMultiplier}x` : ''
+  const rateLabel = activeRateLabel.value
   if (isSubscription.value && !props.alwaysShowRate) {
     // 如果有剩余天数，显示天数
     if (props.daysRemaining !== null && props.daysRemaining !== undefined) {

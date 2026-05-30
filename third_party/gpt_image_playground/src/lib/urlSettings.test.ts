@@ -236,6 +236,7 @@ describe('URL settings params', () => {
 
   it('reads app mode from URL params', () => {
     expect(getAppModeFromUrlParams(new URLSearchParams('appMode=gallery'))).toBe('gallery')
+    expect(getAppModeFromUrlParams(new URLSearchParams('appMode=templates'))).toBe('templates')
     expect(getAppModeFromUrlParams(new URLSearchParams('appMode=agent'))).toBe('agent')
     expect(getAppModeFromUrlParams(new URLSearchParams('appMode=invalid'))).toBeUndefined()
   })

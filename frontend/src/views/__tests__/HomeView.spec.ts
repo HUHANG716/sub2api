@@ -283,19 +283,25 @@ describe('HomeView', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
     const heroButtonBlocks = Array.from(source.matchAll(/\.hero-button\s*\{[\s\S]*?\n\}/g), (match) => match[0])
     const heroButtonBlock = heroButtonBlocks.find((block) => block.includes('min-height: 3.125rem')) ?? ''
+    const heroActionsBlock = source.match(/\.hero-actions\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const heroButtonIconBlock = source.match(/\.hero-button :deep\(svg\)\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const heroButtonTextBlock = source.match(/\.hero-button span\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
     expect(source).toContain('<span>{{ isAuthenticated ? t(\'home.goToDashboard\') : t(\'home.getStarted\') }}</span>')
     expect(source).toContain('<span>{{ t(\'home.viewDocs\') }}</span>')
+    expect(heroActionsBlock).toContain('justify-self: center')
+    expect(heroActionsBlock).toContain('align-items: center')
+    expect(heroActionsBlock).toContain('width: fit-content')
+    expect(heroButtonBlock).toContain('display: inline-flex')
     expect(heroButtonBlock).toContain('align-items: center')
+    expect(heroButtonBlock).toContain('justify-content: center')
     expect(heroButtonBlock).toContain('line-height: 1')
     expect(heroButtonIconBlock).toContain('display: block')
     expect(heroButtonIconBlock).toContain('flex: 0 0 auto')
     expect(heroButtonTextBlock).toContain('line-height: 1')
   })
 
-  it('keeps the hero terminal preview simple without dashboard metric panels', () => {
+  it('renders a fullscreen hero with floating AI tool tags instead of the terminal preview', () => {
     const wrapper = mount(HomeView, {
       global: {
         stubs: {
@@ -309,30 +315,242 @@ describe('HomeView', () => {
       }
     })
 
-    expect(wrapper.find('.hero-console').exists()).toBe(true)
-    expect(wrapper.find('.command-panel').exists()).toBe(true)
-    expect(wrapper.findAll('.console-topbar span')).toHaveLength(3)
-    expect(wrapper.get('.terminal-prompt').text()).toBe('$')
-    expect(wrapper.get('.terminal-curl').text()).toBe('curl')
-    expect(wrapper.get('.terminal-flag').text()).toBe('-X POST')
-    expect(wrapper.get('.terminal-path').text()).toBe('/v1/messages')
-    expect(wrapper.get('.terminal-comment').text()).toBe('# Routing to upstream...')
-    expect(wrapper.get('.terminal-status-badge').text()).toBe('200 OK')
-    expect(wrapper.get('.terminal-json').text()).toBe('{ "content": "Hello!" }')
-    expect(wrapper.find('.terminal-cursor').exists()).toBe(true)
-    expect(wrapper.findAll('.terminal-line')).toHaveLength(4)
+    const floatingTags = wrapper.findAll('.floating-tool-tag')
+
+    expect(wrapper.find('.hero-stage').exists()).toBe(true)
+    expect(wrapper.find('.hero-floating-tags').exists()).toBe(true)
+    expect(wrapper.find('.hero-copy .eyebrow').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('AI API Gateway')
+    expect(floatingTags).toHaveLength(7)
+    expect(floatingTags.map((tag) => tag.text())).toEqual([
+      'Claude Code',
+      'Codex',
+      'Gemini CLI',
+      'OpenAI',
+      'OpenClaw',
+      'Hermes Agent',
+      'Codex App'
+    ])
+    expect(wrapper.html()).toContain('/landing-support/claude-code.svg')
+    expect(wrapper.html()).toContain('/landing-support/codex.svg')
+    expect(wrapper.html()).toContain('/landing-support/gemini-cli.svg')
+    expect(wrapper.html()).toContain('/landing-support/codex-app.png')
+    expect(wrapper.get('.floating-tool-tag-4').classes()).toContain('floating-tool-tag-text')
+    expect(wrapper.get('.floating-tool-tag-4').find('img').exists()).toBe(false)
+    expect(wrapper.find('.hero-console').exists()).toBe(false)
+    expect(wrapper.find('.command-panel').exists()).toBe(false)
     expect(wrapper.find('.code-lines').exists()).toBe(false)
     expect(wrapper.find('.metric-panel').exists()).toBe(false)
     expect(wrapper.find('.route-panel').exists()).toBe(false)
   })
 
-  it('keeps the terminal preview typewriter animation available', () => {
+  it('moves the floating hero tool field with the mouse direction without shifting individual collision boxes', async () => {
+    const wrapper = mount(HomeView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a><slot /></a>'
+          },
+          LocaleSwitcher: true,
+          Icon: true
+        }
+      }
+    })
+
+    await wrapper.get('.hero-section').trigger('mousemove', {
+      clientX: 900,
+      clientY: 540
+    })
+    await nextTick()
+
+    const stageStyle = wrapper.get('.hero-stage').attributes('style') ?? ''
+    const source = readFileSync(homeViewSourcePath, 'utf8')
+    const floatingFieldBlock = source.match(/\.hero-floating-tags\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const floatingTagBlock = source.match(/\.floating-tool-tag\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const tagStyle = wrapper.get('.floating-tool-tag').attributes('style') ?? ''
+
+    expect(stageStyle).toContain('--hero-pointer-x:')
+    expect(stageStyle).toContain('--hero-pointer-y:')
+    expect(stageStyle).not.toContain('--hero-pointer-x: 0.000')
+    expect(floatingFieldBlock).not.toContain('calc(var(--hero-pointer-x) * var(--hero-field-pull-x))')
+    expect(floatingTagBlock).toContain('calc(var(--hero-pointer-x) * var(--hero-tag-drift-x))')
+    expect(floatingTagBlock).toContain('calc(var(--hero-pointer-y) * var(--hero-tag-drift-y))')
+    expect(tagStyle).toBe('')
+
+    await wrapper.get('.hero-section').trigger('mouseleave')
+    await nextTick()
+
+    expect(wrapper.get('.hero-stage').attributes('style')).toContain('--hero-pointer-x: 0.000')
+    expect(wrapper.get('.hero-stage').attributes('style')).toContain('--hero-pointer-y: 0.000')
+  })
+
+  it('keeps hero sticker collision boxes stable with depth-based parallax lanes', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf8')
+    const floatingTagBlock = source.match(/\.floating-tool-tag\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const floatingFieldBlock = source.match(/\.hero-floating-tags\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const mobileBlock = source.match(/@media \(max-width: 640px\)[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(source).not.toContain(':style="heroTagStyle(index)"')
+    expect(source).not.toContain('const heroTagParallax')
+    expect(source).not.toContain('function heroTagStyle')
+    expect(floatingTagBlock).toContain('transform: translate3d(')
+    expect(floatingTagBlock).toContain('var(--hero-pointer-x) * var(--hero-tag-drift-x')
+    expect(floatingTagBlock).toContain('var(--hero-pointer-y) * var(--hero-tag-drift-y')
+    expect(floatingTagBlock).toContain('animation: hero-tag-float')
+    expect(floatingTagBlock).toContain('animation-delay: var(--hero-tag-delay, 0ms)')
+    expect(floatingFieldBlock).not.toContain('--hero-field-pull-x')
+    expect(floatingFieldBlock).not.toContain('--hero-field-pull-y')
+    expect(floatingFieldBlock).not.toContain('transform: translate3d(')
+    expect(source).toContain('width: min(100%, calc(100vw - 2rem))')
+    expect(source).toContain('max-width: none')
+    expect(source).toContain('min-height: calc(100svh - 5.5rem)')
+    expect(source).toContain('left: clamp(-1.1rem, -0.6vw, -0.5rem)')
+    expect(source).toContain('right: calc(100% - var(--hero-copy-safe-left) + var(--hero-copy-safe-gap))')
+    expect(source).toContain('top: clamp(10.5rem, 28vh, 19rem)')
+    expect(source).toContain('top: clamp(4.75rem, 13vh, 8.5rem)')
+    expect(source).toContain('right: calc(100% - var(--hero-copy-safe-left) + var(--hero-copy-safe-gap))')
+    expect(source).toContain('bottom: clamp(7.25rem, 12vh, 9.5rem)')
+    expect(source).toContain('right: clamp(0.75rem, 3vw, 5rem)')
+    expect(source).toContain('left: calc(var(--hero-copy-safe-right) + var(--hero-copy-safe-gap))')
+    expect(source).toContain('top: clamp(1.5rem, 6vh, 4rem)')
+    expect(source).toContain('top: clamp(14rem, 32vh, 21rem)')
+    expect(source).toContain('bottom: clamp(16rem, 31vh, 21rem)')
+    expect(source).toContain('.floating-tool-tag-7')
+    expect(source).toContain('--hero-tag-drift-x: 34px')
+    expect(source).toContain('--hero-tag-drift-x: 9px')
+    expect(source).toContain('--hero-tag-drift-y: 28px')
+    expect(source).not.toContain('left: clamp(-10rem, -7vw, -4rem)')
+    expect(source).not.toContain('top: 34%')
+    expect(source).not.toContain('bottom: clamp(0.9rem, 2vw, 1.5rem)')
+    expect(source).not.toContain('top: clamp(18rem, 38vh, 24rem)')
+    expect(source).not.toContain('bottom: clamp(1.5rem, 5vh, 3.5rem)')
+    expect(mobileBlock).toContain('left: -2.2rem')
+    expect(mobileBlock).toContain('top: -4.4rem')
+    expect(mobileBlock).toContain('top: 30%')
+    expect(mobileBlock).toContain('right: -3.2rem')
+    expect(mobileBlock).toContain('top: 68%')
+    expect(mobileBlock).toContain('left: -1.6rem')
+    expect(mobileBlock).toContain('bottom: 2.6rem')
+    expect(mobileBlock).not.toContain('left: -3.6rem')
+    expect(mobileBlock).not.toContain('right: -4.4rem')
+    expect(mobileBlock).not.toContain('bottom: 2.4rem')
+  })
+
+  it('keeps desktop floating tags outside the hero copy reading lane', () => {
     const source = readFileSync(homeViewSourcePath, 'utf8')
 
-    expect(source).toContain('@keyframes terminal-type')
-    expect(source).toContain('animation: terminal-type')
-    expect(source).toContain('@keyframes terminal-cursor-blink')
-    expect(source).toContain('.terminal-cursor')
+    expect(source).toContain('--hero-copy-safe-width: clamp(46rem, 58vw, 62rem)')
+    expect(source).toContain('--hero-copy-safe-left: calc((100% - var(--hero-copy-safe-width)) / 2)')
+    expect(source).toContain('--hero-copy-safe-right: calc(var(--hero-copy-safe-left) + var(--hero-copy-safe-width))')
+    expect(source).toContain('--hero-copy-safe-gap: clamp(3.5rem, 6vw, 5rem)')
+    expect(source).toContain('right: calc(100% - var(--hero-copy-safe-left) + var(--hero-copy-safe-gap))')
+    expect(source).toContain('left: calc(var(--hero-copy-safe-right) + var(--hero-copy-safe-gap))')
+    expect(source).not.toContain('left: clamp(14rem, 19vw, 24rem)')
+    expect(source).not.toContain('right: clamp(1rem, 3vw, 4rem)')
+  })
+
+  it('falls back to edge-only hero tags when the viewport cannot fit side lanes', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf8')
+    const protectedViewportBlock = source.match(
+      /@media \(max-width: 1320px\) and \(min-width: 641px\)\s*\{[\s\S]*?\n\}/
+    )?.[0] ?? ''
+    const shortViewportBlock = source.match(
+      /@media \(max-height: 820px\) and \(min-width: 641px\)\s*\{[\s\S]*?\n\}/
+    )?.[0] ?? ''
+    const mobileBlock = source.match(/@media \(max-width: 640px\)[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(protectedViewportBlock).toContain('--hero-copy-safe-width: min(38rem, calc(100vw - 12rem))')
+    expect(protectedViewportBlock).toContain('.floating-tool-tag-1,')
+    expect(protectedViewportBlock).toContain('.floating-tool-tag-3,')
+    expect(protectedViewportBlock).toContain('.floating-tool-tag-5')
+    expect(protectedViewportBlock).toContain('display: none')
+    expect(protectedViewportBlock).toContain('.floating-tool-tag-6,')
+    expect(protectedViewportBlock).toContain('.floating-tool-tag-7')
+    expect(protectedViewportBlock).toContain('right: -2rem')
+    expect(protectedViewportBlock).toContain('left: -3rem')
+    expect(protectedViewportBlock).toContain('top: clamp(6rem, 16vh, 8.4rem)')
+    expect(shortViewportBlock).toBe('')
+    expect(mobileBlock).toContain('.floating-tool-tag-1,')
+    expect(mobileBlock).toContain('.floating-tool-tag-3,')
+    expect(mobileBlock).toContain('.floating-tool-tag-5,')
+    expect(mobileBlock).toContain('.floating-tool-tag-6,')
+    expect(mobileBlock).toContain('.floating-tool-tag-7')
+    expect(mobileBlock).toContain('display: none')
+  })
+
+  it('styles the hero tool tags as oversized sticker logos that follow one light direction', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf8')
+    const heroSectionBlock = source.match(/\.hero-section\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const floatingTagBlock = source.match(/\.floating-tool-tag\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const floatingTagsBlock = source.match(/\.hero-floating-tags\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const floatingIconImageBlock = source.match(/\.floating-tool-icon img\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const floatingRoundBlock = source.match(/\.floating-tool-tag-round\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const floatingLabelBaseBlock = source.match(/\.floating-tool-tag-pill,\n\.floating-tool-tag-text\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const floatingTextBlock = Array.from(
+      source.matchAll(/\.floating-tool-tag-text\s*\{[\s\S]*?\n\}/g),
+      (match) => match[0]
+    ).find((block) => block.includes('width: auto')) ?? ''
+
+    expect(heroSectionBlock).toContain('background: var(--landing-bg)')
+    expect(floatingTagsBlock).toContain('perspective:')
+    expect(floatingTagsBlock).toContain('transform-style: preserve-3d')
+    expect(floatingTagsBlock).not.toContain('transform: translate3d(')
+    expect(floatingTagBlock).toContain('width: var(--hero-tag-size)')
+    expect(floatingTagBlock).toContain('height: var(--hero-tag-size)')
+    expect(floatingTagBlock).toContain('aspect-ratio: 1')
+    expect(floatingTagBlock).toContain('border: clamp(0.32rem, 0.8vw, 0.56rem) solid var(--landing-sticker-border)')
+    expect(floatingTagBlock).toContain('rgba(217, 119, 50')
+    expect(floatingTagBlock).toContain('box-shadow:')
+    expect(floatingTagBlock).toContain('filter: drop-shadow')
+    expect(floatingTagBlock).toContain('var(--hero-tag-depth')
+    expect(floatingTagBlock).toContain('var(--hero-tag-drift-x')
+    expect(floatingTagBlock).toContain('var(--hero-tag-drift-y')
+    expect(floatingTagBlock).toContain('rotate(var(--hero-tag-rotation')
+    expect(floatingTagBlock).not.toContain('rotateX(calc(var(--hero-pointer-y)')
+    expect(floatingTagBlock).not.toContain('rotateY(calc(var(--hero-pointer-x)')
+    expect(floatingIconImageBlock).toContain('height: 86%')
+    expect(floatingIconImageBlock).toContain('width: 86%')
+    expect(floatingRoundBlock).toContain('border-radius: 999px')
+    expect(floatingLabelBaseBlock).toContain('border-radius: 999px')
+    expect(floatingLabelBaseBlock).toContain('width: var(--hero-tag-size)')
+    expect(floatingLabelBaseBlock).toContain('height: var(--hero-tag-size)')
+    expect(floatingTextBlock).toContain('width: auto')
+    expect(floatingTextBlock).toContain('height: auto')
+    expect(floatingTextBlock).toContain('min-width: clamp(8rem, 12vw, 11rem)')
+    expect(floatingTextBlock).toContain('min-height: clamp(3.25rem, 5vw, 4.25rem)')
+    expect(source).toContain("{ name: 'OpenAI', icon: '', needsBadge: false, shape: 'text' }")
+    expect(source).toContain("codex-app.png")
+    expect(source).toContain('floating-tool-tag-${tool.shape}')
+    expect(source).toContain('--hero-tag-size:')
+    expect(source).toContain('--hero-tag-rotation:')
+    expect(source).toContain('--hero-mobile-tag-size:')
+    expect(source).toContain('right: clamp(0.75rem, 3vw, 5rem)')
+    expect(source).toContain('right: calc(100% - var(--hero-copy-safe-left) + var(--hero-copy-safe-gap))')
+    expect(source).toContain('left: clamp(-1.1rem, -0.6vw, -0.5rem)')
+    expect(source).toContain('top: clamp(14rem, 32vh, 21rem)')
+    expect(source).toContain('top: clamp(4.75rem, 13vh, 8.5rem)')
+    expect(source).toContain('bottom: clamp(7.25rem, 12vh, 9.5rem)')
+    expect(source).toContain('bottom: clamp(16rem, 31vh, 21rem)')
+    expect(source).toContain('--hero-tag-size: clamp(8.5rem, 12.5vw, 12rem)')
+    expect(source).toContain('18.5rem')
+    expect(source).toContain('6rem')
+    expect(source).toContain('calc(var(--hero-pointer-x) * var(--hero-tag-drift-x)')
+    expect(source).not.toContain('border-radius: 0.55rem')
+  })
+
+  it('keeps the floating hero tool tags gently animated', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf8')
+    const floatingTagBlock = source.match(/\.floating-tool-tag\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const floatingIconImageBlock = source.match(/\.floating-tool-icon img\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(source).toContain('@keyframes hero-tag-float')
+    expect(floatingTagBlock).toContain('animation: hero-tag-float')
+    expect(floatingTagBlock).toContain('animation-delay: var(--hero-tag-delay, 0ms)')
+    expect(floatingIconImageBlock).not.toContain('animation: hero-tag-float')
+    expect(source).toContain('.floating-tool-tag')
+    expect(source).not.toContain('@keyframes terminal-type')
+    expect(source).not.toContain('animation: terminal-type')
   })
 
   it('keeps the hero copy lean without a stacked points list', () => {
@@ -512,23 +730,28 @@ describe('HomeView', () => {
     expect(source).toMatch(/--landing-accent:\s*#[0-9a-fA-F]{6}/)
     expect(source).toContain('--landing-text-soft: #e2e8f0')
     expect(source).toContain('color: var(--landing-text-soft)')
-    expect(source).toContain('color: var(--landing-accent-soft)')
+    expect(source).toContain('color: var(--landing-accent)')
   })
 
   it('calibrates the landing surfaces with finer dark layers and quieter shadows', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
     const landingShellBlock = source.match(/\.landing-shell\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
-    const heroConsoleBlock = source.match(/\.hero-console\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const floatingTagBlock = source.match(/\.floating-tool-tag\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const testimonialCardBlock = source.match(/\.testimonial-card\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
     expect(landingShellBlock).toContain('--landing-surface-raised: #292929')
     expect(landingShellBlock).toContain('--landing-surface-soft: rgba(255, 255, 255, 0.035)')
     expect(landingShellBlock).toContain('--landing-hairline: rgba(255, 255, 255, 0.055)')
     expect(landingShellBlock).toContain('--landing-control-shadow: 0 1px 0 rgba(255, 255, 255, 0.055) inset')
-    expect(heroConsoleBlock).toContain('border: 1px solid var(--landing-border-strong)')
-    expect(heroConsoleBlock).toContain('background: var(--landing-surface-raised)')
-    expect(heroConsoleBlock).toContain('box-shadow:')
-    expect(heroConsoleBlock).not.toContain('0 18px 42px rgba(2, 6, 23, 0.18)')
+    expect(landingShellBlock).toContain('--landing-sticker-bg: color-mix(in srgb, var(--landing-accent-soft) 18%, var(--landing-text-strong))')
+    expect(landingShellBlock).toContain('--landing-sticker-border: color-mix(in srgb, var(--landing-text-strong) 84%, var(--landing-accent-soft))')
+    expect(floatingTagBlock).toContain('border: clamp(0.32rem, 0.8vw, 0.56rem) solid var(--landing-sticker-border)')
+    expect(floatingTagBlock).toContain('background: var(--landing-sticker-bg)')
+    expect(floatingTagBlock).toContain('box-shadow:')
+    expect(floatingTagBlock).toContain('rgba(217, 119, 50')
+    expect(source).not.toContain('rgba(15, 47, 70')
+    expect(source).not.toContain('--landing-sticker-bg: #ffffff')
+    expect(floatingTagBlock).not.toContain('0 18px 42px rgba(2, 6, 23, 0.18)')
     expect(testimonialCardBlock).toContain('border: 1px solid var(--landing-hairline)')
     expect(testimonialCardBlock).not.toContain('0 18px 42px rgba(2, 6, 23, 0.2)')
   })
@@ -541,9 +764,9 @@ describe('HomeView', () => {
     const supportTitleBlock = source.match(/\.support-showcase-title\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const trustValueBlock = source.match(/\.trust-card strong\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(heroTitleBlock).toContain('font-size: clamp(2.35rem, 4.35vw, 3.65rem)')
+    expect(heroTitleBlock).toContain('font-size: clamp(2.65rem, 6.6vw, 5.15rem)')
     expect(heroTitleBlock).toContain('font-weight: 820')
-    expect(heroTitleBlock).toContain('line-height: 1.06')
+    expect(heroTitleBlock).toContain('line-height: 0.98')
     expect(heroBrandBlock).toContain('color: color-mix(in srgb, var(--landing-text-strong) 92%, var(--landing-accent-soft))')
     expect(sectionTitleBlock).toContain('font-size: clamp(2rem, 4.5vw, 3.85rem)')
     expect(sectionTitleBlock).toContain('font-weight: 780')
@@ -711,20 +934,52 @@ describe('HomeView', () => {
     expect(source).toMatch(/@media \(max-width: 640px\)[\s\S]*?\.hero-copy h1 span\s*\{[\s\S]*?white-space:\s*normal;/)
   })
 
-  it('keeps the landing hero compact enough to connect with the stats rail', () => {
+  it('keeps floating stickers out of the mobile hero copy reading lane', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
-    const heroTemplate = source.match(/<section class="hero-section[\s\S]*?<\/section>/)?.[0] ?? ''
-    const heroSectionBlock = source.match(/\.hero-section\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
-    const heroConsoleBlock = source.match(/\.hero-console\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
-    const commandPanelBlock = source.match(/\.command-panel\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const mobileBlock = source.match(/@media \(max-width: 640px\)[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(heroTemplate).toContain('gap-10')
-    expect(heroSectionBlock).toContain('padding-top: clamp(3rem, 5vw, 4.35rem)')
-    expect(heroSectionBlock).toContain('padding-bottom: clamp(2rem, 4vw, 3.25rem)')
-    expect(heroSectionBlock).toContain('min-height: auto')
-    expect(heroConsoleBlock).toContain('max-width: 56rem')
-    expect(heroConsoleBlock).toContain('justify-self: end')
-    expect(commandPanelBlock).toContain('min-height: clamp(10.5rem, 26vw, 13rem)')
-    expect(commandPanelBlock).toContain('font-size: clamp(0.82rem, 1.35vw, 1rem)')
+    expect(mobileBlock).toContain('left: -2.2rem')
+    expect(mobileBlock).toContain('top: 30%')
+    expect(mobileBlock).toContain('top: -4.4rem')
+    expect(mobileBlock).toContain('--hero-mobile-tag-size: clamp(7rem, 32vw, 8.2rem)')
+    expect(mobileBlock).toContain('right: -3.2rem')
+    expect(mobileBlock).toContain('top: -4rem')
+    expect(mobileBlock).toContain('right: -1.6rem')
+    expect(mobileBlock).toContain('top: 33%')
+    expect(mobileBlock).toContain('right: -3.6rem')
+    expect(mobileBlock).toContain('top: 68%')
+    expect(mobileBlock).toContain('left: -1.6rem')
+    expect(mobileBlock).toContain('bottom: 2.6rem')
+    expect(mobileBlock).toContain('--hero-mobile-tag-size: clamp(7.4rem, 34vw, 9.4rem)')
+    expect(mobileBlock).toContain('--hero-mobile-tag-size: clamp(7rem, 32vw, 8.2rem)')
+    expect(mobileBlock).not.toContain('bottom: -5.4rem')
+    expect(mobileBlock).not.toContain('bottom: 0.8rem')
+    expect(mobileBlock).not.toContain('right: 7%')
+    expect(mobileBlock).not.toContain('right: -1.4rem')
+    expect(mobileBlock).not.toContain('left: -9.4rem')
+    expect(mobileBlock).not.toContain('left: -10.6rem')
+    expect(mobileBlock).not.toContain('left: -3.6rem')
+    expect(mobileBlock).not.toContain('right: -6.4rem')
+  })
+
+  it('expands the landing hero into a centered fullscreen hero section', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const heroTemplate = source.match(/<section[\s\S]*?class="hero-section[\s\S]*?<\/section>/)?.[0] ?? ''
+    const heroSectionBlock = source.match(/\.hero-section\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const heroStageBlock = source.match(/\.hero-stage\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const heroFloatingBlock = source.match(/\.hero-floating-tags\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(heroTemplate).toContain('hero-stage')
+    expect(heroTemplate).toContain('hero-floating-tags')
+    expect(heroTemplate).toContain('hero-copy hero-copy-centered')
+    expect(heroSectionBlock).toContain('min-height: 100svh')
+    expect(heroSectionBlock).toContain('display: grid')
+    expect(heroSectionBlock).toContain('place-items: center')
+    expect(heroStageBlock).toContain('min-height: calc(100svh - 5.5rem)')
+    expect(heroStageBlock).toContain('display: grid')
+    expect(heroStageBlock).toContain('place-items: center')
+    expect(heroFloatingBlock).toContain('position: absolute')
+    expect(source).not.toContain('.hero-console')
+    expect(source).not.toContain('.command-panel')
   })
 })

@@ -49,6 +49,7 @@ import { getCustomQueuedImageResult } from './lib/openaiCompatibleImageApi'
 import { validateMaskMatchesImage } from './lib/canvasImage'
 import { orderInputImagesForMask } from './lib/mask'
 import { getChangedParams, normalizeParamsForSettings } from './lib/paramCompatibility'
+import { trackImagePlaygroundEvent } from './lib/imagePlaygroundAnalytics'
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate'
 
 // ===== Image cache =====
@@ -117,6 +118,30 @@ const TIMEOUT_PARTIAL_IMAGES_ZERO_HINT = '官方流式接口不发送心跳，�
 const TIMEOUT_PARTIAL_IMAGES_LOW_HINT = '也可尝试提高「请求中间步骤图像数」来维持连接，避免长时间无数据传输导致断开。'
 
 type TimeoutStreamingHintProfile = Pick<ApiProfile, 'provider' | 'streamImages' | 'streamPartialImages'>
+
+function getGenerationAnalyticsPayload(task: TaskRecord, extra: Record<string, unknown> = {}) {
+  return {
+    taskId: task.id,
+    sourceMode: task.sourceMode ?? 'gallery',
+    provider: task.apiProvider,
+    apiMode: task.apiMode,
+    model: task.apiModel,
+    size: task.params.size,
+    quality: task.params.quality,
+    outputFormat: task.params.output_format,
+    n: task.params.n,
+    inputImageCount: task.inputImageIds.length,
+    hasMask: Boolean(task.maskImageId),
+    durationMs: task.elapsed ?? (task.finishedAt ? task.finishedAt - task.createdAt : Date.now() - task.createdAt),
+    ...extra,
+  }
+}
+
+function getErrorKind(error: unknown) {
+  if (error instanceof DOMException) return error.name
+  if (error instanceof Error) return error.name || 'Error'
+  return typeof error
+}
 
 function getTimeoutStreamingHint(profile?: TimeoutStreamingHintProfile | null) {
   if (profile?.provider !== 'openai') return ''
@@ -644,7 +669,7 @@ function mergePersistedState(persistedState: unknown, currentState: AppState): A
     typeof persisted.activeAgentConversationId === 'string' && (!hasPersistedAgentConversations || agentConversations.some((conversation) => conversation.id === persisted.activeAgentConversationId))
       ? persisted.activeAgentConversationId
       : agentConversations[0]?.id ?? null
-  const appMode = persisted.appMode === 'agent' ? 'agent' : 'gallery'
+  const appMode = persisted.appMode === 'agent' || persisted.appMode === 'templates' ? persisted.appMode : 'gallery'
   const galleryInputDraft = settings.persistInputOnRestart
     ? normalizeAgentInputDraft(persisted.galleryInputDraft ?? {
         prompt: persisted.prompt,
@@ -980,7 +1005,7 @@ function saveActiveAgentInputDrafts(state: Pick<AppState, 'appMode' | 'activeAge
 }
 
 function saveGalleryInputDraft(state: Pick<AppState, 'appMode' | 'galleryInputDraft' | 'prompt' | 'inputImages' | 'maskDraft' | 'maskEditorImageId'>) {
-  if (state.appMode !== 'gallery') return state.galleryInputDraft
+  if (state.appMode !== 'gallery' && state.appMode !== 'templates') return state.galleryInputDraft
   const draft = getCurrentAgentInputDraft(state)
   return isEmptyAgentInputDraft(draft) ? null : copyAgentInputDraft(draft)
 }
@@ -1034,7 +1059,7 @@ function syncActiveInputDraft<T extends Partial<AgentInputDraft>>(
     maskDraft: patch.maskDraft !== undefined ? patch.maskDraft : state.maskDraft,
     maskEditorImageId: patch.maskEditorImageId !== undefined ? patch.maskEditorImageId : state.maskEditorImageId,
   }
-  if (state.appMode === 'gallery') {
+  if (state.appMode === 'gallery' || state.appMode === 'templates') {
     return {
       ...patch,
       galleryInputDraft: isEmptyAgentInputDraft(draft) ? null : copyAgentInputDraft(draft),
@@ -1067,7 +1092,7 @@ export const useStore = create<AppState>()(
       // Mode
       appMode: 'gallery',
       setAppMode: (appMode) => {
-        if (appMode === 'gallery') {
+        if (appMode === 'gallery' || appMode === 'templates') {
           const state = get()
           const agentInputDrafts = saveActiveAgentInputDrafts(state)
           const galleryInputDraft = saveGalleryInputDraft(state)
@@ -2210,6 +2235,7 @@ export async function submitTask(options: { allowFullMask?: boolean; useCurrentA
   const latestTasks = useStore.getState().tasks
   useStore.getState().setTasks([task, ...latestTasks])
   await putTask(task)
+  trackImagePlaygroundEvent('image_generate_submit', getGenerationAnalyticsPayload(task))
   useStore.getState().showToast('任务已提交', 'success')
 
   if (settings.clearInputAfterSubmit) {
@@ -3022,6 +3048,19 @@ export async function submitAgentMessage() {
     createdAt: now,
     finishedAt: null,
   }
+  trackImagePlaygroundEvent('agent_image_generate_submit', {
+    conversationId: conversation.id,
+    roundId,
+    provider: activeProfile.provider,
+    apiMode: activeProfile.apiMode,
+    model: activeProfile.model,
+    size: normalizedParams.size,
+    quality: normalizedParams.quality,
+    outputFormat: normalizedParams.output_format,
+    n: normalizedParams.n,
+    inputImageCount: inputImageIds.length,
+    hasMask: Boolean(maskImageId),
+  })
   const userMessage: AgentMessage = {
     id: userMessageId,
     role: 'user',
@@ -3278,6 +3317,11 @@ async function executeAgentRound(
       useStore.getState().setTasks([task, ...useStore.getState().tasks])
       attachTaskToAgentRound(task.id)
       await putTask(task)
+      trackImagePlaygroundEvent('agent_image_generate_submit', getGenerationAnalyticsPayload(task, {
+        conversationId,
+        roundId,
+        toolCallId,
+      }))
       return task.id
     }
 
@@ -3306,6 +3350,24 @@ async function executeAgentRound(
         elapsed: Date.now() - (latestTask?.createdAt ?? startedAt),
         agentToolAction: image.action,
       })
+      trackImagePlaygroundEvent('agent_image_generate_success', getGenerationAnalyticsPayload(latestTask ?? {
+        id: taskId,
+        prompt: '',
+        params,
+        inputImageIds: [],
+        outputImages: [],
+        status: 'done',
+        error: null,
+        createdAt: startedAt,
+        finishedAt: Date.now(),
+        elapsed: Date.now() - startedAt,
+      } as TaskRecord, {
+        conversationId,
+        roundId,
+        toolCallId,
+        outputImageCount: 1,
+        action: image.action,
+      }))
       useStore.getState().setTaskStreamPreview(taskId)
       return taskId
     }
@@ -3606,6 +3668,12 @@ async function executeAgentRound(
         useStore.getState().setTasks([task, ...useStore.getState().tasks])
         attachTaskToAgentRound(task.id)
         await putTask(task)
+        trackImagePlaygroundEvent('agent_image_generate_success', getGenerationAnalyticsPayload(task, {
+          conversationId,
+          roundId,
+          outputImageCount: 1,
+          action: image.action,
+        }))
       }
 
       if (result.rawResponsePayload && streamingTaskIds.length > 0) {
@@ -3735,12 +3803,40 @@ async function executeAgentRound(
         : [...current.messages, assistantMessage],
     }))
 
+    trackImagePlaygroundEvent('agent_image_generate_success', {
+      conversationId,
+      roundId,
+      provider: activeProfile.provider,
+      apiMode: activeProfile.apiMode,
+      model: activeProfile.model,
+      size: params.size,
+      quality: params.quality,
+      outputFormat: params.output_format,
+      n: params.n,
+      outputTaskCount: taskIds.length,
+      outputImageCount: outputIds.length,
+      durationMs: Date.now() - startedAt,
+      reachedToolLimit,
+    })
     useStore.getState().showToast(outputIds.length > 0 ? 'Agent 已生成图片' : 'Agent 已回复', 'success')
   } catch (err) {
     if (controller.signal.aborted) {
       if (markAgentRoundStopped(conversationId, roundId)) {
         useStore.getState().showToast('已停止生成', 'info')
       }
+      trackImagePlaygroundEvent('agent_image_generate_error', {
+        conversationId,
+        roundId,
+        provider: activeProfile.provider,
+        apiMode: activeProfile.apiMode,
+        model: activeProfile.model,
+        size: params.size,
+        quality: params.quality,
+        outputFormat: params.output_format,
+        n: params.n,
+        errorKind: 'AbortError',
+        durationMs: Date.now() - startedAt,
+      })
       return
     }
 
@@ -3786,6 +3882,19 @@ async function executeAgentRound(
               },
             ],
       }
+    })
+    trackImagePlaygroundEvent('agent_image_generate_error', {
+      conversationId,
+      roundId,
+      provider: activeProfile.provider,
+      apiMode: activeProfile.apiMode,
+      model: activeProfile.model,
+      size: params.size,
+      quality: params.quality,
+      outputFormat: params.output_format,
+      n: params.n,
+      errorKind: getErrorKind(err),
+      durationMs: Date.now() - startedAt,
     })
     useStore.getState().showToast(`Agent 请求失败：${message}`, 'error')
   } finally {
@@ -3931,6 +4040,10 @@ async function executeTask(taskId: string) {
       falRecoverable: false,
       customRecoverable: false,
     })
+    trackImagePlaygroundEvent('image_generate_success', getGenerationAnalyticsPayload(task, {
+      outputImageCount: outputIds.length,
+      durationMs: Date.now() - task.createdAt,
+    }))
     void deleteUnreferencedImageIds(partialImageIdsToClean)
 
     useStore.getState().showToast(`生成完成，共 ${outputIds.length} 张图片`, 'success')
@@ -3962,6 +4075,11 @@ async function executeTask(taskId: string) {
         finishedAt: Date.now(),
         elapsed: Date.now() - task.createdAt,
       })
+      trackImagePlaygroundEvent('image_generate_error', getGenerationAnalyticsPayload(latestTask, {
+        errorKind: getErrorKind(err),
+        recoverable: true,
+        durationMs: Date.now() - task.createdAt,
+      }))
       scheduleFalRecovery(taskId)
     } else if (latestCustomTaskInfo && isFalConnectionRecoverableError(err)) {
       updateTaskInStore(taskId, {
@@ -3972,6 +4090,11 @@ async function executeTask(taskId: string) {
         finishedAt: Date.now(),
         elapsed: Date.now() - task.createdAt,
       })
+      trackImagePlaygroundEvent('image_generate_error', getGenerationAnalyticsPayload(latestTask, {
+        errorKind: getErrorKind(err),
+        recoverable: true,
+        durationMs: Date.now() - task.createdAt,
+      }))
       scheduleCustomRecovery(taskId)
     } else {
       let errorMessage = err instanceof Error ? err.message : String(err)
@@ -3998,6 +4121,11 @@ async function executeTask(taskId: string) {
         finishedAt: Date.now(),
         elapsed: Date.now() - task.createdAt,
       })
+      trackImagePlaygroundEvent('image_generate_error', getGenerationAnalyticsPayload(latestTask, {
+        errorKind: getErrorKind(err),
+        recoverable: false,
+        durationMs: Date.now() - task.createdAt,
+      }))
       useStore.getState().setDetailTaskId(taskId)
     }
   } finally {

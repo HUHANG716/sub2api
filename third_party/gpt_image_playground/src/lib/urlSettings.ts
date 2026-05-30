@@ -99,7 +99,7 @@ export function clearUrlSettingParams(searchParams: URLSearchParams) {
 
 export function getAppModeFromUrlParams(searchParams: URLSearchParams): AppMode | undefined {
   const appModeParam = searchParams.get('appMode')
-  return appModeParam === 'gallery' || appModeParam === 'agent' ? appModeParam : undefined
+  return appModeParam === 'gallery' || appModeParam === 'templates' || appModeParam === 'agent' ? appModeParam : undefined
 }
 
 export function buildSettingsFromUrlParams(currentSettings: Partial<AppSettings> | unknown, searchParams: URLSearchParams): Partial<AppSettings> {

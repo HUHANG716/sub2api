@@ -1560,7 +1560,8 @@ func (r *usageLogRepository) fillDashboardEntityStats(ctx context.Context, stats
 	userStatsQuery := `
 		SELECT
 			COUNT(*) as total_users,
-			COUNT(CASE WHEN created_at >= $1 THEN 1 END) as today_new_users
+			COUNT(CASE WHEN created_at >= $1 THEN 1 END) as today_new_users,
+			COALESCE(SUM(balance), 0) as total_user_balance
 		FROM users
 		WHERE deleted_at IS NULL
 	`
@@ -1571,6 +1572,7 @@ func (r *usageLogRepository) fillDashboardEntityStats(ctx context.Context, stats
 		[]any{todayUTC},
 		&stats.TotalUsers,
 		&stats.TodayNewUsers,
+		&stats.TotalUserBalance,
 	); err != nil {
 		return err
 	}
