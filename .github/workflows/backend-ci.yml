@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
+      ci: ${{ steps.filter.outputs.ci }}
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
       - name: Checkout
@@ -45,14 +46,33 @@ jobs:
               - 'Dockerfile.goreleaser'
               - '.goreleaser*.yaml'
               - 'Makefile'
+            ci:
+              - '.github/ci/**'
               - '.github/workflows/backend-ci.yml'
-              - '.github/workflows/deploy-dev.yml'
               - '.github/workflows/deploy-main.yml'
             frontend:
               - 'frontend/**'
+              - 'third_party/gpt_image_playground/**'
+              - 'tools/image-playground/**'
               - 'Makefile'
+              - '.github/ci/**'
               - '.github/workflows/backend-ci.yml'
               - '.github/workflows/deploy-dev.yml'
+              - '.github/workflows/deploy-main.yml'
+
+  deploy-plan-tests:
+    name: Deploy Plan Tests
+    needs: changes
+    if: ${{ needs.changes.outputs.ci == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate deploy plan scripts
+        run: |
+          bash -n .github/ci/resolve-main-deploy-plan.sh .github/ci/resolve-main-deploy-plan.test.sh
+          bash .github/ci/resolve-main-deploy-plan.test.sh
 
   backend:
     name: Backend

@@ -7,10 +7,21 @@ on:
         description: Git ref to deploy
         required: false
         default: main
+      deploy_mode:
+        description: 'Deployment mode: auto, frontend-only, or full-image'
+        required: false
+        default: auto
       frontend_dist_run_id:
         description: Optional CI run id whose frontend-dist artifact should be deployed without changing backend image
         required: false
         default: ''
+  workflow_run:
+    workflows:
+      - CI
+    branches:
+      - main
+    types:
+      - completed
 
 permissions:
   contents: read
@@ -24,7 +35,7 @@ concurrency:
 jobs:
   deploy:
     name: Deploy to Baoleyun prod
-    if: ${{ inputs.ref == '' || inputs.ref == 'main' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
     environment:
       name: prod
@@ -41,6 +52,14 @@ jobs:
             echo "::error::Deploy Main can only deploy ref=main."
             exit 1
           fi
+          case "${{ inputs.deploy_mode }}" in
+            auto|frontend-only|full-image)
+              ;;
+            *)
+              echo "::error::deploy_mode must be auto, frontend-only, or full-image."
+              exit 1
+              ;;
+          esac
           if [ -n "${{ inputs.frontend_dist_run_id }}" ]; then
             case "${{ inputs.frontend_dist_run_id }}" in
               *[!0-9]*)
@@ -50,18 +69,17 @@ jobs:
             esac
           fi
 
-      - name: Download frontend dist
-        if: ${{ inputs.frontend_dist_run_id != '' }}
-        uses: actions/download-artifact@v8
-        with:
-          name: frontend-dist
-          path: frontend-dist
-          run-id: ${{ inputs.frontend_dist_run_id }}
-          github-token: ${{ github.token }}
+      - name: Log automatic dispatch target
+        if: ${{ github.event_name == 'workflow_run' }}
+        run: |
+          echo "Deploying successful main CI run ${{ github.event.workflow_run.id }}"
+          echo "Target SHA: ${{ github.event.workflow_run.head_sha }}"
 
-      - name: Package frontend dist
-        if: ${{ inputs.frontend_dist_run_id != '' }}
-        run: tar -C frontend-dist -czf frontend-dist.tar.gz .
+      - name: Checkout target
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'main' }}
+          fetch-depth: 0
 
       - name: Configure SSH
         run: |
@@ -71,13 +89,66 @@ jobs:
           printf '%s\n' "${{ secrets.BAOLEYUN_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-      - name: Deploy on server
-        if: ${{ inputs.frontend_dist_run_id == '' }}
+      - name: Resolve deployment plan
+        id: plan
         env:
           DEPLOY_HOST: ${{ vars.BAOLEYUN_HOST }}
           DEPLOY_USER: ${{ vars.BAOLEYUN_USER }}
-          DEPLOY_REF: ${{ inputs.ref || 'main' }}
-          DEPLOY_SHA: ''
+          DEPLOY_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_mode || 'auto' }}
+          FRONTEND_DIST_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.frontend_dist_run_id || '' }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          target_sha="$(git rev-parse HEAD)"
+          deploy_state="$(
+            ssh -i ~/.ssh/id_deploy "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -se' <<'REMOTE'
+          set -euo pipefail
+
+          cd /opt/sub2api/runtime
+          docker compose config | awk '
+            /^services:[[:space:]]*$/ {
+              in_services = 1
+              next
+            }
+            in_services && /^  sub2api:[[:space:]]*$/ {
+              in_sub2api = 1
+              next
+            }
+            in_sub2api && /^  [A-Za-z0-9_-]+:[[:space:]]*$/ {
+              in_sub2api = 0
+            }
+            in_sub2api && /^[[:space:]]+image:[[:space:]]*/ {
+              print $2
+              exit
+            }
+          '
+          docker compose exec -T sub2api sh -c 'cat /app/data/public/.deploy-sha 2>/dev/null || true' < /dev/null
+          REMOTE
+          )"
+          deployed_image="$(printf '%s\n' "$deploy_state" | sed -n '1p')"
+          frontend_deployed_sha="$(printf '%s\n' "$deploy_state" | sed -n '2p')"
+
+          DEPLOYED_IMAGE="$deployed_image" FRONTEND_DEPLOYED_SHA="$frontend_deployed_sha" TARGET_SHA="$target_sha" bash .github/ci/resolve-main-deploy-plan.sh
+
+      - name: Download frontend dist
+        if: ${{ steps.plan.outputs.mode == 'frontend' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: frontend-dist
+          path: frontend-dist
+          run-id: ${{ steps.plan.outputs.frontend_dist_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Package frontend dist
+        if: ${{ steps.plan.outputs.mode == 'frontend' }}
+        run: tar -C frontend-dist -czf frontend-dist.tar.gz .
+
+      - name: Deploy on server
+        if: ${{ steps.plan.outputs.mode == 'image' }}
+        env:
+          DEPLOY_HOST: ${{ vars.BAOLEYUN_HOST }}
+          DEPLOY_USER: ${{ vars.BAOLEYUN_USER }}
+          DEPLOY_REF: main
+          DEPLOY_SHA: ${{ steps.plan.outputs.target_sha }}
           GHCR_USERNAME: ${{ github.actor }}
           GHCR_TOKEN: ${{ github.token }}
         run: |
@@ -186,7 +257,7 @@ jobs:
           } | ssh -i ~/.ssh/id_deploy "${DEPLOY_USER}@${DEPLOY_HOST}" "env DEPLOY_REF=${DEPLOY_REF_Q} DEPLOY_SHA=${DEPLOY_SHA_Q} DEPLOY_IMAGE_NAME=${DEPLOY_IMAGE_NAME_Q} GHCR_USERNAME=${GHCR_USERNAME_Q} sh -c 'IFS= read -r GHCR_TOKEN; export GHCR_TOKEN; bash -se'"
 
       - name: Deploy frontend files
-        if: ${{ inputs.frontend_dist_run_id != '' }}
+        if: ${{ steps.plan.outputs.mode == 'frontend' }}
         env:
           DEPLOY_HOST: ${{ vars.BAOLEYUN_HOST }}
           DEPLOY_USER: ${{ vars.BAOLEYUN_USER }}
@@ -212,6 +283,8 @@ jobs:
 
           docker exec "$CONTAINER_ID" sh -c 'rm -rf /app/data/public.next /app/data/public.previous && mkdir -p /app/data/public.next'
           docker cp "${RELEASE_DIR}/." "$CONTAINER_ID:/app/data/public.next/"
+          printf '%s\n' "${{ steps.plan.outputs.target_sha }}" > "$RELEASE_DIR/.deploy-sha"
+          docker cp "$RELEASE_DIR/.deploy-sha" "$CONTAINER_ID:/app/data/public.next/.deploy-sha"
           docker exec "$CONTAINER_ID" sh -c 'test -f /app/data/public.next/index.html && if [ -d /app/data/public ]; then mv /app/data/public /app/data/public.previous; fi && mv /app/data/public.next /app/data/public'
 
           rm -rf "$RELEASE_DIR"
@@ -220,3 +293,7 @@ jobs:
           curl -fsS http://127.0.0.1:8080/health
           curl -fsS https://code.hahacode.top/health
           REMOTE
+
+      - name: Skip unchanged deployment
+        if: ${{ steps.plan.outputs.mode == 'noop' }}
+        run: echo "main is already deployed; nothing to do."
