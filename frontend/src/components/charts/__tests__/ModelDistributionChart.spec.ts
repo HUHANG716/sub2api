@@ -18,6 +18,7 @@ const messages: Record<string, string> = {
   'admin.dashboard.spendingRankingRequests': 'Requests',
   'admin.dashboard.spendingRankingTokens': 'Tokens',
   'admin.dashboard.spendingRankingSpend': 'Spend',
+  'admin.dashboard.spendingRankingTotalSpend': 'Total Spend',
   'admin.dashboard.spendingRankingOther': 'Others',
   'admin.dashboard.model': 'Model',
   'admin.dashboard.requests': 'Requests',
@@ -168,6 +169,8 @@ describe('ModelDistributionChart', () => {
     expect(chartData.datasets[0].backgroundColor[0]).toBe('#3b82f6')
     expect(chartData.datasets[0].backgroundColor[2]).toBe('#94a3b8')
     expect(chartData.datasets[0].backgroundColor[2]).not.toBe(chartData.datasets[0].backgroundColor[0])
+    expect(wrapper.text()).toContain('Total Spend')
+    expect(wrapper.text()).toContain('$30.00')
 
     const rows = wrapper.findAll('tbody tr')
     expect(rows).toHaveLength(3)

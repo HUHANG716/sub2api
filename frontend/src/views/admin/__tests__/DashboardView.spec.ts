@@ -149,6 +149,9 @@ describe('admin DashboardView', () => {
       end_date: formatLocalDate(now),
       granularity: 'hour'
     }))
+    expect(getUserSpendingRanking).toHaveBeenCalledWith(expect.objectContaining({
+      user_role: ''
+    }))
   })
 
   it('uses user-dashboard style colored icon blocks for dashboard stat cards', async () => {

@@ -1523,6 +1523,7 @@ export interface UserSpendingRankingResponse {
   total_tokens: number
   start_date: string
   end_date: string
+  user_role?: 'admin' | 'user' | ''
 }
 
 export interface ApiKeyUsageTrendPoint {

@@ -285,6 +285,16 @@
                     @change="loadChartData"
                   />
                 </div>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >{{ t('admin.dashboard.roleFilter') }}:</span
+                >
+                <div class="w-28">
+                  <Select
+                    v-model="rankingUserRole"
+                    :options="rankingRoleOptions"
+                    @change="loadUserSpendingRanking"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -416,6 +426,7 @@ const getLast24HoursRangeDates = (): { start: string; end: string } => {
 
 // Date range
 const granularity = ref<'day' | 'hour'>('hour')
+const rankingUserRole = ref<'' | 'admin' | 'user'>('')
 const defaultRange = getLast24HoursRangeDates()
 const startDate = ref(defaultRange.start)
 const endDate = ref(defaultRange.end)
@@ -424,6 +435,12 @@ const endDate = ref(defaultRange.end)
 const granularityOptions = computed(() => [
   { value: 'day', label: t('admin.dashboard.day') },
   { value: 'hour', label: t('admin.dashboard.hour') }
+])
+
+const rankingRoleOptions = computed(() => [
+  { value: '', label: t('admin.dashboard.roleAll') },
+  { value: 'user', label: t('admin.dashboard.roleUser') },
+  { value: 'admin', label: t('admin.dashboard.roleAdmin') }
 ])
 
 // Dark mode detection
@@ -694,7 +711,8 @@ const loadUserSpendingRanking = async () => {
     const response = await adminAPI.dashboard.getUserSpendingRanking({
       start_date: startDate.value,
       end_date: endDate.value,
-      limit: rankingLimit
+      limit: rankingLimit,
+      user_role: rankingUserRole.value
     })
     if (currentSeq !== rankingLoadSeq) return
     rankingItems.value = response.ranking || []

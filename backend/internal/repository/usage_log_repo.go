@@ -2401,10 +2401,11 @@ func (r *usageLogRepository) GetUserUsageTrend(ctx context.Context, startTime, e
 }
 
 // GetUserSpendingRanking returns user spending ranking aggregated within the time range.
-func (r *usageLogRepository) GetUserSpendingRanking(ctx context.Context, startTime, endTime time.Time, limit int) (result *UserSpendingRankingResponse, err error) {
+func (r *usageLogRepository) GetUserSpendingRanking(ctx context.Context, startTime, endTime time.Time, limit int, userRole string) (result *UserSpendingRankingResponse, err error) {
 	if limit <= 0 {
 		limit = 12
 	}
+	userRole = strings.TrimSpace(userRole)
 
 	query := `
 		WITH user_spend AS (
@@ -2417,6 +2418,7 @@ func (r *usageLogRepository) GetUserSpendingRanking(ctx context.Context, startTi
 			FROM usage_logs u
 			LEFT JOIN users us ON u.user_id = us.id
 			WHERE u.created_at >= $1 AND u.created_at < $2
+				AND ($3 = '' OR us.role = $3)
 			GROUP BY u.user_id, us.email
 		),
 		ranked AS (
@@ -2431,7 +2433,7 @@ func (r *usageLogRepository) GetUserSpendingRanking(ctx context.Context, startTi
 				COALESCE(SUM(tokens) OVER (), 0) as total_tokens
 			FROM user_spend
 			ORDER BY actual_cost DESC, tokens DESC, user_id ASC
-			LIMIT $3
+			LIMIT $4
 		)
 		SELECT
 			user_id,
@@ -2446,7 +2448,7 @@ func (r *usageLogRepository) GetUserSpendingRanking(ctx context.Context, startTi
 		ORDER BY actual_cost DESC, tokens DESC, user_id ASC
 	`
 
-	rows, err := r.sql.QueryContext(ctx, query, startTime, endTime, limit)
+	rows, err := r.sql.QueryContext(ctx, query, startTime, endTime, userRole, limit)
 	if err != nil {
 		return nil, err
 	}
