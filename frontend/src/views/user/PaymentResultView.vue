@@ -107,7 +107,7 @@ import {
   readPaymentRecoverySnapshot,
 } from '@/components/payment/paymentFlow'
 import { usePaymentStore } from '@/stores/payment'
-import { paymentAPI } from '@/api/payment'
+import { paymentAPI, type PaymentAnalyticsEvent } from '@/api/payment'
 import type { PaymentOrder } from '@/types/payment'
 import { formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
 import { normalizePaymentMethodForDisplay, paymentMethodI18nKey } from './paymentUx'
@@ -136,6 +136,7 @@ const STATUS_REFRESH_INTERVAL_MS = 2000
 const STATUS_REFRESH_MAX_ATTEMPTS = 15
 
 let statusRefreshTimer: ReturnType<typeof setTimeout> | null = null
+let lastRecordedStatusKey = ''
 const refreshAttempts = ref(0)
 
 /** 充值金额 = pay_amount / (1 + fee_rate/100)，fee_rate=0 时等于 pay_amount */
@@ -189,11 +190,41 @@ function formatGatewayAmount(value: number): string {
   return formatPaymentAmount(value, currency.value, localeCode.value)
 }
 
+function normalizeAnalyticsNumber(value: number | null | undefined): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return undefined
+  return Math.round(value * 100) / 100
+}
+
+function recordPaymentResultAnalytics(event: PaymentAnalyticsEvent) {
+  void paymentAPI.recordEvents({ events: [event] }).catch((error) => {
+    console.warn('Failed to record payment result analytics:', error)
+  })
+}
+
+function recordPaymentResultStatus(nextOrder: PaymentOrder | null) {
+  if (!nextOrder) return
+  const key = `${nextOrder.id}:${nextOrder.status}`
+  if (lastRecordedStatusKey === key) return
+  lastRecordedStatusKey = key
+  recordPaymentResultAnalytics({
+    name: 'payment_result_status',
+    orderType: nextOrder.order_type,
+    paymentType: normalizedOrderPaymentType(nextOrder.payment_type),
+    status: normalizeOrderStatus(nextOrder.status),
+    amount: normalizeAnalyticsNumber(nextOrder.amount),
+    payAmount: normalizeAnalyticsNumber(nextOrder.pay_amount),
+    feeRate: normalizeAnalyticsNumber(nextOrder.fee_rate),
+    planId: nextOrder.plan_id,
+    orderId: nextOrder.id,
+  })
+}
+
 function setResolvedOrder(nextOrder: PaymentOrder | null): void {
   order.value = nextOrder
   if (nextOrder?.currency) {
     currency.value = normalizePaymentCurrency(nextOrder.currency)
   }
+  recordPaymentResultStatus(nextOrder)
 }
 
 function normalizeOrderStatus(status: string | null | undefined): string {
@@ -418,6 +449,17 @@ onMounted(async () => {
     clearRecoverySnapshot()
   }
   loading.value = false
+  recordPaymentResultAnalytics({
+    name: 'payment_result_view',
+    orderType: order.value?.order_type,
+    paymentType: order.value ? normalizedOrderPaymentType(order.value.payment_type) : normalizedOrderPaymentType(returnInfo.value?.type || ''),
+    status: order.value ? normalizeOrderStatus(order.value.status) : String(returnInfo.value?.tradeStatus || ''),
+    amount: normalizeAnalyticsNumber(order.value?.amount),
+    payAmount: normalizeAnalyticsNumber(order.value?.pay_amount),
+    feeRate: normalizeAnalyticsNumber(order.value?.fee_rate),
+    planId: order.value?.plan_id,
+    orderId: order.value?.id,
+  })
 })
 
 onBeforeUnmount(() => {

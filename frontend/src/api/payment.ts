@@ -16,6 +16,43 @@ import type {
 } from '@/types/payment'
 import type { BasePaginationResponse } from '@/types'
 
+export type PaymentAnalyticsEventName =
+  | 'payment_page_view'
+  | 'payment_tab_change'
+  | 'payment_method_select'
+  | 'payment_plan_select'
+  | 'payment_order_submit'
+  | 'payment_order_create_success'
+  | 'payment_order_create_error'
+  | 'payment_launch'
+  | 'payment_success'
+  | 'payment_settled'
+  | 'payment_result_view'
+  | 'payment_result_status'
+
+export interface PaymentAnalyticsEvent {
+  name: PaymentAnalyticsEventName
+  tab?: string
+  orderType?: string
+  paymentType?: string
+  launchKind?: string
+  status?: string
+  amount?: number
+  payAmount?: number
+  feeRate?: number
+  planId?: number
+  orderId?: number
+  errorKind?: string
+}
+
+export interface PaymentAnalyticsEventsRequest {
+  events: PaymentAnalyticsEvent[]
+}
+
+export interface PaymentAnalyticsEventsResponse {
+  inserted: number
+}
+
 export const paymentAPI = {
   /** Get payment configuration (enabled types, limits, etc.) */
   getConfig() {
@@ -45,6 +82,11 @@ export const paymentAPI = {
   /** Create a new payment order */
   createOrder(data: CreateOrderRequest) {
     return apiClient.post<CreateOrderResult>('/payment/orders', data)
+  },
+
+  /** Record non-sensitive payment funnel analytics */
+  recordEvents(data: PaymentAnalyticsEventsRequest) {
+    return apiClient.post<PaymentAnalyticsEventsResponse>('/payment/events', data)
   },
 
   /** Get current user's orders */

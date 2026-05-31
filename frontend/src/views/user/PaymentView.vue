@@ -39,7 +39,7 @@
             :key="tab.key"
             class="payment-tab-button"
             :class="activeTab === tab.key ? 'payment-tab-button-active' : 'payment-tab-button-inactive'"
-            @click="activeTab = tab.key"
+            @click="selectPaymentTab(tab.key)"
           >
             {{ tab.label }}
           </button>
@@ -117,7 +117,7 @@
                 <PaymentMethodSelector
                   :methods="methodOptions"
                   :selected="selectedMethod"
-                  @select="selectedMethod = $event"
+                  @select="selectPaymentMethod"
                 />
               </main>
 
@@ -252,7 +252,7 @@
                   <PaymentMethodSelector
                     :methods="subMethodOptions"
                     :selected="selectedMethod"
-                    @select="selectedMethod = $event"
+                    @select="selectPaymentMethod"
                   />
                 </main>
 
@@ -390,7 +390,7 @@ import { useAuthStore } from '@/stores/auth'
 import { usePaymentStore } from '@/stores/payment'
 import { useSubscriptionStore } from '@/stores/subscriptions'
 import { useAppStore } from '@/stores'
-import { paymentAPI } from '@/api/payment'
+import { paymentAPI, type PaymentAnalyticsEvent } from '@/api/payment'
 import { extractApiErrorMessage, extractI18nErrorMessage } from '@/utils/apiError'
 import { isMobileDevice } from '@/utils/device'
 import type { SubscriptionPlan, CheckoutInfoResponse, CreateOrderResult, OrderType } from '@/types/payment'
@@ -445,6 +445,7 @@ const amount = ref<number | null>(null)
 const selectedMethod = ref('')
 const selectedPlan = ref<SubscriptionPlan | null>(null)
 const previewImage = ref('')
+const hasTrackedInitialPageView = ref(false)
 
 const paymentPhase = ref<'select' | 'paying'>('select')
 
@@ -533,6 +534,69 @@ function removeRecoverySnapshot() {
   clearPaymentRecoverySnapshot(window.localStorage, PAYMENT_RECOVERY_STORAGE_KEY)
 }
 
+function normalizeAnalyticsNumber(value: number | null | undefined): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return undefined
+  return Math.round(value * 100) / 100
+}
+
+function currentOrderType(): OrderType {
+  return activeTab.value === 'subscription' ? 'subscription' : 'balance'
+}
+
+function getAnalyticsAmount(orderType: OrderType = currentOrderType()): number | undefined {
+  if (orderType === 'subscription') return normalizeAnalyticsNumber(selectedPlan.value?.price)
+  return normalizeAnalyticsNumber(validAmount.value)
+}
+
+function getAnalyticsPayAmount(orderType: OrderType = currentOrderType()): number | undefined {
+  if (orderType === 'subscription') return normalizeAnalyticsNumber(feeRate.value > 0 ? subTotalAmount.value : selectedPlan.value?.price)
+  return normalizeAnalyticsNumber(totalAmount.value)
+}
+
+function getAnalyticsPlanId(): number | undefined {
+  return selectedPlan.value?.id
+}
+
+function getErrorKind(err: unknown): string {
+  if (typeof err === 'object' && err !== null) {
+    if ('reason' in err && typeof err.reason === 'string' && err.reason.trim()) return err.reason.trim()
+    if ('code' in err && typeof err.code === 'string' && err.code.trim()) return err.code.trim()
+  }
+  if (err instanceof Error && err.message.trim()) return err.message.trim()
+  return 'unknown'
+}
+
+function recordPaymentAnalytics(event: PaymentAnalyticsEvent) {
+  const normalized: PaymentAnalyticsEvent = {
+    ...event,
+    tab: event.tab || activeTab.value,
+    orderType: event.orderType || currentOrderType(),
+    paymentType: normalizeVisibleMethod(event.paymentType || selectedMethod.value) || event.paymentType || selectedMethod.value || undefined,
+    amount: normalizeAnalyticsNumber(event.amount),
+    payAmount: normalizeAnalyticsNumber(event.payAmount),
+    feeRate: normalizeAnalyticsNumber(event.feeRate),
+    planId: event.planId && event.planId > 0 ? event.planId : undefined,
+    orderId: event.orderId && event.orderId > 0 ? event.orderId : undefined,
+  }
+
+  void paymentAPI.recordEvents({ events: [normalized] }).catch((error) => {
+    console.warn('Failed to record payment analytics:', error)
+  })
+}
+
+function recordOrderFunnelEvent(name: PaymentAnalyticsEvent['name'], orderType: OrderType, extra: Partial<PaymentAnalyticsEvent> = {}) {
+  recordPaymentAnalytics({
+    name,
+    tab: orderType === 'subscription' ? 'subscription' : 'recharge',
+    orderType,
+    amount: extra.amount ?? getAnalyticsAmount(orderType),
+    payAmount: extra.payAmount ?? getAnalyticsPayAmount(orderType),
+    feeRate: extra.feeRate ?? feeRate.value,
+    planId: extra.planId ?? (orderType === 'subscription' ? getAnalyticsPlanId() : undefined),
+    ...extra,
+  })
+}
+
 function resetPayment() {
   paymentPhase.value = 'select'
   paymentState.value = emptyPaymentState()
@@ -595,6 +659,15 @@ function buildWechatOAuthAuthorizeUrl(
 
 function onPaymentDone() {
   const wasSubscription = paymentState.value.orderType === 'subscription'
+  recordPaymentAnalytics({
+    name: 'payment_settled',
+    tab: wasSubscription ? 'subscription' : 'recharge',
+    orderType: paymentState.value.orderType || (wasSubscription ? 'subscription' : 'balance'),
+    paymentType: paymentState.value.paymentType,
+    amount: paymentState.value.amount,
+    payAmount: paymentState.value.payAmount,
+    orderId: paymentState.value.orderId,
+  })
   resetPayment()
   selectedPlan.value = null
   if (wasSubscription) {
@@ -603,6 +676,15 @@ function onPaymentDone() {
 }
 
 function onPaymentSuccess() {
+  recordPaymentAnalytics({
+    name: 'payment_success',
+    tab: paymentState.value.orderType === 'subscription' ? 'subscription' : 'recharge',
+    orderType: paymentState.value.orderType || currentOrderType(),
+    paymentType: paymentState.value.paymentType,
+    amount: paymentState.value.amount,
+    payAmount: paymentState.value.payAmount,
+    orderId: paymentState.value.orderId,
+  })
   removeRecoverySnapshot()
   authStore.refreshUser()
   if (paymentState.value.orderType === 'subscription') {
@@ -611,6 +693,15 @@ function onPaymentSuccess() {
 }
 
 function onPaymentSettled() {
+  recordPaymentAnalytics({
+    name: 'payment_settled',
+    tab: paymentState.value.orderType === 'subscription' ? 'subscription' : 'recharge',
+    orderType: paymentState.value.orderType || currentOrderType(),
+    paymentType: paymentState.value.paymentType,
+    amount: paymentState.value.amount,
+    payAmount: paymentState.value.payAmount,
+    orderId: paymentState.value.orderId,
+  })
   removeRecoverySnapshot()
 }
 
@@ -874,6 +965,17 @@ watch(() => [validAmount.value, selectedMethod.value] as const, ([amt, method]) 
   if (available) selectedMethod.value = available
 })
 
+watch(loading, (next) => {
+  if (next || hasTrackedInitialPageView.value) return
+  hasTrackedInitialPageView.value = true
+  recordPaymentAnalytics({
+    name: 'payment_page_view',
+    amount: getAnalyticsAmount(),
+    payAmount: getAnalyticsPayAmount(),
+    feeRate: feeRate.value,
+  })
+})
+
 // Payment button class: follows selected payment method color
 const paymentButtonClass = computed(() => {
   const m = selectedMethod.value
@@ -908,6 +1010,15 @@ const planValiditySuffix = computed(() => {
 function selectPlan(plan: SubscriptionPlan) {
   selectedPlan.value = plan
   errorMessage.value = ''
+  recordPaymentAnalytics({
+    name: 'payment_plan_select',
+    tab: 'subscription',
+    orderType: 'subscription',
+    amount: plan.price,
+    payAmount: feeRate.value > 0 ? Math.round((plan.price + Math.ceil(((plan.price * feeRate.value) / 100) * 100) / 100) * 100) / 100 : plan.price,
+    feeRate: feeRate.value,
+    planId: plan.id,
+  })
 }
 
 function selectPlanFromModal(plan: SubscriptionPlan) {
@@ -915,6 +1026,37 @@ function selectPlanFromModal(plan: SubscriptionPlan) {
   renewGroupId.value = null
   selectedPlan.value = plan
   errorMessage.value = ''
+  recordPaymentAnalytics({
+    name: 'payment_plan_select',
+    tab: 'subscription',
+    orderType: 'subscription',
+    amount: plan.price,
+    payAmount: feeRate.value > 0 ? Math.round((plan.price + Math.ceil(((plan.price * feeRate.value) / 100) * 100) / 100) * 100) / 100 : plan.price,
+    feeRate: feeRate.value,
+    planId: plan.id,
+  })
+}
+
+function selectPaymentTab(tab: 'recharge' | 'subscription') {
+  if (activeTab.value === tab) return
+  activeTab.value = tab
+  recordPaymentAnalytics({
+    name: 'payment_tab_change',
+    tab,
+    orderType: tab === 'subscription' ? 'subscription' : 'balance',
+  })
+}
+
+function selectPaymentMethod(method: string) {
+  selectedMethod.value = method
+  recordPaymentAnalytics({
+    name: 'payment_method_select',
+    paymentType: method,
+    amount: getAnalyticsAmount(),
+    payAmount: getAnalyticsPayAmount(),
+    feeRate: feeRate.value,
+    planId: currentOrderType() === 'subscription' ? getAnalyticsPlanId() : undefined,
+  })
 }
 
 function closeRenewalModal() {
@@ -924,11 +1066,13 @@ function closeRenewalModal() {
 
 async function handleSubmitRecharge() {
   if (!canSubmit.value || submitting.value) return
+  recordOrderFunnelEvent('payment_order_submit', 'balance')
   await createOrder(validAmount.value, 'balance')
 }
 
 async function confirmSubscribe() {
   if (!selectedPlan.value || submitting.value) return
+  recordOrderFunnelEvent('payment_order_submit', 'subscription')
   await createOrder(selectedPlan.value.price, 'subscription', selectedPlan.value.id)
 }
 
@@ -956,13 +1100,22 @@ async function createOrder(orderAmount: number, orderType: OrderType, planId?: n
     }
 
     const result = await paymentStore.createOrder(payload) as CreateOrderResult & { resume_token?: string }
+    const resultPaymentType = normalizeVisibleMethod(result.payment_type || requestType) || result.payment_type || requestType
+    recordOrderFunnelEvent('payment_order_create_success', orderType, {
+      paymentType: resultPaymentType,
+      amount: result.amount ?? orderAmount,
+      payAmount: result.pay_amount,
+      feeRate: result.fee_rate,
+      planId,
+      orderId: result.order_id,
+    })
     const openWindow = (url: string) => {
       const win = window.open(url, 'paymentPopup', getPaymentPopupFeatures())
       if (!win || win.closed) {
         window.location.href = url
       }
     }
-    const visibleMethod = normalizeVisibleMethod(requestType) || requestType
+    const visibleMethod = resultPaymentType
     // When user clicks the dedicated Stripe button, leave method blank so the
     // landing page renders Stripe's full Payment Element (card/link/alipay/wxpay).
     const stripeMethod = visibleMethod === 'stripe'
@@ -998,6 +1151,16 @@ async function createOrder(orderAmount: number, orderType: OrderType, planId?: n
       stripePopupUrl: stripeRouteUrl,
       stripeRouteUrl,
       airwallexRouteUrl,
+    })
+    recordOrderFunnelEvent('payment_launch', orderType, {
+      paymentType: visibleMethod,
+      launchKind: decision.kind,
+      amount: result.amount ?? orderAmount,
+      payAmount: result.pay_amount,
+      feeRate: result.fee_rate,
+      planId,
+      orderId: result.order_id,
+      status: decision.kind === 'qr_waiting' || decision.kind === 'redirect_waiting' ? 'PENDING' : undefined,
     })
 
     if (decision.kind === 'wechat_oauth' && decision.oauth?.authorize_url) {
@@ -1081,6 +1244,11 @@ async function createOrder(orderAmount: number, orderType: OrderType, planId?: n
       openWindow(decision.paymentState.payUrl)
     }
   } catch (err: unknown) {
+    recordOrderFunnelEvent('payment_order_create_error', orderType, {
+      paymentType: requestType,
+      planId,
+      errorKind: getErrorKind(err),
+    })
     const apiErr = err as Record<string, unknown>
     if (apiErr.reason === 'TOO_MANY_PENDING') {
       const metadata = apiErr.metadata as Record<string, unknown> | undefined
@@ -1174,6 +1342,14 @@ async function attemptMobileQrFallback(err: unknown, context: MobileQrFallbackCo
       isWechatBrowser: false,
     })
     const result = await paymentStore.createOrder(payload) as CreateOrderResult & { resume_token?: string }
+    recordOrderFunnelEvent('payment_order_create_success', context.orderType, {
+      paymentType: visibleMethod,
+      amount: result.amount ?? context.orderAmount,
+      payAmount: result.pay_amount,
+      feeRate: result.fee_rate,
+      planId: context.planId,
+      orderId: result.order_id,
+    })
     const stripeMethod = visibleMethod === 'wxpay' ? 'wechat_pay' : 'alipay'
     const stripeRouteUrl = result.client_secret
       ? router.resolve({
@@ -1198,6 +1374,16 @@ async function attemptMobileQrFallback(err: unknown, context: MobileQrFallbackCo
     if (decision.kind !== 'qr_waiting' || !decision.paymentState.qrCode) {
       return false
     }
+    recordOrderFunnelEvent('payment_launch', context.orderType, {
+      paymentType: visibleMethod,
+      launchKind: decision.kind,
+      amount: result.amount ?? context.orderAmount,
+      payAmount: result.pay_amount,
+      feeRate: result.fee_rate,
+      planId: context.planId,
+      orderId: result.order_id,
+      status: 'PENDING',
+    })
 
     errorMessage.value = ''
     errorHintMessage.value = ''
