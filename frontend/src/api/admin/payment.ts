@@ -51,6 +51,41 @@ export interface UpdatePaymentConfigRequest {
   help_text?: string
 }
 
+export interface PaymentAnalyticsStep {
+  name: string
+  count: number
+  unique_users: number
+}
+
+export interface PaymentAnalyticsMethod {
+  payment_type: string
+  event_name: string
+  count: number
+}
+
+export interface PaymentAnalyticsRecentEvent {
+  name: string
+  tab?: string
+  order_type?: string
+  payment_type?: string
+  launch_kind?: string
+  status?: string
+  amount?: number
+  pay_amount?: number
+  plan_id?: number
+  order_id?: number
+  error_kind?: string
+  created_at?: string
+}
+
+export interface PaymentAnalyticsResponse {
+  steps: PaymentAnalyticsStep[]
+  methods: PaymentAnalyticsMethod[]
+  recent_events: PaymentAnalyticsRecentEvent[]
+  window_days: number
+  events_missing: boolean
+}
+
 export const adminPaymentAPI = {
   // ==================== Config ====================
 
@@ -69,6 +104,13 @@ export const adminPaymentAPI = {
   /** Get payment dashboard statistics */
   getDashboard(days?: number) {
     return apiClient.get<DashboardStats>('/admin/payment/dashboard', {
+      params: days ? { days } : undefined
+    })
+  },
+
+  /** Get payment funnel analytics */
+  getAnalytics(days?: number) {
+    return apiClient.get<PaymentAnalyticsResponse>('/admin/payment/analytics', {
       params: days ? { days } : undefined
     })
   },

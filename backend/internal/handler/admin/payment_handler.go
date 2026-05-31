@@ -1,27 +1,41 @@
 package admin
 
 import (
+	"database/sql"
+	"errors"
 	"strconv"
+	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 )
 
 // PaymentHandler handles admin payment management.
 type PaymentHandler struct {
 	paymentService *service.PaymentService
 	configService  *service.PaymentConfigService
+	sqlDB          *sql.DB
 }
 
 // NewPaymentHandler creates a new admin PaymentHandler.
-func NewPaymentHandler(paymentService *service.PaymentService, configService *service.PaymentConfigService) *PaymentHandler {
+func NewPaymentHandler(paymentService *service.PaymentService, configService *service.PaymentConfigService, sqlDBs ...*sql.DB) *PaymentHandler {
+	var sqlDB *sql.DB
+	if len(sqlDBs) > 0 {
+		sqlDB = sqlDBs[0]
+	}
 	return &PaymentHandler{
 		paymentService: paymentService,
 		configService:  configService,
+		sqlDB:          sqlDB,
 	}
+}
+
+func ProvidePaymentHandler(paymentService *service.PaymentService, configService *service.PaymentConfigService, sqlDB *sql.DB) *PaymentHandler {
+	return NewPaymentHandler(paymentService, configService, sqlDB)
 }
 
 // --- Dashboard ---
@@ -41,6 +55,194 @@ func (h *PaymentHandler) GetDashboard(c *gin.Context) {
 		return
 	}
 	response.Success(c, stats)
+}
+
+type PaymentAnalyticsStep struct {
+	Name        string `json:"name"`
+	Count       int64  `json:"count"`
+	UniqueUsers int64  `json:"unique_users"`
+}
+
+type PaymentAnalyticsMethod struct {
+	PaymentType string `json:"payment_type"`
+	EventName   string `json:"event_name"`
+	Count       int64  `json:"count"`
+}
+
+type PaymentAnalyticsRecentEvent struct {
+	Name        string     `json:"name"`
+	Tab         *string    `json:"tab,omitempty"`
+	OrderType   *string    `json:"order_type,omitempty"`
+	PaymentType *string    `json:"payment_type,omitempty"`
+	LaunchKind  *string    `json:"launch_kind,omitempty"`
+	Status      *string    `json:"status,omitempty"`
+	Amount      *float64   `json:"amount,omitempty"`
+	PayAmount   *float64   `json:"pay_amount,omitempty"`
+	PlanID      *int64     `json:"plan_id,omitempty"`
+	OrderID     *int64     `json:"order_id,omitempty"`
+	ErrorKind   *string    `json:"error_kind,omitempty"`
+	CreatedAt   *time.Time `json:"created_at,omitempty"`
+}
+
+type PaymentAnalyticsResponse struct {
+	Steps         []PaymentAnalyticsStep        `json:"steps"`
+	Methods       []PaymentAnalyticsMethod      `json:"methods"`
+	RecentEvents  []PaymentAnalyticsRecentEvent `json:"recent_events"`
+	WindowDays    int                           `json:"window_days"`
+	EventsMissing bool                          `json:"events_missing"`
+}
+
+// GetAnalytics returns payment funnel analytics from payment_events.
+// GET /api/v1/admin/payment/analytics
+func (h *PaymentHandler) GetAnalytics(c *gin.Context) {
+	if h.sqlDB == nil {
+		response.Success(c, PaymentAnalyticsResponse{WindowDays: parsePaymentAnalyticsDays(c), EventsMissing: true})
+		return
+	}
+
+	days := parsePaymentAnalyticsDays(c)
+	since := time.Now().AddDate(0, 0, -days)
+	result := PaymentAnalyticsResponse{WindowDays: days}
+
+	steps, err := h.queryPaymentAnalyticsSteps(c, since)
+	if err != nil {
+		if isMissingPaymentEventsTable(err) {
+			result.EventsMissing = true
+			response.Success(c, result)
+			return
+		}
+		response.ErrorFrom(c, err)
+		return
+	}
+	methods, err := h.queryPaymentAnalyticsMethods(c, since)
+	if err != nil {
+		if isMissingPaymentEventsTable(err) {
+			result.EventsMissing = true
+			response.Success(c, result)
+			return
+		}
+		response.ErrorFrom(c, err)
+		return
+	}
+	recentEvents, err := h.queryPaymentAnalyticsRecentEvents(c, since)
+	if err != nil {
+		if isMissingPaymentEventsTable(err) {
+			result.EventsMissing = true
+			response.Success(c, result)
+			return
+		}
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	result.Steps = steps
+	result.Methods = methods
+	result.RecentEvents = recentEvents
+	response.Success(c, result)
+}
+
+func isMissingPaymentEventsTable(err error) bool {
+	var pqErr *pq.Error
+	return errors.As(err, &pqErr) && pqErr.Code == "42P01"
+}
+
+func parsePaymentAnalyticsDays(c *gin.Context) int {
+	days := 30
+	if d := c.Query("days"); d != "" {
+		if v, err := strconv.Atoi(d); err == nil && v > 0 {
+			days = v
+		}
+	}
+	if days > 180 {
+		days = 180
+	}
+	return days
+}
+
+func (h *PaymentHandler) queryPaymentAnalyticsSteps(c *gin.Context, since time.Time) ([]PaymentAnalyticsStep, error) {
+	rows, err := h.sqlDB.QueryContext(c.Request.Context(), `
+		SELECT event_name, COUNT(*) AS count, COUNT(DISTINCT user_id) AS unique_users
+		FROM payment_events
+		WHERE created_at >= $1
+		GROUP BY event_name
+		ORDER BY event_name
+	`, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	steps := make([]PaymentAnalyticsStep, 0)
+	for rows.Next() {
+		var step PaymentAnalyticsStep
+		if err := rows.Scan(&step.Name, &step.Count, &step.UniqueUsers); err != nil {
+			return nil, err
+		}
+		steps = append(steps, step)
+	}
+	return steps, rows.Err()
+}
+
+func (h *PaymentHandler) queryPaymentAnalyticsMethods(c *gin.Context, since time.Time) ([]PaymentAnalyticsMethod, error) {
+	rows, err := h.sqlDB.QueryContext(c.Request.Context(), `
+		SELECT COALESCE(payment_type, ''), event_name, COUNT(*) AS count
+		FROM payment_events
+		WHERE created_at >= $1 AND COALESCE(payment_type, '') <> ''
+		GROUP BY payment_type, event_name
+		ORDER BY payment_type, event_name
+	`, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	methods := make([]PaymentAnalyticsMethod, 0)
+	for rows.Next() {
+		var item PaymentAnalyticsMethod
+		if err := rows.Scan(&item.PaymentType, &item.EventName, &item.Count); err != nil {
+			return nil, err
+		}
+		methods = append(methods, item)
+	}
+	return methods, rows.Err()
+}
+
+func (h *PaymentHandler) queryPaymentAnalyticsRecentEvents(c *gin.Context, since time.Time) ([]PaymentAnalyticsRecentEvent, error) {
+	rows, err := h.sqlDB.QueryContext(c.Request.Context(), `
+		SELECT event_name, tab, order_type, payment_type, launch_kind, status,
+		       amount, pay_amount, plan_id, order_id, error_kind, created_at
+		FROM payment_events
+		WHERE created_at >= $1
+		ORDER BY created_at DESC
+		LIMIT 20
+	`, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	events := make([]PaymentAnalyticsRecentEvent, 0)
+	for rows.Next() {
+		var event PaymentAnalyticsRecentEvent
+		if err := rows.Scan(
+			&event.Name,
+			&event.Tab,
+			&event.OrderType,
+			&event.PaymentType,
+			&event.LaunchKind,
+			&event.Status,
+			&event.Amount,
+			&event.PayAmount,
+			&event.PlanID,
+			&event.OrderID,
+			&event.ErrorKind,
+			&event.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	return events, rows.Err()
 }
 
 // --- Orders ---

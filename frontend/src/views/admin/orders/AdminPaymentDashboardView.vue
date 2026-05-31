@@ -31,6 +31,7 @@
       <template v-else-if="stats">
         <OrderStatsCards :stats="stats" />
         <DailyRevenueChart :data="stats.daily_series || []" :loading="loading" />
+        <PaymentFunnelAnalytics :analytics="analytics" :loading="analyticsLoading" :days="days" />
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div class="card p-4">
             <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">{{ t('payment.admin.paymentDistribution') }}</h3>
@@ -74,11 +75,13 @@ import { useAppStore } from '@/stores/app'
 import { adminPaymentAPI } from '@/api/admin/payment'
 import { extractI18nErrorMessage } from '@/utils/apiError'
 import type { DashboardStats } from '@/types/payment'
+import type { PaymentAnalyticsResponse } from '@/api/admin/payment'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Icon from '@/components/icons/Icon.vue'
 import OrderStatsCards from '@/components/admin/payment/OrderStatsCards.vue'
 import DailyRevenueChart from '@/components/admin/payment/DailyRevenueChart.vue'
+import PaymentFunnelAnalytics from '@/components/admin/payment/PaymentFunnelAnalytics.vue'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -86,7 +89,9 @@ const appStore = useAppStore()
 const DAYS_OPTIONS = [7, 30, 90] as const
 const days = ref<number>(30)
 const loading = ref(false)
+const analyticsLoading = ref(false)
 const stats = ref<DashboardStats | null>(null)
+const analytics = ref<PaymentAnalyticsResponse | null>(null)
 
 function methodColor(type: string): string {
   const c: Record<string, string> = {
@@ -106,13 +111,19 @@ function rankClass(idx: number): string {
 
 async function loadDashboard() {
   loading.value = true
+  analyticsLoading.value = true
   try {
-    const res = await adminPaymentAPI.getDashboard(days.value)
+    const [res, analyticsRes] = await Promise.all([
+      adminPaymentAPI.getDashboard(days.value),
+      adminPaymentAPI.getAnalytics(days.value),
+    ])
     stats.value = res.data
+    analytics.value = analyticsRes.data
   } catch (err: unknown) {
     appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error')))
   } finally {
     loading.value = false
+    analyticsLoading.value = false
   }
 }
 

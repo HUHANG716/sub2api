@@ -182,7 +182,7 @@ var ProviderSet = wire.NewSet(
 	admin.NewChannelMonitorHandler,
 	admin.NewChannelMonitorRequestTemplateHandler,
 	admin.NewContentModerationHandler,
-	admin.NewPaymentHandler,
+	admin.ProvidePaymentHandler,
 	admin.NewAffiliateHandler,
 
 	// AdminHandlers and Handlers constructors
