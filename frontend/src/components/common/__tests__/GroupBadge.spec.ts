@@ -54,14 +54,15 @@ describe('GroupBadge global discount rate display', () => {
   it('shows base and discounted rates when an active global discount is passed', () => {
     const wrapper = mountBadge({ rateMultiplier: 1, globalDiscountRate: 0.8 })
 
-    expect(wrapper.text()).toContain('1x → 0.8x')
+    expect(wrapper.text()).toContain('1.000x → 0.800x')
     expect(wrapper.text()).toContain('全局 8 折')
+    expect(wrapper.get('.flex.flex-col').text()).toContain('1.000x → 0.800x')
   })
 
   it('applies the global discount to non-unit group rates', () => {
     const wrapper = mountBadge({ rateMultiplier: 1.2, globalDiscountRate: 0.8 })
 
-    expect(wrapper.text()).toContain('1.2x → 0.96x')
+    expect(wrapper.text()).toContain('1.200x → 0.960x')
   })
 
   it('applies the global discount after the user custom rate', () => {
@@ -72,12 +73,12 @@ describe('GroupBadge global discount rate display', () => {
     })
 
     expect(wrapper.text()).toContain('1x')
-    expect(wrapper.text()).toContain('0.7x → 0.56x')
+    expect(wrapper.text()).toContain('0.700x → 0.560x')
     expect(wrapper.text()).toContain('全局 8 折')
   })
 
   it('keeps the original rate display without a valid global discount', () => {
-    expect(mountBadge({ rateMultiplier: 1 }).text()).toContain('1x')
+    expect(mountBadge({ rateMultiplier: 1 }).text()).toContain('1.000x')
     expect(mountBadge({ rateMultiplier: 1 }).text()).not.toContain('→')
     expect(mountBadge({ rateMultiplier: 1, globalDiscountRate: 1 }).text()).not.toContain('→')
     expect(mountBadge({ rateMultiplier: 1, globalDiscountRate: null }).text()).not.toContain('→')
@@ -88,5 +89,16 @@ describe('GroupBadge global discount rate display', () => {
 
     expect(wrapper.vm.$props.globalDiscountRate).toBe(0.8)
     expect(wrapper.text()).toContain('Global 20% off')
+  })
+
+  it('keeps subscription badges as subscription labels unless rate display is forced', () => {
+    const wrapper = mountBadge({
+      subscriptionType: 'subscription',
+      rateMultiplier: 1.2,
+      globalDiscountRate: 0.8,
+    })
+
+    expect(wrapper.text()).not.toContain('1.200x → 0.960x')
+    expect(wrapper.find('.flex.flex-col').exists()).toBe(false)
   })
 })

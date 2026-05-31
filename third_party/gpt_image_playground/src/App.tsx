@@ -28,6 +28,7 @@ let customProviderConfigUrlImportStarted = false
 export default function App() {
   const setSettings = useStore((s) => s.setSettings)
   const appMode = useStore((s) => s.appMode)
+  const productEmbed = isProductEmbedMode()
   useDockerApiUrlMigrationNotice()
   useParentImageEstimateSync()
   useGlobalClickSuppression()
@@ -81,14 +82,18 @@ export default function App() {
   }, [])
 
   return (
-    <>
+    <div className={productEmbed ? 'product-embed-shell' : undefined}>
       <Header />
       {appMode === 'agent' ? (
         <AgentWorkspace />
       ) : appMode === 'templates' ? (
         <TemplateWorkspace />
       ) : (
-        <main data-home-main data-drag-select-surface className="pb-48">
+        <main
+          data-home-main
+          data-drag-select-surface
+          className={productEmbed ? 'pb-[calc(var(--input-bar-clearance,10rem)+2rem)]' : 'pb-48'}
+        >
           <div className="safe-area-x max-w-7xl mx-auto">
             <SearchBar />
             <TaskGrid />
@@ -104,6 +109,6 @@ export default function App() {
       <Toast />
       <MaskEditorModal />
       <ImageContextMenu />
-    </>
+    </div>
   )
 }

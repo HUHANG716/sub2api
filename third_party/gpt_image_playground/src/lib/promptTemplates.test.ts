@@ -192,6 +192,10 @@ describe('parseYouMindPromptTemplates', () => {
       '',
       '### No. 1: VR 头显爆炸视图海报',
       '',
+      '![Language-EN](https://img.shields.io/badge/Language-EN-blue)',
+      '![Featured](https://img.shields.io/badge/⭐-Featured-gold)',
+      '![Raycast](https://img.shields.io/badge/🚀-Raycast_Friendly-purple)',
+      '',
       '#### 📖 描述',
       '',
       '生成一张高科技 VR 头显爆炸视图。',
@@ -202,7 +206,13 @@ describe('parseYouMindPromptTemplates', () => {
       '{"type":"产品爆炸视图海报"}',
       '```',
       '',
+      '#### 🖼️ 生成图片',
+      '',
       '<img src="https://cms-assets.youmind.com/media/a.jpg" width="700" alt="VR 头显爆炸视图海报 - Image 1">',
+      '',
+      '#### 📌 详情',
+      '',
+      '- **多语言:** en',
       '',
       '### No. 2: 空提示词',
       '',
@@ -228,6 +238,7 @@ describe('parseYouMindPromptTemplates', () => {
       imageUrl: 'https://cms-assets.youmind.com/media/a.jpg',
       language: 'zh',
     })
+    expect(templates[0].imageUrls).toEqual(['https://cms-assets.youmind.com/media/a.jpg'])
   })
 })
 

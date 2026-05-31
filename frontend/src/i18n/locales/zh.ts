@@ -89,11 +89,9 @@ export default {
         titlePrefix: '智能时代的',
         titleCore: 'Harness Engineering',
         titleAccent: '聚焦创意的实现',
-        supports: '同时支持',
         platformIntro: '一键轻松在以下平台体验：'
       },
       testimonials: {
-        eyebrow: '用户评价',
         title: '用户怎么说',
         description: '来自开发者、架构师和研发负责人的真实使用反馈。',
         listLabel: '用户评价列表'

@@ -131,7 +131,11 @@
           @open="showAgreementModal = true"
         />
 
-        <div v-if="showOAuthLogin" class="space-y-3 pt-1">
+        <div
+          v-if="showOAuthLogin"
+          class="space-y-3 pt-1"
+          @click.capture="guardOAuthAgreement"
+        >
           <div class="flex items-center gap-3">
             <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
             <span class="text-xs text-gray-500 dark:text-dark-400">
@@ -283,7 +287,7 @@ const agreementGateActive = computed(
 )
 
 const authActionDisabled = computed(
-  () => isLoading.value || !publicSettingsLoaded.value || agreementGateActive.value
+  () => isLoading.value || !publicSettingsLoaded.value
 )
 
 const showOAuthLogin = computed(
@@ -397,7 +401,19 @@ function rejectLoginAgreement(): void {
   localStorage.removeItem(LOGIN_AGREEMENT_STORAGE_KEY)
   agreementAccepted.value = false
   showAgreementModal.value = false
-  appStore.showWarning('未同意最新条款前，无法输入账号密码或使用快捷登录。')
+  appStore.showWarning('请先阅读并同意最新条款后再继续。')
+}
+
+function guardOAuthAgreement(event: Event): void {
+  if (!agreementGateActive.value) {
+    return
+  }
+  event.preventDefault()
+  event.stopPropagation()
+  appStore.showWarning('请先阅读并同意最新条款后再使用快捷登录。')
+  if (loginAgreementMode.value !== 'checkbox') {
+    showAgreementModal.value = true
+  }
 }
 
 // ==================== Turnstile Handlers ====================

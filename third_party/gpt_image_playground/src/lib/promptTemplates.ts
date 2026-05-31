@@ -127,6 +127,21 @@ function extractFirstImage(lines: string[]) {
   return uniqueStrings([...extractMarkdownImageUrls(lines), ...extractHtmlImageUrls(lines)])[0]
 }
 
+function extractSectionLines(lines: string[], startLine: RegExp) {
+  const sectionLines: string[] = []
+  let inSection = false
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!inSection) {
+      if (startLine.test(trimmed)) inSection = true
+      continue
+    }
+    if (/^####\s+/.test(trimmed)) break
+    sectionLines.push(line)
+  }
+  return sectionLines
+}
+
 function extractFirstCodeBlock(lines: string[], afterLine?: RegExp) {
   let armed = !afterLine
   let inCode = false
@@ -428,7 +443,11 @@ export function parseYouMindPromptTemplates(markdown: string, readmePath = 'READ
       const { caseId, title } = parseCaseHeading(block.heading)
       const promptText = extractFirstCodeBlock(block.lines, /^####\s+📝\s*提示词/i)
       if (!promptText) return null
-      const imageUrls = uniqueStrings([...extractMarkdownImageUrls(block.lines), ...extractHtmlImageUrls(block.lines)])
+      const imageLines = extractSectionLines(block.lines, /^####\s+🖼️\s*生成图片/i)
+      const imageUrls = uniqueStrings([
+        ...extractMarkdownImageUrls(imageLines.length ? imageLines : block.lines),
+        ...extractHtmlImageUrls(imageLines.length ? imageLines : block.lines),
+      ]).filter((url) => !/\/\/img\.shields\.io\//i.test(url))
       const descriptionLines: string[] = []
       let inDescription = false
       for (const line of block.lines) {

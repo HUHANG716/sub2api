@@ -89,11 +89,9 @@ export default {
         titlePrefix: 'Harness Engineering',
         titleCore: 'for the AI era',
         titleAccent: 'focused on making ideas real',
-        supports: 'Works with',
         platformIntro: 'Try it easily on these platforms:'
       },
       testimonials: {
-        eyebrow: 'Customer stories',
         title: 'What users say',
         description: 'Real feedback from developers, architects, and engineering leads.',
         listLabel: 'Customer story list'

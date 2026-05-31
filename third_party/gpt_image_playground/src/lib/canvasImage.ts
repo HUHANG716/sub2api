@@ -20,9 +20,26 @@ export async function getImageDimensions(dataUrl: string): Promise<ImageDimensio
 }
 
 export async function dataUrlToBlob(dataUrl: string, fallbackType = 'image/png'): Promise<Blob> {
-  const response = await fetch(dataUrl)
-  const blob = await response.blob()
-  return blob.type ? blob : new Blob([await blob.arrayBuffer()], { type: fallbackType })
+  const commaIndex = dataUrl.indexOf(',')
+  if (commaIndex < 0 || !dataUrl.startsWith('data:')) throw new Error('图片 data URL 格式无效')
+
+  const meta = dataUrl.slice(5, commaIndex)
+  const payload = dataUrl.slice(commaIndex + 1)
+  const parts = meta.split(';').filter(Boolean)
+  const mime = parts.find((part) => part.includes('/')) || fallbackType
+  const isBase64 = parts.some((part) => part.toLowerCase() === 'base64')
+
+  if (!isBase64) {
+    return new Blob([decodeURIComponent(payload)], { type: mime })
+  }
+
+  const normalized = payload.replace(/\s/g, '')
+  const binary = atob(normalized)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return new Blob([bytes], { type: mime })
 }
 
 export async function imageDataUrlToPngBlob(dataUrl: string): Promise<Blob> {

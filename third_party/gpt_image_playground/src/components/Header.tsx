@@ -152,12 +152,12 @@ export default function Header() {
 
   return (
     <>
-      <header data-no-drag-select className={`safe-area-top fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-gray-950/80 backdrop-blur border-b border-gray-200 dark:border-white/[0.08] transition-transform duration-300 ease-in-out ${appMode === 'agent' && !agentMobileHeaderVisible ? '-translate-y-full sm:translate-y-0' : 'translate-y-0'}`}>
+      <header data-no-drag-select className={`safe-area-top fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-gray-950/80 backdrop-blur border-b border-gray-200 dark:border-white/[0.08] transition-transform duration-300 ease-in-out ${productEmbed ? 'product-embed-header' : ''} ${appMode === 'agent' && !agentMobileHeaderVisible ? '-translate-y-full sm:translate-y-0' : 'translate-y-0'}`}>
         <div className="safe-area-x safe-header-inner max-w-7xl mx-auto flex items-center justify-between relative">
           <div className="flex-1 min-w-0 pr-2 flex items-center gap-2">
-            <h1 className="inline-flex items-start relative mr-2">
+            <h1 className={`inline-flex items-start relative ${productEmbed ? 'mr-1' : 'mr-2'}`}>
               <span className="text-[17px] sm:text-lg font-bold tracking-tight text-gray-800 dark:text-gray-100">
-                GPT Image Playground
+                {productEmbed ? 'Images' : 'GPT Image Playground'}
               </span>
               {!productEmbed && hasUpdate && latestRelease && (
                 <button
@@ -213,13 +213,16 @@ export default function Header() {
               </button>
             </div>
           )}
-          <div className="hidden sm:flex items-center gap-1 rounded-xl border border-gray-200 dark:border-white/[0.08] bg-gray-100/70 dark:bg-white/[0.04] p-1 mr-4">
+          <div
+            data-product-nav
+            className={`${productEmbed ? 'flex' : 'hidden sm:flex'} items-center gap-1 rounded-xl border border-gray-200 dark:border-white/[0.08] bg-gray-100/70 dark:bg-white/[0.04] p-1 ${productEmbed ? 'mr-2' : 'mr-4'}`}
+          >
             {NAV_ITEMS.map((item) => (
               <button
                 key={item.mode}
                 type="button"
                 onClick={() => setAppMode(item.mode)}
-                className={`px-4 py-1.5 rounded-lg text-sm transition-colors ${appMode === item.mode ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm font-medium' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+                className={`${productEmbed ? 'px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm' : 'px-4 py-1.5 text-sm'} rounded-lg transition-colors ${appMode === item.mode ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm font-medium' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
               >
                 {item.label}
               </button>
@@ -281,7 +284,7 @@ export default function Header() {
             </div>
           </div>
         </div>
-        <div className={`safe-area-x sm:hidden overflow-hidden transition-all duration-300 ease-in-out ${appMode === 'gallery' && scrollDirection === 'down' ? 'max-h-0 opacity-0 pb-0' : 'max-h-20 opacity-100 pb-2'}`}>
+        {!productEmbed && <div className={`safe-area-x sm:hidden overflow-hidden transition-all duration-300 ease-in-out ${appMode === 'gallery' && scrollDirection === 'down' ? 'max-h-0 opacity-0 pb-0' : 'max-h-20 opacity-100 pb-2'}`}>
           <div className="grid grid-cols-3 gap-1 rounded-xl border border-gray-200 dark:border-white/[0.08] bg-gray-100/70 dark:bg-white/[0.04] p-1 mx-2">
             {NAV_ITEMS.map((item) => (
               <button
@@ -294,7 +297,7 @@ export default function Header() {
               </button>
             ))}
           </div>
-        </div>
+        </div>}
       </header>
       
       {/* Hint for sliding down */}
@@ -306,11 +309,11 @@ export default function Header() {
 
       <div className={`safe-area-top invisible pointer-events-none transition-all duration-300 ease-in-out ${appMode === 'agent' && !agentMobileHeaderVisible ? 'max-h-0 sm:max-h-[500px] opacity-0 sm:opacity-100 overflow-hidden sm:overflow-visible' : 'max-h-[500px] opacity-100'}`} aria-hidden="true">
         <div className="safe-header-inner" />
-        <div className={`safe-area-x sm:hidden overflow-hidden transition-all duration-300 ease-in-out ${appMode === 'gallery' && scrollDirection === 'down' ? 'max-h-0 pb-0' : 'max-h-20 pb-2'}`}>
+        {!productEmbed && <div className={`safe-area-x sm:hidden overflow-hidden transition-all duration-300 ease-in-out ${appMode === 'gallery' && scrollDirection === 'down' ? 'max-h-0 pb-0' : 'max-h-20 pb-2'}`}>
           <div className="p-1">
             <div className="py-1.5 text-sm">占位</div>
           </div>
-        </div>
+        </div>}
       </div>
       {showHelp && <HelpModal appMode={appMode} onClose={() => setShowHelp(false)} />}
     </>

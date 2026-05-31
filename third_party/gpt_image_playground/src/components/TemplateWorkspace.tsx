@@ -11,6 +11,7 @@ import {
 } from '../lib/promptTemplates'
 import { useStore } from '../store'
 import { CopyIcon, ExternalLinkIcon, PhotoIcon, RefreshIcon } from './icons'
+import { isProductEmbedMode } from '../lib/productEmbed'
 import TemplateImagePreview from './TemplateImagePreview'
 
 type SourceFilter = 'all' | 'xianyu110' | 'evolink' | 'youmind' | 'freestylefly'
@@ -200,6 +201,7 @@ function TemplateCard({
 }
 
 export default function TemplateWorkspace() {
+  const productEmbed = isProductEmbedMode()
   const setPrompt = useStore((s) => s.setPrompt)
   const setAppMode = useStore((s) => s.setAppMode)
   const showToast = useStore((s) => s.showToast)
@@ -316,17 +318,17 @@ export default function TemplateWorkspace() {
   }
 
   return (
-    <main className="pb-48">
+    <main className={productEmbed ? 'pb-[calc(var(--input-bar-clearance,10rem)+2rem)]' : 'pb-48'}>
       <div className="safe-area-x mx-auto max-w-7xl">
-        <section className="mt-6">
-          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <section className={productEmbed ? 'mt-2' : 'mt-6'}>
+          <div className={`${productEmbed ? 'mb-2 gap-2' : 'mb-4 gap-3'} flex flex-col lg:flex-row lg:items-end lg:justify-between`}>
             <div className="min-w-0">
-              <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400">
+              {!productEmbed && <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400">
                 <span className="h-2 w-2 rounded-full bg-blue-500" />
                 Awesome GPT-Image-2
-              </div>
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">模板</h1>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              </div>}
+              <h1 className={`${productEmbed ? 'text-lg' : 'mt-1 text-2xl'} font-bold tracking-tight text-gray-900 dark:text-gray-100`}>模板</h1>
+              <p className={`${productEmbed ? 'mt-0.5 text-xs' : 'mt-1 text-sm'} text-gray-500 dark:text-gray-400`}>
                 多源读取模板、案例库和最新 X Prompt，选中后会填入底部输入框。
               </p>
             </div>

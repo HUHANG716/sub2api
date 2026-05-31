@@ -5,7 +5,7 @@
       <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
         {{ t('payment.quickAmounts') }}
       </label>
-      <div class="grid grid-cols-3 gap-2">
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <button
           v-for="option in filteredAmountOptions"
           :key="option.amount"
@@ -155,7 +155,7 @@ watch(() => props.modelValue, (v) => {
 
 <style scoped>
 .payment-option-button {
-  @apply flex min-h-[52px] flex-col items-center justify-center rounded-lg px-3 py-2 text-center font-medium transition-colors;
+  @apply flex min-h-[58px] flex-col items-center justify-center rounded-lg px-3 py-2.5 text-center font-medium transition-all;
   border: 1px solid var(--theme-border);
 }
 
@@ -164,7 +164,7 @@ watch(() => props.modelValue, (v) => {
 }
 
 .payment-option-amount {
-  @apply leading-none;
+  @apply leading-none text-[15px] font-semibold;
 }
 
 .payment-option-caption {
@@ -195,10 +195,12 @@ watch(() => props.modelValue, (v) => {
 }
 
 .payment-option-button-active {
-  background: color-mix(in srgb, var(--theme-accent-soft) 62%, var(--theme-surface));
+  background: color-mix(in srgb, var(--theme-accent-soft) 58%, var(--theme-surface));
   border-color: color-mix(in srgb, var(--theme-accent) 72%, var(--theme-border));
   color: var(--theme-accent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--theme-accent) 32%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--theme-accent) 28%, transparent),
+    0 10px 24px color-mix(in srgb, var(--theme-accent) 12%, transparent);
 }
 
 .payment-option-button-active .payment-option-badge-bonus {

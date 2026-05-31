@@ -3,7 +3,7 @@
     <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
       {{ t('payment.paymentMethod') }}
     </label>
-    <div class="grid grid-cols-2 gap-3 sm:flex">
+    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:flex">
       <button
         v-for="method in sortedMethods"
         :key="method.type"
@@ -19,8 +19,10 @@
         ]"
         @click="method.available && emit('select', method.type)"
       >
-        <span class="flex items-center gap-2">
-          <img :src="methodIcon(method.type)" :alt="t(`payment.methods.${method.type}`)" class="h-7 w-7 object-contain" />
+        <span class="flex w-full items-center gap-3">
+          <span class="payment-method-icon">
+            <img :src="methodIcon(method.type)" :alt="t(`payment.methods.${method.type}`)" class="h-6 w-6 object-contain" />
+          </span>
           <span class="flex flex-col items-start leading-none">
             <span class="text-base font-semibold">{{ t(`payment.methods.${method.type}`) }}</span>
             <span
@@ -96,8 +98,14 @@ function methodSelectedClass(type: string): string {
 
 <style scoped>
 .payment-method-button {
-  @apply relative flex h-[60px] flex-col items-center justify-center rounded-lg px-3 transition-all sm:flex-1;
+  @apply relative flex min-h-[64px] flex-col items-center justify-center rounded-lg px-3 transition-all xl:flex-1;
   border: 1px solid var(--theme-border);
+}
+
+.payment-method-icon {
+  @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-md;
+  background: var(--theme-surface-muted);
+  border: 1px solid color-mix(in srgb, var(--theme-border) 82%, transparent);
 }
 
 .payment-method-button-inactive {
@@ -118,10 +126,15 @@ function methodSelectedClass(type: string): string {
 
 .payment-method-button-active {
   --payment-method-accent: var(--theme-accent);
-  background: color-mix(in srgb, var(--payment-method-accent) 10%, var(--theme-surface));
+  background: color-mix(in srgb, var(--payment-method-accent) 8%, var(--theme-surface));
   border-color: color-mix(in srgb, var(--payment-method-accent) 64%, var(--theme-border));
   color: var(--theme-text);
-  box-shadow: var(--theme-shadow);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--payment-method-accent) 18%, transparent);
+}
+
+.payment-method-button-active .payment-method-icon {
+  background: color-mix(in srgb, var(--payment-method-accent) 12%, var(--theme-surface));
+  border-color: color-mix(in srgb, var(--payment-method-accent) 32%, var(--theme-border));
 }
 
 .payment-method-alipay {

@@ -1,7 +1,9 @@
 import { useStore } from '../store'
 import Select from './Select'
+import { isProductEmbedMode } from '../lib/productEmbed'
 
 export default function SearchBar() {
+  const productEmbed = isProductEmbedMode()
   const searchQuery = useStore((s) => s.searchQuery)
   const setSearchQuery = useStore((s) => s.setSearchQuery)
   const filterStatus = useStore((s) => s.filterStatus)
@@ -10,11 +12,11 @@ export default function SearchBar() {
   const setFilterFavorite = useStore((s) => s.setFilterFavorite)
 
   return (
-    <div data-no-drag-select className="mt-6 mb-4 flex gap-3">
+    <div data-no-drag-select className={`${productEmbed ? 'mt-2 mb-2 gap-2' : 'mt-6 mb-4 gap-3'} flex`}>
       <div className="flex gap-2 flex-shrink-0 z-20">
         <button
           onClick={() => setFilterFavorite(!filterFavorite)}
-          className={`p-2.5 rounded-xl border transition-all ${
+          className={`${productEmbed ? 'p-2 rounded-lg' : 'p-2.5 rounded-xl'} border transition-all ${
             filterFavorite
               ? 'border-yellow-400 bg-yellow-50 dark:bg-yellow-500/10 text-yellow-500'
               : 'border-gray-200 dark:border-white/[0.08] bg-white dark:bg-gray-900 text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.06]'
@@ -25,7 +27,7 @@ export default function SearchBar() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
           </svg>
         </button>
-        <div className="relative w-28">
+        <div className={`${productEmbed ? 'w-24' : 'w-28'} relative`}>
           <Select
             value={filterStatus}
             onChange={(val) => setFilterStatus(val as any)}
@@ -35,7 +37,7 @@ export default function SearchBar() {
               { label: '生成中', value: 'running' },
               { label: '失败', value: 'error' },
             ]}
-            className="px-3 py-2.5 rounded-xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-white/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
+            className={`${productEmbed ? 'px-2.5 py-2 rounded-lg' : 'px-3 py-2.5 rounded-xl'} border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-white/[0.06] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition`}
           />
         </div>
       </div>
@@ -58,7 +60,7 @@ export default function SearchBar() {
           onChange={(e) => setSearchQuery(e.target.value)}
           type="text"
           placeholder="搜索提示词、参数..."
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
+          className={`w-full pl-10 pr-4 ${productEmbed ? 'py-2 rounded-lg' : 'py-2.5 rounded-xl'} border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition`}
         />
       </div>
     </div>

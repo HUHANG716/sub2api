@@ -1,7 +1,7 @@
 <template>
   <span
     :class="[
-      'inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium transition-colors',
+      'inline-flex min-w-0 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium transition-colors',
       badgeClass
     ]"
   >
@@ -11,7 +11,16 @@
     <span class="truncate">{{ name }}</span>
     <!-- Right side label -->
     <span v-if="showLabel" :class="labelClass">
-      <template v-if="hasCustomRate">
+      <template v-if="showDiscountRateLayout">
+        <span class="flex flex-col items-start leading-tight">
+          <span class="whitespace-nowrap">
+            <span v-if="hasCustomRate" class="mr-0.5 line-through opacity-50">{{ rateMultiplier }}x</span>
+            <span class="font-bold">{{ discountedRateLabel }}</span>
+          </span>
+          <span class="mt-0.5 whitespace-nowrap opacity-80">{{ globalDiscountLabel }}</span>
+        </span>
+      </template>
+      <template v-else-if="hasCustomRate">
         <!-- 原倍率删除线 + 专属倍率高亮 -->
         <span class="line-through opacity-50 mr-0.5">{{ rateMultiplier }}x</span>
         <span class="font-bold">{{ activeRateLabel }}</span>
@@ -84,7 +93,7 @@ const hasGlobalDiscount = computed(() => {
 })
 
 function formatRate(value: number): string {
-  return String(Number(value.toPrecision(10)))
+  return value.toFixed(3)
 }
 
 function formatDiscount(value: number): string {
@@ -119,6 +128,18 @@ const activeRateLabel = computed(() => {
   })
 })
 
+const discountedRateLabel = computed(() => {
+  const rate = activeRate.value
+  if (rate === undefined || !hasGlobalDiscount.value) return ''
+  return `${formatRate(rate)}x → ${formatRate(rate * (props.globalDiscountRate as number))}x`
+})
+
+const showDiscountRateLayout = computed(() => {
+  return hasGlobalDiscount.value
+    && activeRate.value !== undefined
+    && (!isSubscription.value || props.alwaysShowRate)
+})
+
 // 是否显示右侧标签
 const showLabel = computed(() => {
   if (!props.showRate) return false
@@ -147,7 +168,7 @@ const labelText = computed(() => {
 
 // Label style based on type and days remaining
 const labelClass = computed(() => {
-  const base = 'px-1.5 py-0.5 rounded text-[10px] font-semibold'
+  const base = 'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold'
 
   if (!isSubscription.value) {
     // Standard: subtle background (不再为专属倍率使用不同的背景色)

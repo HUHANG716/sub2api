@@ -102,7 +102,7 @@ const hasGlobalDiscount = computed(() => {
 })
 
 function formatRate(value: number): string {
-  return String(Number(value.toPrecision(10)))
+  return value.toFixed(3)
 }
 
 function formatDiscount(value: number): string {

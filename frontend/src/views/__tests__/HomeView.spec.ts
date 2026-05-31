@@ -6,6 +6,7 @@ import { nextTick } from 'vue'
 import HomeView from '@/views/HomeView.vue'
 
 const homeViewSourcePath = path.resolve(process.cwd(), 'src/views/HomeView.vue')
+const heroLayoutSourcePath = path.resolve(process.cwd(), 'src/views/homeHeroLayout.ts')
 const globalStyleSourcePath = path.resolve(process.cwd(), 'src/style.css')
 const indexHtmlSourcePath = path.resolve(process.cwd(), 'index.html')
 
@@ -91,9 +92,7 @@ vi.mock('vue-i18n', async (importOriginal) => {
           'home.modern.supportShowcase.titlePrefix': '智能时代的',
           'home.modern.supportShowcase.titleCore': 'Harness Engineering',
           'home.modern.supportShowcase.titleAccent': '聚焦创意的实现',
-          'home.modern.supportShowcase.supports': '同时支持',
           'home.modern.supportShowcase.platformIntro': '一键轻松在以下平台体验：',
-          'home.modern.testimonials.eyebrow': '用户评价',
           'home.modern.testimonials.title': '用户怎么说',
           'home.modern.testimonials.description': '来自开发者、架构师和研发负责人的真实使用反馈。',
           'home.modern.testimonials.listLabel': '用户评价列表',
@@ -335,8 +334,10 @@ describe('HomeView', () => {
     expect(wrapper.html()).toContain('/landing-support/codex.svg')
     expect(wrapper.html()).toContain('/landing-support/gemini-cli.svg')
     expect(wrapper.html()).toContain('/landing-support/codex-app.png')
-    expect(wrapper.get('.floating-tool-tag-4').classes()).toContain('floating-tool-tag-text')
-    expect(wrapper.get('.floating-tool-tag-4').find('img').exists()).toBe(false)
+    const textTags = wrapper.findAll('.floating-tool-tag-text')
+    expect(textTags).toHaveLength(1)
+    expect(textTags[0].text()).toBe('OpenAI')
+    expect(textTags[0].find('img').exists()).toBe(false)
     expect(wrapper.find('.hero-console').exists()).toBe(false)
     expect(wrapper.find('.command-panel').exists()).toBe(false)
     expect(wrapper.find('.code-lines').exists()).toBe(false)
@@ -374,9 +375,22 @@ describe('HomeView', () => {
     expect(stageStyle).toContain('--hero-pointer-y:')
     expect(stageStyle).not.toContain('--hero-pointer-x: 0.000')
     expect(floatingFieldBlock).not.toContain('calc(var(--hero-pointer-x) * var(--hero-field-pull-x))')
-    expect(floatingTagBlock).toContain('calc(var(--hero-pointer-x) * var(--hero-tag-drift-x))')
-    expect(floatingTagBlock).toContain('calc(var(--hero-pointer-y) * var(--hero-tag-drift-y))')
-    expect(tagStyle).toBe('')
+    expect(floatingTagBlock).toContain('var(--hero-tag-field-x)')
+    expect(floatingTagBlock).toContain('var(--hero-tag-field-y)')
+    expect(floatingTagBlock).not.toContain('var(--hero-tag-magnet-x)')
+    expect(floatingTagBlock).not.toContain('var(--hero-tag-magnet-y)')
+    expect(source).toContain('function tickHeroField()')
+    expect(source).toContain('computeHeroTagFields(heroPointerPhysics)')
+    expect(source).not.toContain('computeHeroTagMagnets')
+    expect(source).toContain(':style="heroTagStyle(tool)"')
+    expect(source).toContain('--hero-tag-x')
+    expect(source).toContain('--hero-tag-y')
+    expect(source).toContain('--hero-tag-field-x')
+    expect(source).not.toContain('--hero-tag-tilt-x')
+    expect(source).not.toContain('--hero-tag-face-x')
+    expect(source).not.toContain('--hero-tag-rotation')
+    expect(source).not.toContain('--hero-tag-magnet-x')
+    expect(tagStyle).not.toContain('--hero-pointer-x')
 
     await wrapper.get('.hero-section').trigger('mouseleave')
     await nextTick()
@@ -390,67 +404,94 @@ describe('HomeView', () => {
     const floatingTagBlock = source.match(/\.floating-tool-tag\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const floatingFieldBlock = source.match(/\.hero-floating-tags\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const mobileBlock = source.match(/@media \(max-width: 640px\)[\s\S]*?\n\}/)?.[0] ?? ''
+    const reducedMotionFloatingTagBlock = source.match(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.floating-tool-tag\s*\{[\s\S]*?\n  \}/
+    )?.[0] ?? ''
 
+    expect(source).toContain(':style="heroTagStyle(tool)"')
     expect(source).not.toContain(':style="heroTagStyle(index)"')
     expect(source).not.toContain('const heroTagParallax')
-    expect(source).not.toContain('function heroTagStyle')
+    expect(source).toContain('function heroTagStyle(tool: HeroFloatingTag): CSSProperties')
     expect(floatingTagBlock).toContain('transform: translate3d(')
-    expect(floatingTagBlock).toContain('var(--hero-pointer-x) * var(--hero-tag-drift-x')
-    expect(floatingTagBlock).toContain('var(--hero-pointer-y) * var(--hero-tag-drift-y')
-    expect(floatingTagBlock).toContain('animation: hero-tag-float')
-    expect(floatingTagBlock).toContain('animation-delay: var(--hero-tag-delay, 0ms)')
+    expect(floatingTagBlock).toContain('left: 0')
+    expect(floatingTagBlock).toContain('top: 0')
+    expect(floatingTagBlock).toContain('width: var(--hero-tag-width)')
+    expect(floatingTagBlock).toContain('height: var(--hero-tag-height)')
+    expect(floatingTagBlock).toContain('box-sizing: border-box')
+    expect(floatingTagBlock).toContain('calc(var(--hero-tag-x) - 50%')
+    expect(floatingTagBlock).toContain('calc(var(--hero-tag-y) - 50%')
+    expect(floatingTagBlock).toContain('var(--hero-tag-field-x)')
+    expect(floatingTagBlock).toContain('var(--hero-tag-field-y)')
+    expect(floatingTagBlock).not.toContain('rotateX(')
+    expect(floatingTagBlock).not.toContain('rotateY(')
+    expect(floatingTagBlock).not.toContain('rotate(')
+    expect(floatingTagBlock).not.toContain('var(--hero-tag-magnet-x)')
+    expect(floatingTagBlock).not.toContain('var(--hero-tag-magnet-y)')
+    expect(floatingTagBlock).not.toContain('scale(var(--hero-tag-scale))')
+    expect(floatingTagBlock).not.toContain('animation: hero-tag-float')
+    expect(floatingTagBlock).not.toContain('animation-delay: var(--hero-tag-delay, 0ms)')
     expect(floatingFieldBlock).not.toContain('--hero-field-pull-x')
     expect(floatingFieldBlock).not.toContain('--hero-field-pull-y')
     expect(floatingFieldBlock).not.toContain('transform: translate3d(')
+    expect(reducedMotionFloatingTagBlock).toContain('transition: none')
+    expect(reducedMotionFloatingTagBlock).not.toMatch(/\.floating-tool-tag\s*\{[\s\S]*?animation:\s*none/)
+    expect(reducedMotionFloatingTagBlock).not.toContain('transform: none')
     expect(source).toContain('width: min(100%, calc(100vw - 2rem))')
     expect(source).toContain('max-width: none')
     expect(source).toContain('min-height: calc(100svh - 5.5rem)')
-    expect(source).toContain('left: clamp(-1.1rem, -0.6vw, -0.5rem)')
-    expect(source).toContain('right: calc(100% - var(--hero-copy-safe-left) + var(--hero-copy-safe-gap))')
-    expect(source).toContain('top: clamp(10.5rem, 28vh, 19rem)')
-    expect(source).toContain('top: clamp(4.75rem, 13vh, 8.5rem)')
-    expect(source).toContain('right: calc(100% - var(--hero-copy-safe-left) + var(--hero-copy-safe-gap))')
-    expect(source).toContain('bottom: clamp(7.25rem, 12vh, 9.5rem)')
-    expect(source).toContain('right: clamp(0.75rem, 3vw, 5rem)')
-    expect(source).toContain('left: calc(var(--hero-copy-safe-right) + var(--hero-copy-safe-gap))')
-    expect(source).toContain('top: clamp(1.5rem, 6vh, 4rem)')
-    expect(source).toContain('top: clamp(14rem, 32vh, 21rem)')
-    expect(source).toContain('bottom: clamp(16rem, 31vh, 21rem)')
-    expect(source).toContain('.floating-tool-tag-7')
-    expect(source).toContain('--hero-tag-drift-x: 34px')
-    expect(source).toContain('--hero-tag-drift-x: 9px')
-    expect(source).toContain('--hero-tag-drift-y: 28px')
+    expect(source).toContain("'--hero-tag-drift-x': `${layout.driftX.toFixed(1)}px`")
+    expect(source).toContain("'--hero-tag-drift-y': `${layout.driftY.toFixed(1)}px`")
+    expect(source).toContain("'--hero-tag-field-x': `${(field?.fieldX ?? 0).toFixed(1)}px`")
+    expect(source).not.toContain("'--hero-tag-tilt-x'")
+    expect(source).not.toContain("'--hero-tag-face-x'")
+    expect(source).not.toContain("'--hero-tag-rotation'")
+    expect(source).not.toContain('constrainHeroFieldVector')
+    expect(source).not.toContain('constrainHeroVectorToRange')
+    expect(source).not.toContain('constrainHeroFieldPairOverlaps')
+    expect(source).not.toContain('shapeWeight')
+    expect(source).not.toContain('horizontalWeight')
+    expect(source).not.toContain('isWideTag')
+    expect(source).not.toContain('axisCandidates')
+    expect(source).not.toContain('getHeroSafeRects')
+    expect(source).toContain('perspective-origin:')
+    expect(source).not.toContain("'--hero-tag-magnet-x'")
+    expect(source).toContain('canUseHeroField()')
+    expect(source).toContain('if (active < 0.01)')
+    expect(source).toContain("window.matchMedia?.('(prefers-reduced-motion: reduce)').matches")
+    expect(source).toContain('computeHeroTagLayout({')
+    expect(source).not.toMatch(/\.floating-tool-tag-[0-9]/)
     expect(source).not.toContain('left: clamp(-10rem, -7vw, -4rem)')
     expect(source).not.toContain('top: 34%')
     expect(source).not.toContain('bottom: clamp(0.9rem, 2vw, 1.5rem)')
     expect(source).not.toContain('top: clamp(18rem, 38vh, 24rem)')
     expect(source).not.toContain('bottom: clamp(1.5rem, 5vh, 3.5rem)')
-    expect(mobileBlock).toContain('left: -2.2rem')
-    expect(mobileBlock).toContain('top: -4.4rem')
-    expect(mobileBlock).toContain('top: 30%')
-    expect(mobileBlock).toContain('right: -3.2rem')
-    expect(mobileBlock).toContain('top: 68%')
-    expect(mobileBlock).toContain('left: -1.6rem')
-    expect(mobileBlock).toContain('bottom: 2.6rem')
+    expect(mobileBlock).not.toContain('grid-template-rows:')
+    expect(mobileBlock).not.toContain('display: contents')
+    expect(mobileBlock).toContain('grid-row: 2')
+    expect(mobileBlock).toContain('grid-column: 1 / -1')
+    expect(mobileBlock).not.toMatch(/\.floating-tool-tag-[0-9]/)
+    expect(mobileBlock).not.toContain('inset: auto')
     expect(mobileBlock).not.toContain('left: -3.6rem')
     expect(mobileBlock).not.toContain('right: -4.4rem')
     expect(mobileBlock).not.toContain('bottom: 2.4rem')
   })
 
-  it('keeps desktop floating tags outside the hero copy reading lane', () => {
+  it('measures the hero copy as safe rectangles for the layout solver', () => {
     const source = readFileSync(homeViewSourcePath, 'utf8')
 
-    expect(source).toContain('--hero-copy-safe-width: clamp(46rem, 58vw, 62rem)')
-    expect(source).toContain('--hero-copy-safe-left: calc((100% - var(--hero-copy-safe-width)) / 2)')
-    expect(source).toContain('--hero-copy-safe-right: calc(var(--hero-copy-safe-left) + var(--hero-copy-safe-width))')
-    expect(source).toContain('--hero-copy-safe-gap: clamp(3.5rem, 6vw, 5rem)')
-    expect(source).toContain('right: calc(100% - var(--hero-copy-safe-left) + var(--hero-copy-safe-gap))')
-    expect(source).toContain('left: calc(var(--hero-copy-safe-right) + var(--hero-copy-safe-gap))')
+    expect(source).toContain('ref="heroHeadlineRef"')
+    expect(source).toContain('ref="heroLedeRef"')
+    expect(source).toContain('ref="heroActionsRef"')
+    expect(source).toContain('const safeElements = [')
+    expect(source).toContain('heroHeadlineRef.value')
+    expect(source).toContain('heroLedeRef.value')
+    expect(source).toContain('heroActionsRef.value')
+    expect(source).toContain('const safeRects = safeElements.map((element) => rectFromStage(element, stageRect))')
     expect(source).not.toContain('left: clamp(14rem, 19vw, 24rem)')
     expect(source).not.toContain('right: clamp(1rem, 3vw, 4rem)')
   })
 
-  it('falls back to edge-only hero tags when the viewport cannot fit side lanes', () => {
+  it('keeps medium viewport hero tags visible without using offscreen edge fallbacks', () => {
     const source = readFileSync(homeViewSourcePath, 'utf8')
     const protectedViewportBlock = source.match(
       /@media \(max-width: 1320px\) and \(min-width: 641px\)\s*\{[\s\S]*?\n\}/
@@ -460,29 +501,23 @@ describe('HomeView', () => {
     )?.[0] ?? ''
     const mobileBlock = source.match(/@media \(max-width: 640px\)[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(protectedViewportBlock).toContain('--hero-copy-safe-width: min(38rem, calc(100vw - 12rem))')
-    expect(protectedViewportBlock).toContain('.floating-tool-tag-1,')
-    expect(protectedViewportBlock).toContain('.floating-tool-tag-3,')
-    expect(protectedViewportBlock).toContain('.floating-tool-tag-5')
-    expect(protectedViewportBlock).toContain('display: none')
-    expect(protectedViewportBlock).toContain('.floating-tool-tag-6,')
-    expect(protectedViewportBlock).toContain('.floating-tool-tag-7')
-    expect(protectedViewportBlock).toContain('right: -2rem')
-    expect(protectedViewportBlock).toContain('left: -3rem')
-    expect(protectedViewportBlock).toContain('top: clamp(6rem, 16vh, 8.4rem)')
+    expect(protectedViewportBlock).toContain('--hero-copy-safe-width: min(36rem, calc(100vw - 10rem))')
+    expect(protectedViewportBlock).toContain('min-height: calc(100svh - clamp(8.5rem, 15vh, 10.25rem))')
+    expect(protectedViewportBlock).toContain('width: min(100%, calc(100vw - clamp(4.5rem, 8vw, 7rem)))')
+    expect(protectedViewportBlock).not.toMatch(/\.floating-tool-tag-[0-9]/)
+    expect(protectedViewportBlock).not.toContain('display: none')
+    expect(protectedViewportBlock).not.toContain('right: -2rem')
+    expect(protectedViewportBlock).not.toContain('left: -3rem')
     expect(shortViewportBlock).toBe('')
-    expect(mobileBlock).toContain('.floating-tool-tag-1,')
-    expect(mobileBlock).toContain('.floating-tool-tag-3,')
-    expect(mobileBlock).toContain('.floating-tool-tag-5,')
-    expect(mobileBlock).toContain('.floating-tool-tag-6,')
-    expect(mobileBlock).toContain('.floating-tool-tag-7')
-    expect(mobileBlock).toContain('display: none')
+    expect(mobileBlock).not.toMatch(/\.floating-tool-tag-[0-9]/)
+    expect(mobileBlock).not.toMatch(/\.floating-tool-tag[\s\S]*?display:\s*none/)
   })
 
-  it('styles the hero tool tags as oversized sticker logos that follow one light direction', () => {
+  it('styles the hero tool tags as oversized moving sticker logos without rotation', () => {
     const source = readFileSync(homeViewSourcePath, 'utf8')
     const heroSectionBlock = source.match(/\.hero-section\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const floatingTagBlock = source.match(/\.floating-tool-tag\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const floatingDepthBlock = source.match(/\.floating-tool-depth\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const floatingTagsBlock = source.match(/\.hero-floating-tags\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const floatingIconImageBlock = source.match(/\.floating-tool-icon img\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const floatingRoundBlock = source.match(/\.floating-tool-tag-round\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
@@ -490,65 +525,76 @@ describe('HomeView', () => {
     const floatingTextBlock = Array.from(
       source.matchAll(/\.floating-tool-tag-text\s*\{[\s\S]*?\n\}/g),
       (match) => match[0]
-    ).find((block) => block.includes('width: auto')) ?? ''
+    ).find((block) => block.includes('aspect-ratio: auto')) ?? ''
 
     expect(heroSectionBlock).toContain('background: var(--landing-bg)')
     expect(floatingTagsBlock).toContain('perspective:')
+    expect(floatingTagsBlock).toContain('perspective-origin:')
     expect(floatingTagsBlock).toContain('transform-style: preserve-3d')
     expect(floatingTagsBlock).not.toContain('transform: translate3d(')
-    expect(floatingTagBlock).toContain('width: var(--hero-tag-size)')
-    expect(floatingTagBlock).toContain('height: var(--hero-tag-size)')
+    expect(floatingTagBlock).toContain('width: var(--hero-tag-width)')
+    expect(floatingTagBlock).toContain('height: var(--hero-tag-height)')
     expect(floatingTagBlock).toContain('aspect-ratio: 1')
-    expect(floatingTagBlock).toContain('border: clamp(0.32rem, 0.8vw, 0.56rem) solid var(--landing-sticker-border)')
-    expect(floatingTagBlock).toContain('rgba(217, 119, 50')
-    expect(floatingTagBlock).toContain('box-shadow:')
-    expect(floatingTagBlock).toContain('filter: drop-shadow')
-    expect(floatingTagBlock).toContain('var(--hero-tag-depth')
-    expect(floatingTagBlock).toContain('var(--hero-tag-drift-x')
-    expect(floatingTagBlock).toContain('var(--hero-tag-drift-y')
-    expect(floatingTagBlock).toContain('rotate(var(--hero-tag-rotation')
-    expect(floatingTagBlock).not.toContain('rotateX(calc(var(--hero-pointer-y)')
-    expect(floatingTagBlock).not.toContain('rotateY(calc(var(--hero-pointer-x)')
+    expect(floatingDepthBlock).toContain('border: clamp(0.32rem, 0.8vw, 0.56rem) solid var(--landing-sticker-border)')
+    expect(floatingDepthBlock).toContain('rgba(217, 119, 50')
+    expect(floatingDepthBlock).toContain('box-shadow:')
+    expect(floatingDepthBlock).toContain('filter:')
+    expect(floatingDepthBlock).toContain('drop-shadow')
+    expect(floatingDepthBlock).toContain('translateZ(var(--hero-tag-depth))')
+    expect(floatingTagBlock).toContain('translate3d(')
+    expect(floatingTagBlock).toContain(',\n      0\n    )')
+    expect(floatingTagBlock).toContain('--hero-tag-drift-x')
+    expect(floatingTagBlock).toContain('--hero-tag-drift-y')
+    expect(floatingTagBlock).toContain('var(--hero-tag-field-x)')
+    expect(floatingTagBlock).not.toContain('rotateX(')
+    expect(floatingTagBlock).not.toContain('rotateY(')
+    expect(floatingTagBlock).not.toContain('var(--hero-tag-magnet-x)')
+    expect(floatingTagBlock).not.toContain('rotate(')
     expect(floatingIconImageBlock).toContain('height: 86%')
     expect(floatingIconImageBlock).toContain('width: 86%')
     expect(floatingRoundBlock).toContain('border-radius: 999px')
     expect(floatingLabelBaseBlock).toContain('border-radius: 999px')
     expect(floatingLabelBaseBlock).toContain('width: var(--hero-tag-size)')
     expect(floatingLabelBaseBlock).toContain('height: var(--hero-tag-size)')
-    expect(floatingTextBlock).toContain('width: auto')
-    expect(floatingTextBlock).toContain('height: auto')
-    expect(floatingTextBlock).toContain('min-width: clamp(8rem, 12vw, 11rem)')
-    expect(floatingTextBlock).toContain('min-height: clamp(3.25rem, 5vw, 4.25rem)')
-    expect(source).toContain("{ name: 'OpenAI', icon: '', needsBadge: false, shape: 'text' }")
+    expect(floatingLabelBaseBlock).not.toContain('background: var(--landing-sticker-bg)')
+    expect(floatingTextBlock).toContain('width: var(--hero-tag-width)')
+    expect(floatingTextBlock).toContain('height: var(--hero-tag-height)')
+    expect(floatingTextBlock).toContain('min-width: 0')
+    expect(floatingTextBlock).toContain('min-height: 0')
+    expect(floatingTextBlock).not.toContain('padding: 0 clamp')
+    expect(source).toContain('.floating-tool-tag-text .floating-tool-depth')
+    expect(source).toContain('padding: 0 clamp(1.25rem, 2vw, 1.85rem)')
+    expect(source).toContain("{ name: 'OpenAI', icon: '', needsBadge: false, shape: 'text', prominence: 'normal' }")
     expect(source).toContain("codex-app.png")
     expect(source).toContain('floating-tool-tag-${tool.shape}')
     expect(source).toContain('--hero-tag-size:')
-    expect(source).toContain('--hero-tag-rotation:')
-    expect(source).toContain('--hero-mobile-tag-size:')
-    expect(source).toContain('right: clamp(0.75rem, 3vw, 5rem)')
-    expect(source).toContain('right: calc(100% - var(--hero-copy-safe-left) + var(--hero-copy-safe-gap))')
-    expect(source).toContain('left: clamp(-1.1rem, -0.6vw, -0.5rem)')
-    expect(source).toContain('top: clamp(14rem, 32vh, 21rem)')
-    expect(source).toContain('top: clamp(4.75rem, 13vh, 8.5rem)')
-    expect(source).toContain('bottom: clamp(7.25rem, 12vh, 9.5rem)')
-    expect(source).toContain('bottom: clamp(16rem, 31vh, 21rem)')
-    expect(source).toContain('--hero-tag-size: clamp(8.5rem, 12.5vw, 12rem)')
-    expect(source).toContain('18.5rem')
-    expect(source).toContain('6rem')
-    expect(source).toContain('calc(var(--hero-pointer-x) * var(--hero-tag-drift-x)')
+    expect(source).toContain('--hero-tag-width:')
+    expect(source).toContain('--hero-tag-height:')
+    expect(source).toContain('--hero-tag-x:')
+    expect(source).toContain('--hero-tag-y:')
+    expect(source).not.toContain('--hero-tag-rotation:')
+    expect(source).toContain('computeHeroTagLayout')
+    expect(source).toContain('ResizeObserver')
+    expect(source).not.toContain('--hero-mobile-tag-size:')
+    expect(source).not.toMatch(/\.floating-tool-tag-[0-9]/)
+    expect(source).toContain('var(--hero-tag-field-x)')
+    expect(source).not.toContain('var(--hero-tag-tilt-x)')
+    expect(source).not.toContain('var(--hero-tag-face-x)')
+    expect(source).not.toContain('var(--hero-tag-magnet-x)')
     expect(source).not.toContain('border-radius: 0.55rem')
   })
 
-  it('keeps the floating hero tool tags gently animated', () => {
+  it('keeps hero tool tags driven by mouse movement without idle float', () => {
     const source = readFileSync(homeViewSourcePath, 'utf8')
     const floatingTagBlock = source.match(/\.floating-tool-tag\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const floatingIconImageBlock = source.match(/\.floating-tool-icon img\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(source).toContain('@keyframes hero-tag-float')
-    expect(floatingTagBlock).toContain('animation: hero-tag-float')
-    expect(floatingTagBlock).toContain('animation-delay: var(--hero-tag-delay, 0ms)')
+    expect(source).not.toContain('@keyframes hero-tag-float')
+    expect(floatingTagBlock).not.toContain('animation: hero-tag-float')
+    expect(floatingTagBlock).not.toContain('animation-delay: var(--hero-tag-delay, 0ms)')
     expect(floatingIconImageBlock).not.toContain('animation: hero-tag-float')
     expect(source).toContain('.floating-tool-tag')
+    expect(source).toContain("'--hero-tag-field-x': `${(field?.fieldX ?? 0).toFixed(1)}px`")
     expect(source).not.toContain('@keyframes terminal-type')
     expect(source).not.toContain('animation: terminal-type')
   })
@@ -623,24 +669,32 @@ describe('HomeView', () => {
     expect(wrapper.get('.landing-header').classes()).not.toContain('landing-header-scrolled')
   })
 
-  it('narrows the landing nav while keeping main sections on a shared max-width container', () => {
+  it('keeps the landing nav full width while main sections use a shared max-width container', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
     const headerNavBlock = source.match(/\.landing-header nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const headerSurfaceBlock = source.match(/\.landing-header::before\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const scrolledHeaderBlock = source.match(/\.landing-header-scrolled\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const scrolledHeaderSurfaceBlock =
+      source.match(/\.landing-header-scrolled::before\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const scrolledNavBlock = source.match(/\.landing-header-scrolled nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const landingContainerBlock = source.match(/\.landing-container\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(headerNavBlock).toContain('width: var(--landing-header-width)')
-    expect(headerNavBlock).toContain('background: var(--theme-surface)')
-    expect(headerNavBlock).toContain('border: 1px solid var(--theme-border)')
+    expect(headerNavBlock).toContain('width: 100%')
+    expect(headerNavBlock).toContain('background: var(--landing-header-surface, var(--landing-bg))')
+    expect(headerNavBlock).toContain('border: 0')
     expect(headerNavBlock).toContain('border-radius: 0')
-    expect(headerNavBlock).toMatch(/transition:[\s\S]*width 240ms cubic-bezier\(0\.22, 1, 0\.36, 1\)/)
-    expect(scrolledHeaderBlock).toContain('--landing-header-width: min(72rem, calc(100vw - 1.5rem))')
-    expect(scrolledNavBlock).toContain('background: var(--theme-surface-strong)')
-    expect(scrolledNavBlock).toContain('border-color: var(--theme-border-strong)')
-    expect(scrolledNavBlock).toContain('border-right: 0')
-    expect(scrolledNavBlock).toContain('border-left: 0')
-    expect(scrolledNavBlock).toContain('border-radius: 0.9rem')
+    expect(headerSurfaceBlock).toContain('width: 100%')
+    expect(headerSurfaceBlock).toContain('background: var(--landing-header-surface, var(--landing-bg))')
+    expect(headerSurfaceBlock).toContain('border-radius: 0 0 1.35rem 1.35rem')
+    expect(headerNavBlock).toContain('transition: padding 180ms ease')
+    expect(headerNavBlock).not.toMatch(/width 240ms/)
+    expect(scrolledHeaderBlock).not.toContain('--landing-header-width')
+    expect(scrolledHeaderBlock).toContain('padding-top: 0')
+    expect(scrolledHeaderSurfaceBlock).toContain('top: 0')
+    expect(scrolledHeaderSurfaceBlock).toContain('border-radius: 0 0 1.35rem 1.35rem')
+    expect(scrolledNavBlock).toContain('background: var(--landing-header-surface, var(--landing-bg))')
+    expect(scrolledNavBlock).toContain('border: 0')
+    expect(scrolledNavBlock).toContain('border-radius: 0')
     expect(source).not.toContain('max-w-7xl')
     expect(landingContainerBlock).toContain('width: min(100%, 78rem)')
     expect(landingContainerBlock).toContain('margin: 0 auto')
@@ -650,37 +704,101 @@ describe('HomeView', () => {
     expect(source).toContain('<div class="landing-container grid gap-10')
   })
 
-  it('keeps the visible landing nav shell on the narrowing nav instead of the full-width header', () => {
+  it('keeps the landing nav readable over hero content without a card shell', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
     const headerBlock = source.match(/\.landing-header\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const headerSurfaceBlock = source.match(/\.landing-header::before\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const headerNavBlock = source.match(/\.landing-header nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const scrolledHeaderBlock = source.match(/\.landing-header-scrolled\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const scrolledHeaderSurfaceBlock =
+      source.match(/\.landing-header-scrolled::before\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const scrolledNavBlock = source.match(/\.landing-header-scrolled nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
+    expect(headerBlock).not.toMatch(/\bbackground:/)
+    expect(headerSurfaceBlock).toContain('background: var(--landing-header-surface, var(--landing-bg))')
+    expect(headerSurfaceBlock).toContain('width: 100%')
+    expect(headerSurfaceBlock).toContain('border-radius: 0 0 1.35rem 1.35rem')
     expect(headerBlock).not.toContain('background: var(--theme-surface)')
     expect(headerBlock).not.toContain('background: var(--theme-surface-strong)')
     expect(headerBlock).not.toMatch(/\bbackdrop-filter:/)
     expect(headerBlock).not.toMatch(/\bbox-shadow:/)
-    expect(headerNavBlock).toMatch(/\bbackground:/)
-    expect(headerNavBlock).toMatch(/\bbackdrop-filter:/)
-    expect(headerNavBlock).toMatch(/\bbox-shadow:/)
+    expect(headerNavBlock).toContain('background: var(--landing-header-surface, var(--landing-bg))')
+    expect(headerNavBlock).toContain('backdrop-filter: none')
+    expect(headerNavBlock).toContain('box-shadow: none')
+    expect(headerNavBlock).toContain('border: 0')
     expect(scrolledHeaderBlock).not.toMatch(/\bbackground:/)
     expect(scrolledHeaderBlock).not.toMatch(/\bbox-shadow:/)
-    expect(scrolledNavBlock).toMatch(/\bbackground:/)
-    expect(scrolledNavBlock).toMatch(/\bbox-shadow:/)
+    expect(scrolledHeaderSurfaceBlock).toContain('border-radius: 0 0 1.35rem 1.35rem')
+    expect(scrolledNavBlock).toContain('background: var(--landing-header-surface, var(--landing-bg))')
+    expect(scrolledNavBlock).toContain('box-shadow: none')
+    expect(scrolledNavBlock).toContain('border: 0')
   })
 
-  it('keeps the landing header canvas transparent while the nav narrows', () => {
+  it('uses a flat header surface so content does not pass through the nav', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
     const headerBlock = source.match(/\.landing-header\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const headerSurfaceBlock = source.match(/\.landing-header::before\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const headerNavBlock = source.match(/\.landing-header nav\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const scrolledHeaderBlock = source.match(/\.landing-header-scrolled\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
     expect(headerBlock).not.toMatch(/\bbackground:/)
+    expect(headerSurfaceBlock).toContain('background: var(--landing-header-surface, var(--landing-bg))')
     expect(headerBlock).not.toMatch(/\bbackdrop-filter:/)
     expect(headerBlock).not.toMatch(/\bbox-shadow:/)
     expect(scrolledHeaderBlock).not.toMatch(/\bbackground:/)
-    expect(headerNavBlock).toContain('background: var(--theme-surface)')
+    expect(headerNavBlock).toContain('background: var(--landing-header-surface, var(--landing-bg))')
+  })
+
+  it('matches the header surface color to the section under the sticky nav', async () => {
+    const originalElementsFromPoint = document.elementsFromPoint
+    const sampledSection = document.createElement('section')
+    sampledSection.setAttribute(
+      'data-header-surface',
+      'color-mix(in srgb, var(--theme-surface-strong) 58%, var(--landing-bg))'
+    )
+    const elementsFromPointSpy = vi.fn(() => [sampledSection])
+    Object.defineProperty(document, 'elementsFromPoint', {
+      configurable: true,
+      value: elementsFromPointSpy
+    })
+
+    const wrapper = mount(HomeView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a><slot /></a>'
+          },
+          LocaleSwitcher: true,
+          Icon: true
+        }
+      }
+    })
+
+    window.scrollY = 320
+    window.dispatchEvent(new Event('scroll'))
+    await nextTick()
+
+    const headerStyle = wrapper.get('.landing-header').attributes('style') ?? ''
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+
+    expect(elementsFromPointSpy).toHaveBeenCalled()
+    expect(headerStyle).toContain(
+      '--landing-header-surface: color-mix(in srgb, var(--theme-surface-strong) 58%, var(--landing-bg));'
+    )
+    expect(source).toContain(':style="landingHeaderStyle"')
+    expect(source).toContain('data-header-surface="var(--landing-bg)"')
+    expect(source).toContain('data-header-surface="color-mix(in srgb, var(--theme-surface-strong) 58%, var(--landing-bg))"')
+
+    wrapper.unmount()
+    if (originalElementsFromPoint) {
+      Object.defineProperty(document, 'elementsFromPoint', {
+        configurable: true,
+        value: originalElementsFromPoint
+      })
+    } else {
+      Reflect.deleteProperty(document, 'elementsFromPoint')
+    }
   })
 
   it('isolates the landing page from the global light theme by forcing dark theme variables', () => {
@@ -737,6 +855,7 @@ describe('HomeView', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
     const landingShellBlock = source.match(/\.landing-shell\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const floatingTagBlock = source.match(/\.floating-tool-tag\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const floatingDepthBlock = source.match(/\.floating-tool-depth\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const testimonialCardBlock = source.match(/\.testimonial-card\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
     expect(landingShellBlock).toContain('--landing-surface-raised: #292929')
@@ -745,13 +864,13 @@ describe('HomeView', () => {
     expect(landingShellBlock).toContain('--landing-control-shadow: 0 1px 0 rgba(255, 255, 255, 0.055) inset')
     expect(landingShellBlock).toContain('--landing-sticker-bg: color-mix(in srgb, var(--landing-accent-soft) 18%, var(--landing-text-strong))')
     expect(landingShellBlock).toContain('--landing-sticker-border: color-mix(in srgb, var(--landing-text-strong) 84%, var(--landing-accent-soft))')
-    expect(floatingTagBlock).toContain('border: clamp(0.32rem, 0.8vw, 0.56rem) solid var(--landing-sticker-border)')
-    expect(floatingTagBlock).toContain('background: var(--landing-sticker-bg)')
-    expect(floatingTagBlock).toContain('box-shadow:')
-    expect(floatingTagBlock).toContain('rgba(217, 119, 50')
+    expect(floatingDepthBlock).toContain('border: clamp(0.32rem, 0.8vw, 0.56rem) solid var(--landing-sticker-border)')
+    expect(floatingDepthBlock).toContain('background: var(--landing-sticker-bg)')
+    expect(floatingDepthBlock).toContain('box-shadow:')
+    expect(floatingDepthBlock).toContain('rgba(217, 119, 50')
     expect(source).not.toContain('rgba(15, 47, 70')
     expect(source).not.toContain('--landing-sticker-bg: #ffffff')
-    expect(floatingTagBlock).not.toContain('0 18px 42px rgba(2, 6, 23, 0.18)')
+    expect(floatingDepthBlock).not.toContain('0 18px 42px rgba(2, 6, 23, 0.18)')
     expect(testimonialCardBlock).toContain('border: 1px solid var(--landing-hairline)')
     expect(testimonialCardBlock).not.toContain('0 18px 42px rgba(2, 6, 23, 0.2)')
   })
@@ -850,10 +969,13 @@ describe('HomeView', () => {
     const supportPlatformBlock = source.match(/\.support-platform-chip\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const supportIconBackedBlock = source.match(/\.support-icon-frame-backed\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(supportShowcaseBlock).toContain('background: color-mix(in srgb, var(--theme-surface) 58%, var(--landing-bg))')
+    expect(supportShowcaseBlock).toContain('background: color-mix(in srgb, var(--theme-surface-strong) 58%, var(--landing-bg))')
     expect(supportShowcaseBlock).toContain('border-top: 1px solid var(--theme-border)')
     expect(supportShowcaseBlock).toContain('border-bottom: 1px solid var(--theme-border)')
+    expect(supportShowcaseBlock).toContain('min-height: min(100svh, 58rem)')
     expect(supportPanelBlock).toContain('color: var(--theme-text)')
+    expect(supportPanelBlock).toContain('grid-template-columns: minmax(0, 0.86fr) minmax(28rem, 1.14fr)')
+    expect(supportPanelBlock).toContain('min-height: min(100svh, 58rem)')
     expect(supportPanelBlock).not.toContain('width: min(100%, 104rem)')
     expect(supportPanelBlock).not.toMatch(/\bborder-radius:/)
     expect(supportPanelBlock).not.toMatch(/\bbox-shadow:/)
@@ -875,17 +997,50 @@ describe('HomeView', () => {
     const trustCardBlock = source.match(/\.trust-card\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const trustCardDividerBlock = source.match(/\.trust-card \+ \.trust-card::before\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const supportProviderChipBlock = source.match(/\.support-provider-chip\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const supportProviderRowBlock = source.match(/\.support-provider-row\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const supportPlatformChipBlock = source.match(/\.support-platform-chip\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const supportEcosystemBlock = source.match(/\.support-ecosystem\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const supportEcosystemBeforeBlock = source.match(/\.support-ecosystem::before\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const supportHubBlock = source.match(/\.support-ecosystem-hub\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const supportPlatformRowBlock = source.match(/\.support-platform-row\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const supportPlatformDockBlock = source.match(/\.support-platform-dock\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(trustBandBlock).toContain('padding-top: clamp(0.75rem, 1.6vw, 1.4rem)')
+    expect(source).toContain('class="support-ecosystem"')
+    expect(source).toContain('class="support-ecosystem-hub"')
+    expect(source).toContain('class="support-platform-dock"')
+    expect(source).toContain(':class="`support-provider-chip-${index + 1}`"')
+    expect(trustBandBlock).toContain('padding-top: clamp(0.6rem, 1.2vw, 1rem)')
     expect(trustStripBlock).toContain('border: 1px solid var(--landing-hairline)')
-    expect(trustStripBlock).toContain('background: var(--landing-surface-soft)')
-    expect(trustCardBlock).toContain('min-height: 5.6rem')
+    expect(trustStripBlock).toContain('background: color-mix(in srgb, var(--landing-surface-soft) 78%, transparent)')
+    expect(trustCardBlock).toContain('min-height: clamp(4.85rem, 8svh, 5.75rem)')
     expect(trustCardDividerBlock).toContain('background: var(--landing-hairline)')
+    expect(supportEcosystemBlock).toContain('min-height: clamp(29rem, 70svh, 42rem)')
+    expect(supportEcosystemBlock).toContain('border: 0')
+    expect(supportEcosystemBlock).toContain('background: transparent')
+    expect(supportEcosystemBlock).toContain('overflow: visible')
+    expect(supportEcosystemBeforeBlock).not.toContain('animation:')
+    expect(supportProviderRowBlock).toContain('animation: support-provider-orbit 34s linear infinite')
+    expect(supportHubBlock).toContain('position: absolute')
+    expect(supportHubBlock).toContain('left: 50%')
+    expect(supportHubBlock).toContain('top: 43%')
+    expect(supportHubBlock).toContain('border: 0')
+    expect(supportHubBlock).toContain('background: transparent')
+    expect(supportHubBlock).toContain('box-shadow: none')
     expect(supportProviderChipBlock).toContain('border: 1px solid var(--landing-hairline)')
-    expect(supportProviderChipBlock).toContain('background: var(--landing-surface-soft)')
-    expect(supportPlatformChipBlock).toContain('min-height: 3.35rem')
+    expect(supportProviderChipBlock).toContain('background: var(--landing-surface-raised)')
+    expect(supportProviderChipBlock).toContain('border-radius: 999px')
+    expect(supportProviderChipBlock).toContain('position: absolute')
+    expect(supportProviderChipBlock).toContain('animation: support-provider-counter-orbit 34s linear infinite')
+    expect(supportPlatformRowBlock).toContain('display: grid')
+    expect(supportPlatformRowBlock).toContain('border: 0')
+    expect(supportPlatformRowBlock).toContain('background: transparent')
+    expect(supportPlatformDockBlock).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))')
+    expect(supportPlatformChipBlock).toContain('min-height: 2.9rem')
+    expect(supportPlatformChipBlock).toContain('min-width: 0')
     expect(supportPlatformChipBlock).toContain('background: var(--landing-surface-soft)')
+    expect(supportPlatformChipBlock).toContain('border-radius: 999px')
+    expect(source).toContain('@keyframes support-provider-orbit')
+    expect(source).toContain('@keyframes support-provider-counter-orbit')
   })
 
   it('shows the home page logo without a framed brand mark', () => {
@@ -936,22 +1091,32 @@ describe('HomeView', () => {
 
   it('keeps floating stickers out of the mobile hero copy reading lane', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const layoutSource = readFileSync(heroLayoutSourcePath, 'utf-8')
     const mobileBlock = source.match(/@media \(max-width: 640px\)[\s\S]*?\n\}/)?.[0] ?? ''
+    const narrowMobileBlock = source.match(/@media \(max-width: 380px\)[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(mobileBlock).toContain('left: -2.2rem')
-    expect(mobileBlock).toContain('top: 30%')
-    expect(mobileBlock).toContain('top: -4.4rem')
-    expect(mobileBlock).toContain('--hero-mobile-tag-size: clamp(7rem, 32vw, 8.2rem)')
-    expect(mobileBlock).toContain('right: -3.2rem')
-    expect(mobileBlock).toContain('top: -4rem')
-    expect(mobileBlock).toContain('right: -1.6rem')
-    expect(mobileBlock).toContain('top: 33%')
-    expect(mobileBlock).toContain('right: -3.6rem')
-    expect(mobileBlock).toContain('top: 68%')
-    expect(mobileBlock).toContain('left: -1.6rem')
-    expect(mobileBlock).toContain('bottom: 2.6rem')
-    expect(mobileBlock).toContain('--hero-mobile-tag-size: clamp(7.4rem, 34vw, 9.4rem)')
-    expect(mobileBlock).toContain('--hero-mobile-tag-size: clamp(7rem, 32vw, 8.2rem)')
+    expect(layoutSource).toContain("profile === 'short-mobile'")
+    expect(layoutSource).toContain("profile === 'mobile'")
+    expect(layoutSource).toContain('createMobileTargetFactory')
+    expect(layoutSource).toContain('bottomCapacity')
+    expect(layoutSource).toContain('const topCount = count - bottomCount')
+    expect(layoutSource).toContain('createMobileBandSlots')
+    expect(layoutSource).toContain('const topSlots = createMobileBandSlots')
+    expect(layoutSource).toContain('const bottomSlots = createMobileBandSlots')
+    expect(layoutSource).toContain('return centerWithinBounds(x, y, dimensions, bounds, slot.band)')
+    expect(mobileBlock).not.toContain('grid-template-rows:')
+    expect(mobileBlock).not.toContain('grid-template-columns: repeat(12, minmax(0, 1fr))')
+    expect(mobileBlock).not.toContain('display: contents')
+    expect(mobileBlock).toContain('grid-row: 2')
+    expect(mobileBlock).toContain('grid-column: 1 / -1')
+    expect(mobileBlock).toContain('--hero-copy-offset-y: clamp(-7rem, -12svh, -5rem)')
+    expect(narrowMobileBlock).toContain('--hero-copy-offset-y: clamp(-5.5rem, -10svh, -4.25rem)')
+    expect(mobileBlock).toContain('min-height: calc(100svh - 7.375rem)')
+    expect(source).toContain('transform: translateY(var(--hero-copy-offset-y))')
+    expect(mobileBlock).not.toMatch(/\.floating-tool-tag-[0-9]/)
+    expect(mobileBlock).not.toContain('--hero-mobile-tag-size:')
+    expect(mobileBlock).not.toContain('inset: auto')
+    expect(mobileBlock).not.toMatch(/\.floating-tool-tag[\s\S]*?display:\s*none/)
     expect(mobileBlock).not.toContain('bottom: -5.4rem')
     expect(mobileBlock).not.toContain('bottom: 0.8rem')
     expect(mobileBlock).not.toContain('right: 7%')

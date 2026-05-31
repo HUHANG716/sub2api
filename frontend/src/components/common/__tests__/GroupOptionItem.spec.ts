@@ -50,7 +50,7 @@ describe('GroupOptionItem global discount rate display', () => {
   it('shows base and discounted rates for group options', () => {
     const wrapper = mountOption({ rateMultiplier: 1, globalDiscountRate: 0.8 })
 
-    expect(wrapper.text()).toContain('1x → 0.8x')
+    expect(wrapper.text()).toContain('1.000x → 0.800x')
     expect(wrapper.text()).toContain('全局 8 折')
   })
 
@@ -62,14 +62,14 @@ describe('GroupOptionItem global discount rate display', () => {
     })
 
     expect(wrapper.text()).toContain('0.9x')
-    expect(wrapper.text()).toContain('0.7x → 0.56x')
+    expect(wrapper.text()).toContain('0.700x → 0.560x')
     expect(wrapper.text()).toContain('全局 8 折')
   })
 
   it('keeps the original rate pill without a valid global discount', () => {
     const wrapper = mountOption({ rateMultiplier: 0.8 })
 
-    expect(wrapper.text()).toContain('0.8x 倍率')
+    expect(wrapper.text()).toContain('0.800x 倍率')
     expect(wrapper.text()).not.toContain('→')
   })
 
