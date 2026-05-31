@@ -526,6 +526,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
       icon: null,
       iconSvg: item.icon_svg,
     })),
+    { path: '/pricing', label: t('nav.pricing'), icon: PriceTagIcon, hideInSimpleMode: true },
     { path: '/docs', label: t('nav.docs'), icon: DocumentIcon },
   )
   return items

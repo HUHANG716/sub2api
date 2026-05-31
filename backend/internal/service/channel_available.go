@@ -83,6 +83,9 @@ func (s *ChannelService) ListAvailable(ctx context.Context) ([]AvailableChannel,
 
 		supported := ch.SupportedModels()
 		s.fillGlobalPricingFallback(supported)
+		if len(supported) == 0 {
+			supported = s.globalSupportedModelsForGroups(groups)
+		}
 
 		out = append(out, AvailableChannel{
 			ID:                 ch.ID,
@@ -100,6 +103,59 @@ func (s *ChannelService) ListAvailable(ctx context.Context) ([]AvailableChannel,
 		return strings.ToLower(out[i].Name) < strings.ToLower(out[j].Name)
 	})
 	return out, nil
+}
+
+func (s *ChannelService) globalSupportedModelsForGroups(groups []AvailableGroupRef) []SupportedModel {
+	if s.pricingService == nil || len(groups) == 0 {
+		return nil
+	}
+	platforms := make(map[string]struct{}, len(groups))
+	for _, g := range groups {
+		if g.Platform != "" {
+			platforms[g.Platform] = struct{}{}
+		}
+	}
+	if len(platforms) == 0 {
+		return nil
+	}
+
+	pricingData := s.pricingService.ListModelPricing()
+	out := make([]SupportedModel, 0, len(pricingData))
+	for name, lp := range pricingData {
+		platform := platformFromLiteLLM(lp)
+		if _, ok := platforms[platform]; !ok {
+			continue
+		}
+		out = append(out, SupportedModel{
+			Name:     name,
+			Platform: platform,
+			Pricing:  synthesizePricingFromLiteLLM(lp, nil),
+		})
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Platform != out[j].Platform {
+			return out[i].Platform < out[j].Platform
+		}
+		return out[i].Name < out[j].Name
+	})
+	return out
+}
+
+func platformFromLiteLLM(lp *LiteLLMModelPricing) string {
+	if lp == nil {
+		return ""
+	}
+	provider := strings.ToLower(lp.LiteLLMProvider)
+	switch {
+	case strings.Contains(provider, "anthropic") || strings.Contains(provider, "claude"):
+		return "anthropic"
+	case strings.Contains(provider, "gemini") || strings.Contains(provider, "google") || strings.Contains(provider, "vertex"):
+		return "gemini"
+	case strings.Contains(provider, "openai") || strings.Contains(provider, "azure"):
+		return "openai"
+	default:
+		return provider
+	}
 }
 
 // fillGlobalPricingFallback 对未命中渠道定价的支持模型，从全局 LiteLLM 数据合成一份

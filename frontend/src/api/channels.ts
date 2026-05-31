@@ -71,6 +71,13 @@ export async function getAvailable(options?: { signal?: AbortSignal }): Promise<
   return data
 }
 
-export const userChannelsAPI = { getAvailable }
+export async function getPublicPricing(options?: { signal?: AbortSignal }): Promise<UserAvailableChannel[]> {
+  const { data } = await apiClient.get<UserAvailableChannel[]>('/channels/pricing', {
+    signal: options?.signal
+  })
+  return data
+}
+
+export const userChannelsAPI = { getAvailable, getPublicPricing }
 
 export default userChannelsAPI

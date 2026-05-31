@@ -43,6 +43,15 @@
           </router-link>
 
           <router-link
+            to="/pricing"
+            class="header-link"
+            :title="t('nav.pricing')"
+          >
+            <Icon name="calculator" size="sm" />
+            <span class="hidden sm:inline">{{ t('nav.pricing') }}</span>
+          </router-link>
+
+          <router-link
             to="/docs"
             class="header-link"
             :title="t('nav.docs')"

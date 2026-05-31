@@ -29,6 +29,7 @@
 
         <div class="landing-nav-links hidden items-center gap-8 text-sm font-medium md:flex">
           <a href="#features" class="transition">{{ t('home.modern.nav.features') }}</a>
+          <router-link to="/pricing" class="transition">{{ t('home.pricing') }}</router-link>
           <a href="#testimonials" class="transition">{{ t('home.modern.nav.testimonials') }}</a>
           <a href="#faq" class="transition">{{ t('home.modern.nav.faq') }}</a>
           <a href="#contact" class="transition">{{ t('home.modern.nav.contact') }}</a>
@@ -96,9 +97,9 @@
                 <span>{{ isAuthenticated ? t('home.goToDashboard') : t('home.getStarted') }}</span>
                 <Icon name="arrowRight" size="sm" />
               </router-link>
-              <router-link to="/docs" class="hero-button secondary">
-                <span>{{ t('home.viewDocs') }}</span>
-                <Icon name="book" size="sm" />
+              <router-link to="/pricing" class="hero-button secondary">
+                <span>{{ t('home.pricing') }}</span>
+                <Icon name="calculator" size="sm" />
               </router-link>
             </div>
           </div>
@@ -491,6 +492,7 @@ const footerGroups = computed<FooterGroup[]>(() => [
     title: t('home.modern.footer.groups.product'),
     items: [
       { label: t('home.modern.nav.features'), href: '#features' },
+      { label: t('home.pricing'), to: '/pricing' },
       { label: t('home.modern.nav.testimonials'), href: '#testimonials' },
       { label: t('home.docs'), to: '/docs' }
     ]

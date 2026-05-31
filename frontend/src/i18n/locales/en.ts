@@ -19,6 +19,7 @@ export default {
     viewOnGithub: 'View on GitHub',
     viewDocs: 'View Documentation',
     docs: 'Docs',
+    pricing: 'Model Pricing',
     switchToLight: 'Switch to Light Mode',
     switchToDark: 'Switch to Dark Mode',
     dashboard: 'Dashboard',
@@ -673,6 +674,7 @@ export default {
     groups: 'Groups',
     channels: 'Channels',
     availableChannels: 'Available Channels',
+    pricing: 'Model Pricing',
     imagePlayground: 'Image Playground',
     subscriptions: 'Subscriptions',
     accounts: 'Accounts',
@@ -1432,6 +1434,91 @@ export default {
       intervals: 'Tiered Pricing',
       unitPerMillion: '/ 1M tokens',
       unitPerRequest: '/ request'
+    }
+  },
+
+  modelPricing: {
+    kicker: 'Model Pricing',
+    title: 'Model Pricing',
+    description: 'A public, searchable summary of the site model prices, including input, output, cache, image, and per-request billing.',
+    publicTitle: 'See how each model is priced',
+    publicDescription: 'Pricing comes from the site channel and group configuration, so visitors can review providers, groups, billing types, and endpoint types directly.',
+    loginToView: 'Log in to use models',
+    viewChannels: 'View channels',
+    searchPlaceholder: 'Search models, platforms, or channels...',
+    platformFilter: 'Platform filter',
+    allPlatforms: 'All platforms',
+    loading: 'Loading model pricing...',
+    loadFailed: 'Failed to load model pricing',
+    empty: 'No model pricing to show',
+    notConfigured: 'Not configured',
+    tiered: '{count} tiers',
+    allProviders: 'All providers',
+    allProviderDescription: 'Browse configured model prices, group multipliers, and endpoint types across all providers.',
+    providerDescription: 'This provider offers multiple AI models for different application scenarios.',
+    modelCount: '{count} models',
+    allGroups: 'All groups',
+    allBilling: 'All types',
+    allTags: 'All tags',
+    allEndpoints: 'All endpoints',
+    copy: 'Copy',
+    copyModel: 'Copy model name',
+    retry: 'Retry',
+    showMultiplier: 'Multiplier',
+    cardView: 'Card view',
+    tableView: 'Table view',
+    pageSize: 'Page size: {count}',
+    note: 'Prices come from currently available site channels. Final billing may also depend on group multipliers, subscription rules, and admin configuration. Use usage records as the source of truth for actual charges.',
+    filters: {
+      title: 'Filters',
+      reset: 'Reset',
+      provider: 'Provider',
+      group: 'Available token groups',
+      billing: 'Billing type',
+      tag: 'Tags',
+      endpoint: 'Endpoint type'
+    },
+    billing: {
+      token: 'Usage based',
+      request: 'Per request',
+      image: 'Per image'
+    },
+    price: {
+      input: 'Input price',
+      output: 'Completion price',
+      cacheRead: 'Cache read price',
+      cacheWrite: 'Cache write price',
+      request: 'Request price'
+    },
+    summary: {
+      models: 'Models',
+      platforms: 'Platforms',
+      channels: 'Channels'
+    },
+    columns: {
+      model: 'Model',
+      platform: 'Platform',
+      group: 'Group',
+      channel: 'Channel',
+      billingMode: 'Billing',
+      input: 'Input',
+      output: 'Output',
+      cache: 'Cache W/R',
+      request: 'Request/Image'
+    },
+    publicPreview: {
+      rate: {
+        title: 'Clear rates',
+        description: 'Review base model pricing together with available groups and multipliers.'
+      },
+      model: {
+        title: 'Easy filtering',
+        description: 'Search by platform, model name, or channel to quickly find the model for a task.'
+      },
+      usage: {
+        title: 'Traceable usage',
+        description: 'Actual charges remain available in usage records, making reconciliation easier.'
+      }
     }
   },
 

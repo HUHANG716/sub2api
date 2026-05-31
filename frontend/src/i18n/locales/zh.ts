@@ -19,6 +19,7 @@ export default {
     viewOnGithub: '在 GitHub 上查看',
     viewDocs: '查看文档',
     docs: '文档',
+    pricing: '模型定价',
     switchToLight: '切换到浅色模式',
     switchToDark: '切换到深色模式',
     dashboard: '控制台',
@@ -673,6 +674,7 @@ export default {
     groups: '分组管理',
     channels: '渠道管理',
     availableChannels: '可用渠道',
+    pricing: '模型定价',
     imagePlayground: '生图工作台',
     subscriptions: '订阅管理',
     accounts: '账号管理',
@@ -1436,6 +1438,91 @@ export default {
       intervals: '阶梯定价',
       unitPerMillion: '/ 1M token',
       unitPerRequest: '/ 次'
+    }
+  },
+
+  modelPricing: {
+    kicker: 'Model Pricing',
+    title: '模型定价',
+    description: '公开汇总当前站点可用渠道的模型价格，输入、输出、缓存和按次计费放在同一张表里。',
+    publicTitle: '清楚查看每个模型怎么计费',
+    publicDescription: '模型价格来自当前站点的渠道和分组配置，访客也可以直接查看供应商、可用分组、计费类型和端点类型。',
+    loginToView: '登录使用模型',
+    viewChannels: '查看可用渠道',
+    searchPlaceholder: '搜索模型、平台或渠道...',
+    platformFilter: '平台筛选',
+    allPlatforms: '全部平台',
+    loading: '正在加载模型定价...',
+    loadFailed: '加载模型定价失败',
+    empty: '暂无可显示的模型定价',
+    notConfigured: '未配置',
+    tiered: '{count} 条阶梯',
+    allProviders: '全部供应商',
+    allProviderDescription: '查看所有已配置供应商的模型价格、分组倍率和端点类型。',
+    providerDescription: '该供应商提供多种 AI 模型，适用于不同的应用场景。',
+    modelCount: '共 {count} 个模型',
+    allGroups: '全部分组',
+    allBilling: '全部类型',
+    allTags: '全部标签',
+    allEndpoints: '全部端点',
+    copy: '复制',
+    copyModel: '复制模型名',
+    retry: '重试',
+    showMultiplier: '倍率',
+    cardView: '卡片视图',
+    tableView: '表格视图',
+    pageSize: '每页条数：{count}',
+    note: '价格来自当前站点可用渠道配置。最终扣费还会受到分组倍率、订阅规则和管理员配置影响，请以使用记录中的实际扣费为准。',
+    filters: {
+      title: '筛选',
+      reset: '重置',
+      provider: '供应商',
+      group: '可用令牌分组',
+      billing: '计费类型',
+      tag: '标签',
+      endpoint: '端点类型'
+    },
+    billing: {
+      token: '按量计费',
+      request: '按次计费',
+      image: '按图片计费'
+    },
+    price: {
+      input: '输入价格',
+      output: '补全价格',
+      cacheRead: '缓存读取价格',
+      cacheWrite: '缓存创建价格',
+      request: '按次价格'
+    },
+    summary: {
+      models: '模型',
+      platforms: '平台',
+      channels: '渠道'
+    },
+    columns: {
+      model: '模型',
+      platform: '平台',
+      group: '分组',
+      channel: '渠道',
+      billingMode: '计费模式',
+      input: '输入',
+      output: '输出',
+      cache: '缓存写/读',
+      request: '按次/图片'
+    },
+    publicPreview: {
+      rate: {
+        title: '倍率清楚',
+        description: '结合可用分组查看模型基础价格和倍率。'
+      },
+      model: {
+        title: '模型可筛选',
+        description: '按平台、模型名或渠道搜索，快速找到当前任务要用的模型。'
+      },
+      usage: {
+        title: '账单可追踪',
+        description: '调用后的实际费用仍然回到使用记录里核对，方便对账。'
+      }
     }
   },
 

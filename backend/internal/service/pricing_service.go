@@ -577,6 +577,19 @@ func (s *PricingService) GetModelPricing(modelName string) *LiteLLMModelPricing 
 	return nil
 }
 
+// ListModelPricing returns a snapshot of all loaded model pricing entries.
+// Callers must treat returned pricing pointers as read-only.
+func (s *PricingService) ListModelPricing() map[string]*LiteLLMModelPricing {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	out := make(map[string]*LiteLLMModelPricing, len(s.pricingData))
+	for name, pricing := range s.pricingData {
+		out[name] = pricing
+	}
+	return out
+}
+
 func (s *PricingService) buildModelLookupCandidates(modelLower string) []string {
 	// Prefer canonical model name first (this also improves billing compatibility with "models/xxx").
 	candidates := []string{
