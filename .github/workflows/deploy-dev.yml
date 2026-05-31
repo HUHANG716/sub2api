@@ -243,7 +243,7 @@ jobs:
                   }
               }
 
-              handle /image-playground {
+              handle /image-playground* {
                   reverse_proxy 127.0.0.1:8080 {
                       header_down -Content-Security-Policy
                       header_down Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-rN/mwjSDRbSp/GyWf3SbRSivx2cXMjUCUKQReJN0U0Y=' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://*.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https:; frame-src 'self' https://challenges.cloudflare.com https://*.stripe.com https://pay.ldxp.cn; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
@@ -384,7 +384,9 @@ jobs:
           app_headers="$(mktemp)"
           shell_headers="$(mktemp)"
           curl -fsSI https://code.hahacode.work/image-playground-app/ -o "$app_headers"
+          shell_slash_headers="$(mktemp)"
           curl -fsSI https://code.hahacode.work/image-playground -o "$shell_headers"
+          curl -fsSI https://code.hahacode.work/image-playground/ -o "$shell_slash_headers"
           if ! grep -iq '^X-Frame-Options:[[:space:]]*SAMEORIGIN' "$app_headers"; then
             echo "image playground app must allow same-origin iframe embedding" >&2
             cat "$app_headers" >&2
@@ -418,6 +420,21 @@ jobs:
           if grep -iq "frame-ancestors 'none'" "$shell_headers"; then
             echo "image playground shell CSP must not include frame-ancestors 'none'" >&2
             cat "$shell_headers" >&2
+            exit 1
+          fi
+          if ! grep -iq '^X-Frame-Options:[[:space:]]*SAMEORIGIN' "$shell_slash_headers"; then
+            echo "image playground slash shell must allow same-origin iframe fallback" >&2
+            cat "$shell_slash_headers" >&2
+            exit 1
+          fi
+          if ! grep -iq "frame-ancestors 'self'" "$shell_slash_headers"; then
+            echo "image playground slash shell CSP must include frame-ancestors 'self'" >&2
+            cat "$shell_slash_headers" >&2
+            exit 1
+          fi
+          if grep -iq "frame-ancestors 'none'" "$shell_slash_headers"; then
+            echo "image playground slash shell CSP must not include frame-ancestors 'none'" >&2
+            cat "$shell_slash_headers" >&2
             exit 1
           fi
           REMOTE
