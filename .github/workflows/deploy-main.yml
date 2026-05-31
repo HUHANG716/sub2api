@@ -129,6 +129,34 @@ jobs:
 
           DEPLOYED_IMAGE="$deployed_image" FRONTEND_DEPLOYED_SHA="$frontend_deployed_sha" TARGET_SHA="$target_sha" bash .github/ci/resolve-main-deploy-plan.sh
 
+      - name: Check deploy image
+        id: image
+        if: ${{ steps.plan.outputs.mode == 'image' }}
+        env:
+          DEPLOY_SHA: ${{ steps.plan.outputs.target_sha }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ github.token }}
+        run: |
+          owner="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          short_sha="${DEPLOY_SHA::12}"
+          image="ghcr.io/${owner}/sub2api:main-${short_sha}"
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+
+          if [ -n "${GHCR_USERNAME:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then
+            printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin >/dev/null
+          fi
+          if docker manifest inspect "$image" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No backend image found for ${image}; skipping image deploy."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip missing image deploy
+        if: ${{ steps.plan.outputs.mode == 'image' && steps.image.outputs.exists != 'true' }}
+        run: |
+          echo "::notice::Deployment plan selected image mode, but no backend image exists for ${{ steps.plan.outputs.target_sha }}. Skipping deploy until a CI run publishes that image."
+
       - name: Download frontend dist
         if: ${{ steps.plan.outputs.mode == 'frontend' }}
         uses: actions/download-artifact@v8
@@ -143,7 +171,7 @@ jobs:
         run: tar -C frontend-dist -czf frontend-dist.tar.gz .
 
       - name: Deploy on server
-        if: ${{ steps.plan.outputs.mode == 'image' }}
+        if: ${{ steps.plan.outputs.mode == 'image' && steps.image.outputs.exists == 'true' }}
         env:
           DEPLOY_HOST: ${{ vars.BAOLEYUN_HOST }}
           DEPLOY_USER: ${{ vars.BAOLEYUN_USER }}
