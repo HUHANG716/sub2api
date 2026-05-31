@@ -176,7 +176,7 @@ func (h *PaymentHandler) queryPaymentAnalyticsSteps(c *gin.Context, since time.T
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	steps := make([]PaymentAnalyticsStep, 0)
 	for rows.Next() {
@@ -208,7 +208,7 @@ func (h *PaymentHandler) queryPaymentAnalyticsMethods(c *gin.Context, since time
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	methods := make([]PaymentAnalyticsMethod, 0)
 	for rows.Next() {
@@ -233,7 +233,7 @@ func (h *PaymentHandler) queryPaymentAnalyticsRecentEvents(c *gin.Context, since
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	events := make([]PaymentAnalyticsRecentEvent, 0)
 	for rows.Next() {

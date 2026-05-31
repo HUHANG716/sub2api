@@ -28,7 +28,7 @@ func newPaymentEventsTestRouter(t *testing.T, h *PaymentHandler) *gin.Engine {
 func TestRecordPaymentEventsInsertsWhitelistedEvent(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
-	defer db.Close()
+	t.Cleanup(func() { _ = db.Close() })
 
 	h := NewPaymentHandler(nil, nil, nil, db)
 	router := newPaymentEventsTestRouter(t, h)
@@ -66,7 +66,7 @@ func TestRecordPaymentEventsInsertsWhitelistedEvent(t *testing.T) {
 func TestRecordPaymentEventsRejectsUnknownEvent(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
-	defer db.Close()
+	t.Cleanup(func() { _ = db.Close() })
 
 	h := NewPaymentHandler(nil, nil, nil, db)
 	router := newPaymentEventsTestRouter(t, h)
