@@ -405,7 +405,7 @@ describe('HomeView', () => {
     const floatingFieldBlock = source.match(/\.hero-floating-tags\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const mobileBlock = source.match(/@media \(max-width: 640px\)[\s\S]*?\n\}/)?.[0] ?? ''
     const reducedMotionFloatingTagBlock = source.match(
-      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.floating-tool-tag\s*\{[\s\S]*?\n  \}/
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.floating-tool-tag\s*\{[\s\S]*?\n {2}\}/
     )?.[0] ?? ''
 
     expect(source).toContain(':style="heroTagStyle(tool)"')
@@ -854,7 +854,6 @@ describe('HomeView', () => {
   it('calibrates the landing surfaces with finer dark layers and quieter shadows', () => {
     const source = readFileSync(homeViewSourcePath, 'utf-8')
     const landingShellBlock = source.match(/\.landing-shell\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
-    const floatingTagBlock = source.match(/\.floating-tool-tag\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const floatingDepthBlock = source.match(/\.floating-tool-depth\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const testimonialCardBlock = source.match(/\.testimonial-card\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
