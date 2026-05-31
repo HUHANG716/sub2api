@@ -23,7 +23,7 @@ func newAdminPaymentAnalyticsTestRouter(h *PaymentHandler) *gin.Engine {
 func TestAdminPaymentAnalyticsReturnsMissingWhenTableDoesNotExist(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
-	defer db.Close()
+	t.Cleanup(func() { _ = db.Close() })
 
 	h := NewPaymentHandler(nil, nil, db)
 	router := newAdminPaymentAnalyticsTestRouter(h)
@@ -44,7 +44,7 @@ func TestAdminPaymentAnalyticsReturnsMissingWhenTableDoesNotExist(t *testing.T) 
 func TestAdminPaymentAnalyticsMethodsUseResultStatusAsCanonicalSuccess(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
-	defer db.Close()
+	t.Cleanup(func() { _ = db.Close() })
 
 	h := NewPaymentHandler(nil, nil, db)
 	rec := httptest.NewRecorder()
