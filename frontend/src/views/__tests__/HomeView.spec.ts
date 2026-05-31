@@ -213,7 +213,7 @@ describe('HomeView', () => {
     expect(wrapper.find('.testimonial-marquee').exists()).toBe(true)
     expect(wrapper.find('[aria-hidden="true"]').exists()).toBe(true)
     expect(wrapper.findAll('.avatar-photo')).toHaveLength(16)
-    expect(wrapper.html()).toContain('testimonial-avatar-sprite.png')
+    expect(wrapper.html()).not.toContain('testimonial-avatar-sprite.png')
     expect(wrapper.html()).not.toContain('/landing-assets/icon-sprite.png')
     expect(wrapper.html()).not.toContain('/landing-assets/feature-visual-sprite.png')
     expect(wrapper.html()).not.toContain('/landing-assets/object-sprite.png')
@@ -918,6 +918,23 @@ describe('HomeView', () => {
     expect(landingShellBlock).not.toContain("'Noto Sans SC Variable'")
     expect(landingShellBlock).toContain("'PingFang SC'")
     expect(landingShellBlock).toContain("'Microsoft YaHei'")
+  })
+
+  it('keeps below-the-fold landing media from competing with first-screen resources', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf-8')
+    const avatarPhotoBlock = source.match(/\.avatar-photo\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(source).toContain("const testimonialAvatarSprite = '/testimonial-avatar-sprite.jpg'")
+    expect(source).not.toContain("const testimonialAvatarSprite = '/testimonial-avatar-sprite.png'")
+    expect(source).toContain('const shouldLoadTestimonials = ref(false)')
+    expect(source).toContain('function setupTestimonialsObserver()')
+    expect(source).toContain("rootMargin: '640px 0px'")
+    expect(source).toContain("'--testimonial-avatar-image': shouldLoadTestimonials.value ? `url(${testimonialAvatarSprite})` : 'none'")
+    expect(avatarPhotoBlock).toContain('--testimonial-avatar-image: none')
+    expect(avatarPhotoBlock).toContain('background-image: var(--testimonial-avatar-image)')
+    expect(source).not.toContain("background-image: url('/testimonial-avatar-sprite.png')")
+    expect(source).toContain('fetchpriority="high"')
+    expect(source).toContain('loading="lazy" decoding="async"')
   })
 
   it('keeps the fixed dark landing theme aligned with the console dark tokens', () => {

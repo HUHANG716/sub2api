@@ -19,7 +19,7 @@
       <nav class="mx-auto flex items-center justify-between gap-4 px-5 py-4 sm:px-6 lg:px-8">
         <router-link to="/home" class="brand-lockup">
             <span class="brand-mark">
-              <img :src="siteLogo || '/logo.png'" :alt="siteName" />
+              <img :src="siteLogo || '/logo.png'" :alt="siteName" fetchpriority="high" decoding="async" />
             </span>
             <span class="min-w-0">
               <span class="block truncate text-base font-semibold tracking-tight">{{ siteName }}</span>
@@ -73,7 +73,7 @@
             >
               <span class="floating-tool-depth">
                 <span v-if="tool.icon" class="floating-tool-icon" :class="{ 'floating-tool-icon-backed': tool.needsBadge }">
-                  <img :src="tool.icon" :alt="tool.name" />
+                  <img :src="tool.icon" :alt="tool.name" decoding="async" />
                 </span>
                 <span class="floating-tool-name">{{ tool.name }}</span>
               </span>
@@ -131,7 +131,7 @@
           <div class="support-ecosystem">
             <div class="support-ecosystem-hub">
               <span class="support-hub-mark">
-                <img :src="siteLogo || '/logo.png'" :alt="siteName" />
+                <img :src="siteLogo || '/logo.png'" :alt="siteName" loading="lazy" decoding="async" />
               </span>
               <strong>{{ siteName }}</strong>
               <span>{{ t('home.modern.hero.line1') }}</span>
@@ -145,7 +145,7 @@
                 :class="`support-provider-chip-${index + 1}`"
               >
                 <span class="support-icon-frame" :class="{ 'support-icon-frame-backed': provider.needsBadge }">
-                  <img :src="provider.icon" :alt="provider.name" />
+                  <img :src="provider.icon" :alt="provider.name" loading="lazy" decoding="async" />
                 </span>
                 <span>{{ provider.name }}</span>
               </div>
@@ -160,7 +160,7 @@
                   class="support-platform-chip"
                 >
                   <span class="support-icon-frame support-icon-frame-backed">
-                    <img :src="platform.icon" :alt="platform.name" />
+                    <img :src="platform.icon" :alt="platform.name" loading="lazy" decoding="async" />
                   </span>
                   <span>{{ platform.name }}</span>
                 </div>
@@ -171,6 +171,7 @@
       </section>
 
       <section
+        ref="testimonialSectionRef"
         id="testimonials"
         class="testimonial-section px-5 py-20 sm:px-6 lg:px-8"
         data-header-surface="var(--landing-bg)"
@@ -249,7 +250,7 @@
           <div>
             <div class="brand-lockup">
               <span class="brand-mark">
-                <img :src="siteLogo || '/logo.png'" :alt="siteName" />
+              <img :src="siteLogo || '/logo.png'" :alt="siteName" loading="lazy" decoding="async" />
               </span>
               <span>
                 <span class="block text-base font-semibold">{{ siteName }}</span>
@@ -346,9 +347,12 @@ const heroStageRef = ref<HTMLElement | null>(null)
 const heroHeadlineRef = ref<HTMLElement | null>(null)
 const heroLedeRef = ref<HTMLElement | null>(null)
 const heroActionsRef = ref<HTMLElement | null>(null)
+const testimonialSectionRef = ref<HTMLElement | null>(null)
 const heroTagLayouts = ref<HeroTagLayout[]>([])
 const heroTagFields = ref<HeroTagField[]>([])
+const shouldLoadTestimonials = ref(false)
 let heroResizeObserver: ResizeObserver | null = null
+let testimonialObserver: IntersectionObserver | null = null
 let heroLayoutFrame = 0
 let heroFieldFrame = 0
 
@@ -388,7 +392,7 @@ const trustStats = computed(() => [
   { value: '1v1', label: t('home.modern.stats.support') }
 ])
 
-const testimonialAvatarSprite = '/testimonial-avatar-sprite.png'
+const testimonialAvatarSprite = '/testimonial-avatar-sprite.jpg'
 const supportAssetBase = '/landing-support'
 const supportProviders = [
   { name: 'Claude Code', icon: `${supportAssetBase}/claude-code.svg`, needsBadge: false },
@@ -551,7 +555,7 @@ function heroTagStyle(tool: HeroFloatingTag): CSSProperties {
 
 function avatarStyle(backgroundPosition: string) {
   return {
-    backgroundImage: `url(${testimonialAvatarSprite})`,
+    '--testimonial-avatar-image': shouldLoadTestimonials.value ? `url(${testimonialAvatarSprite})` : 'none',
     backgroundPosition
   }
 }
@@ -758,6 +762,28 @@ function setupHeroLayoutObserver() {
   nextTick(scheduleHeroTagLayout)
 }
 
+function setupTestimonialsObserver() {
+  if (typeof window === 'undefined') return
+  const section = testimonialSectionRef.value
+  if (!section || shouldLoadTestimonials.value) return
+
+  if (typeof IntersectionObserver === 'undefined') {
+    shouldLoadTestimonials.value = true
+    return
+  }
+
+  testimonialObserver = new IntersectionObserver((entries) => {
+    if (entries.some((entry) => entry.isIntersecting)) {
+      shouldLoadTestimonials.value = true
+      testimonialObserver?.disconnect()
+      testimonialObserver = null
+    }
+  }, {
+    rootMargin: '640px 0px'
+  })
+  testimonialObserver.observe(section)
+}
+
 onMounted(() => {
   authStore.checkAuth()
 
@@ -768,6 +794,7 @@ onMounted(() => {
   syncHeaderScrollState()
   window.addEventListener('scroll', syncHeaderScrollState, { passive: true })
   setupHeroLayoutObserver()
+  nextTick(setupTestimonialsObserver)
 })
 
 watchEffect(() => {
@@ -783,6 +810,8 @@ onUnmounted(() => {
   window.removeEventListener('resize', scheduleHeroTagLayout)
   heroResizeObserver?.disconnect()
   heroResizeObserver = null
+  testimonialObserver?.disconnect()
+  testimonialObserver = null
   document.documentElement.classList.remove('landing-page-active')
   document.body.classList.remove('landing-page-active')
 })
@@ -2042,12 +2071,13 @@ onUnmounted(() => {
 }
 
 .avatar-photo {
+  --testimonial-avatar-image: none;
   display: inline-flex;
   height: 2.7rem;
   width: 2.7rem;
   border-radius: 0.8rem;
   flex: 0 0 auto;
-  background-image: url('/testimonial-avatar-sprite.png');
+  background-image: var(--testimonial-avatar-image);
   background-repeat: no-repeat;
   background-size: 400% 200%;
   box-shadow:
