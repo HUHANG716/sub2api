@@ -22,6 +22,113 @@
             </div>
           </div>
         </div>
+        <div class="card overflow-hidden p-0" data-test="image-playground-analytics">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-4 py-3 dark:border-dark-600">
+            <div>
+              <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('admin.usage.imagePlayground.title') }}</h2>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t('admin.usage.imagePlayground.description') }}</p>
+            </div>
+            <button class="btn btn-secondary px-3 py-1.5" type="button" :disabled="imagePlaygroundLoading" @click="loadImagePlaygroundAnalytics()">
+              {{ t('common.refresh') }}
+            </button>
+          </div>
+          <div v-if="imagePlaygroundError" class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+            {{ imagePlaygroundError }}
+          </div>
+          <div class="space-y-4 p-4">
+            <div v-if="imagePlaygroundLoading && !imagePlaygroundAnalytics" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+              {{ t('common.loading') }}
+            </div>
+            <template v-else>
+            <div class="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200 dark:border-dark-600 dark:bg-dark-600 md:grid-cols-5">
+              <div class="bg-white p-3 dark:bg-dark-800">
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.usage.imagePlayground.submitCount') }}</div>
+                <div class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">{{ imagePlaygroundAnalytics?.overview.submit_count ?? 0 }}</div>
+              </div>
+              <div class="bg-white p-3 dark:bg-dark-800">
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.usage.imagePlayground.successCount') }}</div>
+                <div class="mt-1 text-xl font-semibold text-emerald-600 dark:text-emerald-400">{{ imagePlaygroundAnalytics?.overview.success_count ?? 0 }}</div>
+              </div>
+              <div class="bg-white p-3 dark:bg-dark-800">
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.usage.imagePlayground.errorCount') }}</div>
+                <div class="mt-1 text-xl font-semibold text-rose-600 dark:text-rose-400">{{ imagePlaygroundAnalytics?.overview.error_count ?? 0 }}</div>
+              </div>
+              <div class="bg-white p-3 dark:bg-dark-800">
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.usage.imagePlayground.successRate') }}</div>
+                <div class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">{{ formatPercent(imagePlaygroundAnalytics?.overview.success_rate ?? 0) }}</div>
+              </div>
+              <div class="bg-white p-3 dark:bg-dark-800">
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.usage.imagePlayground.avgDuration') }}</div>
+                <div class="mt-1 text-xl font-semibold text-gray-900 dark:text-white">{{ formatMs(imagePlaygroundAnalytics?.overview.average_duration_ms ?? 0) }}</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 overflow-hidden rounded-lg border border-gray-200 dark:border-dark-600 lg:grid-cols-3">
+              <div class="border-b border-gray-200 p-3 dark:border-dark-600 lg:border-b-0 lg:border-r">
+                <h3 class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">{{ t('admin.usage.imagePlayground.errorReasons') }}</h3>
+                <div v-if="!(imagePlaygroundAnalytics?.error_kinds?.length)" class="text-sm text-gray-500 dark:text-gray-400">{{ t('common.noData') }}</div>
+                <div v-for="item in imagePlaygroundAnalytics?.error_kinds || []" :key="item.key" class="flex items-center justify-between gap-3 py-1 text-sm">
+                  <span class="truncate text-gray-700 dark:text-gray-300">{{ formatEmptyKey(item.key) }}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ item.count }}</span>
+                </div>
+              </div>
+              <div class="border-b border-gray-200 p-3 dark:border-dark-600 lg:border-b-0 lg:border-r">
+                <h3 class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">{{ t('admin.usage.imagePlayground.models') }}</h3>
+                <div v-if="!(imagePlaygroundAnalytics?.models?.length)" class="text-sm text-gray-500 dark:text-gray-400">{{ t('common.noData') }}</div>
+                <div v-for="item in imagePlaygroundAnalytics?.models || []" :key="item.key" class="flex items-center justify-between gap-3 py-1 text-sm">
+                  <span class="truncate text-gray-700 dark:text-gray-300">{{ formatEmptyKey(item.key) }}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ item.count }}</span>
+                </div>
+              </div>
+              <div class="p-3">
+                <h3 class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">{{ t('admin.usage.imagePlayground.apiModes') }}</h3>
+                <div v-if="!(imagePlaygroundAnalytics?.api_modes?.length)" class="text-sm text-gray-500 dark:text-gray-400">{{ t('common.noData') }}</div>
+                <div v-for="item in imagePlaygroundAnalytics?.api_modes || []" :key="item.key" class="flex items-center justify-between gap-3 py-1 text-sm">
+                  <span class="truncate text-gray-700 dark:text-gray-300">{{ formatEmptyKey(item.key) }}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ item.count }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-dark-600">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 bg-gray-50 px-3 py-2 dark:border-dark-600 dark:bg-dark-700">
+                <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ t('admin.usage.imagePlayground.recentEvents') }}</h3>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.usage.imagePlayground.totalEvents', { count: imagePlaygroundAnalytics?.recent_total ?? 0 }) }}</span>
+              </div>
+              <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-dark-600">
+                <thead class="bg-gray-50 dark:bg-dark-700/70">
+                  <tr>
+                    <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-300">{{ t('usage.time') }}</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-300">{{ t('admin.usage.imagePlayground.event') }}</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-300">{{ t('usage.model') }}</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-300">{{ t('admin.usage.imagePlayground.apiMode') }}</th>
+                    <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-300">{{ t('admin.usage.imagePlayground.reason') }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-dark-700">
+                  <tr v-if="!(imagePlaygroundAnalytics?.recent_events?.length)">
+                    <td class="px-3 py-4 text-center text-gray-500 dark:text-gray-400" colspan="5">{{ t('common.noData') }}</td>
+                  </tr>
+                  <tr v-for="event in imagePlaygroundAnalytics?.recent_events || []" :key="event.id">
+                    <td class="whitespace-nowrap px-3 py-2 text-gray-600 dark:text-gray-300">{{ formatDateTime(event.created_at) }}</td>
+                    <td class="whitespace-nowrap px-3 py-2 text-gray-900 dark:text-white">{{ formatImagePlaygroundEvent(event.event_name) }}</td>
+                    <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ event.model || '-' }}</td>
+                    <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ event.api_mode || '-' }}</td>
+                    <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ event.error_kind || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-if="imagePlaygroundRecentTotalPages > 1" class="flex items-center justify-between border-t border-gray-200 px-3 py-2 text-sm dark:border-dark-600">
+                <button class="btn btn-secondary px-3 py-1.5" type="button" :disabled="imagePlaygroundRecentPage <= 1 || imagePlaygroundLoading" data-test="image-playground-prev-page" @click="handleImagePlaygroundRecentPageChange(imagePlaygroundRecentPage - 1)">
+                  {{ t('common.previous') }}
+                </button>
+                <span class="text-gray-500 dark:text-gray-400">{{ t('admin.usage.imagePlayground.pageInfo', { page: imagePlaygroundRecentPage, total: imagePlaygroundRecentTotalPages }) }}</span>
+                <button class="btn btn-secondary px-3 py-1.5" type="button" :disabled="imagePlaygroundRecentPage >= imagePlaygroundRecentTotalPages || imagePlaygroundLoading" data-test="image-playground-next-page" @click="handleImagePlaygroundRecentPageChange(imagePlaygroundRecentPage + 1)">
+                  {{ t('common.next') }}
+                </button>
+              </div>
+            </div>
+            </template>
+          </div>
+        </div>
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <ModelDistributionChart
             v-model:source="modelDistributionSource"
@@ -148,6 +255,7 @@ import ModelDistributionChart from '@/components/charts/ModelDistributionChart.v
 import EndpointDistributionChart from '@/components/charts/EndpointDistributionChart.vue'
 import Icon from '@/components/icons/Icon.vue'
 import type { AdminUsageLog, TrendDataPoint, ModelStat, GroupStat, EndpointStat, AdminUser } from '@/types'; import type { AdminUsageStatsResponse, AdminUsageQueryParams } from '@/api/admin/usage'
+import type { ImagePlaygroundAnalyticsResponse } from '@/api/admin/usage'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -171,10 +279,16 @@ const inboundEndpointStats = ref<EndpointStat[]>([])
 const upstreamEndpointStats = ref<EndpointStat[]>([])
 const endpointPathStats = ref<EndpointStat[]>([])
 const endpointStatsLoading = ref(false)
+const imagePlaygroundAnalytics = ref<ImagePlaygroundAnalyticsResponse | null>(null)
+const imagePlaygroundLoading = ref(false)
+const imagePlaygroundError = ref('')
+const imagePlaygroundRecentPage = ref(1)
+const imagePlaygroundRecentPageSize = 8
 let abortController: AbortController | null = null; let exportAbortController: AbortController | null = null
 let chartReqSeq = 0
 let statsReqSeq = 0
 let modelStatsReqSeq = 0
+let imagePlaygroundReqSeq = 0
 const exportProgress = reactive({ show: false, progress: 0, current: 0, total: 0, estimatedTime: '' })
 const cleanupDialogVisible = ref(false)
 // Balance history modal state
@@ -329,6 +443,40 @@ const loadStats = async () => {
   }
 }
 
+const imagePlaygroundRecentTotalPages = computed(() =>
+  Math.max(1, Math.ceil((imagePlaygroundAnalytics.value?.recent_total ?? 0) / imagePlaygroundRecentPageSize))
+)
+
+const loadImagePlaygroundAnalytics = async (page = imagePlaygroundRecentPage.value) => {
+  const seq = ++imagePlaygroundReqSeq
+  imagePlaygroundLoading.value = true
+  imagePlaygroundError.value = ''
+  try {
+    const response = await adminAPI.usage.getImagePlaygroundAnalytics({
+      start_date: filters.value.start_date || startDate.value,
+      end_date: filters.value.end_date || endDate.value,
+      user_id: filters.value.user_id,
+      model: filters.value.model,
+      recent_page: page,
+      recent_page_size: imagePlaygroundRecentPageSize
+    })
+    if (seq !== imagePlaygroundReqSeq) return
+    imagePlaygroundAnalytics.value = response
+    imagePlaygroundRecentPage.value = response.recent_page || page
+  } catch (error) {
+    if (seq !== imagePlaygroundReqSeq) return
+    console.error('Failed to load image playground analytics:', error)
+    imagePlaygroundError.value = t('admin.usage.imagePlayground.loadFailed')
+  } finally {
+    if (seq === imagePlaygroundReqSeq) imagePlaygroundLoading.value = false
+  }
+}
+
+const handleImagePlaygroundRecentPageChange = (page: number) => {
+  imagePlaygroundRecentPage.value = Math.max(1, Math.min(page, imagePlaygroundRecentTotalPages.value))
+  void loadImagePlaygroundAnalytics(imagePlaygroundRecentPage.value)
+}
+
 const resetModelStatsCache = () => {
   requestedModelStats.value = []
   upstreamModelStats.value = []
@@ -421,16 +569,20 @@ const loadChartData = async () => {
 }
 const applyFilters = () => {
   pagination.page = 1
+  imagePlaygroundRecentPage.value = 1
   resetModelStatsCache()
   loadLogs()
   loadStats()
+  loadImagePlaygroundAnalytics()
   loadModelStats(modelDistributionSource.value, true)
   loadChartData()
 }
 const refreshData = () => {
+  imagePlaygroundRecentPage.value = 1
   resetModelStatsCache()
   loadLogs()
   loadStats()
+  loadImagePlaygroundAnalytics()
   loadModelStats(modelDistributionSource.value, true)
   loadChartData()
 }
@@ -458,6 +610,17 @@ const getRequestTypeLabel = (log: AdminUsageLog): string => {
   if (requestType === 'stream') return t('usage.stream')
   if (requestType === 'sync') return t('usage.sync')
   return t('usage.unknown')
+}
+
+const formatPercent = (value: number) => `${(value * 100).toFixed(1)}%`
+const formatMs = (value: number) => value > 0 ? `${Math.round(value)} ms` : '-'
+const formatEmptyKey = (value: string) => value && value !== 'unknown' ? value : t('usage.unknown')
+const formatDateTime = (value: string) => new Date(value).toLocaleString()
+const formatImagePlaygroundEvent = (value: string) => {
+  if (value === 'image_generate_submit') return t('admin.usage.imagePlayground.submit')
+  if (value === 'image_generate_success') return t('admin.usage.imagePlayground.success')
+  if (value === 'image_generate_error') return t('admin.usage.imagePlayground.error')
+  return value
 }
 
 const exportToExcel = async () => {
@@ -599,6 +762,7 @@ onMounted(() => {
   applyRouteQueryFilters()
   loadLogs()
   loadStats()
+  loadImagePlaygroundAnalytics()
   loadModelStats(modelDistributionSource.value, true)
   window.setTimeout(() => {
     void loadChartData()

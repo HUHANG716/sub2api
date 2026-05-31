@@ -77,8 +77,8 @@ describe('DocsView', () => {
     expect(text).toContain('Gemini CLI')
     expect(text).toContain('OpenAI 兼容')
     expect(text).toContain('CC-Switch')
-    expect(text).toContain('还没有 API Key？')
-    expect(text).toContain('点击“创建密钥”')
+    expect(text).not.toContain('还没有 API Key？')
+    expect(wrapper.find('[data-testid="docs-key-prerequisite"]').exists()).toBe(false)
     expect(wrapper.find('#quick-start').exists()).toBe(false)
     expect(wrapper.get('.docs-toc a[href="#tools"] .docs-toc-number').text()).toBe('1')
     expect(wrapper.get('.docs-toc a[href="#tools"]').text()).toContain('快速开始')
@@ -220,7 +220,7 @@ describe('DocsView', () => {
 
     expect(wrapper.find('[data-testid="docs-api-key-input"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="docs-api-key-link"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="docs-key-prerequisite"]').text()).toContain('还没有 API Key？')
+    expect(wrapper.find('[data-testid="docs-key-prerequisite"]').exists()).toBe(false)
     expect(wrapper.find('.docs-shell-tabs').exists()).toBe(false)
     expect(wrapper.get('[data-testid="docs-recommended-tool"]').classes()).toContain('active')
 
@@ -280,7 +280,7 @@ describe('DocsView', () => {
     const recommended = wrapper.get('[data-testid="docs-recommended-tool"]')
     const backup = wrapper.get('[data-testid="docs-backup-tools"]')
 
-    expect(recommended.text()).toContain('推荐方案')
+    expect(recommended.text()).toContain('推荐流程')
     expect(recommended.text()).toContain('CC-Switch')
     expect(recommended.classes()).toContain('active')
     expect(recommended.find('[data-testid="docs-tool-logo"]').exists()).toBe(true)
@@ -459,6 +459,8 @@ describe('DocsView', () => {
 
     for (const token of [
       'model_reasoning_effort = "xhigh"',
+      'model = "gpt-5.5"',
+      'review_model = "gpt-5.5"',
       'disable_response_storage = true',
       'wire_api = "responses"',
       'supports_websockets = true',
@@ -471,6 +473,10 @@ describe('DocsView', () => {
       expect(docsSource).toContain(token)
     }
 
+    expect(docsSource).not.toContain('model = "gpt-5.4"')
+    expect(docsSource).not.toContain('review_model = "gpt-5.4"')
+    expect(docsSource).not.toContain('"model":"gpt-5.4"')
+
     for (const token of [
       'model_context_window = 1000000',
       'model_auto_compact_token_limit = 900000'
@@ -482,6 +488,7 @@ describe('DocsView', () => {
     for (const token of [
       'buildCcSwitchImportDeeplink',
       'OPENAI_CC_SWITCH_CODEX_MODEL',
+      "OPENAI_CC_SWITCH_CODEX_MODEL = 'gpt-5.5'",
       'ccswitch://v1/import',
       'usageAutoInterval'
     ]) {

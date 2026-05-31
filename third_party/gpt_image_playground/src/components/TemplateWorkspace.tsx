@@ -10,12 +10,13 @@ import {
   type TemplateFetchState,
 } from '../lib/promptTemplates'
 import { useStore } from '../store'
-import { CopyIcon, ExternalLinkIcon, PhotoIcon, RefreshIcon } from './icons'
+import { CopyIcon, ExternalLinkIcon, FavoriteIcon, PhotoIcon, RefreshIcon } from './icons'
 import { isProductEmbedMode } from '../lib/productEmbed'
 import TemplateImagePreview from './TemplateImagePreview'
 
 type SourceFilter = 'all' | 'xianyu110' | 'evolink' | 'youmind' | 'freestylefly'
 type KindFilter = 'all' | PromptTemplateKind
+type FavoriteFilter = 'all' | 'favorites'
 
 const SOURCE_OPTIONS: Array<{ id: SourceFilter; label: string }> = [
   { id: 'all', label: '全部来源' },
@@ -33,6 +34,7 @@ const KIND_OPTIONS: Array<{ label: string; value: KindFilter }> = [
 ]
 
 const PAGE_SIZE = 120
+const TEMPLATE_FAVORITES_STORAGE_KEY = 'gpt-image-playground.template-favorites.v1'
 
 function getKindLabel(kind: PromptTemplateKind) {
   if (kind === 'scenario') return '场景模板'
@@ -44,8 +46,51 @@ function getPromptPreview(prompt: string) {
   return prompt.length > 360 ? `${prompt.slice(0, 360).trim()}...` : prompt
 }
 
+function getMediaTextPreview(prompt: string) {
+  const normalized = prompt.replace(/\s+/g, ' ').trim()
+  return normalized.length > 110 ? `${normalized.slice(0, 110).trim()}...` : normalized
+}
+
 function getImageUrls(item: PromptTemplateItem) {
   return item.imageUrls?.length ? item.imageUrls : item.imageUrl ? [item.imageUrl] : []
+}
+
+function hashTemplateText(value: string) {
+  let hash = 0
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) | 0
+  }
+  return Math.abs(hash).toString(36)
+}
+
+function getTemplateFavoriteId(item: PromptTemplateItem) {
+  return [
+    item.sourceId,
+    item.kind,
+    item.category,
+    item.title,
+    hashTemplateText(item.promptText),
+  ].join(':')
+}
+
+function readTemplateFavoriteIds() {
+  if (typeof window === 'undefined') return new Set<string>()
+  try {
+    const raw = window.localStorage.getItem(TEMPLATE_FAVORITES_STORAGE_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+    return new Set(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string' && id.length > 0) : [])
+  } catch {
+    return new Set<string>()
+  }
+}
+
+function writeTemplateFavoriteIds(ids: Set<string>) {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(TEMPLATE_FAVORITES_STORAGE_KEY, JSON.stringify([...ids].sort()))
+  } catch {
+    // localStorage may be unavailable in restricted embeds; keep the in-memory state.
+  }
 }
 
 function matchesKeyword(item: PromptTemplateItem, keyword: string) {
@@ -91,19 +136,23 @@ function FilterButton({
 
 function TemplateCard({
   item,
+  favorite,
   onApply,
   onCopy,
+  onToggleFavorite,
   onPreview,
 }: {
   item: PromptTemplateItem
+  favorite: boolean
   onApply: (item: PromptTemplateItem) => void
   onCopy: (item: PromptTemplateItem) => void
+  onToggleFavorite: (item: PromptTemplateItem) => void
   onPreview: (item: PromptTemplateItem, index: number) => void
 }) {
   const imageUrls = getImageUrls(item)
   return (
-    <article className="group flex min-h-[22rem] flex-col overflow-hidden rounded-xl border border-gray-200/70 bg-white/80 shadow-sm ring-1 ring-black/[0.02] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-white/[0.08] dark:bg-gray-900/70 dark:ring-white/[0.03] dark:hover:border-blue-500/40">
-      <div className="relative h-36 overflow-hidden bg-gray-100 dark:bg-white/[0.04]">
+    <article data-template-card className="group flex min-h-[22rem] flex-col overflow-hidden rounded-xl border border-gray-200/70 bg-white/80 shadow-sm ring-1 ring-black/[0.02] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-white/[0.08] dark:bg-gray-900/70 dark:ring-white/[0.03] dark:hover:border-blue-500/40">
+      <div data-template-card-media className="relative h-36 overflow-hidden bg-gray-100 dark:bg-white/[0.04]">
         {imageUrls[0] ? (
           <button
             type="button"
@@ -126,8 +175,13 @@ function TemplateCard({
             </span>
           </button>
         ) : (
-          <div className="flex h-full items-center justify-center bg-[linear-gradient(135deg,rgba(15,23,42,0.04),rgba(59,130,246,0.10))] px-5 text-center text-xs font-medium text-gray-400 dark:bg-[linear-gradient(135deg,rgba(255,255,255,0.04),rgba(59,130,246,0.10))] dark:text-gray-500">
-            {item.sourceName}
+          <div className="flex h-full flex-col justify-end bg-[linear-gradient(135deg,rgba(248,250,252,0.98),rgba(219,234,254,0.92))] px-4 pb-4 pt-12 text-left dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.92),rgba(30,41,59,0.86))]">
+            <p className="line-clamp-2 text-sm font-semibold leading-snug text-gray-800 dark:text-gray-100">
+              {item.title}
+            </p>
+            <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
+              {getMediaTextPreview(item.promptText)}
+            </p>
           </div>
         )}
         <div className="absolute left-3 top-3 flex max-w-[calc(100%-1.5rem)] flex-wrap gap-1.5">
@@ -143,7 +197,7 @@ function TemplateCard({
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col p-4">
+      <div data-template-card-body className="flex flex-1 flex-col p-4">
         <div className="mb-2 min-h-[3.25rem]">
           <h2 className="line-clamp-2 text-base font-semibold leading-snug text-gray-900 dark:text-gray-100">
             {item.title}
@@ -161,7 +215,7 @@ function TemplateCard({
           </p>
         )}
 
-        <pre className="custom-scrollbar mb-4 max-h-36 flex-1 overflow-y-auto whitespace-pre-wrap break-words rounded-lg border border-gray-200/70 bg-gray-50/80 p-3 font-mono text-[11px] leading-relaxed text-gray-600 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-gray-300">
+        <pre data-template-prompt className="custom-scrollbar mb-4 max-h-36 flex-1 overflow-y-auto whitespace-pre-wrap break-words rounded-lg border border-gray-200/70 bg-gray-50/80 p-3 font-mono text-[11px] leading-relaxed text-gray-600 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-gray-300">
           {getPromptPreview(item.promptText)}
         </pre>
 
@@ -172,6 +226,19 @@ function TemplateCard({
             className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
           >
             使用模板
+          </button>
+          <button
+            type="button"
+            onClick={() => onToggleFavorite(item)}
+            className={`rounded-lg border p-2 transition focus:outline-none focus:ring-2 focus:ring-yellow-500/20 ${
+              favorite
+                ? 'border-yellow-300 bg-yellow-50 text-yellow-600 hover:bg-yellow-100 dark:border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-300 dark:hover:bg-yellow-500/15'
+                : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-yellow-600 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-gray-400 dark:hover:bg-white/[0.06] dark:hover:text-yellow-300'
+            }`}
+            aria-label={favorite ? '取消收藏模板' : '收藏模板'}
+            title={favorite ? '取消收藏' : '收藏'}
+          >
+            <FavoriteIcon filled={favorite} className="h-4 w-4" />
           </button>
           <button
             type="button"
@@ -209,8 +276,10 @@ export default function TemplateWorkspace() {
   const [query, setQuery] = useState('')
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
   const [kindFilter, setKindFilter] = useState<KindFilter>('all')
+  const [favoriteFilter, setFavoriteFilter] = useState<FavoriteFilter>('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => readTemplateFavoriteIds())
   const [preview, setPreview] = useState<{ item: PromptTemplateItem; index: number } | null>(null)
 
   const loadTemplates = () => {
@@ -247,8 +316,14 @@ export default function TemplateWorkspace() {
     if (sourceFilter === 'xianyu110' && item.sourceId !== 'xianyu110' && item.sourceId !== 'xianyu110-latest-x') return false
     if (sourceFilter !== 'all' && sourceFilter !== 'xianyu110' && item.sourceId !== sourceFilter) return false
     if (kindFilter !== 'all' && item.kind !== kindFilter) return false
+    if (favoriteFilter === 'favorites' && !favoriteIds.has(getTemplateFavoriteId(item))) return false
     return true
-  }), [fetchState.items, kindFilter, sourceFilter])
+  }), [favoriteFilter, favoriteIds, fetchState.items, kindFilter, sourceFilter])
+
+  const favoriteCount = useMemo(
+    () => fetchState.items.filter((item) => favoriteIds.has(getTemplateFavoriteId(item))).length,
+    [favoriteIds, fetchState.items],
+  )
 
   const categories = useMemo(() => {
     const counts = new Map<string, number>()
@@ -266,7 +341,7 @@ export default function TemplateWorkspace() {
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
-  }, [categoryFilter, kindFilter, query, sourceFilter])
+  }, [categoryFilter, favoriteFilter, kindFilter, query, sourceFilter])
 
   const filteredItems = useMemo(() => {
     const keyword = query.trim().toLowerCase()
@@ -307,6 +382,25 @@ export default function TemplateWorkspace() {
     }
   }
 
+  const handleToggleFavorite = (item: PromptTemplateItem) => {
+    const favoriteId = getTemplateFavoriteId(item)
+    const nextFavorite = !favoriteIds.has(favoriteId)
+    setFavoriteIds((current) => {
+      const next = new Set(current)
+      if (nextFavorite) next.add(favoriteId)
+      else next.delete(favoriteId)
+      writeTemplateFavoriteIds(next)
+      return next
+    })
+    trackImagePlaygroundEvent('template_favorite_toggle', {
+      templateId: item.id,
+      sourceId: item.sourceId,
+      kind: item.kind,
+      favorite: nextFavorite,
+    })
+    showToast(nextFavorite ? '已收藏模板' : '已取消收藏', 'success')
+  }
+
   const handlePreview = (item: PromptTemplateItem, index: number) => {
     trackImagePlaygroundEvent('template_preview_open', {
       templateId: item.id,
@@ -318,8 +412,8 @@ export default function TemplateWorkspace() {
   }
 
   return (
-    <main className={productEmbed ? 'pb-[calc(var(--input-bar-clearance,10rem)+2rem)]' : 'pb-48'}>
-      <div className="safe-area-x mx-auto max-w-7xl">
+    <main data-template-workspace className={productEmbed ? 'pb-[calc(var(--input-bar-clearance,10rem)+2rem)]' : 'pb-48'}>
+      <div data-template-container className="safe-area-x mx-auto max-w-7xl">
         <section className={productEmbed ? 'mt-2' : 'mt-6'}>
           <div className={`${productEmbed ? 'mb-2 gap-2' : 'mb-4 gap-3'} flex flex-col lg:flex-row lg:items-end lg:justify-between`}>
             <div className="min-w-0">
@@ -346,7 +440,7 @@ export default function TemplateWorkspace() {
             </div>
           </div>
 
-          <div className="mb-4 grid gap-3 rounded-xl border border-gray-200/70 bg-white/70 p-3 shadow-sm dark:border-white/[0.08] dark:bg-gray-900/60">
+          <div data-template-filters className="mb-4 grid gap-3 rounded-xl border border-gray-200/70 bg-white/70 p-3 shadow-sm dark:border-white/[0.08] dark:bg-gray-900/60">
             <label className="relative block">
               <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -391,6 +485,26 @@ export default function TemplateWorkspace() {
                   </FilterButton>
                 ))}
               </div>
+              <div className="flex gap-1 overflow-x-auto rounded-lg bg-gray-100 p-1 dark:bg-white/[0.04]">
+                <FilterButton
+                  active={favoriteFilter === 'all'}
+                  onClick={() => {
+                    setFavoriteFilter('all')
+                    trackImagePlaygroundEvent('template_filter', { filterType: 'favorite', value: 'all' })
+                  }}
+                >
+                  全部模板
+                </FilterButton>
+                <FilterButton
+                  active={favoriteFilter === 'favorites'}
+                  onClick={() => {
+                    setFavoriteFilter('favorites')
+                    trackImagePlaygroundEvent('template_filter', { filterType: 'favorite', value: 'favorites' })
+                  }}
+                >
+                  已收藏 {favoriteCount}
+                </FilterButton>
+              </div>
             </div>
           </div>
 
@@ -409,7 +523,7 @@ export default function TemplateWorkspace() {
             </div>
           )}
 
-          <div className="mb-5 flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+          <div data-template-categories className="mb-5 flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
             <button
               type="button"
               onClick={() => setCategoryFilter('all')}
@@ -464,7 +578,9 @@ export default function TemplateWorkspace() {
 
           {hasResults && filteredItems.length === 0 && (
             <div className="flex min-h-[32vh] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white/50 px-5 text-center text-sm text-gray-500 dark:border-white/[0.08] dark:bg-white/[0.02] dark:text-gray-400">
-              没有找到匹配模板，试试缩短关键词或切换筛选。
+              {favoriteFilter === 'favorites' && favoriteCount === 0
+                ? '还没有收藏模板。'
+                : '没有找到匹配模板，试试缩短关键词或切换筛选。'}
             </div>
           )}
 
@@ -473,13 +589,15 @@ export default function TemplateWorkspace() {
               <div className="mb-3 text-xs text-gray-400 dark:text-gray-500">
                 显示 {visibleItems.length} / {filteredItems.length} 个模板
               </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div data-template-grid className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {visibleItems.map((item) => (
                   <TemplateCard
                     key={item.id}
                     item={item}
+                    favorite={favoriteIds.has(getTemplateFavoriteId(item))}
                     onApply={handleApply}
                     onCopy={handleCopy}
+                    onToggleFavorite={handleToggleFavorite}
                     onPreview={handlePreview}
                   />
                 ))}

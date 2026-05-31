@@ -6,6 +6,7 @@ import { dismissAllTooltips } from '../lib/tooltipDismiss'
 import ViewportTooltip from './ViewportTooltip'
 import HelpModal from './HelpModal'
 import HistoryModal from './HistoryModal'
+import { useFavoriteCollectionTitle } from './FavoriteCollections'
 import { EditIcon, HelpCircleIcon, HistoryIcon, InstallIcon, SettingsIcon } from './icons'
 import { isProductEmbedMode } from '../lib/productEmbed'
 
@@ -35,9 +36,13 @@ export default function Header() {
   const setAgentMobileHeaderVisible = useStore((s) => s.setAgentMobileHeaderVisible)
   const agentConversations = useStore((s) => s.agentConversations)
   const activeAgentConversationId = useStore((s) => s.activeAgentConversationId)
+  const filterFavorite = useStore((s) => s.filterFavorite)
+  const activeFavoriteCollectionId = useStore((s) => s.activeFavoriteCollectionId)
   const setAgentEditingConversationId = useStore((s) => s.setAgentEditingConversationId)
   const setAgentSidebarCollapsed = useStore((s) => s.setAgentSidebarCollapsed)
   const activeConversation = agentConversations.find((item) => item.id === activeAgentConversationId)
+  const favoriteCollectionTitle = useFavoriteCollectionTitle()
+  const showFavoriteCollectionTitle = appMode === 'gallery' && Boolean(activeFavoriteCollectionId)
   const { hasUpdate, latestRelease, dismiss } = useVersionCheck()
   const [showHelp, setShowHelp] = useState(false)
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
@@ -156,18 +161,43 @@ export default function Header() {
         <div className="safe-area-x safe-header-inner max-w-7xl mx-auto flex items-center justify-between relative">
           <div className="flex-1 min-w-0 pr-2 flex items-center gap-2">
             <h1 className={`inline-flex items-start relative ${productEmbed ? 'mr-1' : 'mr-2'}`}>
-              <span className="text-[17px] sm:text-lg font-bold tracking-tight text-gray-800 dark:text-gray-100">
-                {productEmbed ? 'Images' : 'GPT Image Playground'}
-              </span>
+              {productEmbed ? (
+                <span className="text-[17px] sm:text-lg font-bold tracking-tight text-gray-800 dark:text-gray-100">
+                  Images
+                </span>
+              ) : showFavoriteCollectionTitle ? (
+                <>
+                  <span className="min-w-0 truncate text-[17px] font-bold tracking-tight text-gray-800 dark:text-gray-100 sm:hidden" title={favoriteCollectionTitle}>{favoriteCollectionTitle}</span>
+                  <a
+                    href="https://github.com/CookSleep/gpt_image_playground"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hidden text-lg font-bold tracking-tight text-gray-800 transition-colors hover:text-gray-600 dark:text-gray-100 dark:hover:text-gray-300 sm:inline"
+                  >
+                    GPT Image Playground
+                  </a>
+                </>
+              ) : (
+                <a
+                  href="https://github.com/CookSleep/gpt_image_playground"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[17px] sm:text-lg font-bold tracking-tight text-gray-800 dark:text-gray-100 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  GPT Image Playground
+                </a>
+              )}
               {!productEmbed && hasUpdate && latestRelease && (
-                <button
-                  type="button"
+                <a
+                  href={latestRelease.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={dismiss}
                   className="absolute -right-1 -top-1 translate-x-full -translate-y-1/4 px-1 py-0.5 rounded-[4px] border border-red-500/30 text-[9px] font-black bg-red-500 text-white hover:bg-red-600 transition-all animate-fade-in leading-none shadow-sm"
                   title={`新版本 ${latestRelease.tag}`}
                 >
                   NEW
-                </button>
+                </a>
               )}
             </h1>
             {appMode === 'agent' && <div className="hidden sm:flex items-center gap-1 relative">
@@ -176,7 +206,7 @@ export default function Header() {
                 type="button"
                 onClick={() => setShowHistoryModal((visible) => !visible)}
                 className="p-1.5 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/[0.04] rounded-lg transition-colors"
-                title="历史记录"
+                title="历史任务"
               >
                 <HistoryIcon className="w-5 h-5" />
               </button>
@@ -211,6 +241,13 @@ export default function Header() {
               >
                 {activeConversation.title || 'Agent'}
               </button>
+            </div>
+          )}
+          {showFavoriteCollectionTitle && (
+            <div className="absolute left-1/2 top-1/2 hidden max-w-[30%] -translate-x-1/2 -translate-y-1/2 sm:flex">
+              <div className="truncate rounded px-2 py-1 text-sm font-semibold text-gray-700 dark:text-gray-300" title={favoriteCollectionTitle}>
+                {favoriteCollectionTitle}
+              </div>
             </div>
           )}
           <div
@@ -303,7 +340,7 @@ export default function Header() {
       {/* Hint for sliding down */}
       <div className={`fixed top-0 left-0 right-0 z-30 flex justify-center pointer-events-none transition-all duration-300 ease-in-out sm:hidden ${appMode === 'agent' && hintVisible && !agentMobileHeaderVisible ? 'translate-y-[env(safe-area-inset-top,0px)] opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="bg-black/60 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-b-xl shadow-lg">
-          列表顶部下拉展示顶栏
+          下拉展示顶栏
         </div>
       </div>
 
@@ -315,7 +352,7 @@ export default function Header() {
           </div>
         </div>}
       </div>
-      {showHelp && <HelpModal appMode={appMode} onClose={() => setShowHelp(false)} />}
+      {showHelp && <HelpModal appMode={appMode} isFavoriteCollectionOverview={appMode === 'gallery' && filterFavorite && !activeFavoriteCollectionId} onClose={() => setShowHelp(false)} />}
     </>
   )
 }

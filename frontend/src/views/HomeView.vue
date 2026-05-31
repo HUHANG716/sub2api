@@ -1653,8 +1653,7 @@ onUnmounted(() => {
   transform-style: preserve-3d;
 }
 
-.support-ecosystem::before,
-.support-ecosystem::after {
+.support-ecosystem::before {
   content: '';
   position: absolute;
   pointer-events: none;
@@ -1668,17 +1667,6 @@ onUnmounted(() => {
   border: 1px solid color-mix(in srgb, var(--landing-hairline) 42%, transparent);
   border-radius: 50%;
   transform: translate(-50%, -50%) rotate(-13deg);
-}
-
-.support-ecosystem::after {
-  left: 50%;
-  top: 42%;
-  width: min(22rem, 58%);
-  height: min(13rem, 34%);
-  border: 1px solid color-mix(in srgb, var(--landing-accent-soft) 28%, transparent);
-  border-radius: 50%;
-  background: transparent;
-  transform: translate(-50%, -50%) rotate(17deg);
 }
 
 .support-ecosystem-hub {

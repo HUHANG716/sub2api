@@ -12,7 +12,7 @@ import {
 } from '../imagePlayground'
 import type { ApiKey, Group } from '@/types'
 
-const { appState, createKey, estimateImageCost, getAvailableGroups, getKeyById, listKeys } = vi.hoisted(() => ({
+const { appState, createKey, deleteKey, estimateImageCost, getAvailableGroups, getKeyById, listKeys, recordImagePlaygroundEvents } = vi.hoisted(() => ({
   appState: {
     cachedPublicSettings: {
       image_playground_group_id: 11
@@ -20,10 +20,12 @@ const { appState, createKey, estimateImageCost, getAvailableGroups, getKeyById, 
     fetchPublicSettings: vi.fn()
   },
   createKey: vi.fn(),
+  deleteKey: vi.fn(),
   estimateImageCost: vi.fn(),
   getAvailableGroups: vi.fn(),
   getKeyById: vi.fn(),
-  listKeys: vi.fn()
+  listKeys: vi.fn(),
+  recordImagePlaygroundEvents: vi.fn()
 }))
 
 const messages: Record<string, string> = {
@@ -38,6 +40,7 @@ const messages: Record<string, string> = {
   'imagePlayground.createConfirmAction': 'Create Key',
   'imagePlayground.renewManualConfirmDescription': 'This will regenerate the dedicated API Key for the image playground and reload the current workspace. Continue?',
   'imagePlayground.renewExpiredConfirmDescription': 'The image playground API Key has expired. Regenerate it before continuing?',
+  'imagePlayground.renewUnsupportedGroupConfirmDescription': 'The current API Key belongs to a group that does not support image generation. Regenerate a usable image playground Key before continuing?',
   'imagePlayground.renewConfirmAction': 'Regenerate',
   'imagePlayground.estimatedCost': 'Est. cost',
   'imagePlayground.estimateWaiting': 'Waiting',
@@ -58,11 +61,13 @@ const messages: Record<string, string> = {
 vi.mock('@/api', () => ({
   keysAPI: {
     create: createKey,
+    delete: deleteKey,
     getById: getKeyById,
     list: listKeys
   },
   usageAPI: {
-    estimateImageCost
+    estimateImageCost,
+    recordImagePlaygroundEvents
   },
   userGroupsAPI: {
     getAvailable: getAvailableGroups
@@ -227,11 +232,15 @@ describe('ImagePlaygroundView', () => {
     appState.fetchPublicSettings.mockReset()
     appState.fetchPublicSettings.mockResolvedValue(appState.cachedPublicSettings)
     createKey.mockReset()
+    deleteKey.mockReset()
     estimateImageCost.mockReset()
     getAvailableGroups.mockReset()
     getKeyById.mockReset()
     listKeys.mockReset()
+    recordImagePlaygroundEvents.mockReset()
     listKeys.mockResolvedValue(makeKeyList([]))
+    deleteKey.mockResolvedValue({ message: 'deleted' })
+    recordImagePlaygroundEvents.mockResolvedValue({ inserted: 1 })
     window.localStorage.clear()
     window.sessionStorage.clear()
     consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
@@ -375,6 +384,119 @@ describe('ImagePlaygroundView', () => {
       count: 2
     }, expect.any(Object))
     expect(wrapper.get('[data-test="image-playground-estimate"]').text()).toContain('$0.0900')
+  })
+
+  it('records whitelisted iframe analytics without sensitive payload fields', async () => {
+    getAvailableGroups.mockResolvedValue([makeGroup({ id: 11, name: 'OpenAI Images' })])
+    listKeys.mockResolvedValue(makeKeyList([]))
+    createKey.mockResolvedValue(makeApiKey({ id: 42, key: 'sk-created', group_id: 11 }))
+
+    const wrapper = mount(ImagePlaygroundView, {
+      global: {
+        stubs: {
+          AppLayout: BaseLayoutStub,
+          Icon: true,
+          ConfirmDialog: true
+        }
+      }
+    })
+
+    await flushPromises()
+    await wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm')
+    await flushPromises()
+    window.dispatchEvent(new MessageEvent('message', {
+      origin: window.location.origin,
+      data: {
+        type: 'image-playground:analytics',
+        event: {
+          name: 'image_generate_success',
+          payload: {
+            provider: 'openai',
+            apiMode: 'responses',
+            model: 'gpt-image-2',
+            size: '1024x1024',
+            n: 1,
+            inputImageCount: 0,
+            hasMask: false,
+            durationMs: 1200,
+            outputImageCount: 1,
+            prompt: 'do not record this',
+            apiKey: 'sk-secret',
+            imageData: 'data:image/png;base64,secret'
+          }
+        }
+      }
+    }))
+    await flushPromises()
+
+    expect(recordImagePlaygroundEvents).toHaveBeenCalledWith({
+      events: [{
+        name: 'image_generate_success',
+        provider: 'openai',
+        apiMode: 'responses',
+        model: 'gpt-image-2',
+        size: '1024x1024',
+        n: 1,
+        inputImageCount: 0,
+        hasMask: false,
+        durationMs: 1200,
+        outputImageCount: 1
+      }]
+    })
+    const payload = recordImagePlaygroundEvents.mock.calls[0][0].events[0]
+    expect(payload).not.toHaveProperty('prompt')
+    expect(payload).not.toHaveProperty('apiKey')
+    expect(payload).not.toHaveProperty('imageData')
+  })
+
+  it('normalizes agent iframe analytics into the shared image funnel', async () => {
+    getAvailableGroups.mockResolvedValue([makeGroup({ id: 11, name: 'OpenAI Images' })])
+    listKeys.mockResolvedValue(makeKeyList([]))
+    createKey.mockResolvedValue(makeApiKey({ id: 42, key: 'sk-created', group_id: 11 }))
+
+    const wrapper = mount(ImagePlaygroundView, {
+      global: {
+        stubs: {
+          AppLayout: BaseLayoutStub,
+          Icon: true,
+          ConfirmDialog: true
+        }
+      }
+    })
+
+    await flushPromises()
+    await wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm')
+    await flushPromises()
+    window.dispatchEvent(new MessageEvent('message', {
+      origin: window.location.origin,
+      data: {
+        type: 'image-playground:analytics',
+        event: {
+          name: 'agent_image_generate_error',
+          payload: {
+            sourceMode: 'gallery',
+            provider: 'openai',
+            apiMode: 'responses',
+            model: 'gpt-image-2',
+            errorKind: 'AbortError',
+            recoverable: true
+          }
+        }
+      }
+    }))
+    await flushPromises()
+
+    expect(recordImagePlaygroundEvents).toHaveBeenCalledWith({
+      events: [{
+        name: 'image_generate_error',
+        sourceMode: 'agent',
+        provider: 'openai',
+        apiMode: 'responses',
+        model: 'gpt-image-2',
+        errorKind: 'AbortError',
+        recoverable: true
+      }]
+    })
   })
 
   it('fetches public settings when the admin configured group is not cached yet', async () => {
@@ -613,6 +735,7 @@ describe('ImagePlaygroundView', () => {
     await flushPromises()
 
     expect(createKey).toHaveBeenCalledWith('Image Playground', 11)
+    expect(deleteKey).not.toHaveBeenCalled()
     expect(JSON.parse(window.localStorage.getItem(IMAGE_PLAYGROUND_STORAGE_KEY) || '{}')).toMatchObject({
       key: 'sk-created',
       key_id: 64,
@@ -709,6 +832,114 @@ describe('ImagePlaygroundView', () => {
     const refreshedFrame = wrapper.get('[data-test="image-playground-frame"]')
     expect(refreshedFrame.element).not.toBe(originalFrameElement)
     expect(new URL(refreshedFrame.attributes('src')).searchParams.get('refresh')).toBe('2')
+  })
+
+  it('asks to recreate the key when the embedded playground reports unsupported image generation', async () => {
+    getAvailableGroups.mockResolvedValue([makeGroup({ id: 11, name: 'OpenAI Images' })])
+    getKeyById.mockResolvedValue(makeApiKey({
+      id: 77,
+      key: 'sk-stored',
+      group_id: 11,
+      status: 'active'
+    }))
+    listKeys.mockResolvedValue(makeKeyList([]))
+    createKey.mockResolvedValue(makeApiKey({ id: 99, key: 'sk-recreated', group_id: 11 }))
+    window.localStorage.setItem(IMAGE_PLAYGROUND_STORAGE_KEY, JSON.stringify({
+      key: 'sk-stored',
+      key_id: 77,
+      group_id: 11,
+      group_name: 'OpenAI Images',
+      created_at: '2026-05-27T00:00:00.000Z'
+    }))
+
+    const wrapper = mount(ImagePlaygroundView, {
+      global: {
+        stubs: {
+          AppLayout: BaseLayoutStub,
+          Icon: true,
+          ConfirmDialog: true
+        }
+      }
+    })
+
+    await flushPromises()
+    expect(wrapper.get('[data-test="image-playground-frame"]').exists()).toBe(true)
+
+    window.dispatchEvent(new MessageEvent('message', {
+      origin: window.location.origin,
+      data: {
+        type: 'image-playground:recreate-key-request',
+        reason: 'image_generation_disabled_for_group'
+      }
+    }))
+    await flushPromises()
+
+    expect(wrapper.findComponent({ name: 'ConfirmDialog' }).props('show')).toBe(true)
+    expect(wrapper.findComponent({ name: 'ConfirmDialog' }).props('message')).toContain('does not support image generation')
+    expect(createKey).not.toHaveBeenCalled()
+
+    await wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm')
+    await flushPromises()
+
+    expect(createKey).toHaveBeenCalledWith('Image Playground', 11)
+    expect(deleteKey).toHaveBeenCalledWith(77)
+    expect(JSON.parse(window.localStorage.getItem(IMAGE_PLAYGROUND_STORAGE_KEY) || '{}')).toMatchObject({
+      key: 'sk-recreated',
+      key_id: 99,
+      group_id: 11,
+      group_name: 'OpenAI Images'
+    })
+  })
+
+  it('keeps the recreated key usable when retiring the old key fails', async () => {
+    getAvailableGroups.mockResolvedValue([makeGroup({ id: 11, name: 'OpenAI Images' })])
+    getKeyById.mockResolvedValue(makeApiKey({
+      id: 77,
+      key: 'sk-stored',
+      group_id: 11,
+      status: 'active'
+    }))
+    createKey.mockResolvedValue(makeApiKey({ id: 99, key: 'sk-recreated', group_id: 11 }))
+    deleteKey.mockRejectedValue(new Error('network down'))
+    window.localStorage.setItem(IMAGE_PLAYGROUND_STORAGE_KEY, JSON.stringify({
+      key: 'sk-stored',
+      key_id: 77,
+      group_id: 11,
+      group_name: 'OpenAI Images',
+      created_at: '2026-05-27T00:00:00.000Z'
+    }))
+
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const wrapper = mount(ImagePlaygroundView, {
+      global: {
+        stubs: {
+          AppLayout: BaseLayoutStub,
+          Icon: true,
+          ConfirmDialog: true
+        }
+      }
+    })
+
+    await flushPromises()
+    window.dispatchEvent(new MessageEvent('message', {
+      origin: window.location.origin,
+      data: {
+        type: 'image-playground:recreate-key-request',
+        reason: 'image_generation_disabled_for_group'
+      }
+    }))
+    await flushPromises()
+
+    await wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm')
+    await flushPromises()
+
+    expect(deleteKey).toHaveBeenCalledWith(77)
+    expect(wrapper.get('[data-test="image-playground-frame"]').attributes('src')).toBeTruthy()
+    expect(JSON.parse(window.localStorage.getItem(IMAGE_PLAYGROUND_STORAGE_KEY) || '{}')).toMatchObject({
+      key: 'sk-recreated',
+      key_id: 99
+    })
+    consoleWarn.mockRestore()
   })
 
   it('asks before creating a new key when the stored key was deleted', async () => {

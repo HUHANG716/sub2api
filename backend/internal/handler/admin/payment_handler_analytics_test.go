@@ -3,7 +3,9 @@ package admin
 import (
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gin-gonic/gin"
@@ -36,5 +38,32 @@ func TestAdminPaymentAnalyticsReturnsMissingWhenTableDoesNotExist(t *testing.T) 
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Contains(t, rec.Body.String(), `"window_days":180`)
 	require.Contains(t, rec.Body.String(), `"events_missing":true`)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAdminPaymentAnalyticsMethodsUseResultStatusAsCanonicalSuccess(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	h := NewPaymentHandler(nil, nil, db)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/payment/analytics", nil)
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COALESCE(payment_type, ''), event_name, COUNT(*) AS count")).
+		WillReturnRows(sqlmock.NewRows([]string{"payment_type", "event_name", "count"}).
+			AddRow("alipay", "payment_order_submit", int64(3)).
+			AddRow("alipay", "payment_result_status", int64(1)).
+			AddRow("wxpay", "payment_result_status", int64(2)))
+
+	methods, err := h.queryPaymentAnalyticsMethods(c, time.Now().Add(-24*time.Hour))
+
+	require.NoError(t, err)
+	require.Equal(t, []PaymentAnalyticsMethod{
+		{PaymentType: "alipay", EventName: "payment_order_submit", Count: 3},
+		{PaymentType: "alipay", EventName: "payment_result_status", Count: 1},
+		{PaymentType: "wxpay", EventName: "payment_result_status", Count: 2},
+	}, methods)
 	require.NoError(t, mock.ExpectationsWereMet())
 }

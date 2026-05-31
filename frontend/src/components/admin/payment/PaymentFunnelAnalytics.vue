@@ -112,7 +112,7 @@ const stepDefinitions = [
   { name: 'payment_order_submit', labelKey: 'payment.admin.funnelSubmit' },
   { name: 'payment_order_create_success', labelKey: 'payment.admin.funnelCreated' },
   { name: 'payment_launch', labelKey: 'payment.admin.funnelLaunch' },
-  { name: 'payment_result_status', labelKey: 'payment.admin.funnelResult' },
+  { name: 'payment_result_success', labelKey: 'payment.admin.funnelResult' },
 ] as const
 
 const stepMap = computed(() => {
@@ -141,7 +141,7 @@ const recentEvents = computed(() => props.analytics?.recent_events || [])
 
 const conversionLabel = computed(() => {
   const submit = stepMap.value.get('payment_order_submit')?.count || 0
-  const result = stepMap.value.get('payment_result_status')?.count || 0
+  const result = stepMap.value.get('payment_result_success')?.count || 0
   if (submit <= 0) return t('payment.admin.conversionEmpty')
   return t('payment.admin.conversionRate', { rate: `${Math.round((result / submit) * 1000) / 10}%` })
 })
@@ -152,13 +152,14 @@ const methodRows = computed(() => {
     const paymentType = item.payment_type || '-'
     const row = rows.get(paymentType) || { paymentType, submit: 0, success: 0 }
     if (item.event_name === 'payment_order_submit') row.submit += item.count
-    if (item.event_name === 'payment_result_status' || item.event_name === 'payment_success') row.success += item.count
+    if (item.event_name === 'payment_result_status') row.success += item.count
     rows.set(paymentType, row)
   }
   return [...rows.values()].sort((a, b) => (b.success + b.submit) - (a.success + a.submit))
 })
 
 function stepWidth(count: number): string {
+  if (count <= 0) return '0%'
   return `${Math.max(4, Math.round((count / maxStepCount.value) * 100))}%`
 }
 
@@ -171,7 +172,7 @@ function formatEventName(name: string): string {
 }
 
 function formatAmount(value: number | undefined): string {
-  return typeof value === 'number' && Number.isFinite(value) ? `$${value.toFixed(2)}` : '-'
+  return typeof value === 'number' && Number.isFinite(value) ? `¥${value.toFixed(2)}` : '-'
 }
 
 function formatEventTime(value: string | undefined): string {

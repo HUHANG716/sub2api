@@ -95,9 +95,9 @@ vi.mock('./lib/agentApi', () => ({
     }
   }),
 }))
-import { clearAgentConversations, clearImages, getAllAgentConversations, getAllTasks, putAgentConversation, putImage, putTask as putDbTask } from './lib/db'
+import { clearAgentConversations, clearImages, clearTasks, getAllAgentConversations, getAllTasks, putAgentConversation, putImage, putTask as putDbTask } from './lib/db'
 import { callAgentResponsesApi, callBatchImageSingle } from './lib/agentApi'
-import { cleanStaleAgentInputDrafts, deleteAgentRoundFromConversation, editOutputs, getActiveAgentRounds, getErrorToastMessage, getPersistedState, getTaskApiProfile, importData, initStore, markInterruptedOpenAIRunningTasks, migratePersistedState, regenerateAgentAssistantMessage, remapAgentRoundMentionsForPathChange, removeTask, reuseConfig, submitAgentMessage, submitTask, useStore } from './store'
+import { addTasksToFavoriteCollections, cleanStaleAgentInputDrafts, deleteAgentRoundFromConversation, deleteFavoriteCollection, editOutputs, getActiveAgentRounds, getErrorToastMessage, getPersistedState, getTaskApiProfile, importData, initStore, markInterruptedOpenAIRunningTasks, migratePersistedState, regenerateAgentAssistantMessage, remapAgentRoundMentionsForPathChange, removeTask, reuseConfig, submitAgentMessage, submitTask, useStore } from './store'
 
 const imageA = { id: 'image-a', dataUrl: 'data:image/png;base64,a' }
 const imageB = { id: 'image-b', dataUrl: 'data:image/png;base64,b' }
@@ -148,6 +148,86 @@ function importFile(data: ExportData): File {
   const buffer = zipped.buffer.slice(zipped.byteOffset, zipped.byteOffset + zipped.byteLength)
   return { arrayBuffer: async () => buffer } as File
 }
+
+describe('favorite collection deletion', () => {
+  const collectionA = { id: 'collection-a', name: '收藏夹 A', createdAt: 1, updatedAt: 1 }
+  const collectionB = { id: 'collection-b', name: '收藏夹 B', createdAt: 1, updatedAt: 1 }
+  const collectionC = { id: 'collection-c', name: '收藏夹 C', createdAt: 1, updatedAt: 1 }
+
+  beforeEach(async () => {
+    await clearTasks()
+    await clearImages()
+    useStore.setState({
+      tasks: [],
+      favoriteCollections: [collectionA, collectionB],
+      defaultFavoriteCollectionId: collectionA.id,
+      activeFavoriteCollectionId: collectionA.id,
+      selectedFavoriteCollectionIds: [collectionA.id],
+      selectedTaskIds: [],
+      inputImages: [],
+      galleryInputDraft: null,
+      agentConversations: [],
+      showToast: vi.fn(),
+    })
+  })
+
+  it('keeps tasks that are still referenced by another collection when deleting collection tasks', async () => {
+    const sharedTask = task({
+      id: 'shared-task',
+      isFavorite: true,
+      favoriteCollectionIds: [collectionA.id, collectionB.id],
+    })
+    const collectionOnlyTask = task({
+      id: 'collection-only-task',
+      isFavorite: true,
+      favoriteCollectionIds: [collectionA.id],
+    })
+    useStore.setState({ tasks: [sharedTask, collectionOnlyTask] })
+    await putDbTask(sharedTask)
+    await putDbTask(collectionOnlyTask)
+
+    await deleteFavoriteCollection(collectionA.id, true)
+
+    const state = useStore.getState()
+    expect(state.favoriteCollections.map((collection) => collection.id)).toEqual([collectionB.id])
+    expect(state.activeFavoriteCollectionId).toBeNull()
+    expect(state.selectedFavoriteCollectionIds).toEqual([])
+    expect(state.tasks).toHaveLength(1)
+    expect(state.tasks[0]).toMatchObject({
+      id: sharedTask.id,
+      isFavorite: true,
+      favoriteCollectionIds: [collectionB.id],
+    })
+    expect((await getAllTasks()).map((item) => item.id)).toEqual([sharedTask.id])
+  })
+
+  it('adds selected tasks to a collection without replacing existing mixed collection membership', async () => {
+    const taskA = task({
+      id: 'task-a',
+      isFavorite: true,
+      favoriteCollectionIds: [collectionA.id],
+    })
+    const taskB = task({
+      id: 'task-b',
+      isFavorite: true,
+      favoriteCollectionIds: [collectionB.id],
+    })
+    useStore.setState({
+      tasks: [taskA, taskB],
+      favoriteCollections: [collectionA, collectionB, collectionC],
+    })
+    await putDbTask(taskA)
+    await putDbTask(taskB)
+
+    await addTasksToFavoriteCollections([taskA.id, taskB.id], [collectionC.id])
+
+    const state = useStore.getState()
+    expect(state.tasks.find((item) => item.id === taskA.id)?.favoriteCollectionIds).toEqual([collectionA.id, collectionC.id])
+    expect(state.tasks.find((item) => item.id === taskB.id)?.favoriteCollectionIds).toEqual([collectionB.id, collectionC.id])
+    expect((await getAllTasks()).find((item) => item.id === taskA.id)?.favoriteCollectionIds).toEqual([collectionA.id, collectionC.id])
+    expect((await getAllTasks()).find((item) => item.id === taskB.id)?.favoriteCollectionIds).toEqual([collectionB.id, collectionC.id])
+  })
+})
 
 describe('mask draft lifecycle in store actions', () => {
   beforeEach(() => {
@@ -698,6 +778,41 @@ describe('data import', () => {
       showToast: vi.fn(),
     })
     await clearAgentConversations()
+  })
+
+  it('restores favorite collections and default collection when importing task data', async () => {
+    await clearTasks()
+    const importedCollections = [
+      { id: 'imported-collection-a', name: '导入收藏夹 A', createdAt: 1, updatedAt: 1 },
+      { id: 'imported-collection-b', name: '导入收藏夹 B', createdAt: 2, updatedAt: 2 },
+    ]
+    const importedTask = task({
+      id: 'imported-favorite-task',
+      isFavorite: true,
+      favoriteCollectionIds: [importedCollections[1].id],
+    })
+
+    const imported = await importData(importFile({
+      version: 3,
+      exportedAt: new Date(0).toISOString(),
+      tasks: [importedTask],
+      favoriteCollections: importedCollections,
+      defaultFavoriteCollectionId: importedCollections[1].id,
+      imageFiles: {},
+    }), { importConfig: false, importTasks: true })
+
+    const state = useStore.getState()
+    expect(imported).toBe(true)
+    expect(state.favoriteCollections).toEqual(expect.arrayContaining(importedCollections))
+    expect(state.defaultFavoriteCollectionId).toBe(importedCollections[1].id)
+    expect(state.tasks.find((item) => item.id === importedTask.id)).toMatchObject({
+      favoriteCollectionIds: [importedCollections[1].id],
+      isFavorite: true,
+    })
+    expect((await getAllTasks()).find((item) => item.id === importedTask.id)).toMatchObject({
+      favoriteCollectionIds: [importedCollections[1].id],
+      isFavorite: true,
+    })
   })
 
   it('skips empty agent conversations when importing task data', async () => {
@@ -1626,6 +1741,81 @@ describe('agent batch reference resolution', () => {
     const batchArgs = vi.mocked(callBatchImageSingle).mock.calls[0][0]
     expect(batchArgs.referenceImageDataUrls).toEqual([imageA.dataUrl])
     expect(batchArgs.referenceIds).toEqual(['round-3-reference-1'])
+  })
+
+  it('notifies the parent embed when a batch image call uses a group without image generation', async () => {
+    const postMessage = vi.fn()
+    const originalWindow = globalThis.window
+    const originalDocument = globalThis.document
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        dispatchEvent: vi.fn(),
+        location: { search: '' },
+        sessionStorage: { getItem: vi.fn(() => 'true') },
+        parent: { postMessage },
+      },
+    })
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: {
+        referrer: 'https://code.example.com/image-playground',
+      },
+    })
+
+    vi.mocked(callBatchImageSingle).mockResolvedValueOnce({
+      batchItemId: 'blocked-image',
+      image: null,
+      error: 'Image generation is not enabled for this group',
+    })
+    vi.mocked(callAgentResponsesApi)
+      .mockResolvedValueOnce({
+        text: '',
+        images: [],
+        outputItems: [{
+          type: 'function_call',
+          name: 'generate_image_batch',
+          call_id: 'batch-call',
+          arguments: JSON.stringify({
+            images: [{
+              id: 'blocked-image',
+              prompt: '生成一张图',
+            }],
+          }),
+        }],
+        responseId: 'response-1',
+      })
+      .mockResolvedValueOnce({
+        text: '无法生成',
+        images: [],
+        outputItems: [{ type: 'message', content: [{ type: 'output_text', text: '无法生成' }] }],
+        responseId: 'response-2',
+      })
+
+    try {
+      await submitAgentMessage()
+      for (
+        let i = 0;
+        i < 5 && !postMessage.mock.calls.some(([message]) => message?.type === 'image-playground:recreate-key-request');
+        i++
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      }
+    } finally {
+      Object.defineProperty(globalThis, 'window', {
+        configurable: true,
+        value: originalWindow,
+      })
+      Object.defineProperty(globalThis, 'document', {
+        configurable: true,
+        value: originalDocument,
+      })
+    }
+
+    expect(postMessage).toHaveBeenCalledWith({
+      type: 'image-playground:recreate-key-request',
+      reason: 'image_generation_disabled_for_group',
+    }, 'https://code.example.com')
   })
 })
 

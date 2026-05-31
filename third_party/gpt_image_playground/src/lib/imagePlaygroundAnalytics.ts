@@ -6,6 +6,7 @@ export type ImagePlaygroundEventName =
   | 'template_preview_open'
   | 'template_copy'
   | 'template_apply'
+  | 'template_favorite_toggle'
   | 'image_generate_submit'
   | 'image_generate_success'
   | 'image_generate_error'

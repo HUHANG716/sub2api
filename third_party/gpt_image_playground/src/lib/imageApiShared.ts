@@ -94,6 +94,12 @@ async function blobToDataUrl(blob: Blob, fallbackMime: string): Promise<string> 
 }
 
 export const IMAGE_FETCH_CORS_HINT = ' 可点链接按钮复制结果链接，或尝试开启「返回 Base64 图片数据」避免此问题。'
+export const IMAGE_GENERATION_DISABLED_FOR_GROUP_MESSAGE = 'Image generation is not enabled for this group'
+
+export function isImageGenerationDisabledForGroupError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes(IMAGE_GENERATION_DISABLED_FOR_GROUP_MESSAGE)
+}
 
 async function probeNoCorsReachability(url: string, timeoutMs = 8000): Promise<'opaque' | 'reachable' | 'failed'> {
   const controller = new AbortController()

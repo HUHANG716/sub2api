@@ -99,6 +99,7 @@ import Icon from '@/components/icons/Icon.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import { useAppStore } from '@/stores/app'
 import type { ApiKey, Group, PublicSettings } from '@/types'
+import type { ImagePlaygroundEvent, ImagePlaygroundEventName } from '@/api/usage'
 import {
   IMAGE_PLAYGROUND_KEY_NAME,
   buildImagePlaygroundUrl,
@@ -113,8 +114,8 @@ import {
 
 type PlaygroundState = 'loading' | 'ready' | 'missing-config' | 'unavailable-group' | 'failed'
 type EstimateState = 'idle' | 'loading' | 'ready' | 'failed'
-type PrepareReason = 'initial' | 'confirmed-renew' | 'confirmed-create'
-type RenewReason = 'manual' | 'expired' | 'create'
+type PrepareReason = 'initial' | 'confirmed-renew' | 'confirmed-create' | 'confirmed-recreate'
+type RenewReason = 'manual' | 'expired' | 'create' | 'unsupported-group'
 
 interface PlaygroundParamsMessage {
   type?: string
@@ -124,6 +125,54 @@ interface PlaygroundParamsMessage {
     count?: unknown
   }
 }
+
+interface PlaygroundAnalyticsMessage {
+  type?: string
+  event?: {
+    name?: unknown
+    payload?: Record<string, unknown>
+  }
+}
+
+interface PlaygroundRecreateKeyMessage {
+  type?: string
+  reason?: unknown
+}
+
+const allowedAnalyticsEvents = new Set<ImagePlaygroundEventName>([
+  'image_generate_submit',
+  'image_generate_success',
+  'image_generate_error'
+])
+
+const agentAnalyticsEventMap: Record<string, ImagePlaygroundEventName> = {
+  agent_image_generate_submit: 'image_generate_submit',
+  agent_image_generate_success: 'image_generate_success',
+  agent_image_generate_error: 'image_generate_error'
+}
+
+const analyticsStringFields = [
+  'sourceMode',
+  'provider',
+  'apiMode',
+  'model',
+  'size',
+  'quality',
+  'outputFormat',
+  'errorKind'
+] as const
+
+const analyticsNumberFields = [
+  'n',
+  'inputImageCount',
+  'durationMs',
+  'outputImageCount'
+] as const
+
+const analyticsBooleanFields = [
+  'hasMask',
+  'recoverable'
+] as const
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -166,6 +215,8 @@ const estimateLabel = computed(() => {
 const renewConfirmMessage = computed(() =>
   pendingRenewReason.value === 'create'
     ? t('imagePlayground.createConfirmDescription')
+    : pendingRenewReason.value === 'unsupported-group'
+    ? t('imagePlayground.renewUnsupportedGroupConfirmDescription')
     : pendingRenewReason.value === 'expired'
     ? t('imagePlayground.renewExpiredConfirmDescription')
     : t('imagePlayground.renewManualConfirmDescription')
@@ -265,6 +316,20 @@ async function createKeyForGroup(group: Group) {
   }
 }
 
+async function retireStoredPlaygroundKey(stored: StoredImagePlaygroundKey | null) {
+  if (!stored?.key_id) return
+  try {
+    await keysAPI.delete(stored.key_id)
+  } catch (error) {
+    const status = typeof error === 'object' && error !== null && 'status' in error
+      ? Number((error as { status?: unknown }).status)
+      : 0
+    if (status !== 404) {
+      console.warn('Failed to retire previous image playground key:', error)
+    }
+  }
+}
+
 function requestRenewAccess(reason: RenewReason, group: Group, stored: StoredImagePlaygroundKey | null = null) {
   pendingRenewReason.value = reason
   pendingRenewGroup.value = group
@@ -319,7 +384,7 @@ async function preparePlayground(reason: PrepareReason = 'initial') {
       storedKey.value = null
     }
 
-    const existingKey = await findExistingPlaygroundKey(group)
+    const existingKey = reason === 'confirmed-recreate' ? null : await findExistingPlaygroundKey(group)
     if (existingKey) {
       saveAndUseKey(existingKey, group)
       return
@@ -375,11 +440,75 @@ async function updateEstimate(payload: PlaygroundParamsMessage['payload']) {
   }
 }
 
+function normalizeImagePlaygroundAnalyticsEvent(
+  event: PlaygroundAnalyticsMessage['event']
+): ImagePlaygroundEvent | null {
+  if (!event || typeof event.name !== 'string') {
+    return null
+  }
+  const normalizedName = allowedAnalyticsEvents.has(event.name as ImagePlaygroundEventName)
+    ? event.name as ImagePlaygroundEventName
+    : agentAnalyticsEventMap[event.name]
+  if (!normalizedName) return null
+
+  const payload = event.payload && typeof event.payload === 'object' ? event.payload : {}
+  const normalized: ImagePlaygroundEvent = {
+    name: normalizedName
+  }
+
+  for (const field of analyticsStringFields) {
+    const value = payload[field]
+    if (typeof value === 'string' && value.trim()) {
+      normalized[field] = value.trim()
+    }
+  }
+  for (const field of analyticsNumberFields) {
+    const value = payload[field]
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+      normalized[field] = Math.floor(value)
+    }
+  }
+  for (const field of analyticsBooleanFields) {
+    const value = payload[field]
+    if (typeof value === 'boolean') {
+      normalized[field] = value
+    }
+  }
+  if (event.name.startsWith('agent_image_generate_')) {
+    normalized.sourceMode = 'agent'
+  }
+  return normalized
+}
+
+function recordImagePlaygroundAnalytics(event: PlaygroundAnalyticsMessage['event']) {
+  const normalized = normalizeImagePlaygroundAnalyticsEvent(event)
+  if (!normalized) return
+
+  void usageAPI.recordImagePlaygroundEvents({ events: [normalized] }).catch((error) => {
+    console.warn('Failed to record image playground analytics:', error)
+  })
+}
+
 function handlePlaygroundMessage(event: MessageEvent) {
   if (event.origin !== window.location.origin) return
-  const data = event.data as PlaygroundParamsMessage
-  if (!data || data.type !== 'hahacode:image-playground-params') return
-  void updateEstimate(data.payload)
+  const data = event.data as PlaygroundParamsMessage | PlaygroundAnalyticsMessage | PlaygroundRecreateKeyMessage
+  if (!data) return
+  if (data.type === 'hahacode:image-playground-params') {
+    void updateEstimate((data as PlaygroundParamsMessage).payload)
+    return
+  }
+  if (data.type === 'image-playground:analytics') {
+    recordImagePlaygroundAnalytics((data as PlaygroundAnalyticsMessage).event)
+    return
+  }
+  if (
+    data.type === 'image-playground:recreate-key-request' &&
+    (data as PlaygroundRecreateKeyMessage).reason === 'image_generation_disabled_for_group'
+  ) {
+    const group = activeGroup.value
+    if (!group || renewConfirmVisible.value) return
+    requestRenewAccess('unsupported-group', group, storedKey.value)
+  }
 }
 
 async function regenerateKey() {
@@ -400,11 +529,21 @@ async function confirmRenewAccess() {
   }
   const group = pendingRenewGroup.value
   const reason = pendingRenewReason.value
+  const keyToRetire = pendingRenewStoredKey.value
   pendingRenewGroup.value = null
   pendingRenewStoredKey.value = null
   storedKey.value = null
   if (group) activeGroup.value = group
-  await preparePlayground(reason === 'create' ? 'confirmed-create' : 'confirmed-renew')
+  await preparePlayground(
+    reason === 'create'
+      ? 'confirmed-create'
+      : reason === 'unsupported-group'
+      ? 'confirmed-recreate'
+      : 'confirmed-renew'
+  )
+  if (reason === 'unsupported-group' && iframeSrc.value) {
+    void retireStoredPlaygroundKey(keyToRetire)
+  }
 }
 
 function cancelRenewAccess() {

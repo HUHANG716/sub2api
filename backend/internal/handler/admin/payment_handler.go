@@ -165,6 +165,12 @@ func (h *PaymentHandler) queryPaymentAnalyticsSteps(c *gin.Context, since time.T
 		FROM payment_events
 		WHERE created_at >= $1
 		GROUP BY event_name
+		UNION ALL
+		SELECT 'payment_result_success' AS event_name, COUNT(*) AS count, COUNT(DISTINCT user_id) AS unique_users
+		FROM payment_events
+		WHERE created_at >= $1
+		  AND event_name = 'payment_result_status'
+		  AND status IN ('COMPLETED', 'PAID', 'RECHARGING')
 		ORDER BY event_name
 	`, since)
 	if err != nil {
@@ -187,7 +193,15 @@ func (h *PaymentHandler) queryPaymentAnalyticsMethods(c *gin.Context, since time
 	rows, err := h.sqlDB.QueryContext(c.Request.Context(), `
 		SELECT COALESCE(payment_type, ''), event_name, COUNT(*) AS count
 		FROM payment_events
-		WHERE created_at >= $1 AND COALESCE(payment_type, '') <> ''
+		WHERE created_at >= $1
+		  AND COALESCE(payment_type, '') <> ''
+		  AND (
+		    event_name = 'payment_order_submit'
+		    OR (
+		      event_name = 'payment_result_status'
+		      AND status IN ('COMPLETED', 'PAID', 'RECHARGING')
+		    )
+		  )
 		GROUP BY payment_type, event_name
 		ORDER BY payment_type, event_name
 	`, since)

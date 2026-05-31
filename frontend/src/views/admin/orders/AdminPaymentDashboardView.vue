@@ -111,18 +111,26 @@ function rankClass(idx: number): string {
 
 async function loadDashboard() {
   loading.value = true
-  analyticsLoading.value = true
   try {
-    const [res, analyticsRes] = await Promise.all([
-      adminPaymentAPI.getDashboard(days.value),
-      adminPaymentAPI.getAnalytics(days.value),
-    ])
+    const res = await adminPaymentAPI.getDashboard(days.value)
     stats.value = res.data
-    analytics.value = analyticsRes.data
   } catch (err: unknown) {
     appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error')))
   } finally {
     loading.value = false
+  }
+  await loadAnalytics()
+}
+
+async function loadAnalytics() {
+  analyticsLoading.value = true
+  try {
+    const res = await adminPaymentAPI.getAnalytics(days.value)
+    analytics.value = res.data
+  } catch (err: unknown) {
+    analytics.value = null
+    appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error')))
+  } finally {
     analyticsLoading.value = false
   }
 }

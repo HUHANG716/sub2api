@@ -12,6 +12,7 @@ import type {
   InputImage,
   MaskDraft,
   TaskRecord,
+  FavoriteCollection,
   ExportData,
   ResponsesApiResponse,
   ResponsesOutputItem,
@@ -43,14 +44,20 @@ import {
 import { callImageApi } from './lib/api'
 import { callAgentConversationTitleApi, callAgentResponsesApi, callBatchImageSingle, parseBatchImageCallArguments, type AgentApiResultImage, type BatchImageCallResult } from './lib/agentApi'
 import { collectAgentRoundOutputImageSlots, extractAgentReferenceIds, getAgentCurrentReferenceId, getAgentGeneratedImageReferenceId, replaceAgentPromptImageReferencesForApi } from './lib/agentImageReferences'
-import { IMAGE_FETCH_CORS_HINT } from './lib/imageApiShared'
+import { showBrowserNotification } from './lib/browserNotification'
+import { IMAGE_FETCH_CORS_HINT, isImageGenerationDisabledForGroupError } from './lib/imageApiShared'
 import { getFalErrorMessage, getFalQueuedImageResult } from './lib/falAiImageApi'
 import { getCustomQueuedImageResult } from './lib/openaiCompatibleImageApi'
 import { validateMaskMatchesImage } from './lib/canvasImage'
 import { orderInputImagesForMask } from './lib/mask'
 import { getChangedParams, normalizeParamsForSettings } from './lib/paramCompatibility'
 import { trackImagePlaygroundEvent } from './lib/imagePlaygroundAnalytics'
+import { requestProductEmbedKeyRecreation } from './lib/productEmbedEvents'
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate'
+
+export const ALL_FAVORITES_COLLECTION_ID = '__all_favorites__'
+export const DEFAULT_FAVORITE_COLLECTION_ID = '__default_favorites__'
+export const DEFAULT_FAVORITE_COLLECTION_NAME = '默认'
 
 // ===== Image cache =====
 // 内存缓存，id → dataUrl。只保留少量最近使用图片，避免大量 4K data URL 常驻内存。
@@ -141,6 +148,12 @@ function getErrorKind(error: unknown) {
   if (error instanceof DOMException) return error.name
   if (error instanceof Error) return error.name || 'Error'
   return typeof error
+}
+
+function notifyParentForRecoverableEmbedError(error: unknown) {
+  if (isImageGenerationDisabledForGroupError(error)) {
+    requestProductEmbedKeyRecreation('image_generation_disabled_for_group')
+  }
 }
 
 function getTimeoutStreamingHint(profile?: TimeoutStreamingHintProfile | null) {
@@ -357,6 +370,12 @@ function orderImagesWithMaskFirst(images: InputImage[], maskTargetImageId: strin
 
 function isAgentTask(task: TaskRecord) {
   return task.sourceMode === 'agent' || Boolean(task.agentConversationId || task.agentRoundId)
+}
+
+function showTaskCompletionNotification(title: string, body: string) {
+  const settings = normalizeSettings(useStore.getState().settings)
+  if (!settings.taskCompletionNotification) return
+  showBrowserNotification(title, { body })
 }
 
 function countSuccessfulOutputImages(tasks: TaskRecord[]) {
@@ -582,6 +601,66 @@ export function migratePersistedState(persistedState: unknown): unknown {
   }
 }
 
+function normalizeFavoriteCollectionName(value: string) {
+  return value.trim().replace(/\s+/g, ' ')
+}
+
+function createDefaultFavoriteCollection(now = Date.now()): FavoriteCollection {
+  return {
+    id: DEFAULT_FAVORITE_COLLECTION_ID,
+    name: DEFAULT_FAVORITE_COLLECTION_NAME,
+    createdAt: now,
+    updatedAt: now,
+  }
+}
+
+function normalizeFavoriteCollections(value: unknown): FavoriteCollection[] {
+  const now = Date.now()
+  const collections = Array.isArray(value) ? value : []
+  const normalized: FavoriteCollection[] = []
+  const ids = new Set<string>()
+  for (const item of collections) {
+    if (!isRecord(item)) continue
+    if (typeof item.id !== 'string' || !item.id.trim()) continue
+    const id = item.id
+    if (id === ALL_FAVORITES_COLLECTION_ID || ids.has(id)) continue
+    const name = normalizeFavoriteCollectionName(typeof item.name === 'string' ? item.name : '')
+    if (!name) continue
+    ids.add(id)
+    normalized.push({
+      id,
+      name: name.slice(0, 60),
+      createdAt: typeof item.createdAt === 'number' ? item.createdAt : now,
+      updatedAt: typeof item.updatedAt === 'number' ? item.updatedAt : now,
+    })
+  }
+  return normalized
+}
+
+function ensureDefaultFavoriteCollection(collections: FavoriteCollection[]) {
+  if (collections.length > 0) return collections
+  return [createDefaultFavoriteCollection(), ...collections]
+}
+
+/** 确保"默认"收藏夹存在（用于兜底孤立收藏任务） */
+function ensureDefaultNamedCollection(collections: FavoriteCollection[]) {
+  if (getDefaultNamedFavoriteCollectionId(collections)) return collections
+  return [createDefaultFavoriteCollection(), ...collections]
+}
+
+function getDefaultNamedFavoriteCollectionId(collections: FavoriteCollection[]) {
+  return collections.find((collection) => collection.id === DEFAULT_FAVORITE_COLLECTION_ID)?.id
+    ?? collections.find((collection) => collection.name === DEFAULT_FAVORITE_COLLECTION_NAME)?.id
+    ?? null
+}
+
+function resolveDefaultFavoriteCollectionId(collections: FavoriteCollection[], preferredId: unknown) {
+  if (preferredId === null) return null
+  if (typeof preferredId === 'string' && collections.some((collection) => collection.id === preferredId)) return preferredId
+  if (collections.some((collection) => collection.id === DEFAULT_FAVORITE_COLLECTION_ID)) return DEFAULT_FAVORITE_COLLECTION_ID
+  return collections[0]?.id ?? null
+}
+
 function createAgentConversation(now = Date.now()): AgentConversation {
   return {
     id: genId(),
@@ -639,6 +718,8 @@ export function getPersistedState(state: AppState) {
     agentSidebarCollapsed: state.agentSidebarCollapsed,
     agentAssetTab: state.agentAssetTab,
     agentAssetPanelCollapsed: state.agentAssetPanelCollapsed,
+    favoriteCollections: state.favoriteCollections,
+    defaultFavoriteCollectionId: state.defaultFavoriteCollectionId,
     supportPromptDismissed: state.supportPromptDismissed,
     supportPromptOpen: state.supportPromptOpen,
     supportPromptSkippedForImportedData: state.supportPromptSkippedForImportedData,
@@ -696,6 +777,10 @@ function mergePersistedState(persistedState: unknown, currentState: AppState): A
   const restoredAgentDraft = appMode === 'agent' && activeAgentConversationId
     ? agentInputDrafts[activeAgentConversationId] ?? null
     : null
+  const favoriteCollections = Array.isArray(persisted.favoriteCollections)
+    ? ensureDefaultFavoriteCollection(normalizeFavoriteCollections(persisted.favoriteCollections))
+    : currentState.favoriteCollections
+  const defaultFavoriteCollectionId = resolveDefaultFavoriteCollectionId(favoriteCollections, persisted.defaultFavoriteCollectionId)
   return {
     ...currentState,
     ...persisted,
@@ -708,6 +793,10 @@ function mergePersistedState(persistedState: unknown, currentState: AppState): A
     agentSidebarCollapsed: Boolean(persisted.agentSidebarCollapsed),
     agentAssetTab: persisted.agentAssetTab === 'references' ? 'references' : 'outputs',
     agentAssetPanelCollapsed: Boolean(persisted.agentAssetPanelCollapsed),
+    favoriteCollections,
+    defaultFavoriteCollectionId,
+    activeFavoriteCollectionId: null,
+    favoritePickerTaskIds: null,
     supportPromptDismissed: Boolean(persisted.supportPromptDismissed),
     supportPromptOpen: Boolean(persisted.supportPromptOpen),
     supportPromptSkippedForImportedData: Boolean(persisted.supportPromptSkippedForImportedData),
@@ -783,6 +872,18 @@ interface AppState {
   // 任务列表
   tasks: TaskRecord[]
   setTasks: (t: TaskRecord[]) => void
+  favoriteCollections: FavoriteCollection[]
+  setFavoriteCollections: (collections: FavoriteCollection[]) => void
+  defaultFavoriteCollectionId: string | null
+  setDefaultFavoriteCollectionId: (id: string | null) => void
+  activeFavoriteCollectionId: string | null
+  isManageCollectionsModalOpen: boolean
+  setActiveFavoriteCollectionId: (id: string | null) => void
+  openManageCollectionsModal: () => void
+  closeManageCollectionsModal: () => void
+  favoritePickerTaskIds: string[] | null
+  openFavoritePicker: (taskIds: string[]) => void
+  closeFavoritePicker: () => void
   streamPreviews: Record<string, string>
   streamPreviewSlots: Record<string, Record<string, string>>
   setTaskStreamPreview: (taskId: string, image?: string, requestIndex?: number) => void
@@ -800,6 +901,10 @@ interface AppState {
   setSelectedTaskIds: (ids: string[] | ((prev: string[]) => string[])) => void
   toggleTaskSelection: (id: string, force?: boolean) => void
   clearSelection: () => void
+  selectedFavoriteCollectionIds: string[]
+  setSelectedFavoriteCollectionIds: (ids: string[] | ((prev: string[]) => string[])) => void
+  toggleFavoriteCollectionSelection: (id: string, force?: boolean) => void
+  clearFavoriteCollectionSelection: () => void
 
   // UI
   detailTaskId: string | null
@@ -1104,6 +1209,7 @@ export const useStore = create<AppState>()(
             galleryInputDraft,
             agentMobileHeaderVisible: true,
             selectedTaskIds: [],
+            selectedFavoriteCollectionIds: [],
             agentEditingRoundId: null,
             ...(state.appMode === 'agent' ? restoreGalleryInputDraftState(galleryInputDraft) : {}),
           }))
@@ -1124,6 +1230,7 @@ export const useStore = create<AppState>()(
             agentSidebarCollapsed: true,
             agentAssetPanelCollapsed: true,
             selectedTaskIds: [],
+            selectedFavoriteCollectionIds: [],
             ...restoreAgentInputDraftState(state.agentInputDrafts, state.activeAgentConversationId),
           }))
           return
@@ -1411,6 +1518,32 @@ export const useStore = create<AppState>()(
           ? { supportPromptSkippedForImportedData: false }
           : {}),
       })),
+      favoriteCollections: [createDefaultFavoriteCollection()],
+      setFavoriteCollections: (favoriteCollections) => set((state) => {
+        const nextCollections = ensureDefaultFavoriteCollection(normalizeFavoriteCollections(favoriteCollections))
+        return {
+          favoriteCollections: nextCollections,
+          defaultFavoriteCollectionId: resolveDefaultFavoriteCollectionId(nextCollections, state.defaultFavoriteCollectionId),
+        }
+      }),
+      defaultFavoriteCollectionId: DEFAULT_FAVORITE_COLLECTION_ID,
+      setDefaultFavoriteCollectionId: (defaultFavoriteCollectionId) => set((state) => (
+        defaultFavoriteCollectionId === null || state.favoriteCollections.some((collection) => collection.id === defaultFavoriteCollectionId)
+          ? { defaultFavoriteCollectionId }
+          : state
+      )),
+      activeFavoriteCollectionId: null,
+      isManageCollectionsModalOpen: false,
+      setActiveFavoriteCollectionId: (activeFavoriteCollectionId) => set({ activeFavoriteCollectionId, selectedTaskIds: [], selectedFavoriteCollectionIds: [] }),
+      openManageCollectionsModal: () => set({ isManageCollectionsModalOpen: true }),
+      closeManageCollectionsModal: () => set({ isManageCollectionsModalOpen: false }),
+      favoritePickerTaskIds: null,
+      openFavoritePicker: (taskIds) => {
+        if (!taskIds.length) return
+        dismissAllTooltips()
+        set({ favoritePickerTaskIds: Array.from(new Set(taskIds)).filter(Boolean) })
+      },
+      closeFavoritePicker: () => set({ favoritePickerTaskIds: null }),
       streamPreviews: {},
       streamPreviewSlots: {},
       setTaskStreamPreview: (taskId, image, requestIndex = 0) => set((s) => {
@@ -1441,7 +1574,7 @@ export const useStore = create<AppState>()(
       filterStatus: 'all',
       setFilterStatus: (filterStatus) => set({ filterStatus }),
       filterFavorite: false,
-      setFilterFavorite: (filterFavorite) => set({ filterFavorite }),
+      setFilterFavorite: (filterFavorite) => set(filterFavorite ? { filterFavorite, selectedTaskIds: [], selectedFavoriteCollectionIds: [] } : { filterFavorite, activeFavoriteCollectionId: null, selectedTaskIds: [], selectedFavoriteCollectionIds: [] }),
 
       // Selection
       selectedTaskIds: [],
@@ -1459,6 +1592,21 @@ export const useStore = create<AppState>()(
         }
       }),
       clearSelection: () => set({ selectedTaskIds: [] }),
+      selectedFavoriteCollectionIds: [],
+      setSelectedFavoriteCollectionIds: (updater) => set((s) => ({
+        selectedFavoriteCollectionIds: typeof updater === 'function' ? updater(s.selectedFavoriteCollectionIds) : updater
+      })),
+      toggleFavoriteCollectionSelection: (id, force) => set((s) => {
+        const isSelected = s.selectedFavoriteCollectionIds.includes(id)
+        const shouldSelect = force !== undefined ? force : !isSelected
+        if (shouldSelect === isSelected) return s
+        return {
+          selectedFavoriteCollectionIds: shouldSelect
+            ? [...s.selectedFavoriteCollectionIds, id]
+            : s.selectedFavoriteCollectionIds.filter((x) => x !== id)
+        }
+      }),
+      clearFavoriteCollectionSelection: () => set({ selectedFavoriteCollectionIds: [] }),
 
       // UI
       detailTaskId: null,
@@ -1894,6 +2042,7 @@ async function completeRecoveredFalTask(task: TaskRecord, result: Awaited<Return
     elapsed: Date.now() - task.createdAt,
   })
   useStore.getState().showToast(`fal.ai 任务已恢复，共 ${outputIds.length} 张图片`, 'success')
+  if (!isAgentTask(task)) showTaskCompletionNotification('图像生成完成', `fal.ai 任务已恢复，共 ${outputIds.length} 张图片。`)
 }
 
 async function recoverFalTask(taskId: string) {
@@ -1970,9 +2119,17 @@ export async function initStore() {
   }
   const { tasks: markedTasks, interruptedTasks } = markInterruptedOpenAIRunningTasks(storedTasks)
   const interruptedTaskIds = new Set(interruptedTasks.map((task) => task.id))
-  const tasks = markedTasks.map(getPersistableTask)
+  const favoriteState = useStore.getState()
+  const normalizedFavorites = normalizeLoadedFavoriteState(markedTasks.map(getPersistableTask), favoriteState.favoriteCollections, favoriteState.defaultFavoriteCollectionId)
+  const tasks = normalizedFavorites.tasks
+  if (normalizedFavorites.collections !== favoriteState.favoriteCollections) {
+    favoriteState.setFavoriteCollections(normalizedFavorites.collections)
+  }
+  if (normalizedFavorites.defaultFavoriteCollectionId !== favoriteState.defaultFavoriteCollectionId) {
+    useStore.getState().setDefaultFavoriteCollectionId(normalizedFavorites.defaultFavoriteCollectionId)
+  }
   await Promise.all(tasks
-    .filter((task, index) => interruptedTaskIds.has(task.id) || task.rawResponsePayload !== markedTasks[index]?.rawResponsePayload)
+    .filter((task, index) => normalizedFavorites.changed || interruptedTaskIds.has(task.id) || task.rawResponsePayload !== markedTasks[index]?.rawResponsePayload)
     .map((task) => putTask(task)))
   useStore.getState().setTasks(tasks)
   showSupportPromptForExistingLocalData(tasks)
@@ -3517,12 +3674,14 @@ async function executeAgentRound(
         const batchItem = batchItems[i]
         if (settled.status === 'fulfilled') {
           const r = settled.value
+          if (r.error) notifyParentForRecoverableEmbedError(r.error)
           outputImages.push({
             id: r.batchItemId,
             status: r.image ? 'done' : 'error',
             ...(r.error ? { error: r.error } : {}),
           })
         } else {
+          notifyParentForRecoverableEmbedError(settled.reason)
           outputImages.push({
             id: batchItem.id,
             status: 'error',
@@ -3819,6 +3978,10 @@ async function executeAgentRound(
       reachedToolLimit,
     })
     useStore.getState().showToast(outputIds.length > 0 ? 'Agent 已生成图片' : 'Agent 已回复', 'success')
+    showTaskCompletionNotification(
+      outputIds.length > 0 ? 'Agent 已生成图片' : 'Agent 已回复',
+      outputIds.length > 0 ? `Agent 回复已结束，共生成 ${outputIds.length} 张图片。` : 'Agent 回复已结束。',
+    )
   } catch (err) {
     if (controller.signal.aborted) {
       if (markAgentRoundStopped(conversationId, roundId)) {
@@ -3839,6 +4002,8 @@ async function executeAgentRound(
       })
       return
     }
+
+    notifyParentForRecoverableEmbedError(err)
 
     let message = err instanceof Error ? err.message : String(err)
     const usesApiProxy = activeProfile.apiProxy ?? requestSettings.apiProxy
@@ -4047,6 +4212,7 @@ async function executeTask(taskId: string) {
     void deleteUnreferencedImageIds(partialImageIdsToClean)
 
     useStore.getState().showToast(`生成完成，共 ${outputIds.length} 张图片`, 'success')
+    if (!isAgentTask(task)) showTaskCompletionNotification('图像生成完成', `生成完成，共 ${outputIds.length} 张图片。`)
     const currentMask = useStore.getState().maskDraft
     if (
       maskDataUrl &&
@@ -4060,6 +4226,7 @@ async function executeTask(taskId: string) {
     clearOpenAIWatchdogTimer(taskId)
     const latestTask = useStore.getState().tasks.find((t) => t.id === taskId) ?? task
     if (latestTask.status !== 'running') return
+    notifyParentForRecoverableEmbedError(err)
     useStore.getState().setTaskStreamPreview(taskId)
     const latestFalRequestInfo = falRequestInfo ?? (latestTask.falRequestId && latestTask.falEndpoint
       ? { requestId: latestTask.falRequestId, endpoint: latestTask.falEndpoint }
@@ -4136,15 +4303,212 @@ async function executeTask(taskId: string) {
   }
 }
 
+function normalizeFavoritePatch(task: TaskRecord, patch: Partial<TaskRecord>, defaultFavoriteCollectionId: string | null): Partial<TaskRecord> {
+  if ('favoriteCollectionIds' in patch) {
+    const ids = normalizeFavoriteCollectionIds(patch.favoriteCollectionIds)
+    return { ...patch, favoriteCollectionIds: ids, isFavorite: ids.length > 0 }
+  }
+  if ('isFavorite' in patch) {
+    if (patch.isFavorite) {
+      const ids = normalizeFavoriteCollectionIds(task.favoriteCollectionIds)
+      return { ...patch, favoriteCollectionIds: ids.length ? ids : defaultFavoriteCollectionId ? [defaultFavoriteCollectionId] : [] }
+    }
+    return { ...patch, favoriteCollectionIds: [] }
+  }
+  return patch
+}
+
 export function updateTaskInStore(taskId: string, patch: Partial<TaskRecord>) {
-  const { tasks, setTasks } = useStore.getState()
+  const { tasks, setTasks, defaultFavoriteCollectionId } = useStore.getState()
   const updated = tasks.map((t) =>
-    t.id === taskId ? { ...t, ...patch } : t,
+    t.id === taskId ? { ...t, ...normalizeFavoritePatch(t, patch, defaultFavoriteCollectionId) } : t,
   )
+  const task = updated.find((t) => t.id === taskId)
   setTasks(updated)
   maybeOpenSupportPrompt(tasks, updated, taskId)
-  const task = updated.find((t) => t.id === taskId)
   if (task) putTask(task)
+}
+
+function normalizeFavoriteCollectionIds(ids: unknown) {
+  if (!Array.isArray(ids)) return []
+  return Array.from(new Set(ids.map(String).filter((id) => id && id !== ALL_FAVORITES_COLLECTION_ID)))
+}
+
+function sameFavoriteCollectionIds(a: string[], b: string[]) {
+  if (a.length !== b.length) return false
+  const bSet = new Set(b)
+  return a.every((id) => bSet.has(id))
+}
+
+export function getTaskFavoriteCollectionIds(task: TaskRecord) {
+  const ids = normalizeFavoriteCollectionIds(task.favoriteCollectionIds)
+  if (ids.length > 0) return ids
+  const defaultFavoriteCollectionId = useStore.getState().defaultFavoriteCollectionId
+  return task.isFavorite && defaultFavoriteCollectionId ? [defaultFavoriteCollectionId] : []
+}
+
+function normalizeTaskFavoriteState(task: TaskRecord, collections: FavoriteCollection[]): TaskRecord {
+  const collectionIdSet = new Set(collections.map((collection) => collection.id))
+  const normalizedIds = normalizeFavoriteCollectionIds(task.favoriteCollectionIds).filter((id) => collectionIdSet.has(id))
+  // 旧版本只有 isFavorite 没有 favoriteCollectionIds，迁移到"默认"收藏夹
+  const defaultId = getDefaultNamedFavoriteCollectionId(collections)
+  const ids = normalizedIds.length > 0 ? normalizedIds : task.isFavorite && defaultId ? [defaultId] : []
+  const isFavorite = ids.length > 0 || Boolean(task.isFavorite)
+  if (ids.length === (task.favoriteCollectionIds ?? []).length && ids.every((id, index) => id === task.favoriteCollectionIds?.[index]) && Boolean(task.isFavorite) === isFavorite) {
+    return task
+  }
+  return { ...task, favoriteCollectionIds: ids, isFavorite }
+}
+
+function normalizeLoadedFavoriteState(tasks: TaskRecord[], collections: FavoriteCollection[], preferredDefaultFavoriteCollectionId: string | null) {
+  let changed = false
+  // 确保"默认"收藏夹存在，给孤立收藏任务一个归属
+  const normalizedCollections = ensureDefaultNamedCollection(ensureDefaultFavoriteCollection(normalizeFavoriteCollections(collections)))
+  const defaultFavoriteCollectionId = resolveDefaultFavoriteCollectionId(normalizedCollections, preferredDefaultFavoriteCollectionId)
+  const normalizedTasks = tasks.map((task) => {
+    const nextTask = normalizeTaskFavoriteState(task, normalizedCollections)
+    if (nextTask !== task) changed = true
+    return nextTask
+  })
+  return { tasks: normalizedTasks, collections: normalizedCollections, defaultFavoriteCollectionId, changed }
+}
+
+export function getFavoriteCollectionTitle(collectionId: string | null, collections = useStore.getState().favoriteCollections) {
+  if (collectionId === ALL_FAVORITES_COLLECTION_ID) return '全部'
+  return collections.find((collection) => collection.id === collectionId)?.name ?? DEFAULT_FAVORITE_COLLECTION_NAME
+}
+
+export function createFavoriteCollection(name: string) {
+  const normalizedName = normalizeFavoriteCollectionName(name)
+  if (!normalizedName) return null
+  if (Array.from(normalizedName).length > 60) {
+    useStore.getState().showToast('收藏夹名称最多 60 个字符', 'error')
+    return null
+  }
+  const state = useStore.getState()
+  const existing = state.favoriteCollections.find((collection) => collection.name === normalizedName)
+  if (existing) return existing
+  const now = Date.now()
+  const collection: FavoriteCollection = { id: genId(), name: normalizedName, createdAt: now, updatedAt: now }
+  state.setFavoriteCollections([...state.favoriteCollections, collection])
+  state.showToast(`已创建收藏夹「${normalizedName}」`, 'success')
+  return collection
+}
+
+export function renameFavoriteCollection(collectionId: string, name: string) {
+  const normalizedName = normalizeFavoriteCollectionName(name)
+  if (!normalizedName || collectionId === ALL_FAVORITES_COLLECTION_ID) return
+  if (Array.from(normalizedName).length > 60) {
+    useStore.getState().showToast('收藏夹名称最多 60 个字符', 'error')
+    return
+  }
+  const { favoriteCollections, setFavoriteCollections, showToast } = useStore.getState()
+  setFavoriteCollections(favoriteCollections.map((collection) =>
+    collection.id === collectionId ? { ...collection, name: normalizedName, updatedAt: Date.now() } : collection,
+  ))
+  showToast('收藏夹名称已更新', 'success')
+}
+
+export async function updateTasksFavoriteCollections(taskIds: string[], collectionIds: string[]) {
+  const ids = normalizeFavoriteCollectionIds(collectionIds)
+  const uniqueTaskIds = Array.from(new Set(taskIds)).filter(Boolean)
+  if (!uniqueTaskIds.length) return
+  const { tasks, setTasks, clearSelection, showToast } = useStore.getState()
+  const idSet = new Set(uniqueTaskIds)
+  const changedTaskIds = new Set<string>()
+  const updated = tasks.map((task) => {
+    if (!idSet.has(task.id)) return task
+    if (sameFavoriteCollectionIds(getTaskFavoriteCollectionIds(task), ids)) return task
+    changedTaskIds.add(task.id)
+    return { ...task, favoriteCollectionIds: ids, isFavorite: ids.length > 0 }
+  })
+  if (!changedTaskIds.size) {
+    clearSelection()
+    return
+  }
+  setTasks(updated)
+  await Promise.all(updated.filter((task) => changedTaskIds.has(task.id)).map((task) => putTask(task)))
+  clearSelection()
+  showToast(ids.length ? '收藏夹已更新' : '已取消收藏', 'success')
+}
+
+export async function addTasksToFavoriteCollections(taskIds: string[], collectionIds: string[]) {
+  const ids = normalizeFavoriteCollectionIds(collectionIds)
+  const uniqueTaskIds = Array.from(new Set(taskIds)).filter(Boolean)
+  if (!uniqueTaskIds.length || !ids.length) return
+  const { tasks, setTasks, clearSelection, showToast } = useStore.getState()
+  const idSet = new Set(uniqueTaskIds)
+  const changedTaskIds = new Set<string>()
+  const updated = tasks.map((task) => {
+    if (!idSet.has(task.id)) return task
+    const nextIds = normalizeFavoriteCollectionIds([...getTaskFavoriteCollectionIds(task), ...ids])
+    if (sameFavoriteCollectionIds(getTaskFavoriteCollectionIds(task), nextIds)) return task
+    changedTaskIds.add(task.id)
+    return { ...task, favoriteCollectionIds: nextIds, isFavorite: true }
+  })
+  if (!changedTaskIds.size) {
+    clearSelection()
+    return
+  }
+  setTasks(updated)
+  await Promise.all(updated.filter((task) => changedTaskIds.has(task.id)).map((task) => putTask(task)))
+  clearSelection()
+  showToast('已加入收藏夹', 'success')
+}
+
+export async function deleteFavoriteCollection(collectionId: string, deleteTasks = false) {
+  if (!collectionId || collectionId === ALL_FAVORITES_COLLECTION_ID) return
+  const state = useStore.getState()
+  const collection = state.favoriteCollections.find((item) => item.id === collectionId)
+  if (!collection || state.favoriteCollections.length <= 1) return
+  const collectionTaskRefs = state.tasks
+    .map((task) => ({ task, favoriteIds: getTaskFavoriteCollectionIds(task) }))
+    .filter(({ favoriteIds }) => favoriteIds.includes(collectionId))
+  const taskIds = collectionTaskRefs.map(({ task }) => task.id)
+  const nextCollections = state.favoriteCollections.filter((item) => item.id !== collectionId)
+  const nextCollectionIdSet = new Set(nextCollections.map((item) => item.id))
+  state.setFavoriteCollections(nextCollections)
+  if (state.defaultFavoriteCollectionId === collectionId) {
+    const nextDefaultId = nextCollections[0]?.id
+    if (nextDefaultId) useStore.getState().setDefaultFavoriteCollectionId(nextDefaultId)
+  }
+  if (state.activeFavoriteCollectionId === collectionId) state.setActiveFavoriteCollectionId(null)
+  if (deleteTasks) {
+    const idsByTaskToKeep = new Map<string, string[]>()
+    const taskIdsToDelete: string[] = []
+    for (const { task, favoriteIds } of collectionTaskRefs) {
+      const nextIds = favoriteIds.filter((id) => id !== collectionId && nextCollectionIdSet.has(id))
+      if (nextIds.length) {
+        idsByTaskToKeep.set(task.id, nextIds)
+      } else {
+        taskIdsToDelete.push(task.id)
+      }
+    }
+    if (idsByTaskToKeep.size) {
+      const latestTasks = useStore.getState().tasks
+      const updated = latestTasks.map((task) => {
+        const ids = idsByTaskToKeep.get(task.id)
+        return ids ? { ...task, favoriteCollectionIds: ids, isFavorite: true } : task
+      })
+      useStore.getState().setTasks(updated)
+      await Promise.all(updated.filter((task) => idsByTaskToKeep.has(task.id)).map((task) => putTask(task)))
+    }
+    if (taskIdsToDelete.length) await removeMultipleTasks(taskIdsToDelete)
+  } else if (taskIds.length) {
+    const idsByTaskId = new Map(collectionTaskRefs.map(({ task, favoriteIds }) => [
+      task.id,
+      favoriteIds.filter((id) => id !== collectionId && nextCollectionIdSet.has(id)),
+    ]))
+    const updated = state.tasks.map((task) => {
+      const ids = idsByTaskId.get(task.id)
+      if (!ids) return task
+      return { ...task, favoriteCollectionIds: ids, isFavorite: ids.length > 0 }
+    })
+    state.setTasks(updated)
+    await Promise.all(updated.filter((task) => idsByTaskId.has(task.id)).map((task) => putTask(task)))
+  }
+  useStore.getState().setSelectedFavoriteCollectionIds((ids) => ids.filter((id) => id !== collectionId))
+  useStore.getState().showToast(`已删除收藏夹「${collection.name}」`, 'success')
 }
 
 /** 重试失败的任务：创建新任务并执行 */
@@ -4309,7 +4673,7 @@ export async function removeMultipleTasks(taskIds: string[]) {
     useStore.getState().setSelectedTaskIds(newSelection)
   }
 
-  showToast(`已删除 ${taskIds.length} 条记录`, 'success')
+  showToast(`已删除 ${taskIds.length} 个任务`, 'success')
 }
 
 /** 删除单条任务 */
@@ -4347,7 +4711,7 @@ export async function removeTask(task: TaskRecord) {
     }
   }
 
-  showToast('记录已删除', 'success')
+  showToast('任务已删除', 'success')
 }
 
 /** 清空数据选项 */
@@ -4432,6 +4796,7 @@ async function completeRecoveredCustomTask(task: TaskRecord, result: Awaited<Ret
     elapsed: Date.now() - task.createdAt,
   })
   useStore.getState().showToast(`自定义异步任务已恢复，共 ${outputIds.length} 张图片`, 'success')
+  if (!isAgentTask(task)) showTaskCompletionNotification('图像生成完成', `自定义异步任务已恢复，共 ${outputIds.length} 张图片。`)
 }
 
 async function recoverCustomTask(taskId: string) {
@@ -4479,7 +4844,7 @@ export async function exportData(options: ExportOptions = { exportConfig: true, 
   try {
     const tasks = options.exportTasks ? await getAllTasks() : []
     const images = options.exportTasks ? await getAllImages() : []
-    const { settings, agentConversations } = useStore.getState()
+    const { settings, agentConversations, favoriteCollections, defaultFavoriteCollectionId } = useStore.getState()
     const exportedAt = Date.now()
     const imageCreatedAtFallback = new Map<string, number>()
 
@@ -4548,6 +4913,8 @@ export async function exportData(options: ExportOptions = { exportConfig: true, 
     if (options.exportConfig) manifest.settings = settings
     if (options.exportTasks) {
       manifest.tasks = tasks
+      manifest.favoriteCollections = favoriteCollections
+      manifest.defaultFavoriteCollectionId = defaultFavoriteCollectionId
       manifest.agentConversations = getPersistableAgentConversations(agentConversations)
       manifest.imageFiles = imageFiles
       manifest.thumbnailFiles = thumbnailFiles
@@ -4634,7 +5001,21 @@ export async function importData(file: File, options: ImportOptions = { importCo
       }
 
       const tasks = await getAllTasks()
-      useStore.getState().setTasks(tasks)
+      const state = useStore.getState()
+      const importedCollections = normalizeFavoriteCollections(data.favoriteCollections)
+      const favoriteCollections = importedCollections.length
+        ? ensureDefaultFavoriteCollection(normalizeFavoriteCollections([...state.favoriteCollections, ...importedCollections]))
+        : state.favoriteCollections
+      const defaultFavoriteCollectionId = importedCollections.length
+        ? resolveDefaultFavoriteCollectionId(favoriteCollections, data.defaultFavoriteCollectionId)
+        : state.defaultFavoriteCollectionId
+      const normalizedFavorites = normalizeLoadedFavoriteState(tasks, favoriteCollections, defaultFavoriteCollectionId)
+      useStore.setState({
+        tasks: normalizedFavorites.tasks,
+        favoriteCollections: normalizedFavorites.collections,
+        defaultFavoriteCollectionId: normalizedFavorites.defaultFavoriteCollectionId,
+      })
+      if (normalizedFavorites.changed) await Promise.all(normalizedFavorites.tasks.map((task) => putTask(task)))
       const importedAgentConversations = normalizeAgentConversations(data.agentConversations)
         .filter((conversation) => !isEmptyAgentConversation(conversation))
       useStore.setState((state) => {
@@ -4659,7 +5040,7 @@ export async function importData(file: File, options: ImportOptions = { importCo
 
     let msg = '数据已成功导入'
     if (options.importTasks && data.tasks) {
-      msg = `已导入 ${data.tasks.length} 条记录`
+      msg = `已导入 ${data.tasks.length} 个任务`
     } else if (options.importConfig && data.settings) {
       msg = '配置已成功导入'
     }
