@@ -6,17 +6,16 @@
       </div>
       <template v-else>
         <section v-if="paymentPhase === 'select'" class="payment-hero">
-          <div class="min-w-0">
-            <div class="mb-3 inline-flex items-center gap-2 rounded-md border border-primary-500/20 bg-primary-500/10 px-3 py-1 text-xs font-semibold text-primary-700 dark:text-primary-300">
+          <div class="flex min-w-0 items-center gap-3">
+            <div class="payment-hero-mark">
               <Icon name="shield" size="xs" :stroke-width="2" />
-              {{ t('payment.secureCheckout') }}
             </div>
-            <h1 class="text-2xl font-semibold tracking-normal text-gray-950 dark:text-white sm:text-3xl">
-              {{ t('payment.title') }}
-            </h1>
-            <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">
-              {{ t('payment.checkoutSubtitle') }}
-            </p>
+            <div class="min-w-0">
+              <p class="payment-hero-kicker">{{ t('payment.secureCheckout') }}</p>
+              <h1 class="truncate text-xl font-semibold tracking-normal text-gray-950 dark:text-white sm:text-2xl">
+                {{ t('payment.title') }}
+              </h1>
+            </div>
           </div>
           <div class="payment-hero-metrics">
             <div class="payment-metric">
@@ -40,7 +39,7 @@
             :key="tab.key"
             class="payment-tab-button"
             :class="activeTab === tab.key ? 'payment-tab-button-active' : 'payment-tab-button-inactive'"
-            @click="activeTab = tab.key"
+            @click="selectPaymentTab(tab.key)"
           >
             {{ tab.label }}
           </button>
@@ -118,7 +117,7 @@
                 <PaymentMethodSelector
                   :methods="methodOptions"
                   :selected="selectedMethod"
-                  @select="selectedMethod = $event"
+                  @select="selectPaymentMethod"
                 />
               </main>
 
@@ -253,7 +252,7 @@
                   <PaymentMethodSelector
                     :methods="subMethodOptions"
                     :selected="selectedMethod"
-                    @select="selectedMethod = $event"
+                    @select="selectPaymentMethod"
                   />
                 </main>
 
@@ -391,7 +390,7 @@ import { useAuthStore } from '@/stores/auth'
 import { usePaymentStore } from '@/stores/payment'
 import { useSubscriptionStore } from '@/stores/subscriptions'
 import { useAppStore } from '@/stores'
-import { paymentAPI } from '@/api/payment'
+import { paymentAPI, type PaymentAnalyticsEvent } from '@/api/payment'
 import { extractApiErrorMessage, extractI18nErrorMessage } from '@/utils/apiError'
 import { isMobileDevice } from '@/utils/device'
 import type { SubscriptionPlan, CheckoutInfoResponse, CreateOrderResult, OrderType } from '@/types/payment'
@@ -446,6 +445,7 @@ const amount = ref<number | null>(null)
 const selectedMethod = ref('')
 const selectedPlan = ref<SubscriptionPlan | null>(null)
 const previewImage = ref('')
+const hasTrackedInitialPageView = ref(false)
 
 const paymentPhase = ref<'select' | 'paying'>('select')
 
@@ -534,6 +534,69 @@ function removeRecoverySnapshot() {
   clearPaymentRecoverySnapshot(window.localStorage, PAYMENT_RECOVERY_STORAGE_KEY)
 }
 
+function normalizeAnalyticsNumber(value: number | null | undefined): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return undefined
+  return Math.round(value * 100) / 100
+}
+
+function currentOrderType(): OrderType {
+  return activeTab.value === 'subscription' ? 'subscription' : 'balance'
+}
+
+function getAnalyticsAmount(orderType: OrderType = currentOrderType()): number | undefined {
+  if (orderType === 'subscription') return normalizeAnalyticsNumber(selectedPlan.value?.price)
+  return normalizeAnalyticsNumber(validAmount.value)
+}
+
+function getAnalyticsPayAmount(orderType: OrderType = currentOrderType()): number | undefined {
+  if (orderType === 'subscription') return normalizeAnalyticsNumber(feeRate.value > 0 ? subTotalAmount.value : selectedPlan.value?.price)
+  return normalizeAnalyticsNumber(totalAmount.value)
+}
+
+function getAnalyticsPlanId(): number | undefined {
+  return selectedPlan.value?.id
+}
+
+function getErrorKind(err: unknown): string {
+  if (typeof err === 'object' && err !== null) {
+    if ('reason' in err && typeof err.reason === 'string' && err.reason.trim()) return err.reason.trim()
+    if ('code' in err && typeof err.code === 'string' && err.code.trim()) return err.code.trim()
+  }
+  if (err instanceof Error && err.message.trim()) return err.message.trim()
+  return 'unknown'
+}
+
+function recordPaymentAnalytics(event: PaymentAnalyticsEvent) {
+  const normalized: PaymentAnalyticsEvent = {
+    ...event,
+    tab: event.tab || activeTab.value,
+    orderType: event.orderType || currentOrderType(),
+    paymentType: normalizeVisibleMethod(event.paymentType || selectedMethod.value) || event.paymentType || selectedMethod.value || undefined,
+    amount: normalizeAnalyticsNumber(event.amount),
+    payAmount: normalizeAnalyticsNumber(event.payAmount),
+    feeRate: normalizeAnalyticsNumber(event.feeRate),
+    planId: event.planId && event.planId > 0 ? event.planId : undefined,
+    orderId: event.orderId && event.orderId > 0 ? event.orderId : undefined,
+  }
+
+  void paymentAPI.recordEvents({ events: [normalized] }).catch((error) => {
+    console.warn('Failed to record payment analytics:', error)
+  })
+}
+
+function recordOrderFunnelEvent(name: PaymentAnalyticsEvent['name'], orderType: OrderType, extra: Partial<PaymentAnalyticsEvent> = {}) {
+  recordPaymentAnalytics({
+    name,
+    tab: orderType === 'subscription' ? 'subscription' : 'recharge',
+    orderType,
+    amount: extra.amount ?? getAnalyticsAmount(orderType),
+    payAmount: extra.payAmount ?? getAnalyticsPayAmount(orderType),
+    feeRate: extra.feeRate ?? feeRate.value,
+    planId: extra.planId ?? (orderType === 'subscription' ? getAnalyticsPlanId() : undefined),
+    ...extra,
+  })
+}
+
 function resetPayment() {
   paymentPhase.value = 'select'
   paymentState.value = emptyPaymentState()
@@ -596,6 +659,15 @@ function buildWechatOAuthAuthorizeUrl(
 
 function onPaymentDone() {
   const wasSubscription = paymentState.value.orderType === 'subscription'
+  recordPaymentAnalytics({
+    name: 'payment_settled',
+    tab: wasSubscription ? 'subscription' : 'recharge',
+    orderType: paymentState.value.orderType || (wasSubscription ? 'subscription' : 'balance'),
+    paymentType: paymentState.value.paymentType,
+    amount: paymentState.value.amount,
+    payAmount: paymentState.value.payAmount,
+    orderId: paymentState.value.orderId,
+  })
   resetPayment()
   selectedPlan.value = null
   if (wasSubscription) {
@@ -604,6 +676,15 @@ function onPaymentDone() {
 }
 
 function onPaymentSuccess() {
+  recordPaymentAnalytics({
+    name: 'payment_success',
+    tab: paymentState.value.orderType === 'subscription' ? 'subscription' : 'recharge',
+    orderType: paymentState.value.orderType || currentOrderType(),
+    paymentType: paymentState.value.paymentType,
+    amount: paymentState.value.amount,
+    payAmount: paymentState.value.payAmount,
+    orderId: paymentState.value.orderId,
+  })
   removeRecoverySnapshot()
   authStore.refreshUser()
   if (paymentState.value.orderType === 'subscription') {
@@ -612,6 +693,15 @@ function onPaymentSuccess() {
 }
 
 function onPaymentSettled() {
+  recordPaymentAnalytics({
+    name: 'payment_settled',
+    tab: paymentState.value.orderType === 'subscription' ? 'subscription' : 'recharge',
+    orderType: paymentState.value.orderType || currentOrderType(),
+    paymentType: paymentState.value.paymentType,
+    amount: paymentState.value.amount,
+    payAmount: paymentState.value.payAmount,
+    orderId: paymentState.value.orderId,
+  })
   removeRecoverySnapshot()
 }
 
@@ -875,6 +965,17 @@ watch(() => [validAmount.value, selectedMethod.value] as const, ([amt, method]) 
   if (available) selectedMethod.value = available
 })
 
+watch(loading, (next) => {
+  if (next || hasTrackedInitialPageView.value) return
+  hasTrackedInitialPageView.value = true
+  recordPaymentAnalytics({
+    name: 'payment_page_view',
+    amount: getAnalyticsAmount(),
+    payAmount: getAnalyticsPayAmount(),
+    feeRate: feeRate.value,
+  })
+})
+
 // Payment button class: follows selected payment method color
 const paymentButtonClass = computed(() => {
   const m = selectedMethod.value
@@ -909,6 +1010,15 @@ const planValiditySuffix = computed(() => {
 function selectPlan(plan: SubscriptionPlan) {
   selectedPlan.value = plan
   errorMessage.value = ''
+  recordPaymentAnalytics({
+    name: 'payment_plan_select',
+    tab: 'subscription',
+    orderType: 'subscription',
+    amount: plan.price,
+    payAmount: feeRate.value > 0 ? Math.round((plan.price + Math.ceil(((plan.price * feeRate.value) / 100) * 100) / 100) * 100) / 100 : plan.price,
+    feeRate: feeRate.value,
+    planId: plan.id,
+  })
 }
 
 function selectPlanFromModal(plan: SubscriptionPlan) {
@@ -916,6 +1026,37 @@ function selectPlanFromModal(plan: SubscriptionPlan) {
   renewGroupId.value = null
   selectedPlan.value = plan
   errorMessage.value = ''
+  recordPaymentAnalytics({
+    name: 'payment_plan_select',
+    tab: 'subscription',
+    orderType: 'subscription',
+    amount: plan.price,
+    payAmount: feeRate.value > 0 ? Math.round((plan.price + Math.ceil(((plan.price * feeRate.value) / 100) * 100) / 100) * 100) / 100 : plan.price,
+    feeRate: feeRate.value,
+    planId: plan.id,
+  })
+}
+
+function selectPaymentTab(tab: 'recharge' | 'subscription') {
+  if (activeTab.value === tab) return
+  activeTab.value = tab
+  recordPaymentAnalytics({
+    name: 'payment_tab_change',
+    tab,
+    orderType: tab === 'subscription' ? 'subscription' : 'balance',
+  })
+}
+
+function selectPaymentMethod(method: string) {
+  selectedMethod.value = method
+  recordPaymentAnalytics({
+    name: 'payment_method_select',
+    paymentType: method,
+    amount: getAnalyticsAmount(),
+    payAmount: getAnalyticsPayAmount(),
+    feeRate: feeRate.value,
+    planId: currentOrderType() === 'subscription' ? getAnalyticsPlanId() : undefined,
+  })
 }
 
 function closeRenewalModal() {
@@ -925,11 +1066,13 @@ function closeRenewalModal() {
 
 async function handleSubmitRecharge() {
   if (!canSubmit.value || submitting.value) return
+  recordOrderFunnelEvent('payment_order_submit', 'balance')
   await createOrder(validAmount.value, 'balance')
 }
 
 async function confirmSubscribe() {
   if (!selectedPlan.value || submitting.value) return
+  recordOrderFunnelEvent('payment_order_submit', 'subscription')
   await createOrder(selectedPlan.value.price, 'subscription', selectedPlan.value.id)
 }
 
@@ -957,13 +1100,22 @@ async function createOrder(orderAmount: number, orderType: OrderType, planId?: n
     }
 
     const result = await paymentStore.createOrder(payload) as CreateOrderResult & { resume_token?: string }
+    const resultPaymentType = normalizeVisibleMethod(result.payment_type || requestType) || result.payment_type || requestType
+    recordOrderFunnelEvent('payment_order_create_success', orderType, {
+      paymentType: resultPaymentType,
+      amount: result.amount ?? orderAmount,
+      payAmount: result.pay_amount,
+      feeRate: result.fee_rate,
+      planId,
+      orderId: result.order_id,
+    })
     const openWindow = (url: string) => {
       const win = window.open(url, 'paymentPopup', getPaymentPopupFeatures())
       if (!win || win.closed) {
         window.location.href = url
       }
     }
-    const visibleMethod = normalizeVisibleMethod(requestType) || requestType
+    const visibleMethod = resultPaymentType
     // When user clicks the dedicated Stripe button, leave method blank so the
     // landing page renders Stripe's full Payment Element (card/link/alipay/wxpay).
     const stripeMethod = visibleMethod === 'stripe'
@@ -999,6 +1151,16 @@ async function createOrder(orderAmount: number, orderType: OrderType, planId?: n
       stripePopupUrl: stripeRouteUrl,
       stripeRouteUrl,
       airwallexRouteUrl,
+    })
+    recordOrderFunnelEvent('payment_launch', orderType, {
+      paymentType: visibleMethod,
+      launchKind: decision.kind,
+      amount: result.amount ?? orderAmount,
+      payAmount: result.pay_amount,
+      feeRate: result.fee_rate,
+      planId,
+      orderId: result.order_id,
+      status: decision.kind === 'qr_waiting' || decision.kind === 'redirect_waiting' ? 'PENDING' : undefined,
     })
 
     if (decision.kind === 'wechat_oauth' && decision.oauth?.authorize_url) {
@@ -1082,6 +1244,11 @@ async function createOrder(orderAmount: number, orderType: OrderType, planId?: n
       openWindow(decision.paymentState.payUrl)
     }
   } catch (err: unknown) {
+    recordOrderFunnelEvent('payment_order_create_error', orderType, {
+      paymentType: requestType,
+      planId,
+      errorKind: getErrorKind(err),
+    })
     const apiErr = err as Record<string, unknown>
     if (apiErr.reason === 'TOO_MANY_PENDING') {
       const metadata = apiErr.metadata as Record<string, unknown> | undefined
@@ -1175,6 +1342,14 @@ async function attemptMobileQrFallback(err: unknown, context: MobileQrFallbackCo
       isWechatBrowser: false,
     })
     const result = await paymentStore.createOrder(payload) as CreateOrderResult & { resume_token?: string }
+    recordOrderFunnelEvent('payment_order_create_success', context.orderType, {
+      paymentType: visibleMethod,
+      amount: result.amount ?? context.orderAmount,
+      payAmount: result.pay_amount,
+      feeRate: result.fee_rate,
+      planId: context.planId,
+      orderId: result.order_id,
+    })
     const stripeMethod = visibleMethod === 'wxpay' ? 'wechat_pay' : 'alipay'
     const stripeRouteUrl = result.client_secret
       ? router.resolve({
@@ -1199,6 +1374,16 @@ async function attemptMobileQrFallback(err: unknown, context: MobileQrFallbackCo
     if (decision.kind !== 'qr_waiting' || !decision.paymentState.qrCode) {
       return false
     }
+    recordOrderFunnelEvent('payment_launch', context.orderType, {
+      paymentType: visibleMethod,
+      launchKind: decision.kind,
+      amount: result.amount ?? context.orderAmount,
+      payAmount: result.pay_amount,
+      feeRate: result.fee_rate,
+      planId: context.planId,
+      orderId: result.order_id,
+      status: 'PENDING',
+    })
 
     errorMessage.value = ''
     errorHintMessage.value = ''
@@ -1336,20 +1521,30 @@ onMounted(async () => {
 }
 
 .payment-hero {
-  @apply grid gap-5 rounded-lg p-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--theme-surface-strong) 92%, var(--theme-bg)) 0%, var(--theme-surface) 100%);
+  @apply grid gap-4 rounded-lg px-5 py-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end;
+  background: var(--theme-surface);
   border: 1px solid var(--theme-border);
   box-shadow: var(--theme-shadow);
 }
 
+.payment-hero-mark {
+  @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-primary-600 dark:text-primary-300;
+  background: var(--theme-primary-soft);
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 22%, var(--theme-border));
+}
+
+.payment-hero-kicker {
+  @apply mb-0.5 text-xs font-semibold uppercase tracking-normal text-gray-500 dark:text-gray-400;
+}
+
 .payment-hero-metrics {
-  @apply grid min-w-[280px] grid-cols-3 overflow-hidden rounded-lg;
-  border: 1px solid var(--theme-border);
-  background: var(--theme-surface);
+  @apply grid min-w-[320px] grid-cols-3 overflow-hidden rounded-md;
+  border: 1px solid color-mix(in srgb, var(--theme-border) 84%, transparent);
+  background: var(--theme-surface-muted);
 }
 
 .payment-metric {
-  @apply min-w-0 px-4 py-3;
+  @apply min-w-0 px-4 py-2.5;
 }
 
 .payment-metric + .payment-metric {
@@ -1365,9 +1560,10 @@ onMounted(async () => {
 }
 
 .payment-tab-group {
-  @apply flex space-x-1 rounded-lg p-1;
-  background: var(--theme-surface-muted);
+  @apply flex space-x-1 rounded-lg p-1.5;
+  background: var(--theme-surface);
   border: 1px solid var(--theme-border);
+  box-shadow: var(--theme-shadow);
 }
 
 .payment-tab-button {
@@ -1392,7 +1588,7 @@ onMounted(async () => {
 }
 
 .payment-checkout-grid {
-  @apply grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start;
+  @apply grid gap-5 lg:grid-cols-[minmax(0,1fr)_392px] lg:items-start;
 }
 
 .payment-panel,
@@ -1402,11 +1598,12 @@ onMounted(async () => {
   background: var(--theme-surface);
   border: 1px solid var(--theme-border);
   box-shadow: var(--theme-shadow);
-  @apply rounded-lg p-5 backdrop-blur-xl;
+  @apply rounded-lg p-6 backdrop-blur-xl;
 }
 
 .payment-summary-card {
   @apply sticky top-6 space-y-5;
+  border-color: var(--theme-border-strong);
 }
 
 .payment-section-header,
@@ -1418,7 +1615,7 @@ onMounted(async () => {
 .payment-section-header h2,
 .payment-summary-header h2,
 .payment-section-title h2 {
-  @apply mt-1 text-lg font-semibold text-gray-950 dark:text-white;
+  @apply mt-1 text-base font-semibold text-gray-950 dark:text-white;
 }
 
 .payment-eyebrow {
@@ -1427,7 +1624,7 @@ onMounted(async () => {
 
 .payment-step-badge,
 .payment-count-badge {
-  @apply inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-xs font-semibold;
+  @apply inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] font-semibold;
   background: var(--theme-surface-muted);
   border: 1px solid var(--theme-border);
   color: var(--theme-text-muted);
@@ -1448,13 +1645,13 @@ onMounted(async () => {
 }
 
 .payment-account-strip {
-  @apply flex items-center gap-3 p-3;
+  @apply flex items-center gap-3 p-3.5;
 }
 
 .payment-bonus-banner {
   @apply mt-4 flex flex-col gap-3 rounded-lg border p-4 xl:flex-row xl:items-center;
-  background: linear-gradient(135deg, color-mix(in srgb, #16a34a 12%, var(--theme-surface)), color-mix(in srgb, #0ea5e9 10%, var(--theme-surface)));
-  border-color: color-mix(in srgb, #16a34a 34%, var(--theme-border));
+  background: color-mix(in srgb, #16a34a 8%, var(--theme-surface));
+  border-color: color-mix(in srgb, #16a34a 30%, var(--theme-border));
 }
 
 .payment-bonus-icon {
@@ -1464,9 +1661,9 @@ onMounted(async () => {
 }
 
 .payment-rate-pill {
-  @apply rounded-md border px-2.5 py-1 text-xs font-semibold text-sky-700 dark:text-sky-200 xl:order-last;
-  background: color-mix(in srgb, #0ea5e9 10%, var(--theme-surface));
-  border-color: color-mix(in srgb, #0ea5e9 26%, var(--theme-border));
+  @apply rounded-md border px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-200 xl:order-last;
+  background: color-mix(in srgb, #16a34a 10%, var(--theme-surface));
+  border-color: color-mix(in srgb, #16a34a 26%, var(--theme-border));
 }
 
 .payment-bonus-title {
@@ -1492,7 +1689,7 @@ onMounted(async () => {
 }
 
 .payment-credit-result strong {
-  @apply mt-1 block text-3xl font-semibold text-gray-950 dark:text-white;
+  @apply mt-1 block text-3xl font-semibold tracking-normal text-gray-950 dark:text-white;
 }
 
 .payment-credit-hint {
@@ -1500,7 +1697,7 @@ onMounted(async () => {
 }
 
 .payment-summary-list {
-  @apply space-y-3 text-sm;
+  @apply space-y-3.5 text-sm;
 }
 
 .payment-summary-list > div {
@@ -1556,7 +1753,7 @@ onMounted(async () => {
 
 .payment-plan-detail {
   @apply rounded-lg p-5;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--theme-primary-soft) 44%, var(--theme-surface)) 0%, var(--theme-surface) 70%);
+  background: color-mix(in srgb, var(--theme-primary-soft) 34%, var(--theme-surface));
   border: 1px solid var(--theme-border);
 }
 

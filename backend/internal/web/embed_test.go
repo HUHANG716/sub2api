@@ -688,6 +688,32 @@ func TestFrontendServer_Middleware(t *testing.T) {
 		assert.Contains(t, w.Header().Get("Content-Security-Policy"), "frame-ancestors 'self'")
 		assert.NotContains(t, w.Header().Get("Content-Security-Policy"), "frame-ancestors 'none'")
 	})
+
+	t.Run("serves_image_playground_shell_with_same_origin_frame_headers", func(t *testing.T) {
+		provider := &mockSettingsProvider{
+			settings: map[string]string{"test": "value"},
+		}
+
+		server, err := NewFrontendServer(provider)
+		require.NoError(t, err)
+
+		router := gin.New()
+		router.Use(middleware.SecurityHeaders(config.CSPConfig{
+			Enabled: true,
+			Policy:  "default-src 'self'; frame-ancestors 'none'; script-src 'self' __CSP_NONCE__",
+		}, nil))
+		router.Use(server.Middleware())
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/image-playground", nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "SAMEORIGIN", w.Header().Get("X-Frame-Options"))
+		assert.Contains(t, w.Header().Get("Content-Security-Policy"), "frame-ancestors 'self'")
+		assert.Contains(t, w.Header().Get("Content-Security-Policy"), "frame-src 'self'")
+		assert.NotContains(t, w.Header().Get("Content-Security-Policy"), "frame-ancestors 'none'")
+	})
 }
 
 func TestNewFrontendServer(t *testing.T) {

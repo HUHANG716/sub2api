@@ -114,6 +114,8 @@
                   :subscription-type="row.group.subscription_type"
                   :rate-multiplier="row.group.rate_multiplier"
                   :user-rate-multiplier="userGroupRates[row.group.id]"
+                  :global-discount-rate="activeGlobalDiscountRate"
+                  always-show-rate
                 />
                 <span v-else class="text-sm text-gray-400 dark:text-dark-500">{{
                   t('keys.noGroup')
@@ -424,6 +426,8 @@
                 :subscription-type="(option as unknown as GroupOption).subscriptionType"
                 :rate-multiplier="(option as unknown as GroupOption).rate"
                 :user-rate-multiplier="(option as unknown as GroupOption).userRate"
+                :global-discount-rate="activeGlobalDiscountRate"
+                always-show-rate
               />
               <span v-else class="text-gray-400">{{ t('keys.selectGroup') }}</span>
             </template>
@@ -434,6 +438,7 @@
                 :subscription-type="(option as unknown as GroupOption).subscriptionType"
                 :rate-multiplier="(option as unknown as GroupOption).rate"
                 :user-rate-multiplier="(option as unknown as GroupOption).userRate"
+                :global-discount-rate="activeGlobalDiscountRate"
                 :description="(option as unknown as GroupOption).description"
                 :selected="selected"
               />
@@ -1029,6 +1034,7 @@
               :subscription-type="option.subscriptionType"
               :rate-multiplier="option.rate"
               :user-rate-multiplier="option.userRate"
+              :global-discount-rate="activeGlobalDiscountRate"
               :description="option.description"
               :selected="
                 selectedKeyForGroup?.group_id === option.value ||
@@ -1257,6 +1263,15 @@ const groupOptions = computed(() =>
     platform: group.platform
   }))
 )
+
+const activeGlobalDiscountRate = computed(() => {
+  const discount = publicSettings.value?.global_discount ?? appStore.cachedPublicSettings?.global_discount
+  const rate = discount?.discount_rate
+  if (!discount?.active || typeof rate !== 'number' || rate <= 0 || rate >= 1) {
+    return null
+  }
+  return rate
+})
 
 // Group dropdown search
 const groupSearchQuery = ref('')

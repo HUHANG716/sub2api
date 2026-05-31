@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { RouterView, useRouter, useRoute } from 'vue-router'
-import { onMounted, onBeforeUnmount, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import Toast from '@/components/common/Toast.vue'
 import NavigationProgress from '@/components/common/NavigationProgress.vue'
 import { resolveDocumentTitle } from '@/router/title'
 import AnnouncementPopup from '@/components/common/AnnouncementPopup.vue'
+import ImagePlaygroundView from '@/views/user/ImagePlaygroundView.vue'
+import { clearStoredImagePlaygroundKey } from '@/views/user/imagePlayground'
 import { useAppStore, useAuthStore, useSubscriptionStore, useAnnouncementStore } from '@/stores'
 import { getSetupStatus } from '@/api/setup'
 
@@ -14,6 +16,26 @@ const appStore = useAppStore()
 const authStore = useAuthStore()
 const subscriptionStore = useSubscriptionStore()
 const announcementStore = useAnnouncementStore()
+const imagePlaygroundMounted = ref(false)
+const imagePlaygroundSessionId = ref(0)
+const isImagePlaygroundRoute = computed(() => route.name === 'ImagePlayground' || route.path === '/image-playground')
+const authSessionKey = computed(() => {
+  if (!authStore.isAuthenticated) return ''
+  const user = authStore.user as { id?: unknown; username?: unknown } | null | undefined
+  return typeof user?.id === 'number' || typeof user?.id === 'string'
+    ? String(user.id)
+    : typeof user?.username === 'string'
+    ? user.username
+    : 'authenticated'
+})
+
+watch(
+  isImagePlaygroundRoute,
+  (active) => {
+    if (active) imagePlaygroundMounted.value = true
+  },
+  { immediate: true }
+)
 
 /**
  * Update favicon dynamically
@@ -80,6 +102,19 @@ watch(
   { immediate: true }
 )
 
+watch(
+  authSessionKey,
+  (sessionKey, previousSessionKey) => {
+    if (previousSessionKey === undefined || sessionKey === previousSessionKey) return
+    clearStoredImagePlaygroundKey()
+    imagePlaygroundMounted.value = false
+    imagePlaygroundSessionId.value += 1
+    if (isImagePlaygroundRoute.value && sessionKey) {
+      imagePlaygroundMounted.value = true
+    }
+  }
+)
+
 // Route change trigger (throttled by store)
 router.afterEach(() => {
   if (authStore.isAuthenticated) {
@@ -113,7 +148,12 @@ onMounted(async () => {
 
 <template>
   <NavigationProgress />
-  <RouterView />
+  <RouterView v-if="!isImagePlaygroundRoute" />
+  <ImagePlaygroundView
+    v-if="imagePlaygroundMounted"
+    v-show="isImagePlaygroundRoute"
+    :key="imagePlaygroundSessionId"
+  />
   <Toast />
   <AnnouncementPopup />
 </template>

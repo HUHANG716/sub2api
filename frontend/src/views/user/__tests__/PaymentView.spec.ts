@@ -19,6 +19,7 @@ const showError = vi.hoisted(() => vi.fn())
 const showInfo = vi.hoisted(() => vi.fn())
 const showWarning = vi.hoisted(() => vi.fn())
 const getCheckoutInfo = vi.hoisted(() => vi.fn())
+const recordEvents = vi.hoisted(() => vi.fn())
 const bridgeInvoke = vi.hoisted(() => vi.fn())
 const translateMock = vi.hoisted(() => vi.fn((key: string) => key))
 
@@ -79,6 +80,7 @@ vi.mock('@/stores', () => ({
 vi.mock('@/api/payment', () => ({
   paymentAPI: {
     getCheckoutInfo,
+    recordEvents,
   },
 }))
 
@@ -200,6 +202,7 @@ describe('PaymentView WeChat JSAPI flow', () => {
     showInfo.mockReset()
     showWarning.mockReset()
     getCheckoutInfo.mockReset().mockResolvedValue(checkoutInfoFixture())
+    recordEvents.mockReset().mockResolvedValue({ data: { inserted: 1 } })
     bridgeInvoke.mockReset()
     window.localStorage.clear()
     ;(window as Window & { WeixinJSBridge?: { invoke: typeof bridgeInvoke } }).WeixinJSBridge = {
@@ -434,6 +437,7 @@ describe('PaymentView recharge bonus preview', () => {
     showInfo.mockReset()
     showWarning.mockReset()
     translateMock.mockClear()
+    recordEvents.mockReset().mockResolvedValue({ data: { inserted: 1 } })
     window.localStorage.clear()
   })
 

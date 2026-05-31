@@ -37,4 +37,24 @@ describe('payment api', () => {
       resume_token: 'resume-token-123',
     })
   })
+
+  it('records payment analytics events', async () => {
+    await paymentAPI.recordEvents({
+      events: [{
+        name: 'payment_order_submit',
+        orderType: 'balance',
+        paymentType: 'alipay',
+        amount: 88,
+      }],
+    })
+
+    expect(post).toHaveBeenCalledWith('/payment/events', {
+      events: [{
+        name: 'payment_order_submit',
+        orderType: 'balance',
+        paymentType: 'alipay',
+        amount: 88,
+      }],
+    })
+  })
 })

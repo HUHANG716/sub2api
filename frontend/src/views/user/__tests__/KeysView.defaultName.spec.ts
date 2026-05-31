@@ -9,6 +9,7 @@ const {
   getUserGroupRates,
   getPublicSettings,
   getDashboardApiKeysUsage,
+  appState,
   showError,
   showSuccess
 } = vi.hoisted(() => ({
@@ -17,6 +18,9 @@ const {
   getUserGroupRates: vi.fn(),
   getPublicSettings: vi.fn(),
   getDashboardApiKeysUsage: vi.fn(),
+  appState: {
+    cachedPublicSettings: null as null | Record<string, unknown>,
+  },
   showError: vi.fn(),
   showSuccess: vi.fn()
 }))
@@ -50,7 +54,7 @@ vi.mock('@/api', () => ({
 }))
 
 vi.mock('@/stores/app', () => ({
-  useAppStore: () => ({ showError, showSuccess })
+  useAppStore: () => ({ ...appState, showError, showSuccess })
 }))
 
 vi.mock('@/stores/onboarding', () => ({
@@ -90,6 +94,7 @@ describe('user KeysView create form defaults', () => {
     getDashboardApiKeysUsage.mockReset()
     showError.mockReset()
     showSuccess.mockReset()
+    appState.cachedPublicSettings = null
 
     listKeys.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 20, pages: 0 })
     getAvailableGroups.mockResolvedValue([])
@@ -128,5 +133,73 @@ describe('user KeysView create form defaults', () => {
 
     expect((wrapper.get('[data-tour="key-form-name"]').element as HTMLInputElement).value)
       .toBe('My API Key')
+  })
+
+  it('uses public settings loaded by the page for group discount badges', async () => {
+    listKeys.mockResolvedValue({
+      items: [{
+        id: 1,
+        key: 'sk-test-key',
+        name: 'Discount key',
+        status: 'active',
+        group_id: 10,
+        group: {
+          id: 10,
+          name: 'Discount group',
+          platform: 'openai',
+          subscription_type: 'standard',
+          rate_multiplier: 1,
+        },
+        quota: 0,
+        quota_used: 0,
+        ip_whitelist: [],
+        ip_blacklist: [],
+        created_at: '2026-05-30T00:00:00Z',
+      }],
+      total: 1,
+      page: 1,
+      page_size: 20,
+      pages: 1
+    })
+    getPublicSettings.mockResolvedValue({
+      global_discount: {
+        active: true,
+        discount_rate: 0.8,
+      }
+    })
+
+    const wrapper = mount(KeysView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          TablePageLayout: {
+            template: '<div><slot name="filters" /><slot name="actions" /><slot name="table" /><slot name="pagination" /></div>'
+          },
+          DataTable: {
+            props: ['data'],
+            template: '<div><slot v-for="row in data" name="cell-group" :row="row" /></div>'
+          },
+          EmptyState: true,
+          BaseDialog: BaseDialogStub,
+          Pagination: true,
+          ConfirmDialog: true,
+          Select: true,
+          SearchInput: true,
+          Icon: true,
+          EndpointPopover: true,
+          GroupBadge: {
+            props: ['globalDiscountRate'],
+            template: '<span data-test="group-discount">{{ globalDiscountRate }}</span>'
+          },
+          GroupOptionItem: true,
+          UseKeyModal: true,
+          Teleport: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.get('[data-test="group-discount"]').text()).toBe('0.8')
   })
 })

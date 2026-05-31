@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 	"strconv"
 	"strings"
@@ -25,6 +26,7 @@ type UsageHandler struct {
 	apiKeyService  *service.APIKeyService
 	adminService   service.AdminService
 	cleanupService *service.UsageCleanupService
+	sqlDB          *sql.DB
 }
 
 // NewUsageHandler creates a new admin usage handler
@@ -33,12 +35,18 @@ func NewUsageHandler(
 	apiKeyService *service.APIKeyService,
 	adminService service.AdminService,
 	cleanupService *service.UsageCleanupService,
+	sqlDBs ...*sql.DB,
 ) *UsageHandler {
+	var sqlDB *sql.DB
+	if len(sqlDBs) > 0 {
+		sqlDB = sqlDBs[0]
+	}
 	return &UsageHandler{
 		usageService:   usageService,
 		apiKeyService:  apiKeyService,
 		adminService:   adminService,
 		cleanupService: cleanupService,
+		sqlDB:          sqlDB,
 	}
 }
 
@@ -55,6 +63,51 @@ type CreateUsageCleanupTaskRequest struct {
 	Stream      *bool   `json:"stream"`
 	BillingType *int8   `json:"billing_type"`
 	Timezone    string  `json:"timezone"`
+}
+
+type ImagePlaygroundAnalyticsOverview struct {
+	TotalEvents       int64   `json:"total_events"`
+	SubmitCount       int64   `json:"submit_count"`
+	SuccessCount      int64   `json:"success_count"`
+	ErrorCount        int64   `json:"error_count"`
+	SuccessRate       float64 `json:"success_rate"`
+	AverageDurationMs float64 `json:"average_duration_ms"`
+}
+
+type ImagePlaygroundAnalyticsBreakdownItem struct {
+	Key   string `json:"key"`
+	Count int64  `json:"count"`
+}
+
+type ImagePlaygroundAnalyticsRecentEvent struct {
+	ID               int64   `json:"id"`
+	UserID           int64   `json:"user_id"`
+	EventName        string  `json:"event_name"`
+	Provider         *string `json:"provider,omitempty"`
+	APIMode          *string `json:"api_mode,omitempty"`
+	Model            *string `json:"model,omitempty"`
+	Size             *string `json:"size,omitempty"`
+	DurationMs       *int    `json:"duration_ms,omitempty"`
+	OutputImageCount *int    `json:"output_image_count,omitempty"`
+	ErrorKind        *string `json:"error_kind,omitempty"`
+	CreatedAt        string  `json:"created_at"`
+}
+
+type ImagePlaygroundAnalyticsResponse struct {
+	Overview     ImagePlaygroundAnalyticsOverview        `json:"overview"`
+	ErrorKinds   []ImagePlaygroundAnalyticsBreakdownItem `json:"error_kinds"`
+	Models       []ImagePlaygroundAnalyticsBreakdownItem `json:"models"`
+	APIModes     []ImagePlaygroundAnalyticsBreakdownItem `json:"api_modes"`
+	RecentEvents []ImagePlaygroundAnalyticsRecentEvent   `json:"recent_events"`
+	RecentTotal  int64                                   `json:"recent_total"`
+	RecentPage   int                                     `json:"recent_page"`
+	RecentSize   int                                     `json:"recent_page_size"`
+}
+
+type imagePlaygroundAnalyticsFilters struct {
+	UserID  int64
+	Model   string
+	APIMode string
 }
 
 // List handles listing all usage records with filters
@@ -197,6 +250,252 @@ func (h *UsageHandler) List(c *gin.Context) {
 		out = append(out, *dto.UsageLogFromServiceAdmin(&records[i]))
 	}
 	response.Paginated(c, out, result.Total, page, pageSize)
+}
+
+// ImagePlaygroundAnalytics returns beta image playground event stats.
+// GET /api/v1/admin/usage/image-playground-analytics
+func (h *UsageHandler) ImagePlaygroundAnalytics(c *gin.Context) {
+	if h.sqlDB == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Image playground analytics is not available")
+		return
+	}
+
+	startTime, endTime, ok := parseAdminUsageDateRange(c)
+	if !ok {
+		return
+	}
+	recentPage, recentPageSize := parseImagePlaygroundRecentPagination(c)
+	filters, ok := parseImagePlaygroundAnalyticsFilters(c)
+	if !ok {
+		return
+	}
+
+	overview, err := h.queryImagePlaygroundAnalyticsOverview(c.Request.Context(), startTime, endTime, filters)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to load image playground analytics")
+		return
+	}
+	errorKinds, err := h.queryImagePlaygroundAnalyticsBreakdown(c.Request.Context(), startTime, endTime, filters, "error_kind", "event_name = 'image_generate_error'")
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to load image playground analytics")
+		return
+	}
+	models, err := h.queryImagePlaygroundAnalyticsBreakdown(c.Request.Context(), startTime, endTime, filters, "model", "model IS NOT NULL")
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to load image playground analytics")
+		return
+	}
+	apiModes, err := h.queryImagePlaygroundAnalyticsBreakdown(c.Request.Context(), startTime, endTime, filters, "api_mode", "api_mode IS NOT NULL")
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to load image playground analytics")
+		return
+	}
+	recent, recentTotal, err := h.queryImagePlaygroundAnalyticsRecent(c.Request.Context(), startTime, endTime, filters, recentPage, recentPageSize)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to load image playground analytics")
+		return
+	}
+
+	response.Success(c, ImagePlaygroundAnalyticsResponse{
+		Overview:     overview,
+		ErrorKinds:   errorKinds,
+		Models:       models,
+		APIModes:     apiModes,
+		RecentEvents: recent,
+		RecentTotal:  recentTotal,
+		RecentPage:   recentPage,
+		RecentSize:   recentPageSize,
+	})
+}
+
+func parseImagePlaygroundRecentPagination(c *gin.Context) (int, int) {
+	page := 1
+	if raw := strings.TrimSpace(c.Query("recent_page")); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+	pageSize := 8
+	if raw := strings.TrimSpace(c.Query("recent_page_size")); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			pageSize = parsed
+		}
+	}
+	if pageSize > 20 {
+		pageSize = 20
+	}
+	return page, pageSize
+}
+
+func parseImagePlaygroundAnalyticsFilters(c *gin.Context) (imagePlaygroundAnalyticsFilters, bool) {
+	var filters imagePlaygroundAnalyticsFilters
+	if raw := strings.TrimSpace(c.Query("user_id")); raw != "" {
+		parsed, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || parsed <= 0 {
+			response.BadRequest(c, "Invalid user_id")
+			return filters, false
+		}
+		filters.UserID = parsed
+	}
+	filters.Model = strings.TrimSpace(c.Query("model"))
+	filters.APIMode = strings.TrimSpace(c.Query("api_mode"))
+	return filters, true
+}
+
+func parseAdminUsageDateRange(c *gin.Context) (*time.Time, *time.Time, bool) {
+	var startTime, endTime *time.Time
+	userTZ := c.Query("timezone")
+	if startDateStr := c.Query("start_date"); startDateStr != "" {
+		t, err := timezone.ParseInUserLocation("2006-01-02", startDateStr, userTZ)
+		if err != nil {
+			response.BadRequest(c, "Invalid start_date format, use YYYY-MM-DD")
+			return nil, nil, false
+		}
+		startTime = &t
+	}
+	if endDateStr := c.Query("end_date"); endDateStr != "" {
+		t, err := timezone.ParseInUserLocation("2006-01-02", endDateStr, userTZ)
+		if err != nil {
+			response.BadRequest(c, "Invalid end_date format, use YYYY-MM-DD")
+			return nil, nil, false
+		}
+		t = t.AddDate(0, 0, 1)
+		endTime = &t
+	}
+	return startTime, endTime, true
+}
+
+func imagePlaygroundAnalyticsRangeWhere(startTime, endTime *time.Time, filters imagePlaygroundAnalyticsFilters) (string, []any) {
+	conditions := []string{"1=1"}
+	args := make([]any, 0, 5)
+	if startTime != nil {
+		args = append(args, *startTime)
+		conditions = append(conditions, "created_at >= $"+strconv.Itoa(len(args)))
+	}
+	if endTime != nil {
+		args = append(args, *endTime)
+		conditions = append(conditions, "created_at < $"+strconv.Itoa(len(args)))
+	}
+	if filters.UserID > 0 {
+		args = append(args, filters.UserID)
+		conditions = append(conditions, "user_id = $"+strconv.Itoa(len(args)))
+	}
+	if filters.Model != "" {
+		args = append(args, filters.Model)
+		conditions = append(conditions, "model = $"+strconv.Itoa(len(args)))
+	}
+	if filters.APIMode != "" {
+		args = append(args, filters.APIMode)
+		conditions = append(conditions, "api_mode = $"+strconv.Itoa(len(args)))
+	}
+	return strings.Join(conditions, " AND "), args
+}
+
+func (h *UsageHandler) queryImagePlaygroundAnalyticsOverview(ctx context.Context, startTime, endTime *time.Time, filters imagePlaygroundAnalyticsFilters) (ImagePlaygroundAnalyticsOverview, error) {
+	where, args := imagePlaygroundAnalyticsRangeWhere(startTime, endTime, filters)
+	query := `
+		SELECT
+			COUNT(*),
+			COUNT(*) FILTER (WHERE event_name = 'image_generate_submit'),
+			COUNT(*) FILTER (WHERE event_name = 'image_generate_success'),
+			COUNT(*) FILTER (WHERE event_name = 'image_generate_error'),
+			COALESCE(AVG(duration_ms) FILTER (WHERE event_name = 'image_generate_success' AND duration_ms IS NOT NULL), 0)
+		FROM image_playground_events
+		WHERE ` + where
+	var overview ImagePlaygroundAnalyticsOverview
+	if err := h.sqlDB.QueryRowContext(ctx, query, args...).Scan(
+		&overview.TotalEvents,
+		&overview.SubmitCount,
+		&overview.SuccessCount,
+		&overview.ErrorCount,
+		&overview.AverageDurationMs,
+	); err != nil {
+		return overview, err
+	}
+	completed := overview.SuccessCount + overview.ErrorCount
+	if completed > 0 {
+		overview.SuccessRate = float64(overview.SuccessCount) / float64(completed)
+	}
+	return overview, nil
+}
+
+func (h *UsageHandler) queryImagePlaygroundAnalyticsBreakdown(ctx context.Context, startTime, endTime *time.Time, filters imagePlaygroundAnalyticsFilters, column, extraCondition string) ([]ImagePlaygroundAnalyticsBreakdownItem, error) {
+	where, args := imagePlaygroundAnalyticsRangeWhere(startTime, endTime, filters)
+	query := `
+		SELECT COALESCE(` + column + `, 'unknown') AS key, COUNT(*) AS count
+		FROM image_playground_events
+		WHERE ` + where + ` AND ` + extraCondition + `
+		GROUP BY key
+		ORDER BY count DESC, key ASC
+		LIMIT 8`
+	rows, err := h.sqlDB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := []ImagePlaygroundAnalyticsBreakdownItem{}
+	for rows.Next() {
+		var item ImagePlaygroundAnalyticsBreakdownItem
+		if err := rows.Scan(&item.Key, &item.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (h *UsageHandler) queryImagePlaygroundAnalyticsRecent(ctx context.Context, startTime, endTime *time.Time, filters imagePlaygroundAnalyticsFilters, page, pageSize int) ([]ImagePlaygroundAnalyticsRecentEvent, int64, error) {
+	where, args := imagePlaygroundAnalyticsRangeWhere(startTime, endTime, filters)
+	var total int64
+	countQuery := `SELECT COUNT(*) FROM image_playground_events WHERE ` + where
+	if err := h.sqlDB.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	recentArgs := append([]any{}, args...)
+	recentArgs = append(recentArgs, pageSize, (page-1)*pageSize)
+	query := `
+		SELECT id, user_id, event_name, provider, api_mode, model, image_size,
+			duration_ms, output_image_count, error_kind, created_at
+		FROM image_playground_events
+		WHERE ` + where + `
+		ORDER BY created_at DESC
+		LIMIT $` + strconv.Itoa(len(recentArgs)-1) + ` OFFSET $` + strconv.Itoa(len(recentArgs))
+	rows, err := h.sqlDB.QueryContext(ctx, query, recentArgs...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	items := []ImagePlaygroundAnalyticsRecentEvent{}
+	for rows.Next() {
+		var item ImagePlaygroundAnalyticsRecentEvent
+		var createdAt time.Time
+		if err := rows.Scan(
+			&item.ID,
+			&item.UserID,
+			&item.EventName,
+			&item.Provider,
+			&item.APIMode,
+			&item.Model,
+			&item.Size,
+			&item.DurationMs,
+			&item.OutputImageCount,
+			&item.ErrorKind,
+			&createdAt,
+		); err != nil {
+			return nil, 0, err
+		}
+		item.CreatedAt = createdAt.Format(time.RFC3339)
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return items, total, nil
 }
 
 // Stats handles getting usage statistics with filters

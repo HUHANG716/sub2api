@@ -22,13 +22,14 @@
           </p>
           <button
             type="button"
-            class="btn btn-outline shrink-0"
+            class="image-playground-regenerate"
             data-test="image-playground-regenerate"
             :disabled="loading"
+            :aria-label="t('imagePlayground.regenerateKey')"
             @click="regenerateKey"
           >
             <Icon name="key" size="sm" />
-            {{ t('imagePlayground.regenerateKey') }}
+            <span>{{ t('imagePlayground.regenerateKey') }}</span>
           </button>
         </div>
       </header>
@@ -69,6 +70,7 @@
         v-else-if="iframeSrc"
         data-test="image-playground-frame"
         class="image-playground-frame image-playground-frame--workspace"
+        :key="iframeSrc"
         :src="iframeSrc"
         :title="t('imagePlayground.title')"
         allow="clipboard-read; clipboard-write"
@@ -77,9 +79,9 @@
 
       <ConfirmDialog
         :show="renewConfirmVisible"
-        :title="t('imagePlayground.renewConfirmTitle')"
+        :title="confirmDialogTitle"
         :message="renewConfirmMessage"
-        :confirm-text="t('imagePlayground.renewConfirmAction')"
+        :confirm-text="confirmDialogAction"
         :cancel-text="t('common.cancel')"
         @confirm="confirmRenewAccess"
         @cancel="cancelRenewAccess"
@@ -97,6 +99,7 @@ import Icon from '@/components/icons/Icon.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import { useAppStore } from '@/stores/app'
 import type { ApiKey, Group, PublicSettings } from '@/types'
+import type { ImagePlaygroundEvent, ImagePlaygroundEventName } from '@/api/usage'
 import {
   IMAGE_PLAYGROUND_KEY_NAME,
   buildImagePlaygroundUrl,
@@ -111,8 +114,8 @@ import {
 
 type PlaygroundState = 'loading' | 'ready' | 'missing-config' | 'unavailable-group' | 'failed'
 type EstimateState = 'idle' | 'loading' | 'ready' | 'failed'
-type PrepareReason = 'initial' | 'confirmed-renew'
-type RenewReason = 'manual' | 'expired'
+type PrepareReason = 'initial' | 'confirmed-renew' | 'confirmed-create' | 'confirmed-recreate'
+type RenewReason = 'manual' | 'expired' | 'create' | 'unsupported-group'
 
 interface PlaygroundParamsMessage {
   type?: string
@@ -122,6 +125,54 @@ interface PlaygroundParamsMessage {
     count?: unknown
   }
 }
+
+interface PlaygroundAnalyticsMessage {
+  type?: string
+  event?: {
+    name?: unknown
+    payload?: Record<string, unknown>
+  }
+}
+
+interface PlaygroundRecreateKeyMessage {
+  type?: string
+  reason?: unknown
+}
+
+const allowedAnalyticsEvents = new Set<ImagePlaygroundEventName>([
+  'image_generate_submit',
+  'image_generate_success',
+  'image_generate_error'
+])
+
+const agentAnalyticsEventMap: Record<string, ImagePlaygroundEventName> = {
+  agent_image_generate_submit: 'image_generate_submit',
+  agent_image_generate_success: 'image_generate_success',
+  agent_image_generate_error: 'image_generate_error'
+}
+
+const analyticsStringFields = [
+  'sourceMode',
+  'provider',
+  'apiMode',
+  'model',
+  'size',
+  'quality',
+  'outputFormat',
+  'errorKind'
+] as const
+
+const analyticsNumberFields = [
+  'n',
+  'inputImageCount',
+  'durationMs',
+  'outputImageCount'
+] as const
+
+const analyticsBooleanFields = [
+  'hasMask',
+  'recoverable'
+] as const
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -162,9 +213,25 @@ const estimateLabel = computed(() => {
 })
 
 const renewConfirmMessage = computed(() =>
-  pendingRenewReason.value === 'expired'
+  pendingRenewReason.value === 'create'
+    ? t('imagePlayground.createConfirmDescription')
+    : pendingRenewReason.value === 'unsupported-group'
+    ? t('imagePlayground.renewUnsupportedGroupConfirmDescription')
+    : pendingRenewReason.value === 'expired'
     ? t('imagePlayground.renewExpiredConfirmDescription')
     : t('imagePlayground.renewManualConfirmDescription')
+)
+
+const confirmDialogTitle = computed(() =>
+  pendingRenewReason.value === 'create'
+    ? t('imagePlayground.createConfirmTitle')
+    : t('imagePlayground.renewConfirmTitle')
+)
+
+const confirmDialogAction = computed(() =>
+  pendingRenewReason.value === 'create'
+    ? t('imagePlayground.createConfirmAction')
+    : t('imagePlayground.renewConfirmAction')
 )
 
 function setReady(stored: StoredImagePlaygroundKey) {
@@ -249,6 +316,20 @@ async function createKeyForGroup(group: Group) {
   }
 }
 
+async function retireStoredPlaygroundKey(stored: StoredImagePlaygroundKey | null) {
+  if (!stored?.key_id) return
+  try {
+    await keysAPI.delete(stored.key_id)
+  } catch (error) {
+    const status = typeof error === 'object' && error !== null && 'status' in error
+      ? Number((error as { status?: unknown }).status)
+      : 0
+    if (status !== 404) {
+      console.warn('Failed to retire previous image playground key:', error)
+    }
+  }
+}
+
 function requestRenewAccess(reason: RenewReason, group: Group, stored: StoredImagePlaygroundKey | null = null) {
   pendingRenewReason.value = reason
   pendingRenewGroup.value = group
@@ -303,9 +384,14 @@ async function preparePlayground(reason: PrepareReason = 'initial') {
       storedKey.value = null
     }
 
-    const existingKey = await findExistingPlaygroundKey(group)
+    const existingKey = reason === 'confirmed-recreate' ? null : await findExistingPlaygroundKey(group)
     if (existingKey) {
       saveAndUseKey(existingKey, group)
+      return
+    }
+
+    if (reason === 'initial') {
+      requestRenewAccess('create', group)
       return
     }
 
@@ -354,11 +440,75 @@ async function updateEstimate(payload: PlaygroundParamsMessage['payload']) {
   }
 }
 
+function normalizeImagePlaygroundAnalyticsEvent(
+  event: PlaygroundAnalyticsMessage['event']
+): ImagePlaygroundEvent | null {
+  if (!event || typeof event.name !== 'string') {
+    return null
+  }
+  const normalizedName = allowedAnalyticsEvents.has(event.name as ImagePlaygroundEventName)
+    ? event.name as ImagePlaygroundEventName
+    : agentAnalyticsEventMap[event.name]
+  if (!normalizedName) return null
+
+  const payload = event.payload && typeof event.payload === 'object' ? event.payload : {}
+  const normalized: ImagePlaygroundEvent = {
+    name: normalizedName
+  }
+
+  for (const field of analyticsStringFields) {
+    const value = payload[field]
+    if (typeof value === 'string' && value.trim()) {
+      normalized[field] = value.trim()
+    }
+  }
+  for (const field of analyticsNumberFields) {
+    const value = payload[field]
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+      normalized[field] = Math.floor(value)
+    }
+  }
+  for (const field of analyticsBooleanFields) {
+    const value = payload[field]
+    if (typeof value === 'boolean') {
+      normalized[field] = value
+    }
+  }
+  if (event.name.startsWith('agent_image_generate_')) {
+    normalized.sourceMode = 'agent'
+  }
+  return normalized
+}
+
+function recordImagePlaygroundAnalytics(event: PlaygroundAnalyticsMessage['event']) {
+  const normalized = normalizeImagePlaygroundAnalyticsEvent(event)
+  if (!normalized) return
+
+  void usageAPI.recordImagePlaygroundEvents({ events: [normalized] }).catch((error) => {
+    console.warn('Failed to record image playground analytics:', error)
+  })
+}
+
 function handlePlaygroundMessage(event: MessageEvent) {
   if (event.origin !== window.location.origin) return
-  const data = event.data as PlaygroundParamsMessage
-  if (!data || data.type !== 'hahacode:image-playground-params') return
-  void updateEstimate(data.payload)
+  const data = event.data as PlaygroundParamsMessage | PlaygroundAnalyticsMessage | PlaygroundRecreateKeyMessage
+  if (!data) return
+  if (data.type === 'hahacode:image-playground-params') {
+    void updateEstimate((data as PlaygroundParamsMessage).payload)
+    return
+  }
+  if (data.type === 'image-playground:analytics') {
+    recordImagePlaygroundAnalytics((data as PlaygroundAnalyticsMessage).event)
+    return
+  }
+  if (
+    data.type === 'image-playground:recreate-key-request' &&
+    (data as PlaygroundRecreateKeyMessage).reason === 'image_generation_disabled_for_group'
+  ) {
+    const group = activeGroup.value
+    if (!group || renewConfirmVisible.value) return
+    requestRenewAccess('unsupported-group', group, storedKey.value)
+  }
 }
 
 async function regenerateKey() {
@@ -378,11 +528,22 @@ async function confirmRenewAccess() {
     iframeSrc.value = ''
   }
   const group = pendingRenewGroup.value
+  const reason = pendingRenewReason.value
+  const keyToRetire = pendingRenewStoredKey.value
   pendingRenewGroup.value = null
   pendingRenewStoredKey.value = null
   storedKey.value = null
   if (group) activeGroup.value = group
-  await preparePlayground('confirmed-renew')
+  await preparePlayground(
+    reason === 'create'
+      ? 'confirmed-create'
+      : reason === 'unsupported-group'
+      ? 'confirmed-recreate'
+      : 'confirmed-renew'
+  )
+  if (reason === 'unsupported-group' && iframeSrc.value) {
+    void retireStoredPlaygroundKey(keyToRetire)
+  }
 }
 
 function cancelRenewAccess() {
@@ -420,14 +581,14 @@ onBeforeUnmount(() => {
 
 .image-playground-header {
   display: flex;
-  min-height: 3.5rem;
+  min-height: 2.5rem;
   flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
-  gap: 0.875rem;
+  gap: 0.75rem;
   border-bottom: 1px solid var(--theme-border);
   background: color-mix(in srgb, var(--theme-main-surface) 88%, var(--theme-surface));
-  padding: 0.625rem 1rem;
+  padding: 0.375rem 0.875rem;
 }
 
 .image-playground-title-block {
@@ -440,13 +601,14 @@ onBeforeUnmount(() => {
 .image-playground-header h1 {
   margin: 0;
   color: var(--theme-text-primary);
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   font-weight: 700;
   line-height: 1.3;
   white-space: nowrap;
 }
 
 .image-playground-header p {
+  display: none;
   min-width: 0;
   margin: 0;
   overflow: hidden;
@@ -459,7 +621,7 @@ onBeforeUnmount(() => {
 
 .image-playground-kicker {
   display: inline-flex;
-  min-height: 1.375rem;
+  min-height: 1.25rem;
   align-items: center;
   border: 1px solid color-mix(in srgb, var(--theme-primary) 24%, var(--theme-border));
   border-radius: 999px;
@@ -478,12 +640,12 @@ onBeforeUnmount(() => {
   min-width: 0;
   flex-shrink: 0;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .image-playground-estimate {
   display: inline-flex;
-  min-width: 8.5rem;
+  min-width: 7.75rem;
   align-items: baseline;
   justify-content: space-between;
   gap: 0.5rem;
@@ -493,7 +655,7 @@ onBeforeUnmount(() => {
   color: var(--theme-text-secondary);
   font-size: 0.75rem;
   line-height: 1.2;
-  padding: 0.375rem 0.5rem;
+  padding: 0.3125rem 0.5rem;
   white-space: nowrap;
 }
 
@@ -511,13 +673,42 @@ onBeforeUnmount(() => {
 .image-playground-key-summary {
   display: flex;
   min-width: 0;
-  max-width: min(32vw, 22rem);
+  max-width: min(24vw, 16rem);
   align-items: center;
   gap: 0.5rem;
   color: var(--theme-text-secondary);
   font-size: 0.75rem;
   line-height: 1.35;
   white-space: nowrap;
+}
+
+.image-playground-regenerate {
+  display: inline-flex;
+  min-height: 1.875rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border: 1px solid var(--theme-border);
+  border-radius: 0.5rem;
+  background: var(--theme-surface);
+  color: var(--theme-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0 0.625rem;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.image-playground-regenerate:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--theme-primary) 28%, var(--theme-border));
+  background: color-mix(in srgb, var(--theme-primary) 8%, var(--theme-surface));
+  color: var(--theme-text-primary);
+}
+
+.image-playground-regenerate:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .image-playground-key-summary span {
@@ -602,8 +793,8 @@ onBeforeUnmount(() => {
 
 @media (max-width: 640px) {
   .image-playground-header {
-    min-height: 3.25rem;
-    padding: 0.5rem 0.75rem;
+    min-height: 2.25rem;
+    padding: 0.3125rem 0.5rem;
   }
 
   .image-playground-title-block {
@@ -619,7 +810,7 @@ onBeforeUnmount(() => {
   }
 
   .image-playground-session {
-    gap: 0.5rem;
+    gap: 0.375rem;
   }
 
   .image-playground-key-summary {
@@ -627,7 +818,16 @@ onBeforeUnmount(() => {
   }
 
   .image-playground-estimate {
-    min-width: 7.25rem;
+    min-width: 6.75rem;
+  }
+
+  .image-playground-regenerate {
+    min-width: 1.875rem;
+    padding: 0;
+  }
+
+  .image-playground-regenerate span {
+    display: none;
   }
 
 }
@@ -641,15 +841,15 @@ onBeforeUnmount(() => {
 
 @media (min-width: 768px) {
   .image-playground-header {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }
 
 @media (min-width: 1024px) {
   .image-playground-header {
-    padding-left: 2rem;
-    padding-right: 2rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
   }
 }
 </style>

@@ -170,6 +170,12 @@
                   >
                     {{ t('usage.rate') }} {{ formatMultiplier(row.rate_multiplier || 1) }}x
                   </span>
+                  <span
+                    v-if="hasUsageDiscount(row) && actualRateMultiplier(row) != null"
+                    class="font-medium text-emerald-600 dark:text-emerald-400"
+                  >
+                    {{ t('usage.actualRate') }} {{ formatMultiplier(actualRateMultiplier(row) as number) }}x
+                  </span>
                 </div>
                 <div v-if="row.account_rate_multiplier != null" class="text-[11px] text-orange-500 dark:text-orange-400">
                   {{ t('usage.accountBilled') }} ${{ accountBilled(row).toFixed(6) }}
@@ -387,6 +393,10 @@
             <span class="text-gray-400">{{ t('usage.globalDiscountDeduction') }}</span>
             <span class="font-semibold text-emerald-300">-${{ tooltipData.discount_amount.toFixed(6) }}</span>
           </div>
+          <div v-if="tooltipData && hasUsageDiscount(tooltipData) && actualRateMultiplier(tooltipData) != null" class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">{{ t('usage.actualRate') }}</span>
+            <span class="font-semibold text-emerald-300">{{ formatMultiplier(actualRateMultiplier(tooltipData) as number) }}x</span>
+          </div>
           <div class="flex items-center justify-between gap-6">
             <span class="text-gray-400">{{ t('usage.paidAmount') }}</span>
             <span class="font-semibold text-green-400">${{ tooltipData?.actual_cost?.toFixed(6) || '0.000000' }}</span>
@@ -447,6 +457,13 @@ function hasUsageRateMultiplier(row: Pick<AdminUsageLog, 'rate_multiplier'> | nu
 
 function preDiscountCost(row: Pick<AdminUsageLog, 'actual_cost' | 'discount_amount'>): number {
   return (row.actual_cost ?? 0) + (row.discount_amount ?? 0)
+}
+
+function actualRateMultiplier(row: Pick<AdminUsageLog, 'actual_cost' | 'total_cost'> | null | undefined): number | null {
+  const baseCost = row?.total_cost ?? 0
+  if (baseCost <= 0) return null
+  const multiplier = (row?.actual_cost ?? 0) / baseCost
+  return Number.isFinite(multiplier) ? multiplier : null
 }
 
 function imageUnitPrice(row: AdminUsageLog | null): number {

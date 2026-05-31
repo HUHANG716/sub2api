@@ -180,8 +180,18 @@
       {{ t('admin.dashboard.failedToLoad') }}
     </div>
     <div v-else-if="rankingDisplayItems.length > 0 && rankingChartData" class="flex items-center gap-6">
-      <div class="h-48 w-48">
-        <Doughnut :data="rankingChartData" :options="rankingDoughnutOptions" />
+      <div class="flex h-48 w-48 shrink-0 flex-col gap-3">
+        <div class="min-h-[44px] rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-dark-700/30">
+          <div class="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+            {{ t('admin.dashboard.spendingRankingTotalSpend') }}
+          </div>
+          <div class="mt-1 text-lg font-semibold leading-none text-green-600 dark:text-green-400">
+            ${{ formatCost(rankingTotalSpend) }}
+          </div>
+        </div>
+        <div class="min-h-0 flex-1">
+          <Doughnut :data="rankingChartData" :options="rankingDoughnutOptions" />
+        </div>
       </div>
       <div class="max-h-48 flex-1 overflow-y-auto">
         <table class="w-full text-xs">
@@ -396,6 +406,8 @@ const rankingChartData = computed(() => {
     ]
   }
 })
+
+const rankingTotalSpend = computed(() => props.rankingTotalActualCost || 0)
 
 const otherRankingItem = computed<RankingDisplayItem | null>(() => {
   if (!props.rankingItems?.length) return null

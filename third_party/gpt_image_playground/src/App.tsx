@@ -11,6 +11,7 @@ import Header from './components/Header'
 import SearchBar from './components/SearchBar'
 import TaskGrid from './components/TaskGrid'
 import AgentWorkspace from './components/AgentWorkspace'
+import TemplateWorkspace from './components/TemplateWorkspace'
 import InputBar from './components/InputBar'
 import DetailModal from './components/DetailModal'
 import Lightbox from './components/Lightbox'
@@ -20,6 +21,7 @@ import Toast from './components/Toast'
 import MaskEditorModal from './components/MaskEditorModal'
 import ImageContextMenu from './components/ImageContextMenu'
 import SupportPromptModal from './components/SupportPromptModal'
+import { FavoriteCollectionPickerModal, FavoriteCollectionsView, ManageCollectionsModal } from './components/FavoriteCollections'
 import { useGlobalClickSuppression } from './lib/clickSuppression'
 
 let customProviderConfigUrlImportStarted = false
@@ -27,6 +29,9 @@ let customProviderConfigUrlImportStarted = false
 export default function App() {
   const setSettings = useStore((s) => s.setSettings)
   const appMode = useStore((s) => s.appMode)
+  const productEmbed = isProductEmbedMode()
+  const filterFavorite = useStore((s) => s.filterFavorite)
+  const activeFavoriteCollectionId = useStore((s) => s.activeFavoriteCollectionId)
   useDockerApiUrlMigrationNotice()
   useParentImageEstimateSync()
   useGlobalClickSuppression()
@@ -80,15 +85,21 @@ export default function App() {
   }, [])
 
   return (
-    <>
+    <div className={productEmbed ? 'product-embed-shell' : undefined}>
       <Header />
       {appMode === 'agent' ? (
         <AgentWorkspace />
+      ) : appMode === 'templates' ? (
+        <TemplateWorkspace />
       ) : (
-        <main data-home-main data-drag-select-surface className="pb-48">
+        <main
+          data-home-main
+          data-drag-select-surface
+          className={productEmbed ? 'pb-[calc(var(--input-bar-clearance,10rem)+2rem)]' : 'pb-48'}
+        >
           <div className="safe-area-x max-w-7xl mx-auto">
             <SearchBar />
-            <TaskGrid />
+            {filterFavorite && !activeFavoriteCollectionId ? <FavoriteCollectionsView /> : <TaskGrid />}
           </div>
         </main>
       )}
@@ -98,9 +109,11 @@ export default function App() {
       <SettingsModal />
       <ConfirmDialog />
       <SupportPromptModal />
+      <FavoriteCollectionPickerModal />
+      <ManageCollectionsModal />
       <Toast />
       <MaskEditorModal />
       <ImageContextMenu />
-    </>
+    </div>
   )
 }

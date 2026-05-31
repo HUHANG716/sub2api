@@ -28,10 +28,10 @@
       <span v-if="rateMultiplier !== undefined" :class="['inline-flex items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold', ratePillClass]">
         <template v-if="hasCustomRate">
           <span class="mr-1 line-through opacity-50">{{ rateMultiplier }}x</span>
-          <span class="font-bold">{{ userRateMultiplier }}x</span>
+          <span class="font-bold">{{ activeRateLabel }}</span>
         </template>
         <template v-else>
-          {{ rateMultiplier }}x 倍率
+          {{ activeRateLabel }}
         </template>
       </span>
       <!-- Checkmark -->
@@ -51,6 +51,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import GroupBadge from './GroupBadge.vue'
 import type { SubscriptionType, GroupPlatform } from '@/types'
 
@@ -60,6 +61,7 @@ interface Props {
   subscriptionType?: SubscriptionType
   rateMultiplier?: number
   userRateMultiplier?: number | null
+  globalDiscountRate?: number | null
   description?: string | null
   selected?: boolean
   showCheckmark?: boolean
@@ -69,8 +71,12 @@ const props = withDefaults(defineProps<Props>(), {
   subscriptionType: 'standard',
   selected: false,
   showCheckmark: true,
-  userRateMultiplier: null
+  userRateMultiplier: null,
+  globalDiscountRate: null
 })
+
+const i18n = useI18n()
+const { t } = i18n
 
 // Whether user has a custom rate different from default
 const hasCustomRate = computed(() => {
@@ -80,6 +86,55 @@ const hasCustomRate = computed(() => {
     props.rateMultiplier !== undefined &&
     props.userRateMultiplier !== props.rateMultiplier
   )
+})
+
+const activeRate = computed(() => hasCustomRate.value
+  ? props.userRateMultiplier as number
+  : props.rateMultiplier
+)
+
+const hasGlobalDiscount = computed(() => {
+  const discountRate = props.globalDiscountRate
+  return typeof discountRate === 'number'
+    && Number.isFinite(discountRate)
+    && discountRate > 0
+    && discountRate < 1
+})
+
+function formatRate(value: number): string {
+  return value.toFixed(3)
+}
+
+function formatDiscount(value: number): string {
+  return String(Number((value * 10).toPrecision(10)))
+}
+
+function formatPercentOff(value: number): string {
+  return String(Number(((1 - value) * 100).toPrecision(10)))
+}
+
+const globalDiscountLabel = computed(() => {
+  if (!hasGlobalDiscount.value) return ''
+  const locale = String(i18n.locale?.value ?? 'zh')
+  if (locale.startsWith('en')) {
+    return t('keys.globalDiscountPercentOffLabel', {
+      percent: formatPercentOff(props.globalDiscountRate as number),
+    })
+  }
+  return t('keys.globalDiscountRateLabel', {
+    discount: formatDiscount(props.globalDiscountRate as number),
+  })
+})
+
+const activeRateLabel = computed(() => {
+  const rate = activeRate.value
+  if (rate === undefined) return ''
+  if (!hasGlobalDiscount.value) return hasCustomRate.value ? `${formatRate(rate)}x` : `${formatRate(rate)}x 倍率`
+  return t('keys.effectiveRateWithDiscount', {
+    base: formatRate(rate),
+    effective: formatRate(rate * (props.globalDiscountRate as number)),
+    discountLabel: globalDiscountLabel.value,
+  })
 })
 
 // Rate pill color matches platform badge color

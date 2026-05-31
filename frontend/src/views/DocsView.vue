@@ -43,78 +43,80 @@
             <h2>快速开始</h2>
           </div>
           <div class="docs-tool-picker" aria-label="工具配置入口">
-            <article
-              data-testid="docs-recommended-tool"
-              class="docs-recommended-tool"
-              :class="{ active: activeTool === recommendedTool.id }"
-            >
-              <button
-                :data-testid="`docs-tool-option-${recommendedTool.id}`"
-                type="button"
-                class="docs-recommended-button"
-                @click="activeTool = recommendedTool.id"
+            <div class="docs-tool-picker-main">
+              <article
+                data-testid="docs-recommended-tool"
+                class="docs-recommended-tool"
+                :class="{ active: activeTool === recommendedTool.id }"
               >
-                <span class="docs-recommended-main">
-                  <span class="docs-tool-logo recommended" data-testid="docs-tool-logo">
-                    <span class="docs-tool-icon recommended" :class="recommendedTool.icon.tone && `tone-${recommendedTool.icon.tone}`" data-testid="docs-tool-icon">
-                      <img v-if="recommendedTool.icon.kind === 'brand'" :src="recommendedTool.icon.src" :alt="`${recommendedTool.name} Logo`" />
-                      <Icon v-else :name="recommendedTool.icon.name" size="lg" />
-                    </span>
-                  </span>
-                  <span class="docs-tool-copy">
-                    <span class="docs-tool-kicker">
-                      <Icon name="badge" size="xs" />
-                      推荐方案
-                    </span>
-                    <strong>{{ recommendedTool.name }}</strong>
-                    <small>{{ recommendedTool.summary }}</small>
-                  </span>
-                </span>
-                <span class="docs-recommended-actions">
-                  <Icon name="chevronRight" size="sm" class="docs-tool-row-arrow" />
-                </span>
-              </button>
-              <div class="docs-recommended-links">
-                <a class="docs-text-link" href="https://ccswitch.io" target="_blank" rel="noopener noreferrer" @click.stop>
-                  <Icon name="download" size="sm" />
-                  下载地址
-                </a>
-              </div>
-            </article>
-
-            <div class="docs-backup-tools" data-testid="docs-backup-tools">
-              <div class="docs-backup-heading">
-                <span>手动配置</span>
-                <small>仅在 CC-Switch 不可用或需要临时调试时使用</small>
-              </div>
-              <div class="docs-tool-options">
                 <button
-                  v-for="tool in manualToolOptions"
-                  :key="tool.id"
-                  :data-testid="`docs-tool-option-${tool.id}`"
+                  :data-testid="`docs-tool-option-${recommendedTool.id}`"
                   type="button"
-                  class="docs-tool-option-row"
-                  :class="{ active: activeTool === tool.id }"
-                  @click="activeTool = tool.id"
+                  class="docs-recommended-button"
+                  @click="activeTool = recommendedTool.id"
                 >
-                  <span class="docs-tool-logo" data-testid="docs-tool-logo">
-                    <span class="docs-tool-icon" :class="tool.icon.tone && `tone-${tool.icon.tone}`" data-testid="docs-tool-icon">
-                      <img v-if="tool.icon.kind === 'brand'" :src="tool.icon.src" :alt="`${tool.name} Logo`" />
-                      <Icon v-else :name="tool.icon.name" size="md" />
+                  <span class="docs-recommended-main">
+                    <span class="docs-tool-logo recommended" data-testid="docs-tool-logo">
+                      <span class="docs-tool-icon recommended" :class="recommendedTool.icon.tone && `tone-${recommendedTool.icon.tone}`" data-testid="docs-tool-icon">
+                        <img v-if="recommendedTool.icon.kind === 'brand'" :src="recommendedTool.icon.src" :alt="`${recommendedTool.name} Logo`" />
+                        <Icon v-else :name="recommendedTool.icon.name" size="lg" />
+                      </span>
+                    </span>
+                    <span class="docs-tool-copy">
+                      <span class="docs-tool-kicker">
+                        <Icon name="badge" size="xs" />
+                        推荐流程
+                      </span>
+                      <strong>{{ recommendedTool.name }}</strong>
+                      <small>{{ recommendedTool.summary }}</small>
                     </span>
                   </span>
-                  <span class="docs-tool-option-copy">
-                    <strong>
-                      {{ tool.name }}
-                      <em v-if="tool.badge">{{ tool.badge }}</em>
-                    </strong>
-                    <small>{{ tool.summary }}</small>
+                  <span class="docs-recommended-actions">
+                    <Icon name="chevronRight" size="sm" class="docs-tool-row-arrow" />
                   </span>
                 </button>
+                <div class="docs-recommended-links">
+                  <a class="docs-text-link" href="https://ccswitch.io" target="_blank" rel="noopener noreferrer" @click.stop>
+                    <Icon name="download" size="sm" />
+                    下载地址
+                  </a>
+                </div>
+              </article>
+
+              <div class="docs-backup-tools" data-testid="docs-backup-tools">
+                <div class="docs-backup-heading">
+                  <span>手动配置</span>
+                  <small>CC-Switch 不可用或临时调试时使用</small>
+                </div>
+                <div class="docs-tool-options">
+                  <button
+                    v-for="tool in manualToolOptions"
+                    :key="tool.id"
+                    :data-testid="`docs-tool-option-${tool.id}`"
+                    type="button"
+                    class="docs-tool-option-row"
+                    :class="{ active: activeTool === tool.id }"
+                    @click="activeTool = tool.id"
+                  >
+                    <span class="docs-tool-logo" data-testid="docs-tool-logo">
+                      <span class="docs-tool-icon" :class="tool.icon.tone && `tone-${tool.icon.tone}`" data-testid="docs-tool-icon">
+                        <img v-if="tool.icon.kind === 'brand'" :src="tool.icon.src" :alt="`${tool.name} Logo`" />
+                        <Icon v-else :name="tool.icon.name" size="md" />
+                      </span>
+                    </span>
+                    <span class="docs-tool-option-copy">
+                      <strong>
+                        {{ tool.name }}
+                        <em v-if="tool.badge">{{ tool.badge }}</em>
+                      </strong>
+                      <small>{{ tool.summary }}</small>
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-          <div class="docs-key-prerequisite" data-testid="docs-key-prerequisite">
+          <div v-if="showManualConfigControls" class="docs-key-prerequisite" data-testid="docs-key-prerequisite">
             <Icon name="key" size="sm" />
             <span>
               还没有 API Key？先到
@@ -470,7 +472,7 @@ const toolConfigs = computed<DocsToolConfig[]>(() => [
       content: `curl ${v1BaseUrl.value}/chat/completions \\
   -H "Authorization: Bearer 你的 API Key" \\
   -H "Content-Type: application/json" \\
-  -d '{"model":"gpt-5.4","messages":[{"role":"user","content":"hello"}]}'`
+  -d '{"model":"gpt-5.5","messages":[{"role":"user","content":"hello"}]}'`
     }],
     note: '如果工具要求 Base URL 填到 /v1，就使用上方 API 入口加 /v1。'
   }
@@ -590,8 +592,8 @@ responses_websockets_v2 = true`
     {
       path: `${configDir}/config.toml`,
       content: `model_provider = "OpenAI"
-model = "gpt-5.4"
-review_model = "gpt-5.4"
+model = "gpt-5.5"
+review_model = "gpt-5.5"
 model_reasoning_effort = "xhigh"
 disable_response_storage = true
 network_access = "enabled"
@@ -1026,8 +1028,18 @@ onMounted(() => {
 
 .docs-tool-picker {
   display: grid;
-  gap: 0.65rem;
+  gap: 0.75rem;
   margin-bottom: 0.9rem;
+}
+
+.docs-tool-picker-main {
+  display: grid;
+  min-width: 0;
+  gap: 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--theme-border) 78%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--theme-surface-muted) 42%, var(--theme-surface));
+  padding: 0.65rem;
 }
 
 .docs-recommended-tool {
@@ -1038,7 +1050,7 @@ onMounted(() => {
   border: 1px solid var(--theme-border);
   border-radius: 0.5rem;
   background: var(--theme-surface);
-  padding: 0.65rem;
+  padding: 0.7rem;
 }
 
 .docs-recommended-tool.active {
@@ -1060,7 +1072,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .docs-recommended-main {
@@ -1084,7 +1096,7 @@ onMounted(() => {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.45rem;
-  padding-left: 3.45rem;
+  padding-left: 3.55rem;
 }
 
 .docs-text-link {
@@ -1130,8 +1142,8 @@ onMounted(() => {
 }
 
 .docs-tool-icon.recommended {
-  height: 2.35rem;
-  width: 2.35rem;
+  height: 2.45rem;
+  width: 2.45rem;
   border-color: var(--theme-border);
   background: var(--theme-surface-muted);
   color: var(--theme-primary);
@@ -1145,9 +1157,14 @@ onMounted(() => {
 
 .docs-tool-icon img {
   display: block;
-  height: 1.35rem;
-  width: 1.35rem;
+  height: 1.32rem;
+  width: 1.32rem;
   object-fit: contain;
+}
+
+.docs-tool-icon.recommended img {
+  height: 1.5rem;
+  width: 1.5rem;
 }
 
 .docs-tool-icon.tone-light img {
@@ -1195,11 +1212,7 @@ onMounted(() => {
 .docs-backup-tools {
   display: grid;
   min-width: 0;
-  gap: 0.55rem;
-  border: 1px solid color-mix(in srgb, var(--theme-border) 70%, transparent);
-  border-radius: 0.45rem;
-  background: var(--theme-surface);
-  padding: 0.55rem;
+  gap: 0.6rem;
 }
 
 .docs-backup-heading {
@@ -1224,18 +1237,19 @@ onMounted(() => {
 
 .docs-tool-options {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-  gap: 0.4rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
 }
 
 .docs-tool-option-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   border: 1px solid color-mix(in srgb, var(--theme-border) 70%, transparent);
-  border-radius: 0.35rem;
-  padding: 0.5rem;
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--theme-surface) 88%, transparent);
+  padding: 0.55rem;
 }
 
 .docs-tool-option-row:hover {
@@ -1578,8 +1592,21 @@ onMounted(() => {
   }
 
   .docs-tool-picker {
-    grid-template-columns: minmax(13rem, 0.55fr) minmax(0, 1.95fr);
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
+  }
+
+  .docs-tool-picker-main {
+    grid-template-columns: minmax(14rem, 0.75fr) minmax(0, 1.65fr);
+    align-items: stretch;
+  }
+
+  .docs-recommended-tool {
+    align-content: center;
+  }
+
+  .docs-tool-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

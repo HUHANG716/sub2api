@@ -395,6 +395,284 @@ input[type="number"] {
   min-height: 3.5rem;
 }
 
+.product-embed-shell {
+  min-height: 100dvh;
+  background: #f8fafc;
+}
+
+.product-embed-shell .safe-area-x {
+  padding-left: max(0.625rem, var(--safe-area-left));
+  padding-right: max(0.625rem, var(--safe-area-right));
+}
+
+.product-embed-shell .safe-area-top {
+  padding-top: 0;
+}
+
+.product-embed-shell .safe-header-inner {
+  min-height: 2.25rem;
+}
+
+.product-embed-shell .product-embed-header {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.product-embed-shell .product-embed-header h1 span {
+  font-size: 0.875rem;
+}
+
+.product-embed-shell .product-embed-header button {
+  border-radius: 0.5rem;
+}
+
+.product-embed-shell .product-embed-header button:not([class*="px-"]) {
+  padding: 0.375rem;
+}
+
+.product-embed-shell .product-embed-header svg {
+  height: 1.125rem;
+  width: 1.125rem;
+}
+
+.product-embed-shell [data-product-nav] {
+  border-radius: 0.5rem;
+  padding: 0.1875rem;
+}
+
+.product-embed-shell [data-product-nav] button {
+  min-height: 1.75rem;
+  white-space: nowrap;
+}
+
+.product-embed-shell [data-home-main] {
+  min-height: calc(100dvh - 2.25rem);
+}
+
+.product-embed-shell [data-home-main] > .safe-area-x,
+.product-embed-shell [data-template-container] {
+  max-width: 72rem;
+}
+
+.product-embed-shell [data-task-grid-root] {
+  min-height: 30vh;
+}
+
+.product-embed-shell [data-task-grid],
+.product-embed-shell [data-template-grid] {
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.product-embed-shell [data-task-card-layout] {
+  height: 8.75rem;
+}
+
+.product-embed-shell [data-task-card-media] {
+  min-width: 8.75rem;
+  width: 8.75rem;
+}
+
+.product-embed-shell [data-task-card-body] {
+  padding: 0.625rem;
+}
+
+.product-embed-shell [data-task-card-body] p {
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.product-embed-shell [data-input-bar] {
+  bottom: 0.5rem;
+  max-width: 44rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.product-embed-shell [data-input-card] {
+  border-radius: 1rem;
+  padding: 0.5rem 0.625rem;
+}
+
+.product-embed-shell [data-prompt-input] {
+  min-height: 2rem;
+  border-radius: 0.875rem;
+  padding-bottom: 0.375rem;
+  padding-top: 0.375rem;
+}
+
+.product-embed-shell .prompt-placeholder {
+  padding-bottom: 0.375rem;
+  padding-top: 0.375rem;
+}
+
+.product-embed-shell [data-input-controls] {
+  margin-top: 0.375rem;
+}
+
+.product-embed-shell [data-input-controls] > .hidden {
+  gap: 0.5rem;
+}
+
+.product-embed-shell [data-input-controls] label > span {
+  font-size: 0.625rem;
+  line-height: 1;
+}
+
+.product-embed-shell [data-input-controls] :is(button, input, select) {
+  border-radius: 0.625rem;
+  padding-bottom: 0.25rem;
+  padding-top: 0.25rem;
+}
+
+.product-embed-shell [data-input-controls] .grid {
+  gap: 0.375rem;
+}
+
+.product-embed-shell [data-input-controls] .flex-shrink-0 {
+  gap: 0.375rem;
+}
+
+.product-embed-shell [data-template-workspace] {
+  padding-bottom: calc(var(--input-bar-clearance, 9rem) + 1rem);
+}
+
+.product-embed-shell [data-template-workspace] section {
+  margin-top: 0.5rem;
+}
+
+.product-embed-shell [data-template-workspace] h1 {
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.product-embed-shell [data-template-workspace] p {
+  line-height: 1.35;
+}
+
+.product-embed-shell [data-template-filters] {
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+}
+
+.product-embed-shell [data-template-filters] input {
+  padding-bottom: 0.4375rem;
+  padding-top: 0.4375rem;
+}
+
+.product-embed-shell [data-template-filters] button,
+.product-embed-shell [data-template-categories] button {
+  font-size: 0.75rem;
+  padding-bottom: 0.3125rem;
+  padding-top: 0.3125rem;
+}
+
+.product-embed-shell [data-template-categories] {
+  gap: 0.375rem;
+  margin-bottom: 0.75rem;
+}
+
+.product-embed-shell [data-template-card] {
+  min-height: 17.5rem;
+}
+
+.product-embed-shell [data-template-card-media] {
+  height: 8rem;
+}
+
+.product-embed-shell [data-template-card-body] {
+  padding: 0.75rem;
+}
+
+.product-embed-shell [data-template-card-body] h2 {
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.product-embed-shell [data-template-card-body] > div:first-child {
+  margin-bottom: 0.375rem;
+  min-height: 2.375rem;
+}
+
+.product-embed-shell [data-template-prompt] {
+  margin-bottom: 0.75rem;
+  max-height: 4.75rem;
+  padding: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .product-embed-shell [data-input-bar] {
+    bottom: 0.625rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .product-embed-shell [data-task-grid],
+  .product-embed-shell [data-template-grid] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .product-embed-shell .safe-area-x {
+    padding-left: max(0.5rem, var(--safe-area-left));
+    padding-right: max(0.5rem, var(--safe-area-right));
+  }
+
+  .product-embed-shell .safe-area-top {
+    padding-top: 0;
+  }
+
+  .product-embed-shell .safe-header-inner {
+    min-height: 2.25rem;
+  }
+
+  .product-embed-shell .product-embed-header h1 {
+    display: none;
+  }
+
+  .product-embed-shell .product-embed-header .flex-1 {
+    flex: 0 1 auto;
+  }
+
+  .product-embed-shell [data-product-nav] {
+    margin-right: 0.375rem;
+  }
+
+  .product-embed-shell [data-product-nav] button {
+    min-height: 1.625rem;
+  }
+
+  .product-embed-shell [data-home-main] {
+    min-height: calc(100dvh - 2.25rem);
+  }
+
+  .product-embed-shell [data-input-bar] {
+    bottom: 0.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .product-embed-shell [data-task-card-layout] {
+    height: 8.25rem;
+  }
+
+  .product-embed-shell [data-task-card-media] {
+    min-width: 8.25rem;
+    width: 8.25rem;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .product-embed-shell {
+    background: #09090b;
+  }
+
+  .product-embed-shell .product-embed-header {
+    background: rgba(9, 9, 11, 0.92);
+  }
+}
+
 @media (max-width: 640px) {
   input,
   textarea,

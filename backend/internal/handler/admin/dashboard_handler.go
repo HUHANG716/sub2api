@@ -125,6 +125,10 @@ func (h *DashboardHandler) GetStats(c *gin.Context) {
 		"total_users":     stats.TotalUsers,
 		"today_new_users": stats.TodayNewUsers,
 		"active_users":    stats.ActiveUsers,
+		// 用户当前余额总和（不含订阅套餐额度）
+		"total_user_balance":     stats.TotalUserBalance,
+		"today_balance_added":    stats.TodayBalanceAdded,
+		"today_balance_deducted": stats.TodayBalanceDeducted,
 
 		// API Key 统计
 		"total_api_keys":  stats.TotalAPIKeys,
@@ -535,20 +539,33 @@ func parseRankingLimit(raw string) int {
 	return limit
 }
 
+func parseRankingUserRole(raw string) string {
+	role := strings.TrimSpace(strings.ToLower(raw))
+	switch role {
+	case service.RoleAdmin, service.RoleUser:
+		return role
+	default:
+		return ""
+	}
+}
+
 // GetUserSpendingRanking handles getting user spending ranking data.
 // GET /api/v1/admin/dashboard/users-ranking
 func (h *DashboardHandler) GetUserSpendingRanking(c *gin.Context) {
 	startTime, endTime := parseTimeRange(c)
 	limit := parseRankingLimit(c.DefaultQuery("limit", "12"))
+	userRole := parseRankingUserRole(c.Query("user_role"))
 
 	keyRaw, _ := json.Marshal(struct {
-		Start string `json:"start"`
-		End   string `json:"end"`
-		Limit int    `json:"limit"`
+		Start    string `json:"start"`
+		End      string `json:"end"`
+		Limit    int    `json:"limit"`
+		UserRole string `json:"user_role"`
 	}{
-		Start: startTime.UTC().Format(time.RFC3339),
-		End:   endTime.UTC().Format(time.RFC3339),
-		Limit: limit,
+		Start:    startTime.UTC().Format(time.RFC3339),
+		End:      endTime.UTC().Format(time.RFC3339),
+		Limit:    limit,
+		UserRole: userRole,
 	})
 	cacheKey := string(keyRaw)
 	if cached, ok := dashboardUsersRankingCache.Get(cacheKey); ok {
@@ -557,7 +574,7 @@ func (h *DashboardHandler) GetUserSpendingRanking(c *gin.Context) {
 		return
 	}
 
-	ranking, err := h.dashboardService.GetUserSpendingRanking(c.Request.Context(), startTime, endTime, limit)
+	ranking, err := h.dashboardService.GetUserSpendingRanking(c.Request.Context(), startTime, endTime, limit, userRole)
 	if err != nil {
 		response.Error(c, 500, "Failed to get user spending ranking")
 		return
@@ -570,6 +587,7 @@ func (h *DashboardHandler) GetUserSpendingRanking(c *gin.Context) {
 		"total_tokens":      ranking.TotalTokens,
 		"start_date":        startTime.Format("2006-01-02"),
 		"end_date":          endTime.Add(-24 * time.Hour).Format("2006-01-02"),
+		"user_role":         userRole,
 	}
 	dashboardUsersRankingCache.Set(cacheKey, payload)
 	c.Header("X-Snapshot-Cache", "miss")

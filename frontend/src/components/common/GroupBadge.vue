@@ -1,7 +1,7 @@
 <template>
   <span
     :class="[
-      'inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium transition-colors',
+      'inline-flex min-w-0 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium transition-colors',
       badgeClass
     ]"
   >
@@ -11,10 +11,19 @@
     <span class="truncate">{{ name }}</span>
     <!-- Right side label -->
     <span v-if="showLabel" :class="labelClass">
-      <template v-if="hasCustomRate">
+      <template v-if="showDiscountRateLayout">
+        <span class="flex flex-col items-start leading-tight">
+          <span class="whitespace-nowrap">
+            <span v-if="hasCustomRate" class="mr-0.5 line-through opacity-50">{{ rateMultiplier }}x</span>
+            <span class="font-bold">{{ discountedRateLabel }}</span>
+          </span>
+          <span class="mt-0.5 whitespace-nowrap opacity-80">{{ globalDiscountLabel }}</span>
+        </span>
+      </template>
+      <template v-else-if="hasCustomRate">
         <!-- 原倍率删除线 + 专属倍率高亮 -->
         <span class="line-through opacity-50 mr-0.5">{{ rateMultiplier }}x</span>
-        <span class="font-bold">{{ userRateMultiplier }}x</span>
+        <span class="font-bold">{{ activeRateLabel }}</span>
       </template>
       <template v-else>
         {{ labelText }}
@@ -35,6 +44,7 @@ interface Props {
   subscriptionType?: SubscriptionType
   rateMultiplier?: number
   userRateMultiplier?: number | null // 用户专属倍率
+  globalDiscountRate?: number | null
   showRate?: boolean
   daysRemaining?: number | null // 剩余天数（订阅类型时使用）
   /**
@@ -50,10 +60,12 @@ const props = withDefaults(defineProps<Props>(), {
   showRate: true,
   daysRemaining: null,
   userRateMultiplier: null,
+  globalDiscountRate: null,
   alwaysShowRate: false
 })
 
-const { t } = useI18n()
+const i18n = useI18n()
+const { t } = i18n
 
 const isSubscription = computed(() => props.subscriptionType === 'subscription')
 
@@ -67,6 +79,67 @@ const hasCustomRate = computed(() => {
   )
 })
 
+const activeRate = computed(() => hasCustomRate.value
+  ? props.userRateMultiplier as number
+  : props.rateMultiplier
+)
+
+const hasGlobalDiscount = computed(() => {
+  const discountRate = props.globalDiscountRate
+  return typeof discountRate === 'number'
+    && Number.isFinite(discountRate)
+    && discountRate > 0
+    && discountRate < 1
+})
+
+function formatRate(value: number): string {
+  return value.toFixed(3)
+}
+
+function formatDiscount(value: number): string {
+  return String(Number((value * 10).toPrecision(10)))
+}
+
+function formatPercentOff(value: number): string {
+  return String(Number(((1 - value) * 100).toPrecision(10)))
+}
+
+const globalDiscountLabel = computed(() => {
+  if (!hasGlobalDiscount.value) return ''
+  const locale = String(i18n.locale?.value ?? 'zh')
+  if (locale.startsWith('en')) {
+    return t('keys.globalDiscountPercentOffLabel', {
+      percent: formatPercentOff(props.globalDiscountRate as number),
+    })
+  }
+  return t('keys.globalDiscountRateLabel', {
+    discount: formatDiscount(props.globalDiscountRate as number),
+  })
+})
+
+const activeRateLabel = computed(() => {
+  const rate = activeRate.value
+  if (rate === undefined) return ''
+  if (!hasGlobalDiscount.value) return `${formatRate(rate)}x`
+  return t('keys.effectiveRateWithDiscount', {
+    base: formatRate(rate),
+    effective: formatRate(rate * (props.globalDiscountRate as number)),
+    discountLabel: globalDiscountLabel.value,
+  })
+})
+
+const discountedRateLabel = computed(() => {
+  const rate = activeRate.value
+  if (rate === undefined || !hasGlobalDiscount.value) return ''
+  return `${formatRate(rate)}x → ${formatRate(rate * (props.globalDiscountRate as number))}x`
+})
+
+const showDiscountRateLayout = computed(() => {
+  return hasGlobalDiscount.value
+    && activeRate.value !== undefined
+    && (!isSubscription.value || props.alwaysShowRate)
+})
+
 // 是否显示右侧标签
 const showLabel = computed(() => {
   if (!props.showRate) return false
@@ -78,7 +151,7 @@ const showLabel = computed(() => {
 
 // Label text
 const labelText = computed(() => {
-  const rateLabel = props.rateMultiplier !== undefined ? `${props.rateMultiplier}x` : ''
+  const rateLabel = activeRateLabel.value
   if (isSubscription.value && !props.alwaysShowRate) {
     // 如果有剩余天数，显示天数
     if (props.daysRemaining !== null && props.daysRemaining !== undefined) {
@@ -95,7 +168,7 @@ const labelText = computed(() => {
 
 // Label style based on type and days remaining
 const labelClass = computed(() => {
-  const base = 'px-1.5 py-0.5 rounded text-[10px] font-semibold'
+  const base = 'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold'
 
   if (!isSubscription.value) {
     // Standard: subtle background (不再为专属倍率使用不同的背景色)

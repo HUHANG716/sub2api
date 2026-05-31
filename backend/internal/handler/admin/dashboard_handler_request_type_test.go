@@ -20,6 +20,7 @@ type dashboardUsageRepoCapture struct {
 	modelRequestType *int16
 	modelStream      *bool
 	rankingLimit     int
+	rankingUserRole  string
 	ranking          []usagestats.UserSpendingRankingItem
 	rankingTotal     float64
 }
@@ -56,8 +57,10 @@ func (s *dashboardUsageRepoCapture) GetUserSpendingRanking(
 	ctx context.Context,
 	startTime, endTime time.Time,
 	limit int,
+	userRole string,
 ) (*usagestats.UserSpendingRankingResponse, error) {
 	s.rankingLimit = limit
+	s.rankingUserRole = userRole
 	return &usagestats.UserSpendingRankingResponse{
 		Ranking:         s.ranking,
 		TotalActualCost: s.rankingTotal,
@@ -181,18 +184,20 @@ func TestDashboardUsersRankingLimitAndCache(t *testing.T) {
 	}
 	router := newDashboardRequestTypeTestRouter(repo)
 
-	req := httptest.NewRequest(http.MethodGet, "/admin/dashboard/users-ranking?limit=100&start_date=2025-01-01&end_date=2025-01-02", nil)
+	req := httptest.NewRequest(http.MethodGet, "/admin/dashboard/users-ranking?limit=100&user_role=admin&start_date=2025-01-01&end_date=2025-01-02", nil)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Equal(t, 50, repo.rankingLimit)
+	require.Equal(t, service.RoleAdmin, repo.rankingUserRole)
 	require.Contains(t, rec.Body.String(), "\"total_actual_cost\":88.8")
 	require.Contains(t, rec.Body.String(), "\"total_requests\":44")
 	require.Contains(t, rec.Body.String(), "\"total_tokens\":1234")
+	require.Contains(t, rec.Body.String(), "\"user_role\":\"admin\"")
 	require.Equal(t, "miss", rec.Header().Get("X-Snapshot-Cache"))
 
-	req2 := httptest.NewRequest(http.MethodGet, "/admin/dashboard/users-ranking?limit=100&start_date=2025-01-01&end_date=2025-01-02", nil)
+	req2 := httptest.NewRequest(http.MethodGet, "/admin/dashboard/users-ranking?limit=100&user_role=admin&start_date=2025-01-01&end_date=2025-01-02", nil)
 	rec2 := httptest.NewRecorder()
 	router.ServeHTTP(rec2, req2)
 

@@ -55,6 +55,9 @@ const createDashboardStats = (overrides: Partial<DashboardStats> = {}): Dashboar
   hourly_active_users: 0,
   stats_updated_at: '',
   stats_stale: false,
+  total_user_balance: 0,
+  today_balance_added: 0,
+  today_balance_deducted: 0,
   total_api_keys: 0,
   active_api_keys: 0,
   current_total_concurrency: 7,
@@ -146,6 +149,9 @@ describe('admin DashboardView', () => {
       end_date: formatLocalDate(now),
       granularity: 'hour'
     }))
+    expect(getUserSpendingRanking).toHaveBeenCalledWith(expect.objectContaining({
+      user_role: ''
+    }))
   })
 
   it('uses user-dashboard style colored icon blocks for dashboard stat cards', async () => {
@@ -158,6 +164,8 @@ describe('admin DashboardView', () => {
       'bg-indigo-100',
       'bg-green-100',
       'bg-amber-100',
+      'bg-emerald-100',
+      'bg-teal-100',
       'bg-purple-100',
       'bg-cyan-100',
       'bg-violet-100',
@@ -178,6 +186,40 @@ describe('admin DashboardView', () => {
 
     expect(wrapper.text()).toContain('admin.dashboard.currentConcurrency')
     expect(wrapper.text()).toContain('7')
+  })
+
+  it('renders total user balance in the top stat cards', async () => {
+    getSnapshotV2.mockResolvedValueOnce({
+      stats: createDashboardStats({ total_user_balance: 123.45 }),
+      trend: [],
+      models: []
+    })
+
+    const wrapper = mountDashboardView()
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('admin.dashboard.totalUserBalance')
+    expect(wrapper.text()).toContain('$123.45')
+  })
+
+  it('renders today balance adjustments in the top stat cards', async () => {
+    getSnapshotV2.mockResolvedValueOnce({
+      stats: createDashboardStats({
+        today_balance_added: 20.5,
+        today_balance_deducted: 3.25
+      }),
+      trend: [],
+      models: []
+    })
+
+    const wrapper = mountDashboardView()
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('admin.dashboard.todayBalanceAdjustments')
+    expect(wrapper.text()).toContain('+$20.50')
+    expect(wrapper.text()).toContain('-$3.25')
   })
 
   it('refreshes current concurrency when chart filters reload the snapshot', async () => {

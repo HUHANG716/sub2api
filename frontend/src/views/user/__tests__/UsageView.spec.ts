@@ -28,7 +28,9 @@ const messages: Record<string, string> = {
   'usage.serviceTierFlex': 'Flex',
   'usage.serviceTierStandard': 'Standard',
   'usage.rate': 'Rate',
+  'usage.actualRate': 'Actual rate',
   'usage.original': 'Original',
+  'usage.paidAmount': 'Paid',
   'usage.billed': 'Billed',
   'usage.allApiKeys': 'All API Keys',
   'usage.apiKeyFilter': 'API Key',
@@ -210,10 +212,93 @@ describe('user UsageView tooltip', () => {
     expect(text).toContain('Fast')
     expect(text).toContain('Rate')
     expect(text).toContain('1.00x')
-    expect(text).toContain('Billed')
+    expect(text).toContain('Paid')
     expect(text).toContain('$0.092883')
     expect(text).toContain('$5.0000 / 1M tokens')
     expect(text).toContain('$30.0000 / 1M tokens')
+  })
+
+  it('shows actual rate after discount in the cost row and tooltip', async () => {
+    query.mockResolvedValue({
+      items: [
+        {
+          request_id: 'req-user-discounted-rate',
+          actual_cost: 0.114955,
+          total_cost: 0.440442,
+          discount_amount: 0.012773,
+          discount_rate: 0.9,
+          rate_multiplier: 0.29,
+          service_tier: null,
+          input_cost: 0,
+          output_cost: 0,
+          cache_creation_cost: 0,
+          cache_read_cost: 0,
+          input_tokens: 0,
+          output_tokens: 0,
+          cache_creation_tokens: 0,
+          cache_read_tokens: 0,
+          cache_creation_5m_tokens: 0,
+          cache_creation_1h_tokens: 0,
+          image_count: 0,
+          image_size: null,
+          first_token_ms: null,
+          duration_ms: 1,
+          created_at: '2026-03-08T00:00:00Z',
+        },
+      ],
+      total: 1,
+      pages: 1,
+    })
+    getStatsByDateRange.mockResolvedValue({
+      total_requests: 1,
+      total_tokens: 0,
+      total_cost: 0.440442,
+      avg_duration_ms: 1,
+    })
+    list.mockResolvedValue({ items: [] })
+
+    const wrapper = mount(UsageView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          TablePageLayout: TablePageLayoutStub,
+          Pagination: true,
+          EmptyState: true,
+          Select: true,
+          DateRangePicker: true,
+          DataTable: DataTableStub,
+          Icon: true,
+          Teleport: true,
+        },
+      },
+    })
+
+    await flushPromises()
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Actual rate 0.26x')
+
+    const setupState = (wrapper.vm as any).$?.setupState
+    setupState.tooltipData = {
+      request_id: 'req-user-discounted-rate',
+      actual_cost: 0.114955,
+      total_cost: 0.440442,
+      discount_amount: 0.012773,
+      discount_rate: 0.9,
+      rate_multiplier: 0.29,
+      service_tier: null,
+      input_cost: 0,
+      output_cost: 0,
+      cache_creation_cost: 0,
+      cache_read_cost: 0,
+      input_tokens: 0,
+      output_tokens: 0,
+    }
+    setupState.tooltipVisible = true
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Actual rate')
+    expect(wrapper.text()).toContain('0.26x')
   })
 
   it('exports csv with input and output unit price columns', async () => {

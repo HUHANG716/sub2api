@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"net/http"
 	"strconv"
 	"strings"
@@ -25,6 +26,7 @@ type UsageHandler struct {
 	modelPricingResolver  *service.ModelPricingResolver
 	userGroupRateResolver *service.UserGroupRateResolver
 	settingService        *service.SettingService
+	sqlDB                 *sql.DB
 }
 
 // NewUsageHandler creates a new UsageHandler
@@ -50,6 +52,10 @@ func NewUsageHandler(
 	}
 }
 
+func (h *UsageHandler) SetSQLDB(db *sql.DB) {
+	h.sqlDB = db
+}
+
 func ProvideUsageHandler(
 	usageService *service.UsageService,
 	apiKeyService *service.APIKeyService,
@@ -57,8 +63,9 @@ func ProvideUsageHandler(
 	modelPricingResolver *service.ModelPricingResolver,
 	userGroupRateRepo service.UserGroupRateRepository,
 	settingService *service.SettingService,
+	sqlDB *sql.DB,
 ) *UsageHandler {
-	return NewUsageHandler(
+	h := NewUsageHandler(
 		usageService,
 		apiKeyService,
 		billingService,
@@ -66,6 +73,8 @@ func ProvideUsageHandler(
 		userGroupRateRepo,
 		settingService,
 	)
+	h.SetSQLDB(sqlDB)
+	return h
 }
 
 type imageEstimateRequest struct {
@@ -85,6 +94,36 @@ type imageEstimateResponse struct {
 	RateMultiplier float64 `json:"rate_multiplier"`
 	BillingMode    string  `json:"billing_mode"`
 	PricingSource  string  `json:"pricing_source"`
+}
+
+type imagePlaygroundEventRequest struct {
+	Name             string `json:"name"`
+	SourceMode       string `json:"sourceMode"`
+	Provider         string `json:"provider"`
+	APIMode          string `json:"apiMode"`
+	Model            string `json:"model"`
+	Size             string `json:"size"`
+	Quality          string `json:"quality"`
+	OutputFormat     string `json:"outputFormat"`
+	N                *int   `json:"n"`
+	InputImageCount  *int   `json:"inputImageCount"`
+	HasMask          *bool  `json:"hasMask"`
+	DurationMs       *int   `json:"durationMs"`
+	OutputImageCount *int   `json:"outputImageCount"`
+	ErrorKind        string `json:"errorKind"`
+	Recoverable      *bool  `json:"recoverable"`
+}
+
+type imagePlaygroundEventsRequest struct {
+	Events []imagePlaygroundEventRequest `json:"events"`
+}
+
+const maxImagePlaygroundEventsPerRequest = 20
+
+var allowedImagePlaygroundEvents = map[string]struct{}{
+	"image_generate_submit":  {},
+	"image_generate_success": {},
+	"image_generate_error":   {},
 }
 
 // ImageEstimate returns a read-only image generation cost estimate for a user-visible group.
@@ -165,6 +204,103 @@ func (h *UsageHandler) ImageEstimate(c *gin.Context) {
 		BillingMode:    cost.BillingMode,
 		PricingSource:  pricingSource,
 	})
+}
+
+// RecordImagePlaygroundEvents stores minimal, non-sensitive image playground beta analytics.
+// POST /api/v1/usage/image-playground-events
+func (h *UsageHandler) RecordImagePlaygroundEvents(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	if h.sqlDB == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Image playground analytics is not available")
+		return
+	}
+
+	var req imagePlaygroundEventsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request body")
+		return
+	}
+	if len(req.Events) == 0 {
+		response.BadRequest(c, "events is required")
+		return
+	}
+	if len(req.Events) > maxImagePlaygroundEventsPerRequest {
+		response.BadRequest(c, "too many events")
+		return
+	}
+
+	tx, err := h.sqlDB.BeginTx(c.Request.Context(), nil)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to record image playground events")
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	inserted := 0
+	for _, event := range req.Events {
+		name := strings.TrimSpace(event.Name)
+		if _, ok := allowedImagePlaygroundEvents[name]; !ok {
+			response.BadRequest(c, "invalid image playground event")
+			return
+		}
+		if _, err := tx.ExecContext(c.Request.Context(), `
+			INSERT INTO image_playground_events (
+				user_id, event_name, source_mode, provider, api_mode, model, image_size,
+				quality, output_format, image_count, input_image_count, has_mask,
+				duration_ms, output_image_count, error_kind, recoverable
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+		`,
+			subject.UserID,
+			name,
+			nullableString(event.SourceMode, 32),
+			nullableString(event.Provider, 32),
+			nullableString(event.APIMode, 32),
+			nullableString(event.Model, 100),
+			nullableString(event.Size, 32),
+			nullableString(event.Quality, 32),
+			nullableString(event.OutputFormat, 32),
+			nullableNonNegativeInt(event.N),
+			nullableNonNegativeInt(event.InputImageCount),
+			event.HasMask,
+			nullableNonNegativeInt(event.DurationMs),
+			nullableNonNegativeInt(event.OutputImageCount),
+			nullableString(event.ErrorKind, 100),
+			event.Recoverable,
+		); err != nil {
+			response.Error(c, http.StatusInternalServerError, "Failed to record image playground events")
+			return
+		}
+		inserted++
+	}
+
+	if err := tx.Commit(); err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to record image playground events")
+		return
+	}
+	response.Success(c, gin.H{"inserted": inserted})
+}
+
+func nullableString(value string, maxLen int) any {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return nil
+	}
+	runes := []rune(trimmed)
+	if maxLen > 0 && len(runes) > maxLen {
+		return string(runes[:maxLen])
+	}
+	return trimmed
+}
+
+func nullableNonNegativeInt(value *int) any {
+	if value == nil || *value < 0 {
+		return nil
+	}
+	return *value
 }
 
 func (h *UsageHandler) findUserImageGroup(c *gin.Context, userID, groupID int64) (*service.Group, bool, error) {

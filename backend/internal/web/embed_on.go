@@ -23,6 +23,7 @@ const (
 	// NonceHTMLPlaceholder is the placeholder for nonce in HTML script tags
 	NonceHTMLPlaceholder    = "__CSP_NONCE_VALUE__"
 	imagePlaygroundEmbedCSP = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; frame-src 'self'; worker-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+	imagePlaygroundShellCSP = "default-src 'self'; script-src 'self' 'nonce-__CSP_NONCE_VALUE__' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://*.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https:; frame-src 'self' https://challenges.cloudflare.com https://*.stripe.com https://pay.ldxp.cn; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
 )
 
 //go:embed all:dist
@@ -141,11 +142,14 @@ func (s *FrontendServer) Middleware() gin.HandlerFunc {
 }
 
 func applyImagePlaygroundEmbedHeaders(c *gin.Context, requestPath string) {
-	if !strings.HasPrefix(requestPath, "/image-playground-app/") {
-		return
+	switch {
+	case strings.HasPrefix(requestPath, "/image-playground-app/"):
+		c.Header("X-Frame-Options", "SAMEORIGIN")
+		c.Header("Content-Security-Policy", imagePlaygroundEmbedCSP)
+	case requestPath == "/image-playground" || requestPath == "/image-playground/":
+		c.Header("X-Frame-Options", "SAMEORIGIN")
+		c.Header("Content-Security-Policy", string(replaceNoncePlaceholder([]byte(imagePlaygroundShellCSP), middleware.GetNonceFromContext(c))))
 	}
-	c.Header("X-Frame-Options", "SAMEORIGIN")
-	c.Header("Content-Security-Policy", imagePlaygroundEmbedCSP)
 }
 
 func (s *FrontendServer) fileExists(path string) bool {

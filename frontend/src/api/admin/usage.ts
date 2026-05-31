@@ -85,6 +85,45 @@ export interface AdminUsageQueryParams extends UsageQueryParams {
   sort_order?: 'asc' | 'desc'
 }
 
+export interface ImagePlaygroundAnalyticsOverview {
+  total_events: number
+  submit_count: number
+  success_count: number
+  error_count: number
+  success_rate: number
+  average_duration_ms: number
+}
+
+export interface ImagePlaygroundAnalyticsBreakdownItem {
+  key: string
+  count: number
+}
+
+export interface ImagePlaygroundAnalyticsRecentEvent {
+  id: number
+  user_id: number
+  event_name: 'image_generate_submit' | 'image_generate_success' | 'image_generate_error'
+  provider?: string
+  api_mode?: string
+  model?: string
+  size?: string
+  duration_ms?: number
+  output_image_count?: number
+  error_kind?: string
+  created_at: string
+}
+
+export interface ImagePlaygroundAnalyticsResponse {
+  overview: ImagePlaygroundAnalyticsOverview
+  error_kinds: ImagePlaygroundAnalyticsBreakdownItem[]
+  models: ImagePlaygroundAnalyticsBreakdownItem[]
+  api_modes: ImagePlaygroundAnalyticsBreakdownItem[]
+  recent_events: ImagePlaygroundAnalyticsRecentEvent[]
+  recent_total: number
+  recent_page: number
+  recent_page_size: number
+}
+
 // ==================== API Functions ====================
 
 /**
@@ -124,6 +163,23 @@ export async function getStats(params: {
   const { data } = await apiClient.get<AdminUsageStatsResponse>('/admin/usage/stats', {
     params
   })
+  return data
+}
+
+export async function getImagePlaygroundAnalytics(params: {
+  user_id?: number
+  model?: string
+  api_mode?: string
+  start_date?: string
+  end_date?: string
+  timezone?: string
+  recent_page?: number
+  recent_page_size?: number
+}): Promise<ImagePlaygroundAnalyticsResponse> {
+  const { data } = await apiClient.get<ImagePlaygroundAnalyticsResponse>(
+    '/admin/usage/image-playground-analytics',
+    { params }
+  )
   return data
 }
 
@@ -199,6 +255,7 @@ export async function cancelCleanupTask(taskId: number): Promise<{ id: number; s
 export const adminUsageAPI = {
   list,
   getStats,
+  getImagePlaygroundAnalytics,
   searchUsers,
   searchApiKeys,
   listCleanupTasks,

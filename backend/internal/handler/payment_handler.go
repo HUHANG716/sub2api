@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
@@ -22,15 +23,25 @@ type PaymentHandler struct {
 	channelService *service.ChannelService
 	paymentService *service.PaymentService
 	configService  *service.PaymentConfigService
+	sqlDB          *sql.DB
 }
 
 // NewPaymentHandler creates a new PaymentHandler.
-func NewPaymentHandler(paymentService *service.PaymentService, configService *service.PaymentConfigService, channelService *service.ChannelService) *PaymentHandler {
+func NewPaymentHandler(paymentService *service.PaymentService, configService *service.PaymentConfigService, channelService *service.ChannelService, sqlDBs ...*sql.DB) *PaymentHandler {
+	var sqlDB *sql.DB
+	if len(sqlDBs) > 0 {
+		sqlDB = sqlDBs[0]
+	}
 	return &PaymentHandler{
 		channelService: channelService,
 		paymentService: paymentService,
 		configService:  configService,
+		sqlDB:          sqlDB,
 	}
+}
+
+func ProvidePaymentHandler(paymentService *service.PaymentService, configService *service.PaymentConfigService, channelService *service.ChannelService, sqlDB *sql.DB) *PaymentHandler {
+	return NewPaymentHandler(paymentService, configService, channelService, sqlDB)
 }
 
 // GetPaymentConfig returns the payment system configuration.

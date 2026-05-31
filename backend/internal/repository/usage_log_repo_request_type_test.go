@@ -524,10 +524,10 @@ func TestUsageLogRepositoryGetUserSpendingRanking(t *testing.T) {
 		AddRow(int64(3), "gamma@example.com", 4.25, int64(5), int64(300), 40.0, int64(30), int64(2600))
 
 	mock.ExpectQuery("WITH user_spend AS \\(").
-		WithArgs(start, end, 12).
+		WithArgs(start, end, "", 12).
 		WillReturnRows(rows)
 
-	got, err := repo.GetUserSpendingRanking(context.Background(), start, end, 12)
+	got, err := repo.GetUserSpendingRanking(context.Background(), start, end, 12, "")
 	require.NoError(t, err)
 	require.Equal(t, &usagestats.UserSpendingRankingResponse{
 		Ranking: []usagestats.UserSpendingRankingItem{
@@ -539,6 +539,29 @@ func TestUsageLogRepositoryGetUserSpendingRanking(t *testing.T) {
 		TotalRequests:   30,
 		TotalTokens:     2600,
 	}, got)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUsageLogRepositoryGetUserSpendingRankingUserRoleFilter(t *testing.T) {
+	db, mock := newSQLMock(t)
+	repo := &usageLogRepository{sql: db}
+
+	start := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	end := start.Add(24 * time.Hour)
+
+	rows := sqlmock.NewRows([]string{"user_id", "email", "actual_cost", "requests", "tokens", "total_actual_cost", "total_requests", "total_tokens"}).
+		AddRow(int64(9), "admin@example.com", 21.0, int64(4), int64(500), 21.0, int64(4), int64(500))
+
+	mock.ExpectQuery("us\\.role = \\$3").
+		WithArgs(start, end, service.RoleAdmin, 5).
+		WillReturnRows(rows)
+
+	got, err := repo.GetUserSpendingRanking(context.Background(), start, end, 5, service.RoleAdmin)
+	require.NoError(t, err)
+	require.Equal(t, []usagestats.UserSpendingRankingItem{
+		{UserID: 9, Email: "admin@example.com", ActualCost: 21.0, Requests: 4, Tokens: 500},
+	}, got.Ranking)
+	require.Equal(t, 21.0, got.TotalActualCost)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 

@@ -19,7 +19,7 @@ type dashboardStatsRepoStub struct {
 }
 
 func (s *dashboardStatsRepoStub) GetDashboardStats(ctx context.Context) (*usagestats.DashboardStats, error) {
-	return &usagestats.DashboardStats{TotalUsers: 1}, nil
+	return &usagestats.DashboardStats{TotalUsers: 1, TotalUserBalance: 12.34}, nil
 }
 
 type dashboardAccountRepoStub struct {
@@ -92,6 +92,21 @@ func TestDashboardHandler_GetStats_IncludesCurrentTotalConcurrency(t *testing.T)
 	require.Equal(t, http.StatusOK, rec.Code)
 	data := decodeDashboardResponse(t, rec)
 	require.Equal(t, float64(5), data["current_total_concurrency"])
+}
+
+func TestDashboardHandler_GetStats_IncludesTotalUserBalance(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := newDashboardConcurrencyTestHandler(map[int64]int{}, nil)
+	router := gin.New()
+	router.GET("/admin/dashboard/stats", handler.GetStats)
+
+	req := httptest.NewRequest(http.MethodGet, "/admin/dashboard/stats", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	data := decodeDashboardResponse(t, rec)
+	require.Equal(t, 12.34, data["total_user_balance"])
 }
 
 func TestDashboardHandler_GetSnapshotV2_IncludesCurrentTotalConcurrency(t *testing.T) {

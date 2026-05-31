@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 
 import UsageView from '../UsageView.vue'
 
-const { list, getStats, getSnapshotV2, getById } = vi.hoisted(() => {
+const { list, getStats, getImagePlaygroundAnalytics, getSnapshotV2, getById, getModelStats } = vi.hoisted(() => {
   vi.stubGlobal('localStorage', {
     getItem: vi.fn(() => null),
     setItem: vi.fn(),
@@ -13,7 +13,9 @@ const { list, getStats, getSnapshotV2, getById } = vi.hoisted(() => {
   return {
     list: vi.fn(),
     getStats: vi.fn(),
+    getImagePlaygroundAnalytics: vi.fn(),
     getSnapshotV2: vi.fn(),
+    getModelStats: vi.fn(),
     getById: vi.fn(),
   }
 })
@@ -23,6 +25,34 @@ const messages: Record<string, string> = {
   'admin.dashboard.day': 'Day',
   'admin.dashboard.hour': 'Hour',
   'admin.usage.failedToLoadUser': 'Failed to load user',
+  'admin.usage.imagePlayground.title': 'Image Beta',
+  'admin.usage.imagePlayground.description': 'Tracks image events.',
+  'admin.usage.imagePlayground.submitCount': 'Submits',
+  'admin.usage.imagePlayground.successCount': 'Successes',
+  'admin.usage.imagePlayground.errorCount': 'Errors',
+  'admin.usage.imagePlayground.successRate': 'Success Rate',
+  'admin.usage.imagePlayground.avgDuration': 'Avg Duration',
+  'admin.usage.imagePlayground.errorReasons': 'Failure Reasons',
+  'admin.usage.imagePlayground.models': 'Models',
+  'admin.usage.imagePlayground.apiModes': 'Modes',
+  'admin.usage.imagePlayground.recentEvents': 'Recent Events',
+  'admin.usage.imagePlayground.totalEvents': '{count} total',
+  'admin.usage.imagePlayground.pageInfo': 'Page {page} / {total}',
+  'admin.usage.imagePlayground.event': 'Event',
+  'admin.usage.imagePlayground.apiMode': 'Mode',
+  'admin.usage.imagePlayground.reason': 'Reason',
+  'admin.usage.imagePlayground.submit': 'Submit',
+  'admin.usage.imagePlayground.success': 'Success',
+  'admin.usage.imagePlayground.error': 'Error',
+  'admin.usage.imagePlayground.loadFailed': 'Failed to load Image Beta analytics.',
+  'common.refresh': 'Refresh',
+  'common.loading': 'Loading...',
+  'common.noData': 'No data',
+  'common.previous': 'Previous',
+  'common.next': 'Next',
+  'usage.time': 'Time',
+  'usage.model': 'Model',
+  'usage.unknown': 'Unknown',
 }
 
 const formatLocalDate = (date: Date): string => {
@@ -37,9 +67,11 @@ vi.mock('@/api/admin', () => ({
     usage: {
       list,
       getStats,
+      getImagePlaygroundAnalytics,
     },
     dashboard: {
       getSnapshotV2,
+      getModelStats,
     },
     users: {
       getById,
@@ -110,7 +142,9 @@ describe('admin UsageView distribution metric toggles', () => {
     vi.useFakeTimers()
     list.mockReset()
     getStats.mockReset()
+    getImagePlaygroundAnalytics.mockReset()
     getSnapshotV2.mockReset()
+    getModelStats.mockReset()
     getById.mockReset()
 
     list.mockResolvedValue({
@@ -128,10 +162,38 @@ describe('admin UsageView distribution metric toggles', () => {
       total_actual_cost: 0,
       average_duration_ms: 0,
     })
+    getImagePlaygroundAnalytics.mockResolvedValue({
+      overview: {
+        total_events: 4,
+        submit_count: 2,
+        success_count: 1,
+        error_count: 1,
+        success_rate: 0.5,
+        average_duration_ms: 1200,
+      },
+      error_kinds: [{ key: 'upstream_error', count: 1 }],
+      models: [{ key: 'gpt-image-2', count: 2 }],
+      api_modes: [{ key: 'responses', count: 2 }],
+      recent_total: 12,
+      recent_page: 1,
+      recent_page_size: 8,
+      recent_events: [{
+        id: 1,
+        user_id: 42,
+        event_name: 'image_generate_error',
+        model: 'gpt-image-2',
+        api_mode: 'responses',
+        error_kind: 'upstream_error',
+        created_at: '2026-05-31T00:00:00Z',
+      }],
+    })
     getSnapshotV2.mockResolvedValue({
       trend: [],
       models: [],
       groups: [],
+    })
+    getModelStats.mockResolvedValue({
+      models: [],
     })
   })
 
@@ -192,5 +254,81 @@ describe('admin UsageView distribution metric toggles', () => {
     expect(modelChart.find('.metric').text()).toBe('actual_cost')
     expect(groupChart.find('.metric').text()).toBe('actual_cost')
     expect(getSnapshotV2).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows image playground beta analytics in admin usage', async () => {
+    const wrapper = mount(UsageView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          UsageStatsCards: true,
+          UsageFilters: UsageFiltersStub,
+          UsageTable: true,
+          UsageExportProgress: true,
+          UsageCleanupDialog: true,
+          UserBalanceHistoryModal: true,
+          Pagination: true,
+          Select: true,
+          DateRangePicker: true,
+          Icon: true,
+          TokenUsageTrend: true,
+          ModelDistributionChart: ModelDistributionChartStub,
+          GroupDistributionChart: GroupDistributionChartStub,
+          EndpointDistributionChart: true,
+        },
+      },
+    })
+
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+
+    expect(getImagePlaygroundAnalytics).toHaveBeenCalledOnce()
+    expect(getImagePlaygroundAnalytics).toHaveBeenCalledWith(expect.objectContaining({
+      user_id: undefined,
+      model: undefined,
+      recent_page: 1,
+      recent_page_size: 8,
+    }))
+    const analytics = wrapper.get('[data-test="image-playground-analytics"]')
+    expect(analytics.text()).toContain('Image Beta')
+    expect(analytics.text()).toContain('50.0%')
+    expect(analytics.text()).toContain('1200 ms')
+    expect(analytics.text()).toContain('upstream_error')
+    expect(analytics.text()).toContain('gpt-image-2')
+    expect(analytics.text()).toContain('responses')
+  })
+
+  it('paginates image playground recent events', async () => {
+    const wrapper = mount(UsageView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          UsageStatsCards: true,
+          UsageFilters: UsageFiltersStub,
+          UsageTable: true,
+          UsageExportProgress: true,
+          UsageCleanupDialog: true,
+          UserBalanceHistoryModal: true,
+          Pagination: true,
+          Select: true,
+          DateRangePicker: true,
+          Icon: true,
+          TokenUsageTrend: true,
+          ModelDistributionChart: ModelDistributionChartStub,
+          GroupDistributionChart: GroupDistributionChartStub,
+          EndpointDistributionChart: true,
+        },
+      },
+    })
+
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+    await wrapper.get('[data-test="image-playground-next-page"]').trigger('click')
+    await flushPromises()
+
+    expect(getImagePlaygroundAnalytics).toHaveBeenLastCalledWith(expect.objectContaining({
+      recent_page: 2,
+      recent_page_size: 8,
+    }))
   })
 })

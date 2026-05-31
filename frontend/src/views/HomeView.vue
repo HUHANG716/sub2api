@@ -10,11 +10,16 @@
   </div>
 
   <div v-else class="landing-shell min-h-screen">
-    <header class="landing-header" :class="{ 'landing-header-scrolled': isHeaderCompact }">
+    <header
+      ref="landingHeaderRef"
+      class="landing-header"
+      :class="{ 'landing-header-scrolled': isHeaderCompact }"
+      :style="landingHeaderStyle"
+    >
       <nav class="mx-auto flex items-center justify-between gap-4 px-5 py-4 sm:px-6 lg:px-8">
         <router-link to="/home" class="brand-lockup">
             <span class="brand-mark">
-              <img :src="siteLogo || '/logo.png'" :alt="siteName" />
+              <img :src="siteLogo || '/logo.png'" :alt="siteName" fetchpriority="high" decoding="async" />
             </span>
             <span class="min-w-0">
               <span class="block truncate text-base font-semibold tracking-tight">{{ siteName }}</span>
@@ -50,21 +55,43 @@
     </header>
 
     <main>
-      <section class="hero-section px-5 pb-16 pt-14 sm:px-6 sm:pb-20 sm:pt-20 lg:px-8">
-        <div class="landing-container grid gap-10 lg:grid-cols-[0.88fr_1.12fr] lg:items-center">
-          <div class="hero-copy">
-            <p class="eyebrow">{{ t('home.modern.hero.eyebrow') }}</p>
-            <h1>
+      <section
+        ref="heroSectionRef"
+        class="hero-section px-5 sm:px-6 lg:px-8"
+        data-header-surface="var(--landing-bg)"
+        @mousemove="handleHeroPointerMove"
+        @mouseleave="resetHeroPointer"
+      >
+        <div ref="heroStageRef" class="landing-container hero-stage" :style="heroStageStyle">
+          <div class="hero-floating-tags" aria-hidden="true">
+            <div
+              v-for="tool in heroFloatingTags"
+              :key="tool.name"
+              class="floating-tool-tag"
+              :class="`floating-tool-tag-${tool.shape}`"
+              :style="heroTagStyle(tool)"
+            >
+              <span class="floating-tool-depth">
+                <span v-if="tool.icon" class="floating-tool-icon" :class="{ 'floating-tool-icon-backed': tool.needsBadge }">
+                  <img :src="tool.icon" :alt="tool.name" decoding="async" />
+                </span>
+                <span class="floating-tool-name">{{ tool.name }}</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="hero-copy hero-copy-centered">
+            <h1 ref="heroHeadlineRef">
               <span class="hero-brand-title">{{ siteName }}</span>
               <span>{{ t('home.modern.hero.line1') }}</span>
               <span>{{ t('home.modern.hero.line2') }}</span>
             </h1>
-            <p class="hero-lede">
+            <p ref="heroLedeRef" class="hero-lede">
               {{ siteSubtitle }}
               <span>{{ t('home.modern.hero.description') }}</span>
             </p>
 
-            <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div ref="heroActionsRef" class="hero-actions">
               <router-link :to="isAuthenticated ? dashboardPath : '/login'" class="hero-button">
                 <span>{{ isAuthenticated ? t('home.goToDashboard') : t('home.getStarted') }}</span>
                 <Icon name="arrowRight" size="sm" />
@@ -75,39 +102,10 @@
               </router-link>
             </div>
           </div>
-
-          <div class="hero-console" :aria-label="t('home.modern.console.previewLabel')">
-            <div class="console-topbar">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-            <div class="console-grid">
-              <div class="command-panel">
-                <p class="terminal-line terminal-command" style="--terminal-steps: 28; --terminal-delay: 80ms">
-                  <span class="terminal-prompt">$</span>
-                  <span class="terminal-curl">curl</span>
-                  <span class="terminal-flag">-X POST</span>
-                  <span class="terminal-path">/v1/messages</span>
-                </p>
-                <p class="terminal-line terminal-comment" style="--terminal-steps: 24; --terminal-delay: 920ms">
-                  {{ terminalComment }}
-                </p>
-                <p class="terminal-line terminal-response" style="--terminal-steps: 34; --terminal-delay: 1640ms">
-                  <span class="terminal-status-badge">{{ terminalStatus }}</span>
-                  <span class="terminal-json">{{ terminalResponse }}</span>
-                </p>
-                <p class="terminal-line terminal-final-prompt" style="--terminal-steps: 2; --terminal-delay: 2460ms">
-                  <span class="terminal-prompt">$</span>
-                  <span class="terminal-cursor" aria-hidden="true"></span>
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
-      <section class="trust-band px-5 py-8 sm:px-6 lg:px-8">
+      <section class="trust-band px-5 sm:px-6 lg:px-8" data-header-surface="var(--landing-bg)">
         <div class="landing-container trust-strip">
           <div v-for="stat in trustStats" :key="stat.label" class="trust-card">
             <strong>{{ stat.value }}</strong>
@@ -116,48 +114,70 @@
         </div>
       </section>
 
-      <section id="features" class="support-showcase px-5 py-12 sm:px-6 lg:px-8">
+      <section
+        id="features"
+        class="support-showcase px-5 sm:px-6 lg:px-8"
+        data-header-surface="color-mix(in srgb, var(--theme-surface-strong) 58%, var(--landing-bg))"
+      >
         <div class="landing-container support-showcase-panel">
-          <h2 class="support-showcase-title">
-            <span>{{ t('home.modern.supportShowcase.titlePrefix') }}</span>
-            <strong>{{ t('home.modern.supportShowcase.titleCore') }}</strong>
-            <em>{{ t('home.modern.supportShowcase.titleAccent') }}</em>
-          </h2>
-
-          <div class="support-provider-row">
-            <p>{{ t('home.modern.supportShowcase.supports') }}</p>
-            <div
-              v-for="provider in supportProviders"
-              :key="provider.name"
-              class="support-provider-chip"
-            >
-              <span class="support-icon-frame" :class="{ 'support-icon-frame-backed': provider.needsBadge }">
-                <img :src="provider.icon" :alt="provider.name" />
-              </span>
-              <span>{{ provider.name }}</span>
-            </div>
+          <div class="support-showcase-copy">
+            <h2 class="support-showcase-title">
+              <span>{{ t('home.modern.supportShowcase.titlePrefix') }}</span>
+              <strong>{{ t('home.modern.supportShowcase.titleCore') }}</strong>
+              <em>{{ t('home.modern.supportShowcase.titleAccent') }}</em>
+            </h2>
           </div>
 
-          <div class="support-platform-row">
-            <p>{{ t('home.modern.supportShowcase.platformIntro') }}</p>
-            <div
-              v-for="platform in supportPlatforms"
-              :key="platform.name"
-              class="support-platform-chip"
-            >
-              <span class="support-icon-frame support-icon-frame-backed">
-                <img :src="platform.icon" :alt="platform.name" />
+          <div class="support-ecosystem">
+            <div class="support-ecosystem-hub">
+              <span class="support-hub-mark">
+                <img :src="siteLogo || '/logo.png'" :alt="siteName" loading="lazy" decoding="async" />
               </span>
-              <span>{{ platform.name }}</span>
+              <strong>{{ siteName }}</strong>
+              <span>{{ t('home.modern.hero.line1') }}</span>
+            </div>
+
+            <div class="support-provider-row">
+              <div
+                v-for="(provider, index) in supportProviders"
+                :key="provider.name"
+                class="support-provider-chip"
+                :class="`support-provider-chip-${index + 1}`"
+              >
+                <span class="support-icon-frame" :class="{ 'support-icon-frame-backed': provider.needsBadge }">
+                  <img :src="provider.icon" :alt="provider.name" loading="lazy" decoding="async" />
+                </span>
+                <span>{{ provider.name }}</span>
+              </div>
+            </div>
+
+            <div class="support-platform-row">
+              <p>{{ t('home.modern.supportShowcase.platformIntro') }}</p>
+              <div class="support-platform-dock">
+                <div
+                  v-for="platform in supportPlatforms"
+                  :key="platform.name"
+                  class="support-platform-chip"
+                >
+                  <span class="support-icon-frame support-icon-frame-backed">
+                    <img :src="platform.icon" :alt="platform.name" loading="lazy" decoding="async" />
+                  </span>
+                  <span>{{ platform.name }}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="testimonials" class="testimonial-section px-5 py-20 sm:px-6 lg:px-8">
+      <section
+        ref="testimonialSectionRef"
+        id="testimonials"
+        class="testimonial-section px-5 py-20 sm:px-6 lg:px-8"
+        data-header-surface="var(--landing-bg)"
+      >
         <div class="landing-container">
           <div class="section-heading centered">
-            <p>{{ t('home.modern.testimonials.eyebrow') }}</p>
             <h2>{{ t('home.modern.testimonials.title') }}</h2>
             <span>{{ t('home.modern.testimonials.description') }}</span>
           </div>
@@ -199,7 +219,11 @@
         </div>
       </section>
 
-      <section id="faq" class="section-pad px-5 sm:px-6 lg:px-8">
+      <section
+        id="faq"
+        class="faq-section section-pad px-5 sm:px-6 lg:px-8"
+        data-header-surface="var(--landing-bg)"
+      >
         <div class="landing-container grid gap-10 lg:grid-cols-[0.75fr_1.25fr]">
           <div class="section-heading sticky-heading">
             <p>FAQ</p>
@@ -216,13 +240,17 @@
       </section>
     </main>
 
-    <footer id="contact" class="landing-footer px-5 py-12 sm:px-6 lg:px-8">
+    <footer
+      id="contact"
+      class="landing-footer px-5 py-12 sm:px-6 lg:px-8"
+      data-header-surface="var(--landing-bg)"
+    >
       <div class="landing-container">
         <div class="footer-top">
           <div>
             <div class="brand-lockup">
               <span class="brand-mark">
-                <img :src="siteLogo || '/logo.png'" :alt="siteName" />
+              <img :src="siteLogo || '/logo.png'" :alt="siteName" loading="lazy" decoding="async" />
               </span>
               <span>
                 <span class="block text-base font-semibold">{{ siteName }}</span>
@@ -258,11 +286,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watchEffect, type CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore, useAuthStore } from '@/stores'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import Icon from '@/components/icons/Icon.vue'
+import {
+  computeHeroTagLayout,
+  getHeroLayoutProfile,
+  type HeroFloatingTag,
+  type HeroRect,
+  type HeroTagLayout,
+  type HeroViewport
+} from './homeHeroLayout'
 
 const { t } = useI18n()
 
@@ -303,10 +339,51 @@ const isAdmin = computed(() => authStore.isAdmin)
 const dashboardPath = computed(() => (isAdmin.value ? '/admin/dashboard' : '/dashboard'))
 const currentYear = computed(() => new Date().getFullYear())
 const isHeaderCompact = ref(false)
+const headerSurface = ref('var(--landing-bg)')
+const landingHeaderRef = ref<HTMLElement | null>(null)
+const heroPointer = ref({ x: 0, y: 0 })
+const heroSectionRef = ref<HTMLElement | null>(null)
+const heroStageRef = ref<HTMLElement | null>(null)
+const heroHeadlineRef = ref<HTMLElement | null>(null)
+const heroLedeRef = ref<HTMLElement | null>(null)
+const heroActionsRef = ref<HTMLElement | null>(null)
+const testimonialSectionRef = ref<HTMLElement | null>(null)
+const heroTagLayouts = ref<HeroTagLayout[]>([])
+const heroTagFields = ref<HeroTagField[]>([])
+const shouldLoadTestimonials = ref(false)
+let heroResizeObserver: ResizeObserver | null = null
+let testimonialObserver: IntersectionObserver | null = null
+let heroLayoutFrame = 0
+let heroFieldFrame = 0
 
-const terminalComment = computed(() => t('home.modern.console.lines.connected'))
-const terminalStatus = computed(() => t('home.modern.console.lines.policy'))
-const terminalResponse = computed(() => t('home.modern.console.lines.report'))
+type HeroPointerState = {
+  x: number
+  y: number
+  stageX: number
+  stageY: number
+  active: number
+}
+
+type HeroTagField = {
+  key: string
+  fieldX: number
+  fieldY: number
+}
+
+const heroPointerTarget: HeroPointerState = {
+  x: 0,
+  y: 0,
+  stageX: 0,
+  stageY: 0,
+  active: 0
+}
+const heroPointerPhysics: HeroPointerState = {
+  x: 0,
+  y: 0,
+  stageX: 0,
+  stageY: 0,
+  active: 0
+}
 
 const trustStats = computed(() => [
   { value: '10,000+', label: t('home.modern.stats.developers') },
@@ -315,7 +392,7 @@ const trustStats = computed(() => [
   { value: '1v1', label: t('home.modern.stats.support') }
 ])
 
-const testimonialAvatarSprite = '/testimonial-avatar-sprite.png'
+const testimonialAvatarSprite = '/testimonial-avatar-sprite.jpg'
 const supportAssetBase = '/landing-support'
 const supportProviders = [
   { name: 'Claude Code', icon: `${supportAssetBase}/claude-code.svg`, needsBadge: false },
@@ -324,6 +401,15 @@ const supportProviders = [
   { name: 'OpenClaw', icon: `${supportAssetBase}/openclaw.svg`, needsBadge: false },
   { name: 'Hermes Agent', icon: `${supportAssetBase}/hermes-agent.svg`, needsBadge: true }
 ] as const
+const heroFloatingTags = [
+  { ...supportProviders[0], shape: 'round', prominence: 'normal' },
+  { ...supportProviders[1], shape: 'round', prominence: 'primary' },
+  { ...supportProviders[2], shape: 'round', prominence: 'normal' },
+  { name: 'OpenAI', icon: '', needsBadge: false, shape: 'text', prominence: 'normal' },
+  { ...supportProviders[3], shape: 'round', prominence: 'compact' },
+  { ...supportProviders[4], shape: 'round', prominence: 'compact' },
+  { name: 'Codex App', icon: `${supportAssetBase}/codex-app.png`, needsBadge: false, shape: 'round', prominence: 'compact' }
+] satisfies readonly (HeroFloatingTag & { icon: string; needsBadge: boolean })[]
 const supportPlatforms = [
   { name: 'macOS', icon: `${supportAssetBase}/macos.svg` },
   { name: 'Windows', icon: `${supportAssetBase}/windows.svg` },
@@ -435,15 +521,267 @@ const footerGroups = computed<FooterGroup[]>(() => [
   }
 ])
 
+const heroStageStyle = computed(() => ({
+  '--hero-pointer-x': heroPointer.value.x.toFixed(3),
+  '--hero-pointer-y': heroPointer.value.y.toFixed(3),
+  '--hero-pointer-active': heroPointerPhysics.active.toFixed(3)
+}))
+const landingHeaderStyle = computed(() => ({
+  '--landing-header-surface': headerSurface.value
+}) as CSSProperties)
+
+const heroLayoutByKey = computed(() => new Map(heroTagLayouts.value.map((layout) => [layout.key, layout])))
+const heroFieldByKey = computed(() => new Map(heroTagFields.value.map((field) => [field.key, field])))
+
+function heroTagStyle(tool: HeroFloatingTag): CSSProperties {
+  const layout = heroLayoutByKey.value.get(tool.name)
+  if (!layout) return {}
+  const field = heroFieldByKey.value.get(tool.name)
+
+  return {
+    '--hero-tag-x': `${layout.x.toFixed(1)}px`,
+    '--hero-tag-y': `${layout.y.toFixed(1)}px`,
+    '--hero-tag-size': `${layout.width.toFixed(1)}px`,
+    '--hero-tag-width': `${layout.width.toFixed(1)}px`,
+    '--hero-tag-height': `${layout.height.toFixed(1)}px`,
+    '--hero-tag-depth': `${layout.depth.toFixed(1)}px`,
+    '--hero-tag-drift-x': `${layout.driftX.toFixed(1)}px`,
+    '--hero-tag-drift-y': `${layout.driftY.toFixed(1)}px`,
+    '--hero-tag-field-x': `${(field?.fieldX ?? 0).toFixed(1)}px`,
+    '--hero-tag-field-y': `${(field?.fieldY ?? 0).toFixed(1)}px`,
+    '--hero-tag-delay': `${layout.delay}ms`
+  } as CSSProperties
+}
+
 function avatarStyle(backgroundPosition: string) {
   return {
-    backgroundImage: `url(${testimonialAvatarSprite})`,
+    '--testimonial-avatar-image': shouldLoadTestimonials.value ? `url(${testimonialAvatarSprite})` : 'none',
     backgroundPosition
   }
 }
 
 function syncHeaderScrollState() {
   isHeaderCompact.value = window.scrollY > 18
+  syncHeaderSurface()
+}
+
+function syncHeaderSurface() {
+  const header = landingHeaderRef.value
+  const headerRect = header?.getBoundingClientRect()
+  const sampleY = Math.max(1, Math.min(window.innerHeight - 1, (headerRect?.bottom ?? 64) + 1))
+  const sampleX = Math.max(1, Math.min(window.innerWidth - 1, window.innerWidth / 2))
+  const elements = typeof document.elementsFromPoint === 'function'
+    ? document.elementsFromPoint(sampleX, sampleY)
+    : []
+  const section = elements.find((element): element is HTMLElement => (
+    element instanceof HTMLElement && element.dataset.headerSurface !== undefined
+  ))
+
+  headerSurface.value = section?.dataset.headerSurface || 'var(--landing-bg)'
+}
+
+function handleHeroPointerMove(event: MouseEvent) {
+  const stage = heroStageRef.value
+  const rect = stage?.getBoundingClientRect() ?? (event.currentTarget as HTMLElement).getBoundingClientRect()
+  const stageX = Math.max(0, Math.min(rect.width, event.clientX - rect.left))
+  const stageY = Math.max(0, Math.min(rect.height, event.clientY - rect.top))
+  const x = (stageX / rect.width - 0.5) * 2
+  const y = (stageY / rect.height - 0.5) * 2
+
+  heroPointer.value = {
+    x: Math.max(-1, Math.min(1, x)),
+    y: Math.max(-1, Math.min(1, y))
+  }
+  heroPointerTarget.x = heroPointer.value.x
+  heroPointerTarget.y = heroPointer.value.y
+  heroPointerTarget.stageX = stageX
+  heroPointerTarget.stageY = stageY
+  heroPointerTarget.active = canUseHeroField() ? 1 : 0
+  scheduleHeroFieldFrame()
+}
+
+function resetHeroPointer() {
+  heroPointer.value = { x: 0, y: 0 }
+  heroPointerTarget.x = 0
+  heroPointerTarget.y = 0
+  heroPointerTarget.stageX = 0
+  heroPointerTarget.stageY = 0
+  heroPointerTarget.active = 0
+  scheduleHeroFieldFrame()
+}
+
+function rectFromStage(element: HTMLElement, stageRect: DOMRect): HeroRect {
+  const rect = element.getBoundingClientRect()
+
+  return {
+    x: rect.left - stageRect.left,
+    y: rect.top - stageRect.top,
+    width: rect.width,
+    height: rect.height
+  }
+}
+
+function scheduleHeroTagLayout() {
+  if (typeof window === 'undefined') return
+
+  window.cancelAnimationFrame(heroLayoutFrame)
+  heroLayoutFrame = window.requestAnimationFrame(updateHeroTagLayout)
+}
+
+function updateHeroTagLayout() {
+  const stage = heroStageRef.value
+  if (!stage) return
+
+  const stageRect = stage.getBoundingClientRect()
+  if (stageRect.width <= 0 || stageRect.height <= 0) return
+
+  const safeElements = [
+    heroHeadlineRef.value,
+    heroLedeRef.value,
+    heroActionsRef.value
+  ].filter((element): element is HTMLElement => Boolean(element))
+  const viewport: HeroViewport = {
+    width: window.innerWidth,
+    height: window.innerHeight
+  }
+  const safeRects = safeElements.map((element) => rectFromStage(element, stageRect))
+
+  heroTagLayouts.value = computeHeroTagLayout({
+    tags: heroFloatingTags,
+    stageRect: {
+      x: stageRect.left,
+      y: stageRect.top,
+      width: stageRect.width,
+      height: stageRect.height
+    },
+    safeRects,
+    viewport,
+    profile: getHeroLayoutProfile(viewport)
+  })
+  scheduleHeroFieldFrame()
+}
+
+function scheduleHeroFieldFrame() {
+  if (typeof window === 'undefined') return
+  if (heroFieldFrame) return
+
+  heroFieldFrame = window.requestAnimationFrame(tickHeroField)
+}
+
+function tickHeroField() {
+  heroFieldFrame = 0
+  const stiffness = 0.16
+
+  heroPointerPhysics.x += (heroPointerTarget.x - heroPointerPhysics.x) * stiffness
+  heroPointerPhysics.y += (heroPointerTarget.y - heroPointerPhysics.y) * stiffness
+  heroPointerPhysics.stageX += (heroPointerTarget.stageX - heroPointerPhysics.stageX) * stiffness
+  heroPointerPhysics.stageY += (heroPointerTarget.stageY - heroPointerPhysics.stageY) * stiffness
+  heroPointerPhysics.active += (heroPointerTarget.active - heroPointerPhysics.active) * 0.14
+
+  heroPointer.value = {
+    x: heroPointerPhysics.x * heroPointerPhysics.active,
+    y: heroPointerPhysics.y * heroPointerPhysics.active
+  }
+  heroTagFields.value = computeHeroTagFields(heroPointerPhysics)
+
+  const needsMoreFrames = [
+    Math.abs(heroPointerTarget.x - heroPointerPhysics.x),
+    Math.abs(heroPointerTarget.y - heroPointerPhysics.y),
+    Math.abs(heroPointerTarget.stageX - heroPointerPhysics.stageX) / 100,
+    Math.abs(heroPointerTarget.stageY - heroPointerPhysics.stageY) / 100,
+    Math.abs(heroPointerTarget.active - heroPointerPhysics.active)
+  ].some((delta) => delta > 0.004)
+
+  if (needsMoreFrames) {
+    scheduleHeroFieldFrame()
+  }
+}
+
+function canUseHeroField() {
+  if (typeof window === 'undefined') return false
+  const finePointer = !window.matchMedia || window.matchMedia('(hover: hover) and (pointer: fine)').matches
+  const reducedMotion = Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+  return finePointer && !reducedMotion
+}
+
+function computeHeroTagFields(pointer: HeroPointerState): HeroTagField[] {
+  if (heroTagLayouts.value.length === 0) return []
+
+  const viewport: HeroViewport = {
+    width: window.innerWidth,
+    height: window.innerHeight
+  }
+  const profile = getHeroLayoutProfile(viewport)
+  const active = profile.includes('mobile') ? 0 : pointer.active
+  if (active < 0.01) {
+    return heroTagLayouts.value.map((layout) => ({
+      key: layout.key,
+      fieldX: 0,
+      fieldY: 0
+    }))
+  }
+
+  return heroTagLayouts.value.map((layout) => {
+    const depth = profile.includes('mobile') ? 0 : layout.depth
+    const signedDepth = Math.max(-0.95, Math.min(1, depth / 82))
+    const depthFactor = Math.max(0.72, Math.min(1.28, 1 + signedDepth * 0.28))
+    const parallaxScale = viewport.width <= 640
+      ? 0
+      : viewport.width <= 960
+        ? 0.62
+        : 0.95
+    const travel = viewport.width <= 960 ? 42 : 56
+    const targetFieldX = pointer.x * active * parallaxScale * travel * depthFactor
+    const targetFieldY = pointer.y * active * parallaxScale * travel * depthFactor
+
+    return {
+      key: layout.key,
+      fieldX: targetFieldX,
+      fieldY: targetFieldY
+    }
+  })
+}
+
+function setupHeroLayoutObserver() {
+  if (typeof window === 'undefined') return
+
+  const observedElements = [
+    heroSectionRef.value,
+    heroStageRef.value,
+    heroHeadlineRef.value,
+    heroLedeRef.value,
+    heroActionsRef.value
+  ].filter((element): element is HTMLElement => Boolean(element))
+
+  if (typeof ResizeObserver !== 'undefined') {
+    heroResizeObserver = new ResizeObserver(scheduleHeroTagLayout)
+    observedElements.forEach((element) => heroResizeObserver?.observe(element))
+  }
+
+  window.addEventListener('resize', scheduleHeroTagLayout, { passive: true })
+  nextTick(scheduleHeroTagLayout)
+}
+
+function setupTestimonialsObserver() {
+  if (typeof window === 'undefined') return
+  const section = testimonialSectionRef.value
+  if (!section || shouldLoadTestimonials.value) return
+
+  if (typeof IntersectionObserver === 'undefined') {
+    shouldLoadTestimonials.value = true
+    return
+  }
+
+  testimonialObserver = new IntersectionObserver((entries) => {
+    if (entries.some((entry) => entry.isIntersecting)) {
+      shouldLoadTestimonials.value = true
+      testimonialObserver?.disconnect()
+      testimonialObserver = null
+    }
+  }, {
+    rootMargin: '640px 0px'
+  })
+  testimonialObserver.observe(section)
 }
 
 onMounted(() => {
@@ -455,6 +793,8 @@ onMounted(() => {
 
   syncHeaderScrollState()
   window.addEventListener('scroll', syncHeaderScrollState, { passive: true })
+  setupHeroLayoutObserver()
+  nextTick(setupTestimonialsObserver)
 })
 
 watchEffect(() => {
@@ -464,7 +804,14 @@ watchEffect(() => {
 })
 
 onUnmounted(() => {
+  window.cancelAnimationFrame(heroLayoutFrame)
+  window.cancelAnimationFrame(heroFieldFrame)
   window.removeEventListener('scroll', syncHeaderScrollState)
+  window.removeEventListener('resize', scheduleHeroTagLayout)
+  heroResizeObserver?.disconnect()
+  heroResizeObserver = null
+  testimonialObserver?.disconnect()
+  testimonialObserver = null
   document.documentElement.classList.remove('landing-page-active')
   document.body.classList.remove('landing-page-active')
 })
@@ -549,6 +896,8 @@ onUnmounted(() => {
   --landing-accent-selection: rgba(217, 119, 50, 0.28);
   --landing-support: #d97732;
   --landing-support-soft: rgba(217, 119, 50, 0.12);
+  --landing-sticker-bg: color-mix(in srgb, var(--landing-accent-soft) 18%, var(--landing-text-strong));
+  --landing-sticker-border: color-mix(in srgb, var(--landing-text-strong) 84%, var(--landing-accent-soft));
   --landing-control-radius: 0.375rem;
   --landing-nav-control-height: 2.25rem;
   --landing-nav-control-radius: 0.375rem;
@@ -643,7 +992,6 @@ onUnmounted(() => {
 }
 
 .landing-header {
-  --landing-header-width: 100%;
   position: sticky;
   top: 0;
   z-index: 30;
@@ -653,27 +1001,34 @@ onUnmounted(() => {
   transition: padding 180ms ease;
 }
 
+.landing-header::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  z-index: -1;
+  width: 100%;
+  border-radius: 0 0 1.35rem 1.35rem;
+  background: var(--landing-header-surface, var(--landing-bg));
+  transform: translateX(-50%);
+  transition:
+    background 180ms ease,
+    border-radius 180ms ease,
+    top 180ms ease;
+}
+
 .landing-header nav {
-  width: var(--landing-header-width);
+  width: 100%;
   min-width: 0;
-  border: 1px solid var(--theme-border);
-  border-right: 0;
-  border-left: 0;
+  border: 0;
   border-radius: 0;
-  background: var(--theme-surface);
-  backdrop-filter: blur(18px);
+  background: var(--landing-header-surface, var(--landing-bg));
+  backdrop-filter: none;
   padding-top: 0.625rem;
   padding-bottom: 0.625rem;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.05) inset,
-    0 10px 26px rgba(2, 6, 23, 0.22);
-  transition:
-    padding 180ms ease,
-    width 240ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 180ms ease,
-    border-radius 180ms ease,
-    background-color 180ms ease,
-    box-shadow 180ms ease;
+  box-shadow: none;
+  transition: padding 180ms ease;
 }
 
 .brand-mark {
@@ -684,22 +1039,22 @@ onUnmounted(() => {
 }
 
 .landing-header-scrolled {
-  --landing-header-width: min(72rem, calc(100vw - 1.5rem));
   pointer-events: none;
-  padding-top: 0.5rem;
+  padding-top: 0;
+}
+
+.landing-header-scrolled::before {
+  top: 0;
+  border-radius: 0 0 1.35rem 1.35rem;
 }
 
 .landing-header-scrolled nav {
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
-  border-color: var(--theme-border-strong);
-  border-right: 0;
-  border-left: 0;
-  border-radius: 0.9rem;
-  background: var(--theme-surface-strong);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 12px 28px rgba(2, 6, 23, 0.28);
+  border: 0;
+  border-radius: 0;
+  background: var(--landing-header-surface, var(--landing-bg));
+  box-shadow: none;
   pointer-events: auto;
 }
 
@@ -865,9 +1220,12 @@ onUnmounted(() => {
   position: relative;
   isolation: isolate;
   max-width: 100vw;
-  min-height: auto;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
   overflow-x: clip;
-  padding-top: clamp(3rem, 5vw, 4.35rem);
+  background: var(--landing-bg);
+  padding-top: clamp(6.25rem, 8vw, 7.5rem);
   padding-bottom: clamp(2rem, 4vw, 3.25rem);
 }
 
@@ -881,8 +1239,186 @@ onUnmounted(() => {
   inset: 0;
   z-index: -1;
   background: rgba(18, 21, 27, 0.16);
-  opacity: 0.44;
+  opacity: 0;
   pointer-events: none;
+}
+
+.hero-stage {
+  position: relative;
+  --hero-pointer-x: 0;
+  --hero-pointer-y: 0;
+  --hero-copy-safe-width: clamp(46rem, 58vw, 62rem);
+  --hero-copy-safe-left: calc((100% - var(--hero-copy-safe-width)) / 2);
+  --hero-copy-safe-right: calc(var(--hero-copy-safe-left) + var(--hero-copy-safe-width));
+  --hero-copy-safe-gap: clamp(3.5rem, 6vw, 5rem);
+  --hero-copy-offset-y: clamp(-5rem, -7vh, -2.5rem);
+  width: min(100%, calc(100vw - 2rem));
+  max-width: none;
+  min-height: calc(100svh - 5.5rem);
+  display: grid;
+  place-items: center;
+  overflow: visible;
+}
+
+.hero-floating-tags {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  perspective: 46rem;
+  perspective-origin:
+    calc(50% + var(--hero-pointer-x, 0) * 4%)
+    calc(50% + var(--hero-pointer-y, 0) * 3%);
+  transform-style: preserve-3d;
+  opacity: calc(0.97 + var(--hero-pointer-active, 0) * 0.03);
+}
+
+.floating-tool-tag {
+  position: absolute;
+  --hero-tag-size: 5rem;
+  --hero-tag-width: var(--hero-tag-size);
+  --hero-tag-height: var(--hero-tag-size);
+  --hero-tag-x: 50%;
+  --hero-tag-y: 50%;
+  --hero-tag-depth: 0px;
+  --hero-tag-drift-x: 14px;
+  --hero-tag-drift-y: 12px;
+  --hero-tag-field-x: 0px;
+  --hero-tag-field-y: 0px;
+  display: inline-flex;
+  box-sizing: border-box;
+  left: 0;
+  top: 0;
+  width: var(--hero-tag-width);
+  height: var(--hero-tag-height);
+  aspect-ratio: 1;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0;
+  font-size: clamp(0.62rem, 0.76vw, 0.78rem);
+  isolation: isolate;
+  transform-style: preserve-3d;
+  transform: translate3d(
+      calc(var(--hero-tag-x) - 50% + var(--hero-tag-field-x)),
+      calc(var(--hero-tag-y) - 50% + var(--hero-tag-field-y)),
+      0
+    );
+  transition: transform 520ms cubic-bezier(0.2, 0.82, 0.22, 1);
+  will-change: transform, translate;
+}
+
+.floating-tool-depth {
+  --hero-depth-shadow: clamp(-1, calc(var(--hero-tag-depth) / 90px), 1);
+  display: inline-flex;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.38rem;
+  border: clamp(0.32rem, 0.8vw, 0.56rem) solid var(--landing-sticker-border);
+  border-radius: inherit;
+  background: var(--landing-sticker-bg);
+  color: var(--landing-bg);
+  font-weight: 800;
+  line-height: 1.05;
+  text-align: center;
+  overflow: hidden;
+  box-shadow:
+    calc(var(--hero-depth-shadow) * -8px) calc(18px - var(--hero-depth-shadow) * 8px) calc(30px + var(--hero-depth-shadow) * 12px) rgba(217, 119, 50, 0.28),
+    0 2px 0 color-mix(in srgb, var(--landing-text-strong) 76%, transparent) inset;
+  filter: drop-shadow(0 calc(0.48rem + var(--hero-depth-shadow) * 0.18rem) calc(0.46rem + var(--hero-depth-shadow) * 0.22rem) rgba(217, 119, 50, 0.2));
+  transform: translateZ(var(--hero-tag-depth));
+  transition:
+    box-shadow 160ms ease,
+    filter 160ms ease;
+  transform-style: preserve-3d;
+}
+
+.floating-tool-tag::before {
+  content: none;
+}
+
+.floating-tool-tag::after {
+  content: none;
+}
+
+.floating-tool-tag-round {
+  border-radius: 999px;
+}
+
+.floating-tool-tag-pill,
+.floating-tool-tag-text {
+  width: var(--hero-tag-size);
+  height: var(--hero-tag-size);
+  min-width: 0;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  padding: 0;
+  gap: 0.42rem;
+  color: var(--landing-bg);
+  font-size: clamp(1.35rem, 2vw, 1.9rem);
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.floating-tool-tag-text {
+  width: var(--hero-tag-width);
+  height: var(--hero-tag-height);
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: auto;
+  border-radius: 999px;
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
+}
+
+.floating-tool-tag-text .floating-tool-depth {
+  padding: 0 clamp(1.25rem, 2vw, 1.85rem);
+}
+
+.floating-tool-tag-pill .floating-tool-icon,
+.floating-tool-tag-text .floating-tool-icon {
+  display: none;
+}
+
+.floating-tool-tag-pill .floating-tool-name,
+.floating-tool-tag-text .floating-tool-name {
+  display: block;
+  max-width: none;
+  white-space: nowrap;
+}
+
+.floating-tool-icon {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  height: 100%;
+  width: 100%;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.floating-tool-icon-backed {
+  border: 1px solid color-mix(in srgb, var(--theme-text) 18%, transparent);
+  background: color-mix(in srgb, var(--theme-text) 88%, var(--theme-surface-strong));
+}
+
+.floating-tool-icon img {
+  height: 86%;
+  width: 86%;
+  object-fit: contain;
+}
+
+.floating-tool-name {
+  position: relative;
+  z-index: 1;
+  display: none;
+  max-width: 86%;
+  overflow-wrap: anywhere;
 }
 
 .hero-copy {
@@ -890,14 +1426,24 @@ onUnmounted(() => {
   min-width: 0;
 }
 
+.hero-copy-centered {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  max-width: min(100%, 55rem);
+  text-align: center;
+  transform: translateY(var(--hero-copy-offset-y));
+}
+
 .hero-copy h1 {
-  margin-top: 0.78rem;
-  max-width: 36.5rem;
+  margin-top: 0.85rem;
+  max-width: 52rem;
   color: var(--landing-text-strong);
-  font-size: clamp(2.35rem, 4.35vw, 3.65rem);
+  font-size: clamp(2.65rem, 6.6vw, 5.15rem);
   font-weight: 820;
   letter-spacing: 0;
-  line-height: 1.06;
+  line-height: 0.98;
 }
 
 .hero-copy h1 span {
@@ -920,8 +1466,8 @@ onUnmounted(() => {
 }
 
 .hero-lede {
-  margin-top: 1.05rem;
-  max-width: 32rem;
+  margin-top: 1.1rem;
+  max-width: 42rem;
   color: var(--landing-text-soft);
   font-size: 1rem;
   line-height: 1.62;
@@ -931,15 +1477,28 @@ onUnmounted(() => {
   display: block;
 }
 
+.hero-actions {
+  margin-top: clamp(1.45rem, 3vw, 2.05rem);
+  display: flex;
+  width: fit-content;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  gap: 0.85rem;
+}
+
 .hero-button {
+  display: inline-flex;
   min-height: 3.125rem;
   min-width: 0;
   align-items: center;
+  justify-content: center;
   gap: 0.625rem;
   border: 1px solid var(--landing-accent-border);
-  border-radius: calc(var(--landing-control-radius) + 0.125rem);
+  border-radius: 999px;
   background: var(--landing-button-bg);
-  padding: 0 1.25rem;
+  padding: 0 1.45rem;
   color: var(--landing-text-inverse);
   font-size: 0.9375rem;
   font-weight: 800;
@@ -963,15 +1522,15 @@ onUnmounted(() => {
 }
 
 .hero-button.secondary {
-  border: 1px solid var(--landing-control-border);
-  background: var(--theme-surface-muted);
-  color: var(--landing-text-soft);
+  border: 1px solid var(--landing-accent-border);
+  background: var(--landing-button-bg);
+  color: var(--landing-text-inverse);
 }
 
 .hero-button.secondary:hover {
-  border-color: color-mix(in srgb, var(--landing-support) 42%, transparent);
-  background: var(--theme-surface-strong);
-  color: var(--landing-support);
+  border-color: color-mix(in srgb, var(--landing-accent-hover) 58%, transparent);
+  background: var(--landing-button-bg-hover);
+  color: var(--landing-text-inverse);
 }
 
 .trust-card span {
@@ -980,146 +1539,10 @@ onUnmounted(() => {
   font-size: 0.8rem;
 }
 
-.hero-console {
-  position: relative;
-  justify-self: end;
-  width: 100%;
-  max-width: 56rem;
-  min-width: 0;
-  border: 1px solid var(--landing-border-strong);
-  border-radius: 0.75rem;
-  background: var(--landing-surface-raised);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 14px 32px rgba(2, 6, 23, 0.22);
-  overflow: visible;
-}
-
-.console-topbar {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  border-bottom: 1px solid var(--landing-border);
-  padding: 0.8rem 0.9rem;
-}
-
-.console-topbar span {
-  height: 0.7rem;
-  width: 0.7rem;
-  border-radius: 999px;
-  background: #ff5f57;
-  box-shadow: inset 0 0 0 1px rgba(2, 6, 23, 0.26);
-}
-
-.console-topbar span:nth-child(2) {
-  background: #ffbd2e;
-}
-
-.console-topbar span:nth-child(3) {
-  background: #28c840;
-}
-
-.console-grid {
-  min-width: 0;
-  padding: clamp(0.75rem, 2.4vw, 1.15rem);
-}
-
-.command-panel {
-  min-width: 0;
-  min-height: clamp(10.5rem, 26vw, 13rem);
-  padding: clamp(0.85rem, 2.6vw, 1.25rem);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: clamp(0.82rem, 1.35vw, 1rem);
-  line-height: 1.62;
-}
-
-.terminal-line {
-  margin: 0;
-  width: fit-content;
-  max-width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-  clip-path: inset(0 100% 0 0);
-  animation: terminal-type 720ms steps(var(--terminal-steps, 24), end) var(--terminal-delay, 0ms) forwards;
-  will-change: clip-path;
-}
-
-.terminal-line + .terminal-line {
-  margin-top: 0.65rem;
-}
-
-.terminal-prompt {
-  color: var(--landing-accent-soft);
-  font-weight: 800;
-}
-
-.terminal-command {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.3rem 0.72rem;
-}
-
-.terminal-curl {
-  color: var(--landing-text);
-}
-
-.terminal-flag {
-  color: var(--landing-muted);
-}
-
-.terminal-path {
-  color: var(--landing-accent-soft);
-}
-
-.terminal-comment {
-  color: var(--landing-dim);
-  font-style: italic;
-}
-
-.terminal-response {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1rem;
-}
-
-.terminal-status-badge {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 0.28rem;
-  background: var(--landing-accent-tint);
-  padding: 0.28rem 0.55rem;
-  color: var(--landing-accent-soft);
-  font-weight: 800;
-}
-
-.terminal-json {
-  color: var(--landing-text-soft);
-  min-width: 0;
-}
-
-.terminal-final-prompt {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.terminal-cursor {
-  display: inline-block;
-  height: 1.15em;
-  width: 0.48em;
-  background: var(--landing-accent-soft);
-  transform: translateY(0.16em);
-  animation: terminal-cursor-blink 960ms steps(2, end) infinite;
-}
-
 .trust-band {
   background: var(--landing-bg);
-  padding-top: clamp(0.75rem, 1.6vw, 1.4rem);
-  padding-bottom: clamp(1.35rem, 2.8vw, 2.15rem);
+  padding-top: clamp(0.6rem, 1.2vw, 1rem);
+  padding-bottom: clamp(1rem, 2vw, 1.65rem);
 }
 
 .trust-strip {
@@ -1128,14 +1551,14 @@ onUnmounted(() => {
   overflow: hidden;
   border-radius: 0.5rem;
   border: 1px solid var(--landing-hairline);
-  background: var(--landing-surface-soft);
+  background: color-mix(in srgb, var(--landing-surface-soft) 78%, transparent);
   box-shadow: none;
 }
 
 .trust-card {
-  min-height: 5.6rem;
+  min-height: clamp(4.85rem, 8svh, 5.75rem);
   min-width: 0;
-  padding: 1rem 1.25rem;
+  padding: clamp(0.85rem, 1.5vw, 1.1rem) clamp(1rem, 2vw, 1.35rem);
   position: relative;
 }
 
@@ -1168,28 +1591,46 @@ onUnmounted(() => {
 }
 
 .support-showcase {
+  position: relative;
+  isolation: isolate;
+  min-height: min(100svh, 58rem);
+  display: grid;
+  align-items: center;
+  overflow: hidden;
   border-top: 1px solid var(--theme-border);
   border-bottom: 1px solid var(--theme-border);
-  background: color-mix(in srgb, var(--theme-surface) 58%, var(--landing-bg));
+  background: color-mix(in srgb, var(--theme-surface-strong) 58%, var(--landing-bg));
 }
 
 .support-showcase-panel {
-  padding: clamp(2rem, 4vw, 3.25rem) 0;
+  display: grid;
+  min-height: min(100svh, 58rem);
+  grid-template-columns: minmax(0, 0.86fr) minmax(28rem, 1.14fr);
+  align-items: center;
+  gap: clamp(2.4rem, 6vw, 7rem);
+  padding: clamp(5.5rem, 9svh, 8rem) 0;
   color: var(--theme-text);
+}
+
+.support-showcase-copy {
+  position: relative;
+  z-index: 2;
+  max-width: 45rem;
 }
 
 .support-showcase-title {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.35em;
   margin: 0;
-  text-align: center;
-  font-size: clamp(1.85rem, 4.2vw, 3.45rem);
+  text-align: left;
+  color: var(--landing-text-strong);
+  font-size: clamp(2.3rem, 5.2vw, 5.1rem);
   font-weight: 780;
   letter-spacing: 0;
-  line-height: 1.15;
+  line-height: 0.98;
 }
 
 .support-showcase-title strong {
@@ -1202,39 +1643,130 @@ onUnmounted(() => {
   font-weight: 820;
 }
 
-.support-provider-row,
-.support-platform-row {
-  display: flex;
-  flex-wrap: wrap;
+.support-ecosystem {
+  position: relative;
+  min-height: clamp(29rem, 70svh, 42rem);
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  overflow: visible;
+  transform-style: preserve-3d;
+}
+
+.support-ecosystem::before {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.support-ecosystem::before {
+  left: 50%;
+  top: 43%;
+  width: min(29rem, 76%);
+  height: min(19rem, 48%);
+  border: 1px solid color-mix(in srgb, var(--landing-hairline) 42%, transparent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(-13deg);
+}
+
+.support-ecosystem-hub {
+  position: absolute;
+  left: 50%;
+  top: 43%;
+  z-index: 3;
+  display: grid;
+  min-width: min(15.5rem, 58%);
+  transform: translate(-50%, -50%);
+  justify-items: center;
+  gap: 0.45rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding: 1rem 1.35rem;
+  text-align: center;
+  box-shadow: none;
+}
+
+.support-hub-mark {
+  display: inline-flex;
+  height: 2.25rem;
+  width: 2.25rem;
   align-items: center;
   justify-content: center;
+  border-radius: 0.5rem;
+  background: var(--landing-text-strong);
+}
+
+.support-hub-mark img {
+  height: 82%;
+  width: 82%;
+  object-fit: contain;
+}
+
+.support-ecosystem-hub strong {
+  color: var(--landing-text-strong);
+  font-size: clamp(1rem, 1.5vw, 1.25rem);
+  font-weight: 840;
+  line-height: 1;
+}
+
+.support-ecosystem-hub span:last-child {
+  color: var(--landing-muted);
+  font-size: 0.78rem;
+  font-weight: 720;
 }
 
 .support-provider-row {
-  gap: 0.75rem 0.85rem;
-  margin-top: clamp(1.75rem, 4vw, 3rem);
-}
-
-.support-provider-row p {
-  margin: 0;
-  color: var(--theme-text);
-  font-size: clamp(1.1rem, 2.1vw, 1.6rem);
-  font-weight: 780;
-  line-height: 1.2;
+  position: absolute;
+  inset: clamp(1.1rem, 2vw, 1.8rem);
+  z-index: 2;
+  transform-origin: 50% 43%;
+  animation: support-provider-orbit 34s linear infinite;
 }
 
 .support-provider-chip {
+  position: absolute;
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.6rem;
   border: 1px solid var(--landing-hairline);
-  border-radius: 0.5rem;
-  background: var(--landing-surface-soft);
-  padding: 0.48rem 0.72rem;
+  border-radius: 999px;
+  background: var(--landing-surface-raised);
+  padding: 0.62rem 0.88rem;
   color: var(--theme-text-soft);
-  font-size: clamp(0.94rem, 1.45vw, 1.12rem);
+  font-size: clamp(0.92rem, 1.2vw, 1.08rem);
   font-weight: 760;
   line-height: 1.2;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 18px 36px rgba(2, 6, 23, 0.2);
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: support-provider-counter-orbit 34s linear infinite;
+}
+
+.support-provider-chip-1 {
+  left: 22%;
+  top: 25%;
+}
+
+.support-provider-chip-2 {
+  left: 70%;
+  top: 24%;
+}
+
+.support-provider-chip-3 {
+  left: 82%;
+  top: 43%;
+}
+
+.support-provider-chip-4 {
+  left: 23%;
+  top: 58%;
+}
+
+.support-provider-chip-5 {
+  left: 60%;
+  top: 62%;
 }
 
 .support-icon-frame {
@@ -1262,29 +1794,48 @@ onUnmounted(() => {
 }
 
 .support-platform-row {
-  gap: 0.85rem 1rem;
-  margin-top: clamp(2rem, 4vw, 3rem);
+  position: absolute;
+  left: clamp(1.1rem, 2vw, 1.8rem);
+  right: clamp(1.1rem, 2vw, 1.8rem);
+  bottom: clamp(1rem, 2vw, 1.5rem);
+  z-index: 3;
+  display: grid;
+  min-width: 0;
+  gap: 0.75rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
 }
 
 .support-platform-row p {
-  margin: 0 0.6rem 0 0;
+  margin: 0;
+  max-width: none;
   color: var(--theme-text-muted);
-  font-size: clamp(0.9rem, 1.7vw, 1.2rem);
+  font-size: clamp(0.82rem, 1.05vw, 0.95rem);
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.support-platform-dock {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
 }
 
 .support-platform-chip {
   display: inline-flex;
-  min-height: 3.35rem;
-  min-width: min(12rem, 100%);
+  min-height: 2.9rem;
+  min-width: 0;
   align-items: center;
   justify-content: center;
-  gap: 0.8rem;
+  gap: 0.72rem;
   border: 1px solid var(--theme-border-strong);
-  border-radius: 0.5rem;
+  border-radius: 999px;
   background: var(--landing-surface-soft);
-  padding: 0.68rem 1.2rem;
+  padding: 0.58rem 0.85rem;
   color: var(--theme-text-soft);
   font-size: clamp(0.96rem, 1.45vw, 1.16rem);
   font-weight: 760;
@@ -1293,6 +1844,26 @@ onUnmounted(() => {
 .support-platform-chip .support-icon-frame {
   height: 2rem;
   width: 2rem;
+}
+
+@keyframes support-provider-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes support-provider-counter-orbit {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  to {
+    transform: translate(-50%, -50%) rotate(-360deg);
+  }
 }
 
 .section-pad {
@@ -1332,8 +1903,8 @@ onUnmounted(() => {
   isolation: isolate;
   background: var(--landing-bg);
   color: var(--landing-text);
-  padding-top: clamp(5.5rem, 8vw, 7.5rem);
-  padding-bottom: clamp(5.5rem, 8vw, 7.5rem);
+  padding-top: clamp(4.75rem, 8svh, 7rem);
+  padding-bottom: clamp(4.75rem, 8svh, 7rem);
 }
 
 .testimonial-section .section-heading h2 {
@@ -1345,11 +1916,11 @@ onUnmounted(() => {
 }
 
 .testimonial-marquee {
-  margin-top: 2.5rem;
+  margin-top: clamp(2rem, 4vw, 3.2rem);
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
   overflow: hidden;
-  padding: 0.5rem 0 1.75rem;
+  padding: 0.8rem 0 2rem;
   position: relative;
 }
 
@@ -1376,7 +1947,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   width: max-content;
-  gap: 0.9rem;
+  gap: clamp(0.9rem, 1.4vw, 1.3rem);
   padding-left: 1rem;
   animation: testimonial-scroll 52s linear infinite;
   will-change: transform;
@@ -1391,7 +1962,7 @@ onUnmounted(() => {
   display: flex;
   width: min(22rem, calc(100vw - 2.5rem));
   min-width: 0;
-  min-height: 16rem;
+  min-height: clamp(15.5rem, 31svh, 18rem);
   flex-direction: column;
   justify-content: space-between;
   flex: 0 0 auto;
@@ -1407,7 +1978,7 @@ onUnmounted(() => {
 
 .testimonial-card:nth-child(4n + 2) {
   width: min(24rem, calc(100vw - 2.5rem));
-  min-height: 17rem;
+  min-height: clamp(16.5rem, 34svh, 19rem);
   background: var(--landing-surface-soft);
 }
 
@@ -1418,7 +1989,7 @@ onUnmounted(() => {
 
 .testimonial-card:nth-child(4n) {
   width: min(20rem, calc(100vw - 2.5rem));
-  min-height: 15rem;
+  min-height: clamp(14.5rem, 29svh, 16.5rem);
   transform: translateY(-0.65rem);
   background: var(--landing-surface-soft);
 }
@@ -1452,24 +2023,6 @@ onUnmounted(() => {
   }
 }
 
-@keyframes terminal-type {
-  to {
-    clip-path: inset(0 0 0 0);
-  }
-}
-
-@keyframes terminal-cursor-blink {
-  0%,
-  42% {
-    opacity: 1;
-  }
-
-  43%,
-  100% {
-    opacity: 0;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .testimonial-marquee {
     overflow-x: auto;
@@ -1479,13 +2032,13 @@ onUnmounted(() => {
     animation: none;
   }
 
-  .terminal-line {
+  .support-provider-row,
+  .support-provider-chip {
     animation: none;
-    clip-path: inset(0 0 0 0);
   }
 
-  .terminal-cursor {
-    animation: none;
+  .floating-tool-tag {
+    transition: none;
   }
 
   .landing-header,
@@ -1506,12 +2059,13 @@ onUnmounted(() => {
 }
 
 .avatar-photo {
+  --testimonial-avatar-image: none;
   display: inline-flex;
   height: 2.7rem;
   width: 2.7rem;
   border-radius: 0.8rem;
   flex: 0 0 auto;
-  background-image: url('/testimonial-avatar-sprite.png');
+  background-image: var(--testimonial-avatar-image);
   background-repeat: no-repeat;
   background-size: 400% 200%;
   box-shadow:
@@ -1549,6 +2103,11 @@ onUnmounted(() => {
 .faq-list {
   display: grid;
   gap: 0;
+}
+
+.faq-section {
+  padding-top: clamp(4.75rem, 8svh, 6.5rem);
+  padding-bottom: clamp(4.75rem, 8svh, 6.5rem);
 }
 
 .faq-item {
@@ -1651,6 +2210,22 @@ onUnmounted(() => {
   }
 }
 
+@media (max-width: 1320px) and (min-width: 641px) {
+  .hero-section {
+    min-height: calc(100svh - clamp(4.25rem, 8vh, 5.4rem));
+    padding-top: clamp(3.75rem, 6vh, 4.75rem);
+    padding-bottom: clamp(1.4rem, 3.5vh, 2.25rem);
+  }
+
+  .hero-stage {
+    --hero-copy-safe-width: min(36rem, calc(100vw - 10rem));
+    --hero-copy-safe-gap: clamp(1.2rem, 3vw, 2.5rem);
+    --hero-copy-offset-y: clamp(-7.25rem, -11svh, -5.25rem);
+    min-height: calc(100svh - clamp(8.5rem, 15vh, 10.25rem));
+    width: min(100%, calc(100vw - clamp(4.5rem, 8vw, 7rem)));
+  }
+}
+
 @media (max-width: 640px) {
   .landing-header nav {
     gap: 0.6rem;
@@ -1693,21 +2268,51 @@ onUnmounted(() => {
     padding: 0.8rem 1rem;
   }
 
-  .hero-console {
-    overflow: hidden;
+  .hero-section {
+    min-height: calc(100svh - 3.625rem);
+    padding-top: 3.75rem;
+    padding-bottom: 0;
   }
 
-  .console-grid {
-    grid-template-columns: 1fr;
+  .hero-stage {
+    --hero-copy-offset-y: clamp(-7rem, -12svh, -5rem);
+    min-height: calc(100svh - 7.375rem);
+    align-items: center;
+    padding-top: clamp(0.75rem, 3.5svh, 2rem);
+    padding-bottom: clamp(1rem, 3svh, 2rem);
   }
 
-  .console-topbar {
-    padding: 0.78rem;
+  .floating-tool-tag {
+    --hero-tag-depth: 0px;
+    --hero-tag-drift-x: 0px;
+    --hero-tag-drift-y: 0px;
+    font-size: clamp(0.58rem, 2.7vw, 0.7rem);
+    transition: none;
   }
 
-  .terminal-line {
+  .floating-tool-tag-text {
+    min-width: 0;
+    min-height: 0;
+    font-size: clamp(0.88rem, 3.6vw, 1.15rem);
+  }
+
+  .floating-tool-tag-text .floating-tool-depth {
+    padding: 0 clamp(0.78rem, 2.6vw, 1rem);
+  }
+
+  .floating-tool-icon {
+    height: 100%;
     width: 100%;
-    white-space: normal;
+  }
+
+  .floating-tool-name {
+    max-width: 88%;
+  }
+
+  .hero-copy-centered {
+    order: 1;
+    grid-row: 2;
+    grid-column: 1 / -1;
   }
 
   .testimonial-card,
@@ -1721,30 +2326,90 @@ onUnmounted(() => {
     transform: none;
   }
 
+  .trust-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trust-card + .trust-card::before {
+    content: none;
+  }
+
+  .trust-card {
+    min-height: 4.35rem;
+  }
+
+  .support-showcase {
+    min-height: auto;
+  }
+
   .support-showcase-panel {
-    padding-right: 1.1rem;
-    padding-left: 1.1rem;
+    min-height: auto;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+    padding: 4rem 0;
   }
 
-  .support-provider-row,
+  .support-showcase-copy {
+    max-width: none;
+  }
+
+  .support-showcase-title {
+    font-size: clamp(2rem, 11vw, 3.4rem);
+  }
+
+  .support-ecosystem {
+    min-height: auto;
+    overflow: visible;
+    padding: 1rem;
+  }
+
+  .support-ecosystem::before,
+  .support-ecosystem::after {
+    content: none;
+  }
+
+  .support-ecosystem-hub {
+    position: static;
+    min-width: 0;
+    transform: none;
+    margin-block-end: 0.8rem;
+  }
+
+  .support-provider-row {
+    position: static;
+    display: grid;
+    gap: 0.7rem;
+    animation: none;
+  }
+
+  .support-provider-chip {
+    position: static;
+    justify-content: center;
+    transform: none;
+    animation: none;
+  }
+
   .support-platform-row {
-    align-items: stretch;
+    position: static;
+    margin-top: 1rem;
   }
 
-  .support-provider-row p,
   .support-platform-row p {
-    width: 100%;
+    max-width: none;
     text-align: center;
   }
 
-  .support-provider-chip,
+  .support-platform-dock {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .support-platform-chip {
-    flex: 1 1 100%;
+    width: 100%;
   }
 
   .hero-copy h1 {
-    font-size: clamp(2rem, 10vw, 2.75rem);
-    line-height: 1.04;
+    font-size: clamp(2rem, 10vw, 2.85rem);
+    line-height: 1;
     overflow-wrap: anywhere;
   }
 
@@ -1766,6 +2431,52 @@ onUnmounted(() => {
   }
 }
 
+@media (max-width: 640px) and (max-height: 720px) {
+  .hero-section {
+    padding-top: 3.6rem;
+    padding-bottom: 0;
+  }
+
+  .hero-stage {
+    --hero-copy-offset-y: clamp(-6.25rem, -12svh, -4.5rem);
+    min-height: calc(100svh - 7.225rem);
+    padding-top: clamp(0.75rem, 3.5svh, 1.5rem);
+    padding-bottom: clamp(0.75rem, 3svh, 1.25rem);
+  }
+
+  .floating-tool-tag-text {
+    min-width: 0;
+    min-height: 0;
+    font-size: clamp(0.82rem, 3.25vw, 1.02rem);
+  }
+
+  .hero-copy h1 {
+    margin-top: 0.5rem;
+    font-size: clamp(1.8rem, 9.1vw, 2.45rem);
+  }
+
+  .hero-lede {
+    margin-top: 0.75rem;
+    font-size: 0.94rem;
+    line-height: 1.5;
+  }
+
+  .hero-actions {
+    margin-top: 1rem;
+    width: 100%;
+    flex-wrap: nowrap;
+    gap: 0.55rem;
+  }
+
+  .hero-button {
+    width: auto;
+    flex: 1 1 0;
+    min-height: 2.8rem;
+    padding: 0 0.62rem;
+    font-size: 0.86rem;
+  }
+}
+
 @media (max-width: 380px) {
   .landing-header nav {
     padding-right: 0.55rem;
@@ -1777,15 +2488,11 @@ onUnmounted(() => {
   }
 
   .hero-section {
-    padding-top: 2.5rem;
+    padding-top: 3.6rem;
   }
 
-  .command-panel {
-    line-height: 1.6;
-  }
-
-  .terminal-status-badge {
-    padding: 0.22rem 0.42rem;
+  .hero-stage {
+    --hero-copy-offset-y: clamp(-5.5rem, -10svh, -4.25rem);
   }
 
   .trust-card {

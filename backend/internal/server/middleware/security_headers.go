@@ -95,9 +95,8 @@ func SecurityHeaders(cfg config.CSPConfig, getFrameSrcOrigins func() []string) g
 		c.Header("X-Content-Type-Options", "nosniff")
 		isImagePlaygroundApp := isImagePlaygroundAppPath(c)
 		isImagePlaygroundShell := isImagePlaygroundShellPath(c)
-		if isImagePlaygroundApp {
+		if isImagePlaygroundApp || isImagePlaygroundShell {
 			c.Header("X-Frame-Options", "SAMEORIGIN")
-			finalPolicy = replaceDirective(finalPolicy, "frame-ancestors", "'self'")
 		} else {
 			c.Header("X-Frame-Options", "DENY")
 		}
@@ -138,7 +137,7 @@ func isImagePlaygroundShellPath(c *gin.Context) bool {
 	if c == nil || c.Request == nil || c.Request.URL == nil {
 		return false
 	}
-	return c.Request.URL.Path == "/image-playground"
+	return c.Request.URL.Path == "/image-playground" || c.Request.URL.Path == "/image-playground/"
 }
 
 func isAPIRoutePath(c *gin.Context) bool {
@@ -160,10 +159,7 @@ func ensureImagePlaygroundCSP(policy string, isAppPath, isShellPath bool) string
 	if !directiveHasValue(policy, "frame-src", "'self'") {
 		policy = addToDirective(policy, "frame-src", "'self'")
 	}
-	if isAppPath {
-		return replaceDirective(policy, "frame-ancestors", "'self'")
-	}
-	return replaceDirective(policy, "frame-ancestors", "'none'")
+	return replaceDirective(policy, "frame-ancestors", "'self'")
 }
 
 // enhanceCSPPolicy 确保 CSP 策略包含 nonce 支持和支付 SDK 必需域名。

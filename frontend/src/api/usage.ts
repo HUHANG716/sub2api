@@ -111,6 +111,37 @@ export interface ImageEstimateResponse {
   pricing_source: string
 }
 
+export type ImagePlaygroundEventName =
+  | 'image_generate_submit'
+  | 'image_generate_success'
+  | 'image_generate_error'
+
+export interface ImagePlaygroundEvent {
+  name: ImagePlaygroundEventName
+  sourceMode?: string
+  provider?: string
+  apiMode?: string
+  model?: string
+  size?: string
+  quality?: string
+  outputFormat?: string
+  n?: number
+  inputImageCount?: number
+  hasMask?: boolean
+  durationMs?: number
+  outputImageCount?: number
+  errorKind?: string
+  recoverable?: boolean
+}
+
+export interface ImagePlaygroundEventsRequest {
+  events: ImagePlaygroundEvent[]
+}
+
+export interface ImagePlaygroundEventsResponse {
+  inserted: number
+}
+
 /**
  * List usage logs with optional filters
  * @param page - Page number (default: 1)
@@ -343,6 +374,16 @@ export async function estimateImageCost(
   return data
 }
 
+export async function recordImagePlaygroundEvents(
+  payload: ImagePlaygroundEventsRequest
+): Promise<ImagePlaygroundEventsResponse> {
+  const { data } = await apiClient.post<ImagePlaygroundEventsResponse>(
+    '/usage/image-playground-events',
+    payload
+  )
+  return data
+}
+
 export const usageAPI = {
   list,
   query,
@@ -356,7 +397,8 @@ export const usageAPI = {
   getDashboardModels,
   getMyApiKeyDailyUsage,
   getDashboardApiKeysUsage,
-  estimateImageCost
+  estimateImageCost,
+  recordImagePlaygroundEvents
 }
 
 export default usageAPI
