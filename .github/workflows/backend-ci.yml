@@ -9,6 +9,13 @@ on:
     branches:
       - dev
       - main
+  workflow_dispatch:
+    inputs:
+      force_backend_image:
+        description: Run backend checks and publish the backend image for this ref
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -77,7 +84,7 @@ jobs:
   backend:
     name: Backend
     needs: changes
-    if: ${{ needs.changes.outputs.backend == 'true' }}
+    if: ${{ needs.changes.outputs.backend == 'true' || (github.event_name == 'workflow_dispatch' && inputs.force_backend_image) }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -150,7 +157,7 @@ jobs:
   golangci-lint:
     name: Go Lint
     needs: changes
-    if: ${{ needs.changes.outputs.backend == 'true' }}
+    if: ${{ needs.changes.outputs.backend == 'true' || (github.event_name == 'workflow_dispatch' && inputs.force_backend_image) }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -177,7 +184,7 @@ jobs:
       - changes
       - backend
       - golangci-lint
-    if: ${{ always() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && needs.changes.outputs.backend == 'true' && needs.backend.result == 'success' && needs.golangci-lint.result == 'success' }}
+    if: ${{ always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && (needs.changes.outputs.backend == 'true' || inputs.force_backend_image) && needs.backend.result == 'success' && needs.golangci-lint.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
