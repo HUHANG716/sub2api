@@ -28,7 +28,7 @@ func newImagePlaygroundEventsTestRouter(t *testing.T, h *UsageHandler) *gin.Engi
 func TestRecordImagePlaygroundEventsInsertsWhitelistedEvent(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
-	defer db.Close()
+	t.Cleanup(func() { _ = db.Close() })
 
 	h := NewUsageHandler(nil, nil, nil, nil, nil)
 	h.SetSQLDB(db)
@@ -70,7 +70,7 @@ func TestRecordImagePlaygroundEventsInsertsWhitelistedEvent(t *testing.T) {
 func TestRecordImagePlaygroundEventsRejectsUnknownEvent(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
-	defer db.Close()
+	t.Cleanup(func() { _ = db.Close() })
 
 	h := NewUsageHandler(nil, nil, nil, nil, nil)
 	h.SetSQLDB(db)

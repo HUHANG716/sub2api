@@ -432,7 +432,7 @@ func (h *UsageHandler) queryImagePlaygroundAnalyticsBreakdown(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	items := []ImagePlaygroundAnalyticsBreakdownItem{}
 	for rows.Next() {
@@ -468,7 +468,7 @@ func (h *UsageHandler) queryImagePlaygroundAnalyticsRecent(ctx context.Context, 
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	items := []ImagePlaygroundAnalyticsRecentEvent{}
 	for rows.Next() {
