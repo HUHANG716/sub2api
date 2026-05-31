@@ -86,23 +86,35 @@ jobs:
             if (artifact) {
               core.info(`Found frontend-dist artifact ${artifact.id}.`);
             } else {
-              core.info('No frontend-dist artifact found; skipping frontend deploy.');
+              core.info('No frontend-dist artifact found; frontend will be built during deploy.');
             }
 
+      - name: Resolve frontend dist source
+        id: frontend_dist
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HAS_ARTIFACT: ${{ steps.frontend_artifact.outputs.exists }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$HAS_ARTIFACT" != "true" ]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ steps.frontend_dist.outputs.build == 'true' }}
         uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.ref || 'dev' }}
+          ref: ${{ github.event.workflow_run.head_sha || inputs.ref || 'dev' }}
 
       - name: Setup pnpm
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ steps.frontend_dist.outputs.build == 'true' }}
         uses: pnpm/action-setup@v4
         with:
           version: 9
 
       - name: Setup Node.js
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ steps.frontend_dist.outputs.build == 'true' }}
         uses: actions/setup-node@v6
         with:
           node-version: '20'
@@ -110,26 +122,26 @@ jobs:
           cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install frontend dependencies
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ steps.frontend_dist.outputs.build == 'true' }}
         working-directory: frontend
         run: pnpm install --frozen-lockfile
 
       - name: Lint frontend
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ steps.frontend_dist.outputs.build == 'true' }}
         working-directory: frontend
         run: pnpm run lint:check
 
       - name: Typecheck frontend
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ steps.frontend_dist.outputs.build == 'true' }}
         working-directory: frontend
         run: pnpm run typecheck
 
       - name: Critical frontend tests
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ steps.frontend_dist.outputs.build == 'true' }}
         run: make test-frontend-critical
 
       - name: Build frontend
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ steps.frontend_dist.outputs.build == 'true' }}
         working-directory: frontend
         run: pnpm run build
 
@@ -146,12 +158,12 @@ jobs:
         if: ${{ github.event_name != 'workflow_dispatch' && steps.frontend_artifact.outputs.exists == 'true' }}
         run: tar -C frontend-dist -czf frontend-dist.tar.gz .
 
-      - name: Package frontend dist from manual build
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+      - name: Package frontend dist from deploy build
+        if: ${{ steps.frontend_dist.outputs.build == 'true' }}
         run: tar -C backend/internal/web/dist -czf frontend-dist.tar.gz .
 
       - name: Configure SSH
-        if: ${{ steps.image.outputs.exists == 'true' || github.event_name == 'workflow_dispatch' || steps.frontend_artifact.outputs.exists == 'true' }}
+        if: ${{ steps.image.outputs.exists == 'true' || steps.frontend_artifact.outputs.exists == 'true' || steps.frontend_dist.outputs.build == 'true' }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "${{ secrets.SEOUL_SSH_KEY }}" > ~/.ssh/id_seoul
@@ -441,7 +453,7 @@ jobs:
           } | ssh -i ~/.ssh/id_seoul "${DEPLOY_USER}@${DEPLOY_HOST}" "env DEPLOY_REF=${DEPLOY_REF_Q} DEPLOY_SHA=${DEPLOY_SHA_Q} DEPLOY_IMAGE_NAME=${DEPLOY_IMAGE_NAME_Q} GHCR_USERNAME=${GHCR_USERNAME_Q} sh -c 'IFS= read -r GHCR_TOKEN; export GHCR_TOKEN; bash -se'"
 
       - name: Deploy frontend files
-        if: ${{ github.event_name == 'workflow_dispatch' || steps.frontend_artifact.outputs.exists == 'true' }}
+        if: ${{ steps.frontend_artifact.outputs.exists == 'true' || steps.frontend_dist.outputs.build == 'true' }}
         env:
           DEPLOY_HOST: ${{ vars.SEOUL_HOST }}
           DEPLOY_USER: ${{ vars.SEOUL_USER }}
