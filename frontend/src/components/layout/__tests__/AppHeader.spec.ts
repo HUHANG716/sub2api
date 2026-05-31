@@ -72,6 +72,26 @@ describe('AppHeader discount campaign', () => {
     expect(wrapper.get('.header-discount-campaign').text()).toContain('限时八折活动进行中')
   })
 
+  it('preserves campaign label spacing when rendering', () => {
+    setActivePinia(createPinia())
+    const appStore = useAppStore()
+    const authStore = useAuthStore()
+    authStore.user = { id: 1, username: 'tester', email: 'tester@example.com', role: 'user' } as any
+    appStore.cachedPublicSettings = {
+      global_discount: {
+        enabled: true,
+        active: true,
+        discount_rate: 0.9,
+        schedule_type: 'once',
+        label: '🎁  周末全天享  9 折计费  🎁'
+      }
+    } as any
+
+    const wrapper = mountHeader()
+
+    expect(wrapper.get('.header-discount-campaign span').text()).toBe('🎁  周末全天享  9 折计费  🎁')
+  })
+
   it('hides the campaign copy when the discount is inactive', () => {
     setActivePinia(createPinia())
     const appStore = useAppStore()

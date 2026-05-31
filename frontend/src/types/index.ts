@@ -1361,6 +1361,8 @@ export interface DashboardStats {
   today_new_users: number // 今日新增用户数
   active_users: number // 今日有请求的用户数
   total_user_balance: number // 所有用户当前余额总和（不含订阅套餐额度）
+  today_balance_added: number // 今日管理员手动增加余额
+  today_balance_deducted: number // 今日管理员手动扣减余额
   hourly_active_users: number // 当前小时活跃用户数（UTC）
   stats_updated_at: string // 统计更新时间（UTC RFC3339）
   stats_stale: boolean // 统计是否过期

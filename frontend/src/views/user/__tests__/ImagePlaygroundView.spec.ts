@@ -692,6 +692,8 @@ describe('ImagePlaygroundView', () => {
     await wrapper.get('[data-test="image-playground-regenerate"]').trigger('click')
     await flushPromises()
 
+    const originalFrameElement = wrapper.get('[data-test="image-playground-frame"]').element
+
     expect(wrapper.get('[data-test="image-playground-regenerate"]').text()).toContain('Regenerate API Key')
     expect(wrapper.findComponent({ name: 'ConfirmDialog' }).props('show')).toBe(true)
     expect(getKeyById).not.toHaveBeenCalled()
@@ -704,7 +706,9 @@ describe('ImagePlaygroundView', () => {
       key_id: 88,
       group_id: 11
     })
-    expect(new URL(wrapper.get('[data-test="image-playground-frame"]').attributes('src')).searchParams.get('refresh')).toBe('2')
+    const refreshedFrame = wrapper.get('[data-test="image-playground-frame"]')
+    expect(refreshedFrame.element).not.toBe(originalFrameElement)
+    expect(new URL(refreshedFrame.attributes('src')).searchParams.get('refresh')).toBe('2')
   })
 
   it('asks before creating a new key when the stored key was deleted', async () => {

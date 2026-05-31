@@ -1,8 +1,10 @@
-import { nextTick, onUnmounted, type Component } from 'vue'
-import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, onUnmounted, reactive, type Component } from 'vue'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import App from '@/App.vue'
+
+enableAutoUnmount(afterEach)
 
 const { routeRef, routerAfterEach, imagePlaygroundUnmounts } = vi.hoisted(() => ({
   routeRef: {
@@ -89,9 +91,13 @@ const appStore = {
   fetchPublicSettings: vi.fn(async () => ({}))
 }
 
-const authStore = {
-  isAuthenticated: true
-}
+const authStore = reactive({
+  isAuthenticated: true,
+  user: {
+    id: 1,
+    username: 'alice'
+  }
+})
 
 const subscriptionStore = {
   fetchActiveSubscriptions: vi.fn(async () => undefined),
@@ -126,6 +132,12 @@ describe('App image playground route persistence', () => {
     announcementStore.fetchAnnouncements.mockClear()
     announcementStore.reset.mockClear()
     authStore.isAuthenticated = true
+    authStore.user = {
+      id: 1,
+      username: 'alice'
+    }
+    localStorage.clear()
+    sessionStorage.clear()
   })
 
   it('keeps the image playground mounted when navigating away and shows it again without remounting', async () => {
@@ -161,5 +173,30 @@ describe('App image playground route persistence', () => {
     expect(wrapper.get('[data-test="image-playground-host"]').attributes('style') ?? '').not.toContain('display: none')
     expect(wrapper.find('[data-test="router-view"]').exists()).toBe(false)
     expect(imagePlaygroundUnmounts.count).toBe(0)
+  })
+
+  it('unmounts image playground and clears stored key material when the auth session changes', async () => {
+    const wrapper = mount(App)
+
+    if (!routeRef.current) throw new Error('route mock was not initialized')
+    routeRef.current.name = 'ImagePlayground'
+    routeRef.current.path = '/image-playground'
+    routeRef.current.meta = { title: 'Image Playground' }
+    await nextTick()
+
+    expect(wrapper.find('[data-test="image-playground-host"]').exists()).toBe(true)
+    localStorage.setItem('image_playground_api_key', JSON.stringify({ key: 'sk-old' }))
+    sessionStorage.setItem('hahacode.imagePlayground.settings', JSON.stringify({ apiKey: 'sk-old' }))
+
+    authStore.user = {
+      id: 2,
+      username: 'bob'
+    }
+    await nextTick()
+
+    expect(imagePlaygroundUnmounts.count).toBe(1)
+    expect(localStorage.getItem('image_playground_api_key')).toBeNull()
+    expect(sessionStorage.getItem('hahacode.imagePlayground.settings')).toBeNull()
+    expect(wrapper.find('[data-test="image-playground-host"]').exists()).toBe(true)
   })
 })

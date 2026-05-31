@@ -129,4 +129,5 @@ export function writeStoredImagePlaygroundKey(apiKey: ApiKey, group?: Group | nu
 
 export function clearStoredImagePlaygroundKey() {
   window.localStorage.removeItem(IMAGE_PLAYGROUND_STORAGE_KEY)
+  window.sessionStorage.removeItem(IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY)
 }

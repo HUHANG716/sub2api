@@ -1771,6 +1771,7 @@ export default {
       activeUsers: '活跃用户',
       totalUserBalance: '用户余额总量',
       balanceOnly: '仅余额',
+      todayBalanceAdjustments: '今日余额调整',
       accounts: '账号',
       totalAccounts: '账号总数',
       activeAccounts: '活跃账号',

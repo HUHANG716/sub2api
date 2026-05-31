@@ -70,6 +70,7 @@
         v-else-if="iframeSrc"
         data-test="image-playground-frame"
         class="image-playground-frame image-playground-frame--workspace"
+        :key="iframeSrc"
         :src="iframeSrc"
         :title="t('imagePlayground.title')"
         allow="clipboard-read; clipboard-write"

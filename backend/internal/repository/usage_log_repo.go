@@ -1577,6 +1577,27 @@ func (r *usageLogRepository) fillDashboardEntityStats(ctx context.Context, stats
 		return err
 	}
 
+	balanceAdjustmentStatsQuery := `
+		SELECT
+			COALESCE(SUM(CASE WHEN value > 0 THEN value ELSE 0 END), 0) as today_balance_added,
+			COALESCE(SUM(CASE WHEN value < 0 THEN -value ELSE 0 END), 0) as today_balance_deducted
+		FROM redeem_codes
+		WHERE type = $1
+			AND status = $2
+			AND used_at >= $3
+			AND used_at < $4
+	`
+	if err := scanSingleRow(
+		ctx,
+		r.sql,
+		balanceAdjustmentStatsQuery,
+		[]any{service.AdjustmentTypeAdminBalance, service.StatusUsed, todayUTC, todayUTC.Add(24 * time.Hour)},
+		&stats.TodayBalanceAdded,
+		&stats.TodayBalanceDeducted,
+	); err != nil {
+		return err
+	}
+
 	apiKeyStatsQuery := `
 		SELECT
 			COUNT(*) as total_api_keys,

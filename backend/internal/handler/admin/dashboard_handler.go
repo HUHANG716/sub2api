@@ -126,7 +126,9 @@ func (h *DashboardHandler) GetStats(c *gin.Context) {
 		"today_new_users": stats.TodayNewUsers,
 		"active_users":    stats.ActiveUsers,
 		// 用户当前余额总和（不含订阅套餐额度）
-		"total_user_balance": stats.TotalUserBalance,
+		"total_user_balance":     stats.TotalUserBalance,
+		"today_balance_added":    stats.TodayBalanceAdded,
+		"today_balance_deducted": stats.TodayBalanceDeducted,
 
 		// API Key 统计
 		"total_api_keys":  stats.TotalAPIKeys,

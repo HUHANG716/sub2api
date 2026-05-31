@@ -26,7 +26,6 @@
         class="header-discount-campaign"
         :title="discountCampaignText"
       >
-        <Icon name="sparkles" size="sm" />
         <span>{{ discountCampaignText }}</span>
       </div>
 
@@ -125,7 +124,9 @@ const activeGlobalDiscount = computed(() => {
 
 const discountCampaignText = computed(() => {
   const discount = activeGlobalDiscount.value
-  return discount?.label?.trim() || ''
+  const label = discount?.label
+  if (!label?.trim()) return ''
+  return label
 })
 
 function toggleMobileSidebar() {
@@ -210,6 +211,7 @@ function toggleMobileSidebar() {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: pre;
 }
 
 @media (min-width: 640px) {

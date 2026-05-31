@@ -1764,6 +1764,7 @@ export default {
       users: 'Users',
       totalUserBalance: 'Total User Balance',
       balanceOnly: 'Balance only',
+      todayBalanceAdjustments: 'Today Balance Adjustments',
       todayRequests: 'Today Requests',
       newUsersToday: 'New Users Today',
       todayTokens: 'Today Tokens',
