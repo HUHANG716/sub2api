@@ -1,16 +1,15 @@
 <template>
-  <div class="space-y-6">
+  <div>
     <!-- Charts Grid -->
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.12fr)_minmax(20rem,0.88fr)]">
       <!-- Model Distribution Chart -->
-      <div class="card relative overflow-hidden p-4">
+      <div class="card relative min-h-[16rem] overflow-hidden p-4">
         <div v-if="loading" class="absolute inset-0 z-10 flex items-center justify-center bg-white/50 backdrop-blur-sm dark:bg-dark-800/50">
           <LoadingSpinner size="md" />
         </div>
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('dashboard.modelDistribution') }}</h3>
           <div class="flex flex-wrap items-center gap-2">
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('dashboard.timeRange') }}:</span>
             <DateRangePicker
               :start-date="startDate"
               :end-date="endDate"
@@ -18,17 +17,17 @@
               @update:endDate="$emit('update:endDate', $event)"
               @change="$emit('dateRangeChange', $event)"
             />
-            <button @click="$emit('refresh')" :disabled="loading" class="btn btn-secondary">
-              {{ t('common.refresh') }}
+            <button @click="$emit('refresh')" :disabled="loading" class="btn btn-secondary btn-icon" :title="t('common.refresh')" :aria-label="t('common.refresh')">
+              <Icon name="refresh" size="sm" />
             </button>
           </div>
         </div>
-        <div class="flex items-center gap-6">
-          <div class="h-48 w-48">
+        <div class="grid items-center gap-5 md:grid-cols-[12rem_minmax(0,1fr)]">
+          <div class="mx-auto h-44 w-44 md:h-48 md:w-48">
             <Doughnut v-if="modelData" :data="modelData" :options="doughnutOptions" />
             <div v-else class="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">{{ t('dashboard.noDataAvailable') }}</div>
           </div>
-          <div class="max-h-48 flex-1 overflow-y-auto">
+          <div class="max-h-48 min-w-0 overflow-y-auto">
             <table class="w-full text-xs">
               <thead>
                 <tr class="text-gray-500 dark:text-gray-400">
@@ -66,6 +65,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import { Doughnut } from 'vue-chartjs'
 import UserDashboardAnnouncements from './UserDashboardAnnouncements.vue'
+import Icon from '@/components/icons/Icon.vue'
 import type { ModelStat } from '@/types'
 import { formatCostFixed as formatCost, formatNumberLocaleString as formatNumber, formatTokensK as formatTokens } from '@/utils/format'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler } from 'chart.js'

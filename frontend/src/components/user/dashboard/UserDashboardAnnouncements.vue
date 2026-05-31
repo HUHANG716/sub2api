@@ -1,6 +1,6 @@
 <template>
-  <div class="card flex h-full flex-col overflow-hidden">
-    <div class="flex min-h-[4.5rem] items-center justify-between gap-4 border-b border-gray-100 px-4 dark:border-dark-700/80">
+  <div class="card flex h-full min-h-[16rem] flex-col overflow-hidden">
+    <div class="flex min-h-[3.75rem] items-center justify-between gap-4 border-b border-gray-100 px-4 dark:border-dark-700/80">
       <div class="min-w-0">
         <div class="flex items-center gap-2">
           <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-600 dark:bg-dark-700 dark:text-dark-300">
@@ -37,7 +37,7 @@
               v-for="item in visibleAnnouncements"
               :key="item.id"
               type="button"
-              class="group grid min-h-[3.65rem] w-full cursor-pointer grid-cols-[auto,minmax(0,1fr),auto] items-center gap-3 border-b border-gray-100 px-4 text-left transition-colors hover:bg-gray-50/90 focus:outline-none focus-visible:bg-gray-50 dark:border-dark-700/80 dark:hover:bg-dark-700/30 dark:focus-visible:bg-dark-700/30"
+              class="group grid min-h-[3.25rem] w-full cursor-pointer grid-cols-[auto,minmax(0,1fr),auto] items-center gap-3 border-b border-gray-100 px-4 text-left transition-colors hover:bg-gray-50/90 focus:outline-none focus-visible:bg-gray-50 dark:border-dark-700/80 dark:hover:bg-dark-700/30 dark:focus-visible:bg-dark-700/30"
               @click="openDetail(item)"
             >
               <span
@@ -74,7 +74,7 @@
             </button>
           </div>
 
-          <div class="mt-auto flex min-h-[3rem] items-center justify-between gap-3 border-t border-gray-100 bg-gray-50/70 px-4 dark:border-dark-700/80 dark:bg-dark-800/30">
+          <div class="mt-auto flex min-h-[2.75rem] items-center justify-between gap-3 border-t border-gray-100 bg-gray-50/70 px-4 dark:border-dark-700/80 dark:bg-dark-800/30">
             <span class="text-xs font-medium text-gray-500 dark:text-dark-400">
               {{ announcements.length }} {{ t('announcements.total') }}
             </span>
