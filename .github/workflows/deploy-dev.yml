@@ -29,6 +29,7 @@ jobs:
     name: Deploy to code.hahacode.work
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'dev' && !contains(github.event.workflow_run.head_commit.message, '[skip deploy]')) }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     environment:
       name: dev
       url: https://code.hahacode.work
@@ -46,6 +47,7 @@ jobs:
           fi
 
       - name: Check deploy image
+        timeout-minutes: 5
         id: image
         env:
           DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
@@ -172,6 +174,7 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
 
       - name: Deploy backend on server
+        timeout-minutes: 30
         if: ${{ steps.image.outputs.exists == 'true' }}
         env:
           DEPLOY_HOST: ${{ vars.SEOUL_HOST }}
@@ -453,6 +456,7 @@ jobs:
           } | ssh -i ~/.ssh/id_seoul "${DEPLOY_USER}@${DEPLOY_HOST}" "env DEPLOY_REF=${DEPLOY_REF_Q} DEPLOY_SHA=${DEPLOY_SHA_Q} DEPLOY_IMAGE_NAME=${DEPLOY_IMAGE_NAME_Q} GHCR_USERNAME=${GHCR_USERNAME_Q} sh -c 'IFS= read -r GHCR_TOKEN; export GHCR_TOKEN; bash -se'"
 
       - name: Deploy frontend files
+        timeout-minutes: 10
         if: ${{ steps.frontend_artifact.outputs.exists == 'true' || steps.frontend_dist.outputs.build == 'true' }}
         env:
           DEPLOY_HOST: ${{ vars.SEOUL_HOST }}

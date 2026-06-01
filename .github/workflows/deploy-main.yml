@@ -37,6 +37,7 @@ jobs:
     name: Deploy to Baoleyun prod
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment:
       name: prod
       url: https://code.hahacode.top
@@ -90,6 +91,7 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
 
       - name: Resolve deployment plan
+        timeout-minutes: 5
         id: plan
         env:
           DEPLOY_HOST: ${{ vars.BAOLEYUN_HOST }}
@@ -130,6 +132,7 @@ jobs:
           DEPLOYED_IMAGE="$deployed_image" FRONTEND_DEPLOYED_SHA="$frontend_deployed_sha" TARGET_SHA="$target_sha" bash .github/ci/resolve-main-deploy-plan.sh
 
       - name: Check deploy image
+        timeout-minutes: 5
         id: image
         if: ${{ steps.plan.outputs.mode == 'image' }}
         env:
@@ -171,6 +174,7 @@ jobs:
         run: tar -C frontend-dist -czf frontend-dist.tar.gz .
 
       - name: Deploy on server
+        timeout-minutes: 20
         if: ${{ steps.plan.outputs.mode == 'image' && steps.image.outputs.exists == 'true' }}
         env:
           DEPLOY_HOST: ${{ vars.BAOLEYUN_HOST }}
@@ -285,6 +289,7 @@ jobs:
           } | ssh -i ~/.ssh/id_deploy "${DEPLOY_USER}@${DEPLOY_HOST}" "env DEPLOY_REF=${DEPLOY_REF_Q} DEPLOY_SHA=${DEPLOY_SHA_Q} DEPLOY_IMAGE_NAME=${DEPLOY_IMAGE_NAME_Q} GHCR_USERNAME=${GHCR_USERNAME_Q} sh -c 'IFS= read -r GHCR_TOKEN; export GHCR_TOKEN; bash -se'"
 
       - name: Deploy frontend files
+        timeout-minutes: 10
         if: ${{ steps.plan.outputs.mode == 'frontend' }}
         env:
           DEPLOY_HOST: ${{ vars.BAOLEYUN_HOST }}
