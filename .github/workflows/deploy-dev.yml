@@ -22,7 +22,7 @@ permissions:
 
 concurrency:
   group: deploy-dev
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
