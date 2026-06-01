@@ -37,12 +37,12 @@ describe('dark theme tokens', () => {
   })
 
   it('softens the light shell with the burnt mandarin theme tokens', () => {
-    expect(styleSource).toContain('--theme-bg: #efeee8')
-    expect(styleSource).toContain('--theme-bg-soft: #e2dfd6')
-    expect(styleSource).toContain('--theme-bg-deep: #d2d0c5')
-    expect(styleSource).toContain('--theme-surface: rgba(250, 248, 242, 0.94)')
-    expect(styleSource).toContain('--theme-surface-strong: #fbfaf5')
-    expect(styleSource).toContain('--theme-surface-muted: rgba(239, 237, 229, 0.92)')
+    expect(styleSource).toContain('--theme-bg: #e8e6df')
+    expect(styleSource).toContain('--theme-bg-soft: #d9d6cc')
+    expect(styleSource).toContain('--theme-bg-deep: #c9c5b9')
+    expect(styleSource).toContain('--theme-surface: rgba(245, 243, 236, 0.96)')
+    expect(styleSource).toContain('--theme-surface-strong: #f6f3ec')
+    expect(styleSource).toContain('--theme-surface-muted: rgba(230, 227, 217, 0.94)')
     expect(styleSource).toContain('--theme-primary: #c65a1e')
     expect(styleSource).toContain('--theme-primary-hover: #a94718')
     expect(styleSource).toContain('--theme-primary-soft: rgba(198, 90, 30, 0.12)')
@@ -61,24 +61,18 @@ describe('dark theme tokens', () => {
     expect(cardGlassBlock).not.toContain('border: 1px solid transparent')
   })
 
-  it('keeps admin dashboard stat accents on semantic classes instead of legacy Tailwind colors', () => {
-    const accentClasses = [
-      'dashboard-stat-icon-key',
-      'dashboard-stat-icon-account',
-      'dashboard-stat-icon-request',
-      'dashboard-stat-icon-user',
-      'dashboard-stat-icon-today-token',
-      'dashboard-stat-icon-total-token',
-      'dashboard-stat-icon-performance',
-      'dashboard-stat-icon-latency'
-    ]
-
-    accentClasses.forEach((className) => {
-      expect(dashboardSource).toContain(`dashboard-stat-icon ${className}`)
-    })
-
-    expect(dashboardSource).not.toMatch(/bg-(blue|purple|green|emerald|indigo|violet|rose)-100 p-2/)
-    expect(dashboardSource).not.toMatch(/text-(blue|purple|green|emerald|indigo|violet|rose)-600 dark:text-\1-400/)
+  it('keeps admin dashboard metrics aligned with regular dashboard card styling', () => {
+    expect(dashboardSource).toContain('admin-metrics-row')
+    expect(dashboardSource).toContain('admin-metric-card card')
+    expect(dashboardSource).toContain('admin-metric-card-icon')
+    expect(dashboardSource).toContain('lg:grid-cols-5')
+    expect(dashboardSource).toContain('lg:grid-cols-4')
+    expect(dashboardSource).not.toContain('admin-metrics-grid')
+    expect(dashboardSource).not.toContain('admin-metrics-panel')
+    expect(dashboardSource).not.toContain('background: var(--theme-surface);')
+    expect(styleSource).not.toContain('.dashboard-stat-card')
+    expect(dashboardSource).not.toContain('dashboard-stat-icon')
+    expect(dashboardSource).not.toContain('dashboard-stat-card')
   })
 
   it('uses theme tokens for the accounts more actions dropdown', () => {

@@ -8,12 +8,14 @@ const {
   listUsers,
   getAllGroups,
   getBatchUsersUsage,
+  getPlatformQuotas,
   listEnabledDefinitions,
   getBatchUserAttributes
 } = vi.hoisted(() => ({
   listUsers: vi.fn(),
   getAllGroups: vi.fn(),
   getBatchUsersUsage: vi.fn(),
+  getPlatformQuotas: vi.fn(),
   listEnabledDefinitions: vi.fn(),
   getBatchUserAttributes: vi.fn()
 }))
@@ -23,7 +25,8 @@ vi.mock('@/api/admin', () => ({
     users: {
       list: listUsers,
       toggleStatus: vi.fn(),
-      delete: vi.fn()
+      delete: vi.fn(),
+      getPlatformQuotas
     },
     groups: {
       getAll: getAllGroups
@@ -55,7 +58,7 @@ vi.mock('vue-i18n', async () => {
   }
 })
 
-const createAdminUser = (): AdminUser => ({
+const createAdminUser = (overrides: Partial<AdminUser> = {}): AdminUser => ({
   id: 42,
   username: 'scoped-user',
   email: 'scoped@example.com',
@@ -72,7 +75,8 @@ const createAdminUser = (): AdminUser => ({
   notes: '',
   last_active_at: '2026-04-16T02:00:00Z',
   last_used_at: '2026-04-17T02:00:00Z',
-  current_concurrency: 0
+  current_concurrency: 0,
+  ...overrides
 })
 
 const DataTableStub = {
@@ -82,7 +86,9 @@ const DataTableStub = {
     <div>
       <div data-test="columns">{{ columns.map(col => col.key).join(',') }}</div>
       <button data-test="sort-last-used" @click="$emit('sort', 'last_used_at', 'desc')">sort</button>
-      <div v-for="row in data" :key="row.id">
+      <button data-test="sort-email" @click="$emit('sort', 'email', 'asc')">sort email</button>
+      <div v-for="row in data" :key="row.id" data-test="user-row">
+        <span data-test="row-email">{{ row.email }}</span>
         <slot name="cell-last_used_at" :value="row.last_used_at" :row="row" />
       </div>
     </div>
@@ -112,6 +118,7 @@ describe('admin UsersView', () => {
     listUsers.mockReset()
     getAllGroups.mockReset()
     getBatchUsersUsage.mockReset()
+    getPlatformQuotas.mockReset()
     listEnabledDefinitions.mockReset()
     getBatchUserAttributes.mockReset()
 
@@ -124,6 +131,7 @@ describe('admin UsersView', () => {
     })
     getAllGroups.mockResolvedValue([])
     getBatchUsersUsage.mockResolvedValue({ stats: {} })
+    getPlatformQuotas.mockResolvedValue({ platform_quotas: [] })
     listEnabledDefinitions.mockResolvedValue([])
     getBatchUserAttributes.mockResolvedValue({ values: {} })
   })
@@ -222,5 +230,95 @@ describe('admin UsersView', () => {
       }),
       expect.any(Object)
     )
+  })
+
+  it('clears current-page usage sorting when a server-side column sort is selected', async () => {
+    vi.useFakeTimers()
+
+    const alpha = createAdminUser({ id: 1, username: 'alpha', email: 'alpha@example.com' })
+    const beta = createAdminUser({ id: 2, username: 'beta', email: 'beta@example.com' })
+
+    localStorage.setItem('user-hidden-columns', JSON.stringify([]))
+    localStorage.setItem('user-column-settings-version', '3')
+    localStorage.setItem(
+      'admin-users-usage-sort',
+      JSON.stringify({ key: 'usage', metric: 'total', order: 'desc' })
+    )
+
+    listUsers.mockImplementation(async (_page, _pageSize, filters) => ({
+      items: filters?.sort_by === 'email' ? [alpha, beta] : [alpha, beta],
+      total: 2,
+      page: 1,
+      page_size: 20,
+      pages: 1
+    }))
+    getBatchUsersUsage.mockResolvedValue({
+      stats: {
+        1: { today_actual_cost: 0, total_actual_cost: 1, by_platform: [] },
+        2: { today_actual_cost: 0, total_actual_cost: 10, by_platform: [] }
+      }
+    })
+
+    const wrapper = mount(UsersView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          TablePageLayout: {
+            template: '<div><slot name="filters" /><slot name="table" /><slot name="pagination" /></div>'
+          },
+          DataTable: DataTableStub,
+          Pagination: true,
+          ConfirmDialog: true,
+          EmptyState: true,
+          GroupBadge: true,
+          Select: SelectStub,
+          UserAttributesConfigModal: true,
+          UserConcurrencyCell: true,
+          PlatformUsageBreakdown: true,
+          PlatformCostCell: true,
+          UserPlatformQuotaCell: true,
+          UserCreateModal: true,
+          UserEditModal: true,
+          UserApiKeysModal: true,
+          UserAllowedGroupsModal: true,
+          UserBalanceModal: true,
+          UserBalanceHistoryModal: true,
+          GroupReplaceModal: true,
+          Icon: true,
+          Teleport: true
+        }
+      }
+    })
+
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(60)
+    await flushPromises()
+
+    expect(wrapper.findAll('[data-test="row-email"]').map((row) => row.text())).toEqual([
+      'beta@example.com',
+      'alpha@example.com'
+    ])
+
+    await wrapper.get('[data-test="sort-email"]').trigger('click')
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(60)
+    await flushPromises()
+
+    expect(listUsers).toHaveBeenLastCalledWith(
+      1,
+      20,
+      expect.objectContaining({
+        sort_by: 'email',
+        sort_order: 'asc'
+      }),
+      expect.any(Object)
+    )
+    expect(wrapper.findAll('[data-test="row-email"]').map((row) => row.text())).toEqual([
+      'alpha@example.com',
+      'beta@example.com'
+    ])
+    expect(localStorage.getItem('admin-users-usage-sort')).toBeNull()
+
+    vi.useRealTimers()
   })
 })

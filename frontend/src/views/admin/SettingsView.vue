@@ -4975,12 +4975,19 @@
                 v-for="(rule, index) in form.global_discount_settings.rules"
                 :key="rule.id || index"
                 class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-dark-700"
+                data-test="global-discount-rule-card"
               >
                 <div class="flex items-center justify-between gap-3">
-                  <div class="flex items-center gap-3">
+                  <div class="flex flex-wrap items-center gap-3">
                     <Toggle v-model="rule.enabled" />
                     <span class="text-sm font-medium text-gray-900 dark:text-white">
                       {{ rule.label || localText(`折扣规则 ${index + 1}`, `Discount rule ${index + 1}`) }}
+                    </span>
+                    <span
+                      class="rounded-full px-2 py-0.5 text-xs font-medium"
+                      :class="globalDiscountRuleStatusMeta(rule).className"
+                    >
+                      {{ globalDiscountRuleStatusMeta(rule).label }}
                     </span>
                   </div>
                   <button
@@ -5012,6 +5019,9 @@
                       max="1"
                       step="0.01"
                     />
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {{ globalDiscountRuleRateHelp(rule) }}
+                    </p>
                   </div>
                   <div>
                     <label class="input-label">{{ localText("频率", "Frequency") }}</label>
@@ -5096,6 +5106,11 @@
                 <p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
                   {{ globalDiscountRulePreview(rule) }}
                 </p>
+                <div
+                  class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-300"
+                >
+                  {{ globalDiscountRuleTimelineSummary(rule) }}
+                </div>
               </div>
 
               <div
@@ -5150,6 +5165,18 @@
                         {{ cell.label }}
                       </div>
                     </div>
+                  </div>
+                </div>
+                <div
+                  v-if="globalDiscountPreviewHighlights.length > 0"
+                  class="mt-4 space-y-2"
+                >
+                  <div
+                    v-for="highlight in globalDiscountPreviewHighlights"
+                    :key="highlight"
+                    class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200"
+                  >
+                    {{ highlight }}
                   </div>
                 </div>
                 <div class="mt-3 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
@@ -7719,6 +7746,14 @@ const formatDiscountRate = (rate: number): string => {
     : normalized.toFixed(2);
 };
 
+const formatDiscountRateInput = (rate: number): string =>
+  Number.isInteger(rate) ? rate.toFixed(0) : String(rate);
+
+const formatDiscountPercentOff = (rate: number): string => {
+  const percent = Math.max(0, Math.round((1 - rate) * 100));
+  return `${percent}%`;
+};
+
 const discountRuleDisplayName = (rule: GlobalDiscountRule, index: number): string =>
   rule.label?.trim() || localText(`折扣规则 ${index + 1}`, `Discount rule ${index + 1}`);
 
@@ -7735,9 +7770,7 @@ const globalDiscountRuleMatchesPreviewTime = (
   date: Date,
   minuteOfDay: number,
 ): boolean => {
-  if (!rule.enabled) return false;
-  const rate = Number(rule.discount_rate || 1);
-  if (!Number.isFinite(rate) || rate <= 0 || rate >= 1) return false;
+  if (!isGlobalDiscountRuleEffective(rule)) return false;
   const instant = previewDayStart(date).getTime() + minuteOfDay * 60_000;
   if (rule.schedule_type === "once") {
     const start = rule.starts_at ? new Date(rule.starts_at).getTime() : Number.NaN;
@@ -7795,9 +7828,10 @@ const globalDiscountEffectivePreview = computed(() =>
       return {
         hour: slot,
         label: cellLabel,
+        matches: names,
         title: best
           ? localText(
-            `${label} ${slot} 命中：${names.join("、")}；最终 ${formatDiscountRate(best.rate)} 折`,
+            `${label} ${slot} 命中：${names.join("、")}；最终 ${formatDiscountRate(best.rate)}折`,
             `${label} ${slot} matches: ${names.join(", ")}; final ${best.rate.toFixed(2)}x`,
           )
           : localText(`${label} ${slot} 原价`, `${label} ${slot} standard rate`),
@@ -7816,11 +7850,90 @@ const globalDiscountEffectivePreview = computed(() =>
   }),
 );
 
+const globalDiscountPreviewHighlights = computed(() => {
+  const highlights: string[] = [];
+  for (const day of globalDiscountEffectivePreview.value) {
+    for (const cell of day.cells) {
+      if (cell.matches.length > 1) {
+        highlights.push(cell.title);
+      }
+      if (highlights.length >= 3) return highlights;
+    }
+  }
+  return highlights;
+});
+
 const globalDiscountRuleCrossesMidnight = (rule: GlobalDiscountRule) => {
   if (rule.schedule_type === "once") return false;
   const start = parseDiscountClockMinutes(rule.recurring_start_at);
   const end = parseDiscountClockMinutes(rule.recurring_end_at);
   return start !== null && end !== null && end <= start;
+};
+
+const addDaysToWeekdayValue = (weekday: number, offset: number): number => {
+  const normalized = ((weekday - 1 + offset) % 7) + 1;
+  return normalized > 0 ? normalized : normalized + 7;
+};
+
+const globalDiscountWeekdayLabel = (weekday: number): string =>
+  globalDiscountWeekdayOptions.value.find((item) => item.value === weekday)?.label || "";
+
+const globalDiscountRuleRateHelp = (rule: GlobalDiscountRule): string => {
+  const rate = Number(rule.discount_rate || 1);
+  if (!Number.isFinite(rate) || rate <= 0) {
+    return localText("请输入大于 0 且小于 1 的折扣倍率", "Enter a discount multiplier greater than 0 and lower than 1");
+  }
+  if (rate >= 1) {
+    return localText(`${formatDiscountRateInput(rate)} = 原价，无优惠`, `${formatDiscountRateInput(rate)} = standard rate, no discount`);
+  }
+  return localText(
+    `${formatDiscountRateInput(rate)} = ${formatDiscountRate(rate)}折，优惠 ${formatDiscountPercentOff(rate)}`,
+    `${formatDiscountRateInput(rate)} = ${rate.toFixed(2)}x, ${formatDiscountPercentOff(rate)} off`,
+  );
+};
+
+const globalDiscountRuleTimelineSummary = (rule: GlobalDiscountRule): string => {
+  if (rule.schedule_type === "once") {
+    const start = toDatetimeLocal(rule.starts_at).replace("T", " ");
+    const end = toDatetimeLocal(rule.ends_at).replace("T", " ");
+    return start && end
+      ? localText(`${start} - ${end}：${formatDiscountRate(Number(rule.discount_rate || 1))}折`, `${start} - ${end}: ${Number(rule.discount_rate || 1).toFixed(2)}x`)
+      : localText("请填写一次性折扣的开始和结束时间", "Enter the one-time discount start and end time");
+  }
+
+  const start = rule.recurring_start_at || "00:00";
+  const end = rule.recurring_end_at || "23:59";
+  const rate = Number(rule.discount_rate || 1);
+  const rateLabel = localText(`${formatDiscountRate(rate)}折`, `${rate.toFixed(2)}x`);
+  const endPrefix = globalDiscountRuleCrossesMidnight(rule) ? localText("次日", "Next day") : localText("当日", "Same day");
+
+  if (rule.schedule_type === "weekly") {
+    const weekdays = rule.weekdays || [];
+    if (weekdays.length === 0) return localText("请选择每周生效日期", "Select at least one weekday");
+    return weekdays
+      .map((weekday) => {
+        const endWeekday = globalDiscountRuleCrossesMidnight(rule)
+          ? addDaysToWeekdayValue(weekday, 1)
+          : weekday;
+        const startLabel = globalDiscountWeekdayLabel(weekday);
+        const endLabel = globalDiscountRuleCrossesMidnight(rule)
+          ? globalDiscountWeekdayLabel(endWeekday)
+          : startLabel;
+        return `${startLabel} ${start} - ${endLabel} ${end}：${rateLabel}`;
+      })
+      .join(localText("；", "; "));
+  }
+
+  if (rule.schedule_type === "monthly") {
+    const monthDays = rule.month_days || [];
+    if (monthDays.length === 0) return localText("请选择每月生效日期", "Select at least one month day");
+    return localText(
+      `每月 ${monthDays.join("、")} 日 ${start} - ${endPrefix} ${end}：${rateLabel}`,
+      `Monthly on day ${monthDays.join(", ")} ${start} - ${endPrefix} ${end}: ${rateLabel}`,
+    );
+  }
+
+  return localText(`每天 ${start} - ${endPrefix} ${end}：${rateLabel}`, `Daily ${start} - ${endPrefix} ${end}: ${rateLabel}`);
 };
 
 const formatDiscountRecurringPreview = (
@@ -7861,6 +7974,12 @@ const globalDiscountRulePreview = (rule: GlobalDiscountRule): string => {
   if (!rule.enabled) {
     return localText("此规则未启用", "This rule is off");
   }
+  if (!isGlobalDiscountRuleEffective(rule)) {
+    return localText(
+      "折扣倍率必须小于 1；1 表示原价，不会产生优惠",
+      "Discount multiplier must be lower than 1; 1 is standard rate.",
+    );
+  }
   const rate = Math.round((1 - Number(rule.discount_rate || 1)) * 100);
   if (rule.schedule_type !== "once") {
     if (rule.schedule_type === "daily") {
@@ -7884,6 +8003,72 @@ const globalDiscountRulePreview = (rule: GlobalDiscountRule): string => {
     return localText(`已结束，优惠 ${rate}%`, `Ended, ${rate}% off`);
   }
   return localText(`进行中，优惠 ${rate}%`, `Active, ${rate}% off`);
+};
+
+const globalDiscountRuleStatusMeta = (rule: GlobalDiscountRule): { label: string; className: string } => {
+  if (!rule.enabled) {
+    return {
+      label: localText("未启用", "Off"),
+      className: "bg-gray-100 text-gray-600 dark:bg-dark-700 dark:text-gray-300",
+    };
+  }
+  if (!isGlobalDiscountRuleEffective(rule)) {
+    return {
+      label: localText("配置无效", "Invalid"),
+      className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+    };
+  }
+  const now = new Date();
+  const minuteOfDay = now.getHours() * 60 + now.getMinutes();
+  if (globalDiscountRuleMatchesPreviewTime(rule, now, minuteOfDay)) {
+    return {
+      label: localText("当前生效", "Active now"),
+      className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+    };
+  }
+  if (rule.schedule_type === "once") {
+    const start = rule.starts_at ? new Date(rule.starts_at).getTime() : Number.NaN;
+    const end = rule.ends_at ? new Date(rule.ends_at).getTime() : Number.NaN;
+    if (!Number.isFinite(start) || !Number.isFinite(end)) {
+      return {
+        label: localText("待完善", "Incomplete"),
+        className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+      };
+    }
+    if (Date.now() < start) {
+      return {
+        label: localText("未开始", "Upcoming"),
+        className: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300",
+      };
+    }
+    return {
+      label: localText("已结束", "Ended"),
+      className: "bg-gray-100 text-gray-600 dark:bg-dark-700 dark:text-gray-300",
+    };
+  }
+  return {
+    label: localText("等待命中", "Waiting"),
+    className: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300",
+  };
+};
+
+const isGlobalDiscountRuleEffective = (rule: GlobalDiscountRule): boolean => {
+  if (!rule.enabled) return false;
+  const rate = Number(rule.discount_rate || 1);
+  return Number.isFinite(rate) && rate > 0 && rate < 1;
+};
+
+const validateGlobalDiscountRules = (settings: GlobalDiscountSettings): string | null => {
+  if (!settings.enabled) return null;
+  const invalidRateRule = (settings.rules || []).find(
+    (rule) => rule.enabled && !isGlobalDiscountRuleEffective(rule),
+  );
+  return invalidRateRule
+    ? localText(
+      "启用的折扣规则必须小于 1，1 表示原价，不会产生优惠。",
+      "Enabled discount rules must be lower than 1; 1 is the standard rate.",
+    )
+    : null;
 };
 
 const addBalanceBonusTier = () => {
@@ -8817,6 +9002,14 @@ async function saveSettings() {
     form.payment_balance_bonus_tiers = normalizeBalanceBonusTiers(
       form.payment_balance_bonus_tiers,
     );
+
+    const globalDiscountRuleError = validateGlobalDiscountRules(
+      form.global_discount_settings,
+    );
+    if (globalDiscountRuleError) {
+      appStore.showError(globalDiscountRuleError);
+      return;
+    }
 
     if (form.wechat_connect_mp_enabled && form.wechat_connect_mobile_enabled) {
       appStore.showError(

@@ -8,11 +8,11 @@
 
       <template v-else-if="stats">
         <!-- Row 1: Core Stats -->
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-6">
+        <div class="admin-metrics-row grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <!-- Total API Keys -->
-          <div class="card p-4">
+          <div class="admin-metric-card card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
+              <div class="admin-metric-card-icon rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
                 <Icon name="key" size="md" class="text-blue-600 dark:text-blue-400" :stroke-width="2" />
               </div>
               <div>
@@ -30,9 +30,9 @@
           </div>
 
           <!-- Service Accounts -->
-          <div class="card p-4">
+          <div class="admin-metric-card card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-indigo-100 p-2 dark:bg-indigo-900/30">
+              <div class="admin-metric-card-icon rounded-lg bg-indigo-100 p-2 dark:bg-indigo-900/30">
                 <Icon name="server" size="md" class="text-indigo-600 dark:text-indigo-400" :stroke-width="2" />
               </div>
               <div>
@@ -55,9 +55,9 @@
           </div>
 
           <!-- Today Requests -->
-          <div class="card p-4">
+          <div class="admin-metric-card card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-green-100 p-2 dark:bg-green-900/30">
+              <div class="admin-metric-card-icon rounded-lg bg-green-100 p-2 dark:bg-green-900/30">
                 <Icon name="chart" size="md" class="text-green-600 dark:text-green-400" :stroke-width="2" />
               </div>
               <div>
@@ -65,7 +65,7 @@
                   {{ t('admin.dashboard.todayRequests') }}
                 </p>
                 <p class="text-xl font-bold text-gray-900 dark:text-white">
-                  {{ stats.today_requests }}
+                  {{ formatNumber(stats.today_requests) }}
                 </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
                   {{ t('common.total') }}: {{ formatNumber(stats.total_requests) }}
@@ -75,9 +75,9 @@
           </div>
 
           <!-- New Users Today -->
-          <div class="card p-4">
+          <div class="admin-metric-card card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-amber-100 p-2 dark:bg-amber-900/30">
+              <div class="admin-metric-card-icon rounded-lg bg-amber-100 p-2 dark:bg-amber-900/30">
                 <Icon name="userPlus" size="md" class="text-amber-600 dark:text-amber-400" :stroke-width="2" />
               </div>
               <div>
@@ -95,9 +95,9 @@
           </div>
 
           <!-- Total User Balance -->
-          <div class="card p-4">
+          <div class="admin-metric-card card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-emerald-100 p-2 dark:bg-emerald-900/30">
+              <div class="admin-metric-card-icon rounded-lg bg-emerald-100 p-2 dark:bg-emerald-900/30">
                 <Icon name="wallet" size="md" class="text-emerald-600 dark:text-emerald-400" :stroke-width="2" />
               </div>
               <div>
@@ -113,15 +113,14 @@
               </div>
             </div>
           </div>
-
         </div>
 
         <!-- Row 2: Token Stats -->
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="admin-metrics-row grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <!-- Today Tokens -->
-          <div class="card p-4">
+          <div class="admin-metric-card card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-purple-100 p-2 dark:bg-purple-900/30">
+              <div class="admin-metric-card-icon rounded-lg bg-purple-100 p-2 dark:bg-purple-900/30">
                 <Icon name="cube" size="md" class="text-purple-600 dark:text-purple-400" :stroke-width="2" />
               </div>
               <div>
@@ -155,9 +154,9 @@
           </div>
 
           <!-- Total Tokens -->
-          <div class="card p-4">
+          <div class="admin-metric-card card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-cyan-100 p-2 dark:bg-cyan-900/30">
+              <div class="admin-metric-card-icon rounded-lg bg-cyan-100 p-2 dark:bg-cyan-900/30">
                 <Icon name="database" size="md" class="text-cyan-600 dark:text-cyan-400" :stroke-width="2" />
               </div>
               <div>
@@ -191,9 +190,9 @@
           </div>
 
           <!-- Performance (RPM/TPM) -->
-          <div class="card p-4">
+          <div class="admin-metric-card card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-violet-100 p-2 dark:bg-violet-900/30">
+              <div class="admin-metric-card-icon rounded-lg bg-violet-100 p-2 dark:bg-violet-900/30">
                 <Icon name="bolt" size="md" class="text-violet-600 dark:text-violet-400" :stroke-width="2" />
               </div>
               <div class="flex-1">
@@ -217,9 +216,9 @@
           </div>
 
           <!-- Current Concurrency -->
-          <div class="card p-4">
+          <div class="admin-metric-card card p-4">
             <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-rose-100 p-2 dark:bg-rose-900/30">
+              <div class="admin-metric-card-icon rounded-lg bg-rose-100 p-2 dark:bg-rose-900/30">
                 <Icon name="clock" size="md" class="text-rose-600 dark:text-rose-400" :stroke-width="2" />
               </div>
               <div>
@@ -324,7 +323,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
@@ -389,6 +388,8 @@ const rankingTotalTokens = ref(0)
 let chartLoadSeq = 0
 let usersTrendLoadSeq = 0
 let rankingLoadSeq = 0
+let statsRefreshSeq = 0
+let statsRefreshTimer: number | null = null
 const rankingLimit = 12
 
 // Helper function to format date in local timezone
@@ -628,6 +629,7 @@ const onDateRangeChange = (range: {
 // Load data
 const loadDashboardSnapshot = async (includeStats: boolean) => {
   const currentSeq = ++chartLoadSeq
+  const currentStatsSeq = includeStats ? ++statsRefreshSeq : statsRefreshSeq
   if (includeStats && !stats.value) {
     loading.value = true
   }
@@ -644,7 +646,7 @@ const loadDashboardSnapshot = async (includeStats: boolean) => {
       include_users_trend: false
     })
     if (currentSeq !== chartLoadSeq) return
-    if (includeStats && response.stats) {
+    if (includeStats && response.stats && currentStatsSeq === statsRefreshSeq) {
       stats.value = response.stats
     }
     trendData.value = response.trend || []
@@ -658,6 +660,27 @@ const loadDashboardSnapshot = async (includeStats: boolean) => {
       loading.value = false
       chartsLoading.value = false
     }
+  }
+}
+
+const refreshDashboardStats = async () => {
+  const currentStatsSeq = ++statsRefreshSeq
+  try {
+    const response = await adminAPI.dashboard.getSnapshotV2({
+      start_date: startDate.value,
+      end_date: endDate.value,
+      granularity: granularity.value,
+      include_stats: true,
+      include_trend: false,
+      include_model_stats: false,
+      include_group_stats: false,
+      include_users_trend: false
+    })
+    if (response.stats && currentStatsSeq === statsRefreshSeq) {
+      stats.value = response.stats
+    }
+  } catch (error) {
+    console.error('Error refreshing dashboard stats:', error)
   }
 }
 
@@ -733,5 +756,15 @@ const loadChartData = async () => {
 
 onMounted(() => {
   loadDashboardStats()
+  statsRefreshTimer = window.setInterval(() => {
+    void refreshDashboardStats()
+  }, 5000)
+})
+
+onUnmounted(() => {
+  if (statsRefreshTimer !== null) {
+    window.clearInterval(statsRefreshTimer)
+    statsRefreshTimer = null
+  }
 })
 </script>
