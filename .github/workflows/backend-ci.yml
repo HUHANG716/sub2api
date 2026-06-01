@@ -53,6 +53,8 @@ jobs:
               - 'Dockerfile.goreleaser'
               - '.goreleaser*.yaml'
               - 'Makefile'
+              - '.github/workflows/backend-ci.yml'
+              - '.github/workflows/deploy-main.yml'
             ci:
               - '.github/ci/**'
               - '.github/workflows/backend-ci.yml'
