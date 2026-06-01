@@ -93,23 +93,6 @@ function writeTemplateFavoriteIds(ids: Set<string>) {
   }
 }
 
-function matchesKeyword(item: PromptTemplateItem, keyword: string) {
-  if (!keyword) return true
-  return [
-    item.title,
-    item.category,
-    item.description,
-    item.promptText,
-    item.author,
-    item.sourceName,
-    item.sourceRepo,
-  ]
-    .filter(Boolean)
-    .join('\n')
-    .toLowerCase()
-    .includes(keyword)
-}
-
 function FilterButton({
   active,
   children,
@@ -273,7 +256,6 @@ export default function TemplateWorkspace() {
   const setAppMode = useStore((s) => s.setAppMode)
   const showToast = useStore((s) => s.showToast)
   const [fetchState, setFetchState] = useState<TemplateFetchState>(() => createEmptyTemplateFetchState())
-  const [query, setQuery] = useState('')
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
   const [kindFilter, setKindFilter] = useState<KindFilter>('all')
   const [favoriteFilter, setFavoriteFilter] = useState<FavoriteFilter>('all')
@@ -341,15 +323,14 @@ export default function TemplateWorkspace() {
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
-  }, [categoryFilter, favoriteFilter, kindFilter, query, sourceFilter])
+  }, [categoryFilter, favoriteFilter, kindFilter, sourceFilter])
 
   const filteredItems = useMemo(() => {
-    const keyword = query.trim().toLowerCase()
     return sourceFilteredItems.filter((item) => {
       if (categoryFilter !== 'all' && item.category !== categoryFilter) return false
-      return matchesKeyword(item, keyword)
+      return true
     })
-  }, [categoryFilter, query, sourceFilteredItems])
+  }, [categoryFilter, sourceFilteredItems])
 
   const visibleItems = filteredItems.slice(0, visibleCount)
   const failedSources = Object.entries(fetchState.sourceStates).filter(([, state]) => state.status === 'error')
@@ -412,7 +393,7 @@ export default function TemplateWorkspace() {
   }
 
   return (
-    <main data-template-workspace className={productEmbed ? 'pb-[calc(var(--input-bar-clearance,10rem)+2rem)]' : 'pb-48'}>
+    <main data-template-workspace className={productEmbed ? 'pb-4' : 'pb-8'}>
       <div data-template-container className="safe-area-x mx-auto max-w-7xl">
         <section className={productEmbed ? 'mt-2' : 'mt-6'}>
           <div className={`${productEmbed ? 'mb-2 gap-2' : 'mb-4 gap-3'} flex flex-col lg:flex-row lg:items-end lg:justify-between`}>
@@ -423,7 +404,7 @@ export default function TemplateWorkspace() {
               </div>}
               <h1 className={`${productEmbed ? 'text-lg' : 'mt-1 text-2xl'} font-bold tracking-tight text-gray-900 dark:text-gray-100`}>模板</h1>
               <p className={`${productEmbed ? 'mt-0.5 text-xs' : 'mt-1 text-sm'} text-gray-500 dark:text-gray-400`}>
-                多源读取模板、案例库和最新 X Prompt，选中后会填入底部输入框。
+                多源读取模板、案例库和最新 X Prompt，选中后回到画廊继续生成。
               </p>
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
@@ -441,21 +422,6 @@ export default function TemplateWorkspace() {
           </div>
 
           <div data-template-filters className="mb-4 grid gap-3 rounded-xl border border-gray-200/70 bg-white/70 p-3 shadow-sm dark:border-white/[0.08] dark:bg-gray-900/60">
-            <label className="relative block">
-              <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value)
-                  trackImagePlaygroundEvent('template_search', { keywordLength: event.target.value.trim().length })
-                }}
-                type="search"
-                placeholder="搜索标题、分类、说明、来源或 prompt..."
-                className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-gray-100"
-              />
-            </label>
             <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex gap-1 overflow-x-auto rounded-lg bg-gray-100 p-1 dark:bg-white/[0.04]">
                 {SOURCE_OPTIONS.map((option) => (

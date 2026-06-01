@@ -15,6 +15,7 @@ type paymentEventRequest struct {
 	OrderType   string   `json:"orderType"`
 	PaymentType string   `json:"paymentType"`
 	LaunchKind  string   `json:"launchKind"`
+	Source      string   `json:"source"`
 	Status      string   `json:"status"`
 	Amount      *float64 `json:"amount"`
 	PayAmount   *float64 `json:"payAmount"`
@@ -33,6 +34,7 @@ const maxPaymentEventsPerRequest = 20
 var allowedPaymentEvents = map[string]struct{}{
 	"payment_page_view":            {},
 	"payment_tab_change":           {},
+	"payment_amount_select":        {},
 	"payment_method_select":        {},
 	"payment_plan_select":          {},
 	"payment_order_submit":         {},
@@ -89,8 +91,8 @@ func (h *PaymentHandler) RecordPaymentEvents(c *gin.Context) {
 		if _, err := tx.ExecContext(c.Request.Context(), `
 			INSERT INTO payment_events (
 				user_id, event_name, tab, order_type, payment_type, launch_kind,
-				status, amount, pay_amount, fee_rate, plan_id, order_id, error_kind
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+				source, status, amount, pay_amount, fee_rate, plan_id, order_id, error_kind
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		`,
 			subject.UserID,
 			name,
@@ -98,6 +100,7 @@ func (h *PaymentHandler) RecordPaymentEvents(c *gin.Context) {
 			paymentNullableString(event.OrderType, 32),
 			paymentNullableString(event.PaymentType, 32),
 			paymentNullableString(event.LaunchKind, 32),
+			paymentNullableString(event.Source, 32),
 			paymentNullableString(event.Status, 32),
 			paymentNullableNonNegativeFloat(event.Amount),
 			paymentNullableNonNegativeFloat(event.PayAmount),

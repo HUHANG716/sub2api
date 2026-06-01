@@ -7,6 +7,7 @@ import { getCustomProviderConfigUrl, loadCustomProviderSettingsFromUrl } from '.
 import { useDockerApiUrlMigrationNotice } from './hooks/useDockerApiUrlMigrationNotice'
 import { useParentImageEstimateSync } from './hooks/useParentImageEstimateSync'
 import { isProductEmbedMode, rememberProductEmbedMode } from './lib/productEmbed'
+import { syncInitialProductEmbedTheme } from './lib/productEmbedTheme'
 import Header from './components/Header'
 import SearchBar from './components/SearchBar'
 import TaskGrid from './components/TaskGrid'
@@ -40,6 +41,7 @@ export default function App() {
     const searchParams = new URLSearchParams(window.location.search)
     const productEmbed = isProductEmbedMode()
     if (productEmbed) rememberProductEmbedMode()
+    const stopProductEmbedThemeSync = syncInitialProductEmbedTheme()
     const nextSettings = buildSettingsFromUrlParams(useStore.getState().settings, searchParams)
     const appModeFromUrl = getAppModeFromUrlParams(searchParams)
 
@@ -71,6 +73,7 @@ export default function App() {
     }
 
     initStore()
+    return stopProductEmbedThemeSync
   }, [setSettings])
 
   useEffect(() => {
@@ -103,7 +106,7 @@ export default function App() {
           </div>
         </main>
       )}
-      <InputBar />
+      {appMode !== 'templates' && <InputBar />}
       <DetailModal />
       <Lightbox />
       <SettingsModal />

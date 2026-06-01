@@ -370,6 +370,12 @@ type HeroTagField = {
   fieldY: number
 }
 
+type HeroFloatingTool = HeroFloatingTag & {
+  icon: string
+  needsBadge: boolean
+  angle: number
+}
+
 const heroPointerTarget: HeroPointerState = {
   x: 0,
   y: 0,
@@ -402,14 +408,14 @@ const supportProviders = [
   { name: 'Hermes Agent', icon: `${supportAssetBase}/hermes-agent.svg`, needsBadge: true }
 ] as const
 const heroFloatingTags = [
-  { ...supportProviders[0], shape: 'round', prominence: 'normal' },
-  { ...supportProviders[1], shape: 'round', prominence: 'primary' },
-  { ...supportProviders[2], shape: 'round', prominence: 'normal' },
-  { name: 'OpenAI', icon: '', needsBadge: false, shape: 'text', prominence: 'normal' },
-  { ...supportProviders[3], shape: 'round', prominence: 'compact' },
-  { ...supportProviders[4], shape: 'round', prominence: 'compact' },
-  { name: 'Codex App', icon: `${supportAssetBase}/codex-app.png`, needsBadge: false, shape: 'round', prominence: 'compact' }
-] satisfies readonly (HeroFloatingTag & { icon: string; needsBadge: boolean })[]
+  { ...supportProviders[0], shape: 'round', prominence: 'normal', angle: -7 },
+  { ...supportProviders[1], shape: 'round', prominence: 'primary', angle: 4 },
+  { ...supportProviders[2], shape: 'round', prominence: 'normal', angle: 6 },
+  { name: 'OpenAI', icon: '', needsBadge: false, shape: 'text', prominence: 'normal', angle: -3 },
+  { ...supportProviders[3], shape: 'round', prominence: 'compact', angle: 8 },
+  { ...supportProviders[4], shape: 'round', prominence: 'compact', angle: -6 },
+  { name: 'Codex App', icon: `${supportAssetBase}/codex-app.png`, needsBadge: false, shape: 'round', prominence: 'compact', angle: 5 }
+] satisfies readonly HeroFloatingTool[]
 const supportPlatforms = [
   { name: 'macOS', icon: `${supportAssetBase}/macos.svg` },
   { name: 'Windows', icon: `${supportAssetBase}/windows.svg` },
@@ -533,7 +539,7 @@ const landingHeaderStyle = computed(() => ({
 const heroLayoutByKey = computed(() => new Map(heroTagLayouts.value.map((layout) => [layout.key, layout])))
 const heroFieldByKey = computed(() => new Map(heroTagFields.value.map((field) => [field.key, field])))
 
-function heroTagStyle(tool: HeroFloatingTag): CSSProperties {
+function heroTagStyle(tool: HeroFloatingTool): CSSProperties {
   const layout = heroLayoutByKey.value.get(tool.name)
   if (!layout) return {}
   const field = heroFieldByKey.value.get(tool.name)
@@ -549,6 +555,7 @@ function heroTagStyle(tool: HeroFloatingTag): CSSProperties {
     '--hero-tag-drift-y': `${layout.driftY.toFixed(1)}px`,
     '--hero-tag-field-x': `${(field?.fieldX ?? 0).toFixed(1)}px`,
     '--hero-tag-field-y': `${(field?.fieldY ?? 0).toFixed(1)}px`,
+    '--hero-tag-angle': `${tool.angle}deg`,
     '--hero-tag-delay': `${layout.delay}ms`
   } as CSSProperties
 }
@@ -670,13 +677,13 @@ function scheduleHeroFieldFrame() {
 
 function tickHeroField() {
   heroFieldFrame = 0
-  const stiffness = 0.16
+  const stiffness = 0.34
 
   heroPointerPhysics.x += (heroPointerTarget.x - heroPointerPhysics.x) * stiffness
   heroPointerPhysics.y += (heroPointerTarget.y - heroPointerPhysics.y) * stiffness
   heroPointerPhysics.stageX += (heroPointerTarget.stageX - heroPointerPhysics.stageX) * stiffness
   heroPointerPhysics.stageY += (heroPointerTarget.stageY - heroPointerPhysics.stageY) * stiffness
-  heroPointerPhysics.active += (heroPointerTarget.active - heroPointerPhysics.active) * 0.14
+  heroPointerPhysics.active += (heroPointerTarget.active - heroPointerPhysics.active) * 0.28
 
   heroPointer.value = {
     x: heroPointerPhysics.x * heroPointerPhysics.active,
@@ -730,7 +737,7 @@ function computeHeroTagFields(pointer: HeroPointerState): HeroTagField[] {
       : viewport.width <= 960
         ? 0.62
         : 0.95
-    const travel = viewport.width <= 960 ? 42 : 56
+    const travel = viewport.width <= 960 ? 52 : 72
     const targetFieldX = pointer.x * active * parallaxScale * travel * depthFactor
     const targetFieldY = pointer.y * active * parallaxScale * travel * depthFactor
 
@@ -1285,6 +1292,7 @@ onUnmounted(() => {
   --hero-tag-drift-y: 12px;
   --hero-tag-field-x: 0px;
   --hero-tag-field-y: 0px;
+  --hero-tag-angle: 0deg;
   display: inline-flex;
   box-sizing: border-box;
   left: 0;
@@ -1303,13 +1311,12 @@ onUnmounted(() => {
       calc(var(--hero-tag-x) - 50% + var(--hero-tag-field-x)),
       calc(var(--hero-tag-y) - 50% + var(--hero-tag-field-y)),
       0
-    );
-  transition: transform 520ms cubic-bezier(0.2, 0.82, 0.22, 1);
+    ) rotate(var(--hero-tag-angle));
+  transition: transform 120ms ease-out;
   will-change: transform, translate;
 }
 
 .floating-tool-depth {
-  --hero-depth-shadow: clamp(-1, calc(var(--hero-tag-depth) / 90px), 1);
   display: inline-flex;
   box-sizing: border-box;
   width: 100%;
@@ -1326,14 +1333,10 @@ onUnmounted(() => {
   line-height: 1.05;
   text-align: center;
   overflow: hidden;
-  box-shadow:
-    calc(var(--hero-depth-shadow) * -8px) calc(18px - var(--hero-depth-shadow) * 8px) calc(30px + var(--hero-depth-shadow) * 12px) rgba(217, 119, 50, 0.28),
-    0 2px 0 color-mix(in srgb, var(--landing-text-strong) 76%, transparent) inset;
-  filter: drop-shadow(0 calc(0.48rem + var(--hero-depth-shadow) * 0.18rem) calc(0.46rem + var(--hero-depth-shadow) * 0.22rem) rgba(217, 119, 50, 0.2));
+  box-shadow: none;
+  filter: none;
   transform: translateZ(var(--hero-tag-depth));
-  transition:
-    box-shadow 160ms ease,
-    filter 160ms ease;
+  transition: none;
   transform-style: preserve-3d;
 }
 
@@ -1408,8 +1411,8 @@ onUnmounted(() => {
 }
 
 .floating-tool-icon img {
-  height: 86%;
-  width: 86%;
+  height: 98%;
+  width: 98%;
   object-fit: contain;
 }
 

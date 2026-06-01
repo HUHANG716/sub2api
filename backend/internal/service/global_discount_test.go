@@ -4,6 +4,8 @@ import (
 	"math"
 	"testing"
 	"time"
+
+	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
 )
 
 func TestApplyGlobalDiscountToCost(t *testing.T) {
@@ -161,7 +163,7 @@ func TestGlobalDiscountRulesAllowWeekendsAndWeekdayNights(t *testing.T) {
 	}
 }
 
-func TestGlobalDiscountRulesRejectOverlap(t *testing.T) {
+func TestGlobalDiscountRulesAllowOverlapAndRuntimeUsesLowestRate(t *testing.T) {
 	_, err := normalizeGlobalDiscountSettings(GlobalDiscountSettings{
 		Enabled: true,
 		Rules: []GlobalDiscountRule{
@@ -184,12 +186,10 @@ func TestGlobalDiscountRulesRejectOverlap(t *testing.T) {
 			},
 		},
 	})
-	if err == nil {
-		t.Fatalf("normalizeGlobalDiscountSettings error = nil, want overlap error")
+	if err != nil {
+		t.Fatalf("normalizeGlobalDiscountSettings returned error: %v", err)
 	}
-}
 
-func TestGlobalDiscountRuntimeUsesMatchingRule(t *testing.T) {
 	runtime := globalDiscountRuntime(GlobalDiscountSettings{
 		Enabled: true,
 		Rules: []GlobalDiscountRule{
@@ -197,24 +197,68 @@ func TestGlobalDiscountRuntimeUsesMatchingRule(t *testing.T) {
 				ID:               "weekends",
 				Enabled:          true,
 				DiscountRate:     0.8,
-				ScheduleType:     "weekly",
-				RecurringStartAt: "00:00",
-				RecurringEndAt:   "23:59",
-				Weekdays:         []int{6, 7},
+				ScheduleType:     "daily",
+				RecurringStartAt: "22:00",
+				RecurringEndAt:   "03:00",
 			},
 			{
 				ID:               "weekday-nights",
 				Enabled:          true,
 				DiscountRate:     0.9,
 				ScheduleType:     "weekly",
-				RecurringStartAt: "22:00",
-				RecurringEndAt:   "03:00",
-				Weekdays:         []int{1, 2, 3, 4, 5},
+				RecurringStartAt: "23:00",
+				RecurringEndAt:   "23:30",
+				Weekdays:         []int{4},
 			},
 		},
 	}, time.Date(2026, 5, 28, 23, 0, 0, 0, time.Local))
-	if !runtime.Active || runtime.RuleID != "weekday-nights" || runtime.DiscountRate != 0.9 {
-		t.Fatalf("runtime = %+v, want weekday-nights active", runtime)
+	if !runtime.Active || runtime.RuleID != "weekends" || runtime.DiscountRate != 0.8 {
+		t.Fatalf("runtime = %+v, want lowest-rate rule active", runtime)
+	}
+}
+
+func TestGlobalDiscountRuntimeWeeklyOvernightUsesSelectedDayAsStartDay(t *testing.T) {
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+	if err := timezone.Init("Asia/Shanghai"); err != nil {
+		t.Fatalf("init timezone: %v", err)
+	}
+	t.Cleanup(func() { _ = timezone.Init("UTC") })
+	settings := GlobalDiscountSettings{
+		Enabled: true,
+		Rules: []GlobalDiscountRule{
+			{
+				ID:               "weekday-nights",
+				Enabled:          true,
+				DiscountRate:     0.9,
+				ScheduleType:     "weekly",
+				RecurringStartAt: "22:00",
+				RecurringEndAt:   "08:00",
+				Weekdays:         []int{1, 2, 3, 4, 5},
+			},
+		},
+	}
+
+	mondayMorning := globalDiscountRuntime(settings, time.Date(2026, 6, 1, 0, 30, 0, 0, loc))
+	if mondayMorning.Active {
+		t.Fatalf("Monday 00:30 Active = true, want false because Sunday was not selected")
+	}
+
+	mondayNight := globalDiscountRuntime(settings, time.Date(2026, 6, 1, 22, 30, 0, 0, loc))
+	if !mondayNight.Active {
+		t.Fatalf("Monday 22:30 Active = false, want true")
+	}
+
+	tuesdayMorning := globalDiscountRuntime(settings, time.Date(2026, 6, 2, 7, 59, 0, 0, loc))
+	if !tuesdayMorning.Active {
+		t.Fatalf("Tuesday 07:59 Active = false, want true because Monday was selected")
+	}
+
+	tuesdayAfterEnd := globalDiscountRuntime(settings, time.Date(2026, 6, 2, 8, 1, 0, 0, loc))
+	if tuesdayAfterEnd.Active {
+		t.Fatalf("Tuesday 08:01 Active = true, want false")
 	}
 }
 

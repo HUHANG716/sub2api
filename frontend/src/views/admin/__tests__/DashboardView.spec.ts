@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import type { DashboardStats } from '@/types'
 import DashboardView from '../DashboardView.vue'
@@ -91,6 +91,16 @@ const createDashboardStats = (overrides: Partial<DashboardStats> = {}): Dashboar
   ...overrides
 })
 
+const deferred = <T>() => {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
 const mountDashboardView = () => mount(DashboardView, {
   global: {
     stubs: {
@@ -110,6 +120,7 @@ const mountDashboardView = () => mount(DashboardView, {
 
 describe('admin DashboardView', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     getSnapshotV2.mockReset()
     getUserUsageTrend.mockReset()
     getUserSpendingRanking.mockReset()
@@ -135,6 +146,10 @@ describe('admin DashboardView', () => {
     })
   })
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('uses last 24 hours as default dashboard range', async () => {
     mountDashboardView()
 
@@ -154,28 +169,17 @@ describe('admin DashboardView', () => {
     }))
   })
 
-  it('uses user-dashboard style colored icon blocks for dashboard stat cards', async () => {
+  it('uses regular dashboard card rows for the top metrics', async () => {
     const wrapper = mountDashboardView()
 
     await flushPromises()
 
-    const accentClasses = [
-      'bg-blue-100',
-      'bg-indigo-100',
-      'bg-green-100',
-      'bg-amber-100',
-      'bg-emerald-100',
-      'bg-teal-100',
-      'bg-purple-100',
-      'bg-cyan-100',
-      'bg-violet-100',
-      'bg-rose-100'
-    ]
-
-    accentClasses.forEach((className) => {
-      expect(wrapper.find(`.${className}`).exists()).toBe(true)
-    })
-
+    expect(wrapper.findAll('.admin-metrics-row')).toHaveLength(2)
+    expect(wrapper.findAll('.admin-metric-card')).toHaveLength(9)
+    expect(wrapper.findAll('.admin-metric-card.card')).toHaveLength(9)
+    expect(wrapper.findAll('.admin-metric-card-icon')).toHaveLength(9)
+    expect(wrapper.find('.admin-metrics-grid').exists()).toBe(false)
+    expect(wrapper.find('.admin-metrics-panel').exists()).toBe(false)
     expect(wrapper.find('.dashboard-stat-card').exists()).toBe(false)
   })
 
@@ -203,7 +207,7 @@ describe('admin DashboardView', () => {
     expect(wrapper.text()).toContain('$123.45')
   })
 
-  it('renders today balance adjustments in the top stat cards', async () => {
+  it('does not render today balance adjustments in the top stat cards', async () => {
     getSnapshotV2.mockResolvedValueOnce({
       stats: createDashboardStats({
         today_balance_added: 20.5,
@@ -217,9 +221,9 @@ describe('admin DashboardView', () => {
 
     await flushPromises()
 
-    expect(wrapper.text()).toContain('admin.dashboard.todayBalanceAdjustments')
-    expect(wrapper.text()).toContain('+$20.50')
-    expect(wrapper.text()).toContain('-$3.25')
+    expect(wrapper.text()).not.toContain('admin.dashboard.todayBalanceAdjustments')
+    expect(wrapper.text()).not.toContain('+$20.50')
+    expect(wrapper.text()).not.toContain('-$3.25')
   })
 
   it('refreshes current concurrency when chart filters reload the snapshot', async () => {
@@ -247,5 +251,86 @@ describe('admin DashboardView', () => {
       include_stats: true
     }))
     expect(wrapper.text()).toContain('11')
+  })
+
+  it('polls dashboard stats every 5 seconds without refreshing chart datasets', async () => {
+    vi.useFakeTimers()
+    getSnapshotV2
+      .mockResolvedValueOnce({
+        stats: createDashboardStats({ current_total_concurrency: 7 }),
+        trend: [],
+        models: []
+      })
+      .mockResolvedValueOnce({
+        stats: createDashboardStats({ current_total_concurrency: 12 }),
+        trend: [],
+        models: []
+      })
+
+    const wrapper = mountDashboardView()
+
+    await flushPromises()
+    expect(wrapper.text()).toContain('7')
+    expect(getSnapshotV2).toHaveBeenCalledTimes(1)
+    expect(getUserUsageTrend).toHaveBeenCalledTimes(1)
+    expect(getUserSpendingRanking).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(5000)
+    await flushPromises()
+
+    expect(getSnapshotV2).toHaveBeenCalledTimes(2)
+    expect(getSnapshotV2).toHaveBeenLastCalledWith(expect.objectContaining({
+      include_stats: true,
+      include_trend: false,
+      include_model_stats: false,
+      include_group_stats: false,
+      include_users_trend: false
+    }))
+    expect(getUserUsageTrend).toHaveBeenCalledTimes(1)
+    expect(getUserSpendingRanking).toHaveBeenCalledTimes(1)
+    expect(wrapper.text()).toContain('12')
+  })
+
+  it('ignores stale polling stats after a newer snapshot refresh resolves', async () => {
+    vi.useFakeTimers()
+    const stalePoll = deferred<{
+      stats: DashboardStats
+      trend: []
+      models: []
+    }>()
+
+    getSnapshotV2
+      .mockResolvedValueOnce({
+        stats: createDashboardStats({ current_total_concurrency: 7 }),
+        trend: [],
+        models: []
+      })
+      .mockReturnValueOnce(stalePoll.promise)
+      .mockResolvedValueOnce({
+        stats: createDashboardStats({ current_total_concurrency: 21 }),
+        trend: [],
+        models: []
+      })
+
+    const wrapper = mountDashboardView()
+
+    await flushPromises()
+    expect(wrapper.text()).toContain('7')
+
+    await vi.advanceTimersByTimeAsync(5000)
+    await wrapper.get('[data-test="date-range-picker"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('admin.dashboard.currentConcurrency21')
+
+    stalePoll.resolve({
+      stats: createDashboardStats({ current_total_concurrency: 12 }),
+      trend: [],
+      models: []
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('admin.dashboard.currentConcurrency21')
+    expect(wrapper.text()).not.toContain('admin.dashboard.currentConcurrency12')
   })
 })

@@ -1215,6 +1215,12 @@ const openUsageSortMenu = ref<string | null>(null)
 const toggleUsageSortMenu = (key: string) => {
   openUsageSortMenu.value = openUsageSortMenu.value === key ? null : key
 }
+const clearUsageSort = () => {
+  if (!usageSort.value) return
+  usageSort.value = null
+  persistUsageSort()
+  openUsageSortMenu.value = null
+}
 
 const getUsageValue = (userId: number, key: string, metric: UsageMetric): number => {
   const stats = usageStats.value[userId]
@@ -1582,6 +1588,7 @@ const handlePageSizeChange = (pageSize: number) => {
 }
 
 const handleSort = (key: string, order: 'asc' | 'desc') => {
+  clearUsageSort()
   sortState.sort_by = key
   sortState.sort_order = order
   pagination.page = 1

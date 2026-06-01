@@ -69,6 +69,7 @@ export interface PaymentAnalyticsRecentEvent {
   order_type?: string
   payment_type?: string
   launch_kind?: string
+  source?: string
   status?: string
   amount?: number
   pay_amount?: number
@@ -78,10 +79,38 @@ export interface PaymentAnalyticsRecentEvent {
   created_at?: string
 }
 
+export interface PaymentAnalyticsOperatorSummary {
+  operator: string
+  actor_type: string
+  actor_id?: number
+  action: string
+  count: number
+  last_action_at?: string
+}
+
+export interface PaymentAnalyticsAuditEvent {
+  id: number
+  order_id: string
+  action: string
+  operator: string
+  actor_type: string
+  actor_id?: number
+  subject_user_id?: number
+  user_email?: string
+  order_type?: string
+  payment_type?: string
+  pay_amount?: number
+  status?: string
+  detail?: string
+  created_at?: string
+}
+
 export interface PaymentAnalyticsResponse {
   steps: PaymentAnalyticsStep[]
   methods: PaymentAnalyticsMethod[]
   recent_events: PaymentAnalyticsRecentEvent[]
+  operators: PaymentAnalyticsOperatorSummary[]
+  audit_events: PaymentAnalyticsAuditEvent[]
   window_days: number
   events_missing: boolean
 }

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h } from "vue";
 import { flushPromises, mount } from "@vue/test-utils";
 
@@ -487,6 +487,7 @@ async function openFeaturesTab(wrapper: ReturnType<typeof mountView>) {
 
 describe("admin SettingsView payment visible method controls", () => {
   beforeEach(() => {
+    vi.useRealTimers();
     getSettings.mockReset();
     updateSettings.mockReset();
     getWebSearchEmulationConfig.mockReset();
@@ -562,6 +563,10 @@ describe("admin SettingsView payment visible method controls", () => {
     });
     fetchPublicSettings.mockResolvedValue(undefined);
     adminSettingsFetch.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("does not render legacy visible payment method controls", async () => {
@@ -679,6 +684,170 @@ describe("admin SettingsView payment visible method controls", () => {
 
     expect(updateSettings).not.toHaveBeenCalled();
     expect(showError).toHaveBeenCalledWith("充值赠送阶梯的金额和赠送额度都必须大于 0。");
+  });
+
+  it("renders the effective discount preview with lowest-rate overlap semantics", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 5, 1, 12, 0, 0));
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      global_discount_settings: {
+        enabled: true,
+        discount_rate: 0.9,
+        schedule_type: "weekly",
+        starts_at: "",
+        ends_at: "",
+        recurring_start_at: "00:00",
+        recurring_end_at: "23:59",
+        weekdays: [1],
+        month_days: [],
+        label: "周一全天",
+        rules: [
+          {
+            id: "monday",
+            enabled: true,
+            discount_rate: 0.9,
+            schedule_type: "weekly",
+            starts_at: "",
+            ends_at: "",
+            recurring_start_at: "00:00",
+            recurring_end_at: "23:59",
+            weekdays: [1],
+            month_days: [],
+            label: "周一全天",
+          },
+          {
+            id: "night",
+            enabled: true,
+            discount_rate: 0.8,
+            schedule_type: "daily",
+            starts_at: "",
+            ends_at: "",
+            recurring_start_at: "00:00",
+            recurring_end_at: "02:00",
+            weekdays: [],
+            month_days: [],
+            label: "夜间",
+          },
+        ],
+      },
+    });
+
+    const wrapper = mountView();
+
+    await flushPromises();
+    await openPaymentTab(wrapper);
+
+    const preview = wrapper.get('[data-test="global-discount-effective-preview"]');
+    expect(preview.text()).toContain("策略：最低倍率优先");
+    expect(preview.text()).toContain("8折");
+    expect(preview.text()).toContain("周一 06/01 00:00 命中：周一全天、夜间；最终 8折");
+  });
+
+  it("assigns weekly overnight preview slots to the selected start day", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 5, 1, 12, 0, 0));
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      global_discount_settings: {
+        enabled: true,
+        discount_rate: 0.7,
+        schedule_type: "weekly",
+        starts_at: "",
+        ends_at: "",
+        recurring_start_at: "22:00",
+        recurring_end_at: "03:00",
+        weekdays: [1],
+        month_days: [],
+        label: "周一夜间",
+        rules: [
+          {
+            id: "monday-night",
+            enabled: true,
+            discount_rate: 0.7,
+            schedule_type: "weekly",
+            starts_at: "",
+            ends_at: "",
+            recurring_start_at: "22:00",
+            recurring_end_at: "03:00",
+            weekdays: [1],
+            month_days: [],
+            label: "周一夜间",
+          },
+        ],
+      },
+    });
+
+    const wrapper = mountView();
+
+    await flushPromises();
+    await openPaymentTab(wrapper);
+
+    const ruleCard = wrapper.get('[data-test="global-discount-rule-card"]');
+    expect(ruleCard.text()).toContain("0.7 = 7折，优惠 30%");
+    expect(ruleCard.text()).toContain("等待命中");
+    expect(ruleCard.text()).toContain("周一 22:00 - 周二 03:00：7折");
+
+    const cells = wrapper
+      .get('[data-test="global-discount-effective-preview"]')
+      .findAll("[title]");
+    const cellText = (title: string) => {
+      const cell = cells.find((node) => node.attributes("title")?.startsWith(title));
+      expect(cell, title).toBeDefined();
+      return cell?.text();
+    };
+
+    expect(cellText("周一 06/01 20:00")).toBe("1.0");
+    expect(cellText("周一 06/01 22:00")).toBe("7折");
+    expect(cellText("周二 06/02 00:00")).toBe("7折");
+    expect(cellText("周二 06/02 02:00")).toBe("7折");
+    expect(cellText("周二 06/02 04:00")).toBe("1.0");
+  });
+
+  it("rejects enabled global discount rules that do not lower the rate", async () => {
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      global_discount_settings: {
+        enabled: true,
+        discount_rate: 1,
+        schedule_type: "weekly",
+        starts_at: "",
+        ends_at: "",
+        recurring_start_at: "22:00",
+        recurring_end_at: "03:00",
+        weekdays: [1],
+        month_days: [],
+        label: "无折扣",
+        rules: [
+          {
+            id: "no-discount",
+            enabled: true,
+            discount_rate: 1,
+            schedule_type: "weekly",
+            starts_at: "",
+            ends_at: "",
+            recurring_start_at: "22:00",
+            recurring_end_at: "03:00",
+            weekdays: [1],
+            month_days: [],
+            label: "无折扣",
+          },
+        ],
+      },
+    });
+
+    const wrapper = mountView();
+
+    await flushPromises();
+    await openPaymentTab(wrapper);
+
+    expect(wrapper.get('[data-test="global-discount-rule-card"]').text()).toContain("配置无效");
+    expect(wrapper.get('[data-test="global-discount-rule-card"]').text()).toContain("1 = 原价，无优惠");
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateSettings).not.toHaveBeenCalled();
+    expect(showError).toHaveBeenCalledWith("启用的折扣规则必须小于 1，1 表示原价，不会产生优惠。");
   });
 
   it("submits Anthropic cache TTL injection gateway setting", async () => {

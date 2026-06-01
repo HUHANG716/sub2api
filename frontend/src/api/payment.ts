@@ -19,6 +19,7 @@ import type { BasePaginationResponse } from '@/types'
 export type PaymentAnalyticsEventName =
   | 'payment_page_view'
   | 'payment_tab_change'
+  | 'payment_amount_select'
   | 'payment_method_select'
   | 'payment_plan_select'
   | 'payment_order_submit'
@@ -36,6 +37,7 @@ export interface PaymentAnalyticsEvent {
   orderType?: string
   paymentType?: string
   launchKind?: string
+  source?: string
   status?: string
   amount?: number
   payAmount?: number

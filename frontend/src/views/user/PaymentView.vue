@@ -85,6 +85,7 @@
                   :amount-badges="quickAmountBonusBadges"
                   :amount-formatter="formatSelectedPaymentAmount"
                   :input-prefix="selectedCurrencySymbol"
+                  @amount-select="recordAmountSelect"
                 />
                 <p v-if="amountError" class="mt-3 rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-700 dark:text-amber-200">{{ amountError }}</p>
 
@@ -572,6 +573,7 @@ function recordPaymentAnalytics(event: PaymentAnalyticsEvent) {
     tab: event.tab || activeTab.value,
     orderType: event.orderType || currentOrderType(),
     paymentType: normalizeVisibleMethod(event.paymentType || selectedMethod.value) || event.paymentType || selectedMethod.value || undefined,
+    source: event.source,
     amount: normalizeAnalyticsNumber(event.amount),
     payAmount: normalizeAnalyticsNumber(event.payAmount),
     feeRate: normalizeAnalyticsNumber(event.feeRate),
@@ -1010,10 +1012,15 @@ const planValiditySuffix = computed(() => {
 function selectPlan(plan: SubscriptionPlan) {
   selectedPlan.value = plan
   errorMessage.value = ''
+  recordPlanSelect(plan, 'catalog')
+}
+
+function recordPlanSelect(plan: SubscriptionPlan, source: string) {
   recordPaymentAnalytics({
     name: 'payment_plan_select',
     tab: 'subscription',
     orderType: 'subscription',
+    source,
     amount: plan.price,
     payAmount: feeRate.value > 0 ? Math.round((plan.price + Math.ceil(((plan.price * feeRate.value) / 100) * 100) / 100) * 100) / 100 : plan.price,
     feeRate: feeRate.value,
@@ -1026,15 +1033,7 @@ function selectPlanFromModal(plan: SubscriptionPlan) {
   renewGroupId.value = null
   selectedPlan.value = plan
   errorMessage.value = ''
-  recordPaymentAnalytics({
-    name: 'payment_plan_select',
-    tab: 'subscription',
-    orderType: 'subscription',
-    amount: plan.price,
-    payAmount: feeRate.value > 0 ? Math.round((plan.price + Math.ceil(((plan.price * feeRate.value) / 100) * 100) / 100) * 100) / 100 : plan.price,
-    feeRate: feeRate.value,
-    planId: plan.id,
-  })
+  recordPlanSelect(plan, 'renewal_modal')
 }
 
 function selectPaymentTab(tab: 'recharge' | 'subscription') {
@@ -1044,6 +1043,19 @@ function selectPaymentTab(tab: 'recharge' | 'subscription') {
     name: 'payment_tab_change',
     tab,
     orderType: tab === 'subscription' ? 'subscription' : 'balance',
+    source: 'tab_button',
+  })
+}
+
+function recordAmountSelect(payload: { amount: number; source: 'quick' | 'custom' }) {
+  recordPaymentAnalytics({
+    name: 'payment_amount_select',
+    tab: 'recharge',
+    orderType: 'balance',
+    source: payload.source,
+    amount: payload.amount,
+    payAmount: feeRate.value > 0 ? Math.round((payload.amount + Math.ceil(((payload.amount * feeRate.value) / 100) * 100) / 100) * 100) / 100 : payload.amount,
+    feeRate: feeRate.value,
   })
 }
 

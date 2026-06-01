@@ -74,12 +74,71 @@
                 <tr v-for="event in recentEvents" :key="`${event.name}-${event.created_at}-${event.order_id || ''}`">
                   <td class="px-3 py-2 text-gray-700 dark:text-gray-300">
                     <div class="font-medium">{{ formatEventName(event.name) }}</div>
-                    <div v-if="event.status || event.error_kind || event.launch_kind" class="text-xs text-gray-500 dark:text-gray-400">
-                      {{ event.status || event.error_kind || event.launch_kind }}
+                    <div v-if="event.status || event.error_kind || event.launch_kind || event.source" class="text-xs text-gray-500 dark:text-gray-400">
+                      {{ event.status || event.error_kind || event.launch_kind || event.source }}
                     </div>
                   </td>
                   <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ event.payment_type ? formatPaymentMethod(event.payment_type) : '-' }}</td>
                   <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ formatAmount(event.pay_amount ?? event.amount) }}</td>
+                  <td class="whitespace-nowrap px-3 py-2 text-gray-500 dark:text-gray-400">{{ formatEventTime(event.created_at) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <div class="rounded-lg border border-gray-200 p-4 dark:border-dark-600">
+          <h4 class="mb-3 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">{{ t('payment.admin.operatorSummary') }}</h4>
+          <div v-if="!operatorRows.length" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">{{ t('payment.admin.noData') }}</div>
+          <div v-else class="overflow-x-auto">
+            <table class="min-w-full text-left text-sm">
+              <thead class="text-xs uppercase text-gray-500 dark:text-gray-400">
+                <tr>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.operator') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.action') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.count') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.time') }}</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 dark:divide-dark-700">
+                <tr v-for="item in operatorRows" :key="`${item.operator}-${item.action}`">
+                  <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ formatOperator(item.operator, item.actor_type, item.actor_id) }}</td>
+                  <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ formatAuditAction(item.action) }}</td>
+                  <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ item.count }}</td>
+                  <td class="whitespace-nowrap px-3 py-2 text-gray-500 dark:text-gray-400">{{ formatEventTime(item.last_action_at) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="rounded-lg border border-gray-200 p-4 dark:border-dark-600">
+          <h4 class="mb-3 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">{{ t('payment.admin.recentAuditEvents') }}</h4>
+          <div v-if="!auditEvents.length" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">{{ t('payment.admin.noData') }}</div>
+          <div v-else class="overflow-x-auto">
+            <table class="min-w-full text-left text-sm">
+              <thead class="text-xs uppercase text-gray-500 dark:text-gray-400">
+                <tr>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.operator') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.action') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.order') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.colUser') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.amount') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.time') }}</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 dark:divide-dark-700">
+                <tr v-for="event in auditEvents" :key="event.id">
+                  <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ formatOperator(event.operator, event.actor_type, event.actor_id) }}</td>
+                  <td class="px-3 py-2 text-gray-600 dark:text-gray-300">
+                    <div class="font-medium">{{ formatAuditAction(event.action) }}</div>
+                    <div v-if="event.status" class="text-xs text-gray-500 dark:text-gray-400">{{ event.status }}</div>
+                  </td>
+                  <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ event.order_id || '-' }}</td>
+                  <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ event.user_email || formatSubjectUser(event.subject_user_id) }}</td>
+                  <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ formatAmount(event.pay_amount) }}</td>
                   <td class="whitespace-nowrap px-3 py-2 text-gray-500 dark:text-gray-400">{{ formatEventTime(event.created_at) }}</td>
                 </tr>
               </tbody>
@@ -136,8 +195,15 @@ const funnelSteps = computed(() =>
 )
 
 const maxStepCount = computed(() => Math.max(1, ...funnelSteps.value.map((step) => step.count)))
-const hasData = computed(() => funnelSteps.value.some((step) => step.count > 0) || !!props.analytics?.recent_events?.length)
 const recentEvents = computed(() => props.analytics?.recent_events || [])
+const operatorRows = computed(() => props.analytics?.operators || [])
+const auditEvents = computed(() => props.analytics?.audit_events || [])
+const hasData = computed(() =>
+  funnelSteps.value.some((step) => step.count > 0) ||
+  recentEvents.value.length > 0 ||
+  operatorRows.value.length > 0 ||
+  auditEvents.value.length > 0
+)
 
 const conversionLabel = computed(() => {
   const submit = stepMap.value.get('payment_order_submit')?.count || 0
@@ -169,6 +235,22 @@ function formatPaymentMethod(method: string): string {
 
 function formatEventName(name: string): string {
   return t(`payment.admin.events.${name}`, name)
+}
+
+function formatAuditAction(action: string): string {
+  return t(`payment.admin.auditActions.${action}`, action)
+}
+
+function formatOperator(operator: string, actorType?: string, actorId?: number): string {
+  if (actorType === 'admin' && actorId) return t('payment.admin.operatorAdmin', { id: actorId })
+  if (actorType === 'user' && actorId) return t('payment.admin.operatorUser', { id: actorId })
+  if (actorType === 'system') return t('payment.admin.operatorSystem')
+  if (actorType === 'provider') return operator || t('payment.admin.operatorProvider')
+  return operator || '-'
+}
+
+function formatSubjectUser(userId: number | undefined): string {
+  return userId ? `#${userId}` : '-'
 }
 
 function formatAmount(value: number | undefined): string {

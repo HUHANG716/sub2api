@@ -1561,7 +1561,7 @@ func (r *usageLogRepository) fillDashboardEntityStats(ctx context.Context, stats
 		SELECT
 			COUNT(*) as total_users,
 			COUNT(CASE WHEN created_at >= $1 THEN 1 END) as today_new_users,
-			COALESCE(SUM(balance), 0) as total_user_balance
+			COALESCE(SUM(CASE WHEN role <> $2 THEN balance ELSE 0 END), 0) as total_user_balance
 		FROM users
 		WHERE deleted_at IS NULL
 	`
@@ -1569,7 +1569,7 @@ func (r *usageLogRepository) fillDashboardEntityStats(ctx context.Context, stats
 		ctx,
 		r.sql,
 		userStatsQuery,
-		[]any{todayUTC},
+		[]any{todayUTC, service.RoleAdmin},
 		&stats.TotalUsers,
 		&stats.TodayNewUsers,
 		&stats.TotalUserBalance,

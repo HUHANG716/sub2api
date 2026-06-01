@@ -44,6 +44,7 @@ describe('payment api', () => {
         name: 'payment_order_submit',
         orderType: 'balance',
         paymentType: 'alipay',
+        source: 'quick',
         amount: 88,
       }],
     })
@@ -53,6 +54,7 @@ describe('payment api', () => {
         name: 'payment_order_submit',
         orderType: 'balance',
         paymentType: 'alipay',
+        source: 'quick',
         amount: 88,
       }],
     })

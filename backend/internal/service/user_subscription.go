@@ -36,7 +36,11 @@ func (s *UserSubscription) IsActive() bool {
 }
 
 func (s *UserSubscription) IsExpired() bool {
-	return time.Now().After(s.ExpiresAt)
+	return s.IsExpiredAt(time.Now())
+}
+
+func (s *UserSubscription) IsExpiredAt(now time.Time) bool {
+	return now.After(s.ExpiresAt)
 }
 
 func (s *UserSubscription) DaysRemaining() int {

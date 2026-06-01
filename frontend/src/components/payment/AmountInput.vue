@@ -57,6 +57,8 @@
           :placeholder="placeholderText"
           class="input w-full py-3 pl-8 pr-4"
           @input="handleInput"
+          @change="commitCustomAmount"
+          @blur="commitCustomAmount"
         />
       </div>
     </div>
@@ -94,11 +96,14 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: number | null]
+  'amount-select': [payload: { amount: number; source: 'quick' | 'custom' }]
 }>()
 
 const { t } = useI18n()
 
 const customText = ref('')
+const customInputDirty = ref(false)
+const lastCommittedCustomAmount = ref<number | null>(null)
 
 // 0 = no limit
 const filteredAmounts = computed(() =>
@@ -127,13 +132,18 @@ function formatAmount(amount: number) {
 
 function selectAmount(amt: number) {
   customText.value = String(amt)
+  customInputDirty.value = false
+  lastCommittedCustomAmount.value = null
   emit('update:modelValue', amt)
+  emit('amount-select', { amount: amt, source: 'quick' })
 }
 
 function handleInput(e: Event) {
   const val = (e.target as HTMLInputElement).value
   if (!AMOUNT_PATTERN.test(val)) return
   customText.value = val
+  customInputDirty.value = true
+  lastCommittedCustomAmount.value = null
   if (val === '') {
     emit('update:modelValue', null)
     return
@@ -143,6 +153,16 @@ function handleInput(e: Event) {
     emit('update:modelValue', num)
   } else {
     emit('update:modelValue', null)
+  }
+}
+
+function commitCustomAmount() {
+  if (!customInputDirty.value) return
+  const num = parseFloat(customText.value)
+  if (!isNaN(num) && num > 0 && num !== lastCommittedCustomAmount.value) {
+    lastCommittedCustomAmount.value = num
+    customInputDirty.value = false
+    emit('amount-select', { amount: num, source: 'custom' })
   }
 }
 
