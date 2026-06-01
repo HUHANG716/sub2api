@@ -195,10 +195,15 @@ const funnelSteps = computed(() =>
 )
 
 const maxStepCount = computed(() => Math.max(1, ...funnelSteps.value.map((step) => step.count)))
-const hasData = computed(() => funnelSteps.value.some((step) => step.count > 0) || !!props.analytics?.recent_events?.length)
 const recentEvents = computed(() => props.analytics?.recent_events || [])
 const operatorRows = computed(() => props.analytics?.operators || [])
 const auditEvents = computed(() => props.analytics?.audit_events || [])
+const hasData = computed(() =>
+  funnelSteps.value.some((step) => step.count > 0) ||
+  recentEvents.value.length > 0 ||
+  operatorRows.value.length > 0 ||
+  auditEvents.value.length > 0
+)
 
 const conversionLabel = computed(() => {
   const submit = stepMap.value.get('payment_order_submit')?.count || 0

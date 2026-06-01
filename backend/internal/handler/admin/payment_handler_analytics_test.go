@@ -90,3 +90,31 @@ func TestAdminPaymentAnalyticsStepsTreatSuccessAndSettledAsResultSuccess(t *test
 	}, steps)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
+
+func TestAdminPaymentAnalyticsOperatorsParseAdminActor(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	h := NewPaymentHandler(nil, nil, db)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/payment/analytics", nil)
+	lastActionAt := time.Now()
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT operator, action, COUNT(*) AS count, MAX(created_at) AS last_action_at")).
+		WillReturnRows(sqlmock.NewRows([]string{"operator", "action", "count", "last_action_at"}).
+			AddRow("admin:123", "REFUND_SUCCESS", int64(2), lastActionAt).
+			AddRow("system", "ORDER_PAID", int64(1), lastActionAt))
+
+	operators, err := h.queryPaymentAnalyticsOperators(c, time.Now().Add(-24*time.Hour))
+
+	require.NoError(t, err)
+	require.Len(t, operators, 2)
+	require.Equal(t, "admin", operators[0].ActorType)
+	require.NotNil(t, operators[0].ActorID)
+	require.Equal(t, int64(123), *operators[0].ActorID)
+	require.Equal(t, "system", operators[1].ActorType)
+	require.Nil(t, operators[1].ActorID)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
