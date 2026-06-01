@@ -4,10 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
+	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -85,12 +87,40 @@ type PaymentAnalyticsRecentEvent struct {
 	CreatedAt   *time.Time `json:"created_at,omitempty"`
 }
 
+type PaymentAnalyticsOperatorSummary struct {
+	Operator     string     `json:"operator"`
+	ActorType    string     `json:"actor_type"`
+	ActorID      *int64     `json:"actor_id,omitempty"`
+	Action       string     `json:"action"`
+	Count        int64      `json:"count"`
+	LastActionAt *time.Time `json:"last_action_at,omitempty"`
+}
+
+type PaymentAnalyticsAuditEvent struct {
+	ID          int64      `json:"id"`
+	OrderID     string     `json:"order_id"`
+	Action      string     `json:"action"`
+	Operator    string     `json:"operator"`
+	ActorType   string     `json:"actor_type"`
+	ActorID     *int64     `json:"actor_id,omitempty"`
+	SubjectUser *int64     `json:"subject_user_id,omitempty"`
+	UserEmail   *string    `json:"user_email,omitempty"`
+	OrderType   *string    `json:"order_type,omitempty"`
+	PaymentType *string    `json:"payment_type,omitempty"`
+	PayAmount   *float64   `json:"pay_amount,omitempty"`
+	Status      *string    `json:"status,omitempty"`
+	Detail      *string    `json:"detail,omitempty"`
+	CreatedAt   *time.Time `json:"created_at,omitempty"`
+}
+
 type PaymentAnalyticsResponse struct {
-	Steps         []PaymentAnalyticsStep        `json:"steps"`
-	Methods       []PaymentAnalyticsMethod      `json:"methods"`
-	RecentEvents  []PaymentAnalyticsRecentEvent `json:"recent_events"`
-	WindowDays    int                           `json:"window_days"`
-	EventsMissing bool                          `json:"events_missing"`
+	Steps         []PaymentAnalyticsStep            `json:"steps"`
+	Methods       []PaymentAnalyticsMethod          `json:"methods"`
+	RecentEvents  []PaymentAnalyticsRecentEvent     `json:"recent_events"`
+	Operators     []PaymentAnalyticsOperatorSummary `json:"operators"`
+	AuditEvents   []PaymentAnalyticsAuditEvent      `json:"audit_events"`
+	WindowDays    int                               `json:"window_days"`
+	EventsMissing bool                              `json:"events_missing"`
 }
 
 // GetAnalytics returns payment funnel analytics from payment_events.
@@ -135,10 +165,22 @@ func (h *PaymentHandler) GetAnalytics(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
+	operators, err := h.queryPaymentAnalyticsOperators(c, since)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	auditEvents, err := h.queryPaymentAnalyticsAuditEvents(c, since)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
 
 	result.Steps = steps
 	result.Methods = methods
 	result.RecentEvents = recentEvents
+	result.Operators = operators
+	result.AuditEvents = auditEvents
 	response.Success(c, result)
 }
 
@@ -276,6 +318,95 @@ func (h *PaymentHandler) queryPaymentAnalyticsRecentEvents(c *gin.Context, since
 	return events, rows.Err()
 }
 
+func (h *PaymentHandler) queryPaymentAnalyticsOperators(c *gin.Context, since time.Time) ([]PaymentAnalyticsOperatorSummary, error) {
+	rows, err := h.sqlDB.QueryContext(c.Request.Context(), `
+		SELECT operator, action, COUNT(*) AS count, MAX(created_at) AS last_action_at
+		FROM payment_audit_logs
+		WHERE created_at >= $1
+		GROUP BY operator, action
+		ORDER BY last_action_at DESC
+		LIMIT 50
+	`, since)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	items := make([]PaymentAnalyticsOperatorSummary, 0)
+	for rows.Next() {
+		var item PaymentAnalyticsOperatorSummary
+		if err := rows.Scan(&item.Operator, &item.Action, &item.Count, &item.LastActionAt); err != nil {
+			return nil, err
+		}
+		item.ActorType, item.ActorID = parsePaymentAuditOperator(item.Operator)
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (h *PaymentHandler) queryPaymentAnalyticsAuditEvents(c *gin.Context, since time.Time) ([]PaymentAnalyticsAuditEvent, error) {
+	rows, err := h.sqlDB.QueryContext(c.Request.Context(), `
+		SELECT pal.id, pal.order_id, pal.action, pal.operator, pal.detail, pal.created_at,
+		       po.user_id, po.user_email, po.order_type, po.payment_type, po.pay_amount, po.status
+		FROM payment_audit_logs pal
+		LEFT JOIN payment_orders po ON po.id::text = pal.order_id
+		WHERE pal.created_at >= $1
+		ORDER BY pal.created_at DESC
+		LIMIT 50
+	`, since)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	events := make([]PaymentAnalyticsAuditEvent, 0)
+	for rows.Next() {
+		var event PaymentAnalyticsAuditEvent
+		if err := rows.Scan(
+			&event.ID,
+			&event.OrderID,
+			&event.Action,
+			&event.Operator,
+			&event.Detail,
+			&event.CreatedAt,
+			&event.SubjectUser,
+			&event.UserEmail,
+			&event.OrderType,
+			&event.PaymentType,
+			&event.PayAmount,
+			&event.Status,
+		); err != nil {
+			return nil, err
+		}
+		event.ActorType, event.ActorID = parsePaymentAuditOperator(event.Operator)
+		events = append(events, event)
+	}
+	return events, rows.Err()
+}
+
+func parsePaymentAuditOperator(operator string) (string, *int64) {
+	trimmed := strings.TrimSpace(operator)
+	prefix, rawID, ok := strings.Cut(trimmed, ":")
+	if ok {
+		if id, err := strconv.ParseInt(rawID, 10, 64); err == nil && id > 0 {
+			switch prefix {
+			case "admin", "user":
+				return prefix, &id
+			}
+		}
+	}
+	switch trimmed {
+	case "admin":
+		return "admin", nil
+	case "system":
+		return "system", nil
+	case "":
+		return "unknown", nil
+	default:
+		return "provider", nil
+	}
+}
+
 // --- Orders ---
 
 // ListOrders returns a paginated list of all payment orders.
@@ -326,7 +457,12 @@ func (h *PaymentHandler) CancelOrder(c *gin.Context) {
 	if !ok {
 		return
 	}
-	msg, err := h.paymentService.AdminCancelOrder(c.Request.Context(), orderID)
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok || subject.UserID <= 0 {
+		response.Unauthorized(c, "Admin not authenticated")
+		return
+	}
+	msg, err := h.paymentService.AdminCancelOrder(c.Request.Context(), orderID, subject.UserID)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -341,7 +477,12 @@ func (h *PaymentHandler) RetryFulfillment(c *gin.Context) {
 	if !ok {
 		return
 	}
-	if err := h.paymentService.RetryFulfillment(c.Request.Context(), orderID); err != nil {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok || subject.UserID <= 0 {
+		response.Unauthorized(c, "Admin not authenticated")
+		return
+	}
+	if err := h.paymentService.RetryFulfillment(c.Request.Context(), orderID, subject.UserID); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -383,6 +524,11 @@ func (h *PaymentHandler) ProcessRefund(c *gin.Context) {
 	if !ok {
 		return
 	}
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok || subject.UserID <= 0 {
+		response.Unauthorized(c, "Admin not authenticated")
+		return
+	}
 
 	var req AdminProcessRefundRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -390,7 +536,7 @@ func (h *PaymentHandler) ProcessRefund(c *gin.Context) {
 		return
 	}
 
-	plan, earlyResult, err := h.paymentService.PrepareRefund(c.Request.Context(), orderID, req.Amount, req.Reason, req.Force, req.DeductBalance)
+	plan, earlyResult, err := h.paymentService.PrepareRefund(c.Request.Context(), orderID, req.Amount, req.Reason, req.Force, req.DeductBalance, subject.UserID)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

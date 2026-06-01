@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"math"
 	"sort"
@@ -156,6 +157,20 @@ func (s *PaymentService) writeAuditLog(ctx context.Context, oid int64, action, o
 	if err != nil {
 		slog.Error("audit log failed", "orderID", oid, "action", action, "error", err)
 	}
+}
+
+func paymentAdminOperator(adminID int64) string {
+	if adminID > 0 {
+		return fmt.Sprintf("admin:%d", adminID)
+	}
+	return "admin"
+}
+
+func paymentRefundOperator(plan *RefundPlan) string {
+	if plan != nil && plan.Operator != "" {
+		return plan.Operator
+	}
+	return "admin"
 }
 
 func (s *PaymentService) GetOrderAuditLogs(ctx context.Context, oid int64) ([]*dbent.PaymentAuditLog, error) {

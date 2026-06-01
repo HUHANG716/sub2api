@@ -604,7 +604,7 @@ func (s *PaymentService) markFailed(ctx context.Context, oid int64, cause error)
 	}
 }
 
-func (s *PaymentService) RetryFulfillment(ctx context.Context, oid int64) error {
+func (s *PaymentService) RetryFulfillment(ctx context.Context, oid int64, adminID int64) error {
 	o, err := s.entClient.PaymentOrder.Get(ctx, oid)
 	if err != nil {
 		return infraerrors.NotFound("NOT_FOUND", "order not found")
@@ -628,6 +628,6 @@ func (s *PaymentService) RetryFulfillment(ctx context.Context, oid int64) error 
 	if err != nil {
 		return fmt.Errorf("reset for retry: %w", err)
 	}
-	s.writeAuditLog(ctx, oid, "RECHARGE_RETRY", "admin", map[string]any{"detail": "admin manual retry"})
+	s.writeAuditLog(ctx, oid, "RECHARGE_RETRY", paymentAdminOperator(adminID), map[string]any{"detail": "admin manual retry"})
 	return s.executeFulfillment(ctx, oid)
 }
