@@ -165,7 +165,6 @@ describe('admin DashboardView', () => {
       'bg-green-100',
       'bg-amber-100',
       'bg-emerald-100',
-      'bg-teal-100',
       'bg-purple-100',
       'bg-cyan-100',
       'bg-violet-100',
@@ -203,7 +202,7 @@ describe('admin DashboardView', () => {
     expect(wrapper.text()).toContain('$123.45')
   })
 
-  it('renders today balance adjustments in the top stat cards', async () => {
+  it('does not render today balance adjustments in the top stat cards', async () => {
     getSnapshotV2.mockResolvedValueOnce({
       stats: createDashboardStats({
         today_balance_added: 20.5,
@@ -217,9 +216,9 @@ describe('admin DashboardView', () => {
 
     await flushPromises()
 
-    expect(wrapper.text()).toContain('admin.dashboard.todayBalanceAdjustments')
-    expect(wrapper.text()).toContain('+$20.50')
-    expect(wrapper.text()).toContain('-$3.25')
+    expect(wrapper.text()).not.toContain('admin.dashboard.todayBalanceAdjustments')
+    expect(wrapper.text()).not.toContain('+$20.50')
+    expect(wrapper.text()).not.toContain('-$3.25')
   })
 
   it('refreshes current concurrency when chart filters reload the snapshot', async () => {

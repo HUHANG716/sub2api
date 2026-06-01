@@ -114,25 +114,6 @@
             </div>
           </div>
 
-          <!-- Today Balance Adjustments -->
-          <div class="card p-4">
-            <div class="flex items-center gap-3">
-              <div class="rounded-lg bg-teal-100 p-2 dark:bg-teal-900/30">
-                <Icon name="arrowsUpDown" size="md" class="text-teal-600 dark:text-teal-400" :stroke-width="2" />
-              </div>
-              <div>
-                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                  {{ t('admin.dashboard.todayBalanceAdjustments') }}
-                </p>
-                <p class="text-xl font-bold text-gray-900 dark:text-white">
-                  +${{ formatCost(stats.today_balance_added || 0) }}
-                </p>
-                <p class="text-xs text-red-500 dark:text-red-400">
-                  -${{ formatCost(stats.today_balance_deducted || 0) }}
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- Row 2: Token Stats -->

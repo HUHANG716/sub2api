@@ -5097,6 +5097,76 @@
                   {{ globalDiscountRulePreview(rule) }}
                 </p>
               </div>
+
+              <div
+                class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-900"
+                data-test="global-discount-effective-preview"
+              >
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ localText("最终生效费率预览", "Effective rate preview") }}
+                    </h3>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {{
+                        localText(
+                          "重叠时自动取最低倍率，下面展示未来一周每个时段最终按几折计费。",
+                          "When rules overlap, the lowest rate wins. The grid shows the final billing rate for the next week.",
+                        )
+                      }}
+                    </p>
+                  </div>
+                  <div class="rounded-md bg-white px-2 py-1 text-xs font-medium text-gray-600 shadow-sm dark:bg-dark-800 dark:text-gray-300">
+                    {{ localText("策略：最低倍率优先", "Strategy: lowest rate wins") }}
+                  </div>
+                </div>
+                <div class="mt-4 overflow-x-auto">
+                  <div class="min-w-[760px] space-y-1">
+                    <div class="grid grid-cols-[72px_repeat(12,minmax(44px,1fr))] gap-1 text-[11px] text-gray-500 dark:text-gray-400">
+                      <div></div>
+                      <div
+                        v-for="slot in globalDiscountPreviewSlots"
+                        :key="slot"
+                        class="text-center"
+                      >
+                        {{ slot }}
+                      </div>
+                    </div>
+                    <div
+                      v-for="day in globalDiscountEffectivePreview"
+                      :key="day.value"
+                      class="grid grid-cols-[72px_repeat(12,minmax(44px,1fr))] gap-1"
+                    >
+                      <div class="flex items-center text-xs font-medium text-gray-600 dark:text-gray-300">
+                        {{ day.label }}
+                      </div>
+                      <div
+                        v-for="cell in day.cells"
+                        :key="cell.hour"
+                        class="h-9 rounded border px-1 text-center text-[11px] leading-9"
+                        :class="cell.className"
+                        :title="cell.title"
+                      >
+                        {{ cell.label }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
+                  <span class="inline-flex items-center gap-1">
+                    <span class="h-2.5 w-2.5 rounded bg-gray-200 dark:bg-dark-700"></span>
+                    {{ localText("原价", "Standard") }}
+                  </span>
+                  <span class="inline-flex items-center gap-1">
+                    <span class="h-2.5 w-2.5 rounded bg-emerald-200 dark:bg-emerald-900/60"></span>
+                    {{ localText("优惠", "Discount") }}
+                  </span>
+                  <span class="inline-flex items-center gap-1">
+                    <span class="h-2.5 w-2.5 rounded bg-amber-200 dark:bg-amber-900/60"></span>
+                    {{ localText("重叠，已取最低倍率", "Overlap, lowest rate applied") }}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 	        </div>
@@ -7631,6 +7701,7 @@ const globalDiscountWeekdayOptions = computed(() => [
 ]);
 
 const globalDiscountMonthDayOptions = Array.from({ length: 31 }, (_, index) => index + 1);
+const globalDiscountPreviewSlots = Array.from({ length: 12 }, (_, index) => `${String(index * 2).padStart(2, "0")}:00`);
 
 const parseDiscountClockMinutes = (value?: string): number | null => {
   const match = /^(\d{2}):(\d{2})$/.exec(value || "");
@@ -7640,6 +7711,110 @@ const parseDiscountClockMinutes = (value?: string): number | null => {
   if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
   return hours * 60 + minutes;
 };
+
+const formatDiscountRate = (rate: number): string => {
+  const normalized = Number.isFinite(rate) && rate > 0 ? rate : 1;
+  return Number.isInteger(normalized * 100)
+    ? (normalized * 10).toFixed(Number.isInteger(normalized * 10) ? 0 : 1)
+    : normalized.toFixed(2);
+};
+
+const discountRuleDisplayName = (rule: GlobalDiscountRule, index: number): string =>
+  rule.label?.trim() || localText(`折扣规则 ${index + 1}`, `Discount rule ${index + 1}`);
+
+const previewWeekdayValue = (date: Date): number => {
+  const day = date.getDay();
+  return day === 0 ? 7 : day;
+};
+
+const previewDayStart = (date: Date): Date =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+const globalDiscountRuleMatchesPreviewTime = (
+  rule: GlobalDiscountRule,
+  date: Date,
+  minuteOfDay: number,
+): boolean => {
+  if (!rule.enabled) return false;
+  const rate = Number(rule.discount_rate || 1);
+  if (!Number.isFinite(rate) || rate <= 0 || rate >= 1) return false;
+  const instant = previewDayStart(date).getTime() + minuteOfDay * 60_000;
+  if (rule.schedule_type === "once") {
+    const start = rule.starts_at ? new Date(rule.starts_at).getTime() : Number.NaN;
+    const end = rule.ends_at ? new Date(rule.ends_at).getTime() : Number.NaN;
+    return Number.isFinite(start) && Number.isFinite(end) && instant >= start && instant < end;
+  }
+  const start = parseDiscountClockMinutes(rule.recurring_start_at);
+  const end = parseDiscountClockMinutes(rule.recurring_end_at);
+  if (start === null || end === null || start === end) return false;
+  if (rule.schedule_type === "daily") {
+    if (start < end) return minuteOfDay >= start && minuteOfDay < end;
+    return minuteOfDay >= start || minuteOfDay < end;
+  }
+  if (rule.schedule_type === "weekly") {
+    const weekday = previewWeekdayValue(date);
+    const weekdays = rule.weekdays || [];
+    const previousWeekday = weekday === 1 ? 7 : weekday - 1;
+    if (start < end) return weekdays.includes(weekday) && minuteOfDay >= start && minuteOfDay < end;
+    return (weekdays.includes(weekday) && minuteOfDay >= start) ||
+      (weekdays.includes(previousWeekday) && minuteOfDay < end);
+  }
+  if (rule.schedule_type === "monthly") {
+    const monthDays = rule.month_days || [];
+    const today = date.getDate();
+    const yesterday = new Date(previewDayStart(date).getTime() - 24 * 60 * 60_000).getDate();
+    if (start < end) return monthDays.includes(today) && minuteOfDay >= start && minuteOfDay < end;
+    return (monthDays.includes(today) && minuteOfDay >= start) ||
+      (monthDays.includes(yesterday) && minuteOfDay < end);
+  }
+  return false;
+};
+
+const globalDiscountEffectivePreview = computed(() =>
+  Array.from({ length: 7 }, (_, dayOffset) => {
+    const date = previewDayStart(new Date());
+    date.setDate(date.getDate() + dayOffset);
+    const weekday = previewWeekdayValue(date);
+    const weekdayLabel = globalDiscountWeekdayOptions.value.find((item) => item.value === weekday)?.label || "";
+    const dateLabel = `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}`;
+    const label = `${weekdayLabel} ${dateLabel}`;
+    const cells = globalDiscountPreviewSlots.map((slot, index) => {
+      const minuteOfDay = index * 2 * 60;
+      const matches = (form.global_discount_settings.rules || [])
+        .map((rule, ruleIndex) => ({ rule, ruleIndex }))
+        .filter(({ rule }) => globalDiscountRuleMatchesPreviewTime(rule, date, minuteOfDay));
+      const best = matches.reduce<{ rate: number; name: string } | null>((current, { rule, ruleIndex }) => {
+        const rate = Number(rule.discount_rate || 1);
+        if (!current || rate < current.rate) {
+          return { rate, name: discountRuleDisplayName(rule, ruleIndex) };
+        }
+        return current;
+      }, null);
+      const names = matches.map(({ rule, ruleIndex }) => discountRuleDisplayName(rule, ruleIndex));
+      const cellLabel = best ? localText(`${formatDiscountRate(best.rate)}折`, `${best.rate.toFixed(2)}x`) : "1.0";
+      return {
+        hour: slot,
+        label: cellLabel,
+        title: best
+          ? localText(
+            `${label} ${slot} 命中：${names.join("、")}；最终 ${formatDiscountRate(best.rate)} 折`,
+            `${label} ${slot} matches: ${names.join(", ")}; final ${best.rate.toFixed(2)}x`,
+          )
+          : localText(`${label} ${slot} 原价`, `${label} ${slot} standard rate`),
+        className: best
+          ? matches.length > 1
+            ? "border-amber-200 bg-amber-100 font-semibold text-amber-800 dark:border-amber-800 dark:bg-amber-900/50 dark:text-amber-200"
+            : "border-emerald-200 bg-emerald-100 font-semibold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200"
+          : "border-gray-200 bg-white text-gray-400 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-500",
+      };
+    });
+    return {
+      value: weekday,
+      label,
+      cells,
+    };
+  }),
+);
 
 const globalDiscountRuleCrossesMidnight = (rule: GlobalDiscountRule) => {
   if (rule.schedule_type === "once") return false;

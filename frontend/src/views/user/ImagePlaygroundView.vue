@@ -75,6 +75,7 @@
         :title="t('imagePlayground.title')"
         allow="clipboard-read; clipboard-write"
         referrerpolicy="same-origin"
+        ref="iframeRef"
       ></iframe>
 
       <ConfirmDialog
@@ -105,6 +106,7 @@ import {
   buildImagePlaygroundUrl,
   clearStoredImagePlaygroundKey,
   findConfiguredImagePlaygroundGroup,
+  type ImagePlaygroundTheme,
   isImagePlaygroundGroup,
   readStoredImagePlaygroundKey,
   storedKeyMatchesGroup,
@@ -137,6 +139,15 @@ interface PlaygroundAnalyticsMessage {
 interface PlaygroundRecreateKeyMessage {
   type?: string
   reason?: unknown
+}
+
+interface PlaygroundThemeMessage {
+  type?: string
+  request?: unknown
+}
+
+type ThemeMessageTarget = {
+  postMessage: (message: unknown, targetOrigin: string) => void
 }
 
 const allowedAnalyticsEvents = new Set<ImagePlaygroundEventName>([
@@ -180,6 +191,7 @@ const appStore = useAppStore()
 const loading = ref(true)
 const state = ref<PlaygroundState>('loading')
 const iframeSrc = ref('')
+const iframeRef = ref<HTMLIFrameElement | null>(null)
 const availableGroups = ref<Group[]>([])
 const storedKey = ref<StoredImagePlaygroundKey | null>(null)
 const creating = ref(false)
@@ -192,6 +204,7 @@ const renewConfirmVisible = ref(false)
 const pendingRenewReason = ref<RenewReason>('manual')
 const pendingRenewGroup = ref<Group | null>(null)
 const pendingRenewStoredKey = ref<StoredImagePlaygroundKey | null>(null)
+let themeObserver: MutationObserver | null = null
 
 const currentKeyLabel = computed(() =>
   storedKey.value ? `Key #${storedKey.value.key_id}` : ''
@@ -234,13 +247,40 @@ const confirmDialogAction = computed(() =>
     : t('imagePlayground.renewConfirmAction')
 )
 
+function getCurrentTheme(): ImagePlaygroundTheme {
+  return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+}
+
+function postThemeToPlayground(target: unknown = iframeRef.value?.contentWindow) {
+  if (!target || typeof target !== 'object' || !('postMessage' in target)) return
+  ;(target as ThemeMessageTarget).postMessage({
+    type: 'hahacode:image-playground-theme',
+    theme: getCurrentTheme()
+  }, window.location.origin)
+}
+
+function startThemeBridge() {
+  postThemeToPlayground()
+  themeObserver = new MutationObserver(() => postThemeToPlayground())
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class']
+  })
+}
+
+function stopThemeBridge() {
+  themeObserver?.disconnect()
+  themeObserver = null
+}
+
 function setReady(stored: StoredImagePlaygroundKey) {
   storedKey.value = stored
   iframeRefreshCounter.value += 1
   iframeSrc.value = buildImagePlaygroundUrl({
     origin: window.location.origin,
     apiKey: stored.key,
-    refreshToken: String(iframeRefreshCounter.value)
+    refreshToken: String(iframeRefreshCounter.value),
+    theme: getCurrentTheme()
   })
   state.value = 'ready'
 }
@@ -491,8 +531,12 @@ function recordImagePlaygroundAnalytics(event: PlaygroundAnalyticsMessage['event
 
 function handlePlaygroundMessage(event: MessageEvent) {
   if (event.origin !== window.location.origin) return
-  const data = event.data as PlaygroundParamsMessage | PlaygroundAnalyticsMessage | PlaygroundRecreateKeyMessage
+  const data = event.data as PlaygroundParamsMessage | PlaygroundAnalyticsMessage | PlaygroundRecreateKeyMessage | PlaygroundThemeMessage
   if (!data) return
+  if (data.type === 'hahacode:image-playground-theme' && (data as PlaygroundThemeMessage).request) {
+    postThemeToPlayground(event.source)
+    return
+  }
   if (data.type === 'hahacode:image-playground-params') {
     void updateEstimate((data as PlaygroundParamsMessage).payload)
     return
@@ -555,12 +599,14 @@ function cancelRenewAccess() {
 }
 
 onMounted(() => {
+  startThemeBridge()
   window.addEventListener('message', handlePlaygroundMessage)
   void preparePlayground()
 })
 
 onBeforeUnmount(() => {
   estimateAbort.value?.abort()
+  stopThemeBridge()
   window.removeEventListener('message', handlePlaygroundMessage)
 })
 </script>

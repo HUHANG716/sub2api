@@ -298,6 +298,7 @@ describe('ImagePlaygroundView', () => {
     expect(iframeUrl.pathname).toBe('/image-playground-app/')
     expect(iframeUrl.searchParams.get('appMode')).toBe('gallery')
     expect(iframeUrl.searchParams.get('embed')).toBe('product')
+    expect(iframeUrl.searchParams.get('theme')).toBe('light')
     expect(iframeUrl.searchParams.get('refresh')).toBe('1')
     expect(iframeUrl.searchParams.get('settings')).toBeNull()
     expect(iframe.attributes('src')).not.toContain('sk-created')
@@ -307,6 +308,53 @@ describe('ImagePlaygroundView', () => {
       expect.objectContaining({ apiKey: 'sk-created', apiMode: 'responses', model: IMAGE_PLAYGROUND_AGENT_MODEL })
     ])
     expect(wrapper.get('[data-test="image-playground-estimate"]').text()).toContain('Waiting')
+  })
+
+  it('sends the outer app theme to the embedded playground and updates it when the theme changes', async () => {
+    document.documentElement.classList.add('dark')
+    getAvailableGroups.mockResolvedValue([makeGroup({ id: 11, name: 'OpenAI Images' })])
+    createKey.mockResolvedValue(makeApiKey({ id: 42, key: 'sk-created', group_id: 11 }))
+
+    const wrapper = mount(ImagePlaygroundView, {
+      global: {
+        stubs: {
+          AppLayout: BaseLayoutStub,
+          Icon: true,
+          ConfirmDialog: true
+        }
+      }
+    })
+
+    await flushPromises()
+    await wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm')
+    await flushPromises()
+
+    const firstIframeUrl = new URL(wrapper.get('[data-test="image-playground-frame"]').attributes('src'))
+    expect(firstIframeUrl.searchParams.get('theme')).toBe('dark')
+
+    document.documentElement.classList.remove('dark')
+    await flushPromises()
+
+    const frame = wrapper.get('[data-test="image-playground-frame"]').element as HTMLIFrameElement
+    const frameWindow = { postMessage: vi.fn() } as unknown as Window
+    Object.defineProperty(frame, 'contentWindow', {
+      value: frameWindow,
+      configurable: true
+    })
+
+    window.dispatchEvent(new MessageEvent('message', {
+      origin: window.location.origin,
+      source: frameWindow,
+      data: {
+        type: 'hahacode:image-playground-theme',
+        request: true
+      }
+    }))
+
+    expect(frameWindow.postMessage).toHaveBeenCalledWith({
+      type: 'hahacode:image-playground-theme',
+      theme: 'light'
+    }, window.location.origin)
   })
 
   it('does not create a dedicated key when the first-time create confirmation is cancelled', async () => {

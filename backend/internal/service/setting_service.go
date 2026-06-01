@@ -350,9 +350,6 @@ func normalizeGlobalDiscountSettings(in GlobalDiscountSettings) (GlobalDiscountS
 			rules = append(rules, normalized)
 		}
 		out.Rules = rules
-		if err := validateGlobalDiscountRulesMutuallyExclusive(out.Rules); err != nil {
-			return out, err
-		}
 		out = copyFirstGlobalDiscountRuleToLegacyFields(out)
 		return out, nil
 	}
@@ -433,132 +430,6 @@ func normalizeGlobalDiscountRule(in GlobalDiscountRule, index int) (GlobalDiscou
 		}
 	}
 	return out, nil
-}
-
-type globalDiscountInterval struct {
-	ruleID    string
-	start     time.Time
-	end       time.Time
-	recurring bool
-	originDay time.Time
-}
-
-func validateGlobalDiscountRulesMutuallyExclusive(rules []GlobalDiscountRule) error {
-	enabledRules := make([]GlobalDiscountRule, 0, len(rules))
-	var minOnce, maxOnce time.Time
-	for _, rule := range rules {
-		if !rule.Enabled {
-			continue
-		}
-		enabledRules = append(enabledRules, rule)
-		if rule.ScheduleType == "once" {
-			start, _ := parseGlobalDiscountTime(rule.StartsAt)
-			end, _ := parseGlobalDiscountTime(rule.EndsAt)
-			if minOnce.IsZero() || start.Before(minOnce) {
-				minOnce = start
-			}
-			if maxOnce.IsZero() || end.After(maxOnce) {
-				maxOnce = end
-			}
-		}
-	}
-	if len(enabledRules) < 2 {
-		return nil
-	}
-
-	loc := timezone.Location()
-	windowStart := time.Date(2026, 1, 1, 0, 0, 0, 0, loc)
-	windowEnd := windowStart.AddDate(1, 1, 0)
-	if !minOnce.IsZero() && !maxOnce.IsZero() {
-		windowStart = minOnce.In(loc).AddDate(0, 0, -2)
-		windowEnd = maxOnce.In(loc).AddDate(0, 0, 2)
-		if windowEnd.Before(windowStart.AddDate(0, 1, 0)) {
-			windowEnd = windowStart.AddDate(0, 1, 0)
-		}
-	}
-
-	intervals := make([]globalDiscountInterval, 0)
-	for _, rule := range enabledRules {
-		intervals = append(intervals, globalDiscountRuleIntervals(rule, windowStart, windowEnd)...)
-	}
-	sort.Slice(intervals, func(i, j int) bool {
-		return intervals[i].start.Before(intervals[j].start)
-	})
-	for i := 1; i < len(intervals); i++ {
-		prev := intervals[i-1]
-		curr := intervals[i]
-		if prev.ruleID == curr.ruleID {
-			continue
-		}
-		if prev.recurring && curr.recurring && !prev.originDay.Equal(curr.originDay) {
-			continue
-		}
-		if prev.start.Before(curr.end) && curr.start.Before(prev.end) {
-			return infraerrors.BadRequest("INVALID_GLOBAL_DISCOUNT", "global discount rules must not overlap")
-		}
-	}
-	return nil
-}
-
-func globalDiscountRuleIntervals(rule GlobalDiscountRule, windowStart, windowEnd time.Time) []globalDiscountInterval {
-	if rule.ScheduleType == "once" {
-		start, startErr := parseGlobalDiscountTime(rule.StartsAt)
-		end, endErr := parseGlobalDiscountTime(rule.EndsAt)
-		if startErr != nil || endErr != nil || !end.After(start) {
-			return nil
-		}
-		if end.After(windowStart) && start.Before(windowEnd) {
-			return []globalDiscountInterval{{ruleID: rule.ID, start: start, end: end}}
-		}
-		return nil
-	}
-
-	startMin, ok := parseGlobalDiscountClockMinutes(rule.RecurringStartAt)
-	if !ok {
-		return nil
-	}
-	endMin, ok := parseGlobalDiscountClockMinutes(rule.RecurringEndAt)
-	if !ok || startMin == endMin {
-		return nil
-	}
-
-	loc := timezone.Location()
-	startDay := timezone.StartOfDay(windowStart.In(loc)).AddDate(0, 0, -1)
-	endDay := timezone.StartOfDay(windowEnd.In(loc)).AddDate(0, 0, 1)
-	intervals := make([]globalDiscountInterval, 0)
-	for day := startDay; !day.After(endDay); day = day.AddDate(0, 0, 1) {
-		if !globalDiscountRuleAppliesOnDay(rule, day) {
-			continue
-		}
-		start := day.Add(time.Duration(startMin) * time.Minute)
-		end := day.Add(time.Duration(endMin) * time.Minute)
-		if endMin <= startMin {
-			end = end.AddDate(0, 0, 1)
-		}
-		if end.After(windowStart) && start.Before(windowEnd) {
-			intervals = append(intervals, globalDiscountInterval{
-				ruleID:    rule.ID,
-				start:     start,
-				end:       end,
-				recurring: true,
-				originDay: day,
-			})
-		}
-	}
-	return intervals
-}
-
-func globalDiscountRuleAppliesOnDay(rule GlobalDiscountRule, day time.Time) bool {
-	switch rule.ScheduleType {
-	case "daily":
-		return true
-	case "weekly":
-		return containsInt(rule.Weekdays, globalDiscountWeekday(day))
-	case "monthly":
-		return containsInt(rule.MonthDays, day.Day())
-	default:
-		return false
-	}
 }
 
 func copyFirstGlobalDiscountRuleToLegacyFields(settings GlobalDiscountSettings) GlobalDiscountSettings {
@@ -712,7 +583,9 @@ func globalDiscountRuntime(settings GlobalDiscountSettings, now time.Time) Globa
 		runtime.Active = globalDiscountActive(runtime, now)
 		if runtime.Active {
 			duration := globalDiscountRuleDuration(runtime)
-			if best == nil || duration < bestDuration {
+			if best == nil ||
+				runtime.DiscountRate < best.DiscountRate ||
+				(runtime.DiscountRate == best.DiscountRate && duration < bestDuration) {
 				candidate := runtime
 				best = &candidate
 				bestDuration = duration
@@ -815,13 +688,19 @@ func globalDiscountRecurringActive(runtime GlobalDiscountRuntime, now time.Time)
 	case "weekly":
 		today := globalDiscountWeekday(local)
 		yesterday := globalDiscountWeekday(local.AddDate(0, 0, -1))
-		return (containsInt(runtime.Weekdays, today) && clockWindowContains(startMin, endMin, localMin)) ||
-			(startMin > endMin && containsInt(runtime.Weekdays, yesterday) && localMin < endMin)
+		if startMin > endMin {
+			return (containsInt(runtime.Weekdays, today) && localMin >= startMin) ||
+				(containsInt(runtime.Weekdays, yesterday) && localMin < endMin)
+		}
+		return containsInt(runtime.Weekdays, today) && clockWindowContains(startMin, endMin, localMin)
 	case "monthly":
 		today := local.Day()
 		yesterday := local.AddDate(0, 0, -1).Day()
-		return (containsInt(runtime.MonthDays, today) && clockWindowContains(startMin, endMin, localMin)) ||
-			(startMin > endMin && containsInt(runtime.MonthDays, yesterday) && localMin < endMin)
+		if startMin > endMin {
+			return (containsInt(runtime.MonthDays, today) && localMin >= startMin) ||
+				(containsInt(runtime.MonthDays, yesterday) && localMin < endMin)
+		}
+		return containsInt(runtime.MonthDays, today) && clockWindowContains(startMin, endMin, localMin)
 	default:
 		return false
 	}

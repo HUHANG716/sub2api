@@ -777,6 +777,11 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TotalUserBalanceExcludesSoftDelet
 		Email:   "balance-active-2@example.com",
 		Balance: -2.25,
 	})
+	mustCreateUser(s.T(), s.client, &service.User{
+		Email:   "balance-admin@example.com",
+		Role:    service.RoleAdmin,
+		Balance: 99.00,
+	})
 	deletedUser := mustCreateUser(s.T(), s.client, &service.User{
 		Email:   "balance-deleted@example.com",
 		Balance: 99.00,

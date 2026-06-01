@@ -681,6 +681,61 @@ describe("admin SettingsView payment visible method controls", () => {
     expect(showError).toHaveBeenCalledWith("充值赠送阶梯的金额和赠送额度都必须大于 0。");
   });
 
+  it("renders the effective discount preview with lowest-rate overlap semantics", async () => {
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      global_discount_settings: {
+        enabled: true,
+        discount_rate: 0.9,
+        schedule_type: "weekly",
+        starts_at: "",
+        ends_at: "",
+        recurring_start_at: "00:00",
+        recurring_end_at: "23:59",
+        weekdays: [1],
+        month_days: [],
+        label: "周一全天",
+        rules: [
+          {
+            id: "monday",
+            enabled: true,
+            discount_rate: 0.9,
+            schedule_type: "weekly",
+            starts_at: "",
+            ends_at: "",
+            recurring_start_at: "00:00",
+            recurring_end_at: "23:59",
+            weekdays: [1],
+            month_days: [],
+            label: "周一全天",
+          },
+          {
+            id: "night",
+            enabled: true,
+            discount_rate: 0.8,
+            schedule_type: "daily",
+            starts_at: "",
+            ends_at: "",
+            recurring_start_at: "00:00",
+            recurring_end_at: "02:00",
+            weekdays: [],
+            month_days: [],
+            label: "夜间",
+          },
+        ],
+      },
+    });
+
+    const wrapper = mountView();
+
+    await flushPromises();
+    await openPaymentTab(wrapper);
+
+    const preview = wrapper.get('[data-test="global-discount-effective-preview"]');
+    expect(preview.text()).toContain("策略：最低倍率优先");
+    expect(preview.text()).toContain("8折");
+  });
+
   it("submits Anthropic cache TTL injection gateway setting", async () => {
     getSettings.mockResolvedValueOnce({
       ...baseSettingsResponse,

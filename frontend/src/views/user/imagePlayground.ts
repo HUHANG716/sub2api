@@ -6,6 +6,7 @@ export const IMAGE_PLAYGROUND_KEY_NAME = 'Image Playground'
 export const IMAGE_PLAYGROUND_APP_PATH = '/image-playground-app/'
 export const IMAGE_PLAYGROUND_MODEL = 'gpt-image-2'
 export const IMAGE_PLAYGROUND_AGENT_MODEL = 'gpt-5.5'
+export type ImagePlaygroundTheme = 'light' | 'dark'
 
 export interface StoredImagePlaygroundKey {
   key: string
@@ -43,6 +44,7 @@ export function buildImagePlaygroundUrl(options: {
   origin: string
   apiKey: string
   refreshToken?: string
+  theme?: ImagePlaygroundTheme
 }): string {
   const origin = options.origin.replace(/\/+$/, '')
   const url = new URL(IMAGE_PLAYGROUND_APP_PATH, `${origin}/`)
@@ -82,6 +84,7 @@ export function buildImagePlaygroundUrl(options: {
   window.sessionStorage.setItem(IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY, JSON.stringify(settings))
   url.searchParams.set('appMode', 'gallery')
   url.searchParams.set('embed', 'product')
+  url.searchParams.set('theme', options.theme ?? 'light')
   if (options.refreshToken) url.searchParams.set('refresh', options.refreshToken)
   return url.toString()
 }
