@@ -42,6 +42,7 @@ func TestRecordPaymentEventsInsertsWhitelistedEvent(t *testing.T) {
 			"balance",
 			"alipay",
 			"qrcode",
+			nil,
 			"PENDING",
 			88.0,
 			90.64,
@@ -81,5 +82,44 @@ func TestRecordPaymentEventsRejectsUnknownEvent(t *testing.T) {
 	router.ServeHTTP(rec, req)
 
 	require.Equal(t, http.StatusBadRequest, rec.Code)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestRecordPaymentEventsAcceptsSelectionMetadata(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	h := NewPaymentHandler(nil, nil, nil, db)
+	router := newPaymentEventsTestRouter(t, h)
+
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO payment_events")).
+		WithArgs(
+			int64(42),
+			"payment_amount_select",
+			"recharge",
+			"balance",
+			"wxpay",
+			nil,
+			"quick",
+			nil,
+			200.0,
+			200.0,
+			nil,
+			nil,
+			nil,
+			nil,
+		).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	body := []byte(`{"events":[{"name":"payment_amount_select","tab":"recharge","orderType":"balance","paymentType":"wxpay","source":"quick","amount":200,"payAmount":200}]}`)
+	req := httptest.NewRequest(http.MethodPost, "/payment/events", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
 	require.NoError(t, mock.ExpectationsWereMet())
 }

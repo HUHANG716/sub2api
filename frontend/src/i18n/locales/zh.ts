@@ -7598,6 +7598,7 @@ export default {
       events: {
         payment_page_view: '访问支付页',
         payment_tab_change: '切换支付标签',
+        payment_amount_select: '选择充值金额',
         payment_method_select: '选择支付方式',
         payment_plan_select: '选择套餐',
         payment_order_submit: '提交订单',

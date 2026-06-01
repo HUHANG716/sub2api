@@ -7418,6 +7418,7 @@ export default {
       events: {
         payment_page_view: 'Payment page view',
         payment_tab_change: 'Payment tab change',
+        payment_amount_select: 'Amount select',
         payment_method_select: 'Payment method select',
         payment_plan_select: 'Plan select',
         payment_order_submit: 'Order submit',

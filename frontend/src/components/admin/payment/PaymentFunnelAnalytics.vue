@@ -74,8 +74,8 @@
                 <tr v-for="event in recentEvents" :key="`${event.name}-${event.created_at}-${event.order_id || ''}`">
                   <td class="px-3 py-2 text-gray-700 dark:text-gray-300">
                     <div class="font-medium">{{ formatEventName(event.name) }}</div>
-                    <div v-if="event.status || event.error_kind || event.launch_kind" class="text-xs text-gray-500 dark:text-gray-400">
-                      {{ event.status || event.error_kind || event.launch_kind }}
+                    <div v-if="event.status || event.error_kind || event.launch_kind || event.source" class="text-xs text-gray-500 dark:text-gray-400">
+                      {{ event.status || event.error_kind || event.launch_kind || event.source }}
                     </div>
                   </td>
                   <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ event.payment_type ? formatPaymentMethod(event.payment_type) : '-' }}</td>

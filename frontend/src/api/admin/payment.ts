@@ -69,6 +69,7 @@ export interface PaymentAnalyticsRecentEvent {
   order_type?: string
   payment_type?: string
   launch_kind?: string
+  source?: string
   status?: string
   amount?: number
   pay_amount?: number

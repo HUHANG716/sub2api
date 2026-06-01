@@ -606,4 +606,48 @@ describe('PaymentView recharge bonus preview', () => {
     expect(wrapper.find('.payment-credit-hint').text()).toContain('payment.creditSummaryBaseOnly')
     expect(wrapper.text()).toContain('$200.00')
   })
+
+  it('records quick amount selections with the selected amount', async () => {
+    getCheckoutInfo.mockReset().mockResolvedValue(checkoutInfoFixture())
+
+    const wrapper = shallowMount(PaymentView, {
+      global: {
+        stubs: {
+          AppLayout: {
+            template: '<div><slot /></div>',
+          },
+          Teleport: true,
+          Transition: false,
+          AmountInput: defineComponent({
+            emits: ['update:modelValue', 'amount-select'],
+            setup(_, { emit }) {
+              return () => h('button', {
+                class: 'amount-input-stub',
+                onClick: () => {
+                  emit('update:modelValue', 200)
+                  emit('amount-select', { amount: 200, source: 'quick' })
+                },
+              }, 'set amount')
+            },
+          }),
+        },
+      },
+    })
+    await flushPromises()
+    recordEvents.mockClear()
+
+    await wrapper.get('.amount-input-stub').trigger('click')
+    await flushPromises()
+
+    expect(recordEvents).toHaveBeenCalledWith({
+      events: [expect.objectContaining({
+        name: 'payment_amount_select',
+        tab: 'recharge',
+        orderType: 'balance',
+        source: 'quick',
+        amount: 200,
+        payAmount: 200,
+      })],
+    })
+  })
 })

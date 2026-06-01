@@ -75,6 +75,7 @@ type PaymentAnalyticsRecentEvent struct {
 	OrderType   *string    `json:"order_type,omitempty"`
 	PaymentType *string    `json:"payment_type,omitempty"`
 	LaunchKind  *string    `json:"launch_kind,omitempty"`
+	Source      *string    `json:"source,omitempty"`
 	Status      *string    `json:"status,omitempty"`
 	Amount      *float64   `json:"amount,omitempty"`
 	PayAmount   *float64   `json:"pay_amount,omitempty"`
@@ -238,7 +239,7 @@ func (h *PaymentHandler) queryPaymentAnalyticsMethods(c *gin.Context, since time
 
 func (h *PaymentHandler) queryPaymentAnalyticsRecentEvents(c *gin.Context, since time.Time) ([]PaymentAnalyticsRecentEvent, error) {
 	rows, err := h.sqlDB.QueryContext(c.Request.Context(), `
-		SELECT event_name, tab, order_type, payment_type, launch_kind, status,
+		SELECT event_name, tab, order_type, payment_type, launch_kind, source, status,
 		       amount, pay_amount, plan_id, order_id, error_kind, created_at
 		FROM payment_events
 		WHERE created_at >= $1
@@ -259,6 +260,7 @@ func (h *PaymentHandler) queryPaymentAnalyticsRecentEvents(c *gin.Context, since
 			&event.OrderType,
 			&event.PaymentType,
 			&event.LaunchKind,
+			&event.Source,
 			&event.Status,
 			&event.Amount,
 			&event.PayAmount,
