@@ -30,13 +30,14 @@ permissions:
 
 concurrency:
   group: deploy-main
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
     name: Deploy to Baoleyun prod
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment:
       name: prod
       url: https://code.hahacode.top
@@ -90,6 +91,7 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
 
       - name: Resolve deployment plan
+        timeout-minutes: 3
         id: plan
         env:
           DEPLOY_HOST: ${{ vars.BAOLEYUN_HOST }}
@@ -100,11 +102,19 @@ jobs:
         run: |
           target_sha="$(git rev-parse HEAD)"
           deploy_state="$(
-            ssh -i ~/.ssh/id_deploy "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -se' <<'REMOTE'
+            ssh \
+              -o BatchMode=yes \
+              -o ConnectTimeout=10 \
+              -o ServerAliveInterval=10 \
+              -o ServerAliveCountMax=2 \
+              -i ~/.ssh/id_deploy \
+              "${DEPLOY_USER}@${DEPLOY_HOST}" 'bash -se' <<'REMOTE'
           set -euo pipefail
 
+          echo "remote: entering /opt/sub2api/runtime" >&2
           cd /opt/sub2api/runtime
-          docker compose config | awk '
+          echo "remote: reading compose image" >&2
+          timeout 20s docker compose config | awk '
             /^services:[[:space:]]*$/ {
               in_services = 1
               next
@@ -121,7 +131,14 @@ jobs:
               exit
             }
           '
-          docker compose exec -T sub2api sh -c 'cat /app/data/public/.deploy-sha 2>/dev/null || true' < /dev/null
+          echo "remote: reading deployed frontend sha" >&2
+          container_id="$(timeout 10s docker compose ps -q sub2api 2>/dev/null || true)"
+          if [ -n "$container_id" ]; then
+            timeout 10s docker exec "$container_id" sh -c 'cat /app/data/public/.deploy-sha 2>/dev/null || true' < /dev/null || true
+          else
+            echo "remote: sub2api container is not running" >&2
+            printf '\n'
+          fi
           REMOTE
           )"
           deployed_image="$(printf '%s\n' "$deploy_state" | sed -n '1p')"
@@ -130,6 +147,7 @@ jobs:
           DEPLOYED_IMAGE="$deployed_image" FRONTEND_DEPLOYED_SHA="$frontend_deployed_sha" TARGET_SHA="$target_sha" bash .github/ci/resolve-main-deploy-plan.sh
 
       - name: Check deploy image
+        timeout-minutes: 5
         id: image
         if: ${{ steps.plan.outputs.mode == 'image' }}
         env:
@@ -171,6 +189,7 @@ jobs:
         run: tar -C frontend-dist -czf frontend-dist.tar.gz .
 
       - name: Deploy on server
+        timeout-minutes: 20
         if: ${{ steps.plan.outputs.mode == 'image' && steps.image.outputs.exists == 'true' }}
         env:
           DEPLOY_HOST: ${{ vars.BAOLEYUN_HOST }}
@@ -285,6 +304,7 @@ jobs:
           } | ssh -i ~/.ssh/id_deploy "${DEPLOY_USER}@${DEPLOY_HOST}" "env DEPLOY_REF=${DEPLOY_REF_Q} DEPLOY_SHA=${DEPLOY_SHA_Q} DEPLOY_IMAGE_NAME=${DEPLOY_IMAGE_NAME_Q} GHCR_USERNAME=${GHCR_USERNAME_Q} sh -c 'IFS= read -r GHCR_TOKEN; export GHCR_TOKEN; bash -se'"
 
       - name: Deploy frontend files
+        timeout-minutes: 10
         if: ${{ steps.plan.outputs.mode == 'frontend' }}
         env:
           DEPLOY_HOST: ${{ vars.BAOLEYUN_HOST }}
