@@ -1005,7 +1005,7 @@ func (s *SubscriptionService) validateAndCheckLimitsAt(sub *UserSubscription, gr
 	if sub.Status == SubscriptionStatusSuspended {
 		return false, ErrSubscriptionSuspended
 	}
-	if sub.IsExpired() {
+	if sub.IsExpiredAt(now) {
 		return false, ErrSubscriptionExpired
 	}
 
