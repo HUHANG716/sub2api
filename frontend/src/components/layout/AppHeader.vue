@@ -69,11 +69,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAppStore, useAuthStore } from '@/stores'
 import { useAdminSettingsStore } from '@/stores/adminSettings'
+import type { GlobalDiscountRuntime } from '@/types'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMini.vue'
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
@@ -86,6 +87,9 @@ const { t } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
 const adminSettingsStore = useAdminSettingsStore()
+const nowMs = ref(Date.now())
+let discountClockTimer: ReturnType<typeof setInterval> | null = null
+let discountBoundaryTimer: ReturnType<typeof setTimeout> | null = null
 
 const user = computed(() => authStore.user)
 const showPaymentShortcut = computed(() =>
@@ -118,7 +122,7 @@ const pageDescription = computed(() => {
 
 const activeGlobalDiscount = computed(() => {
   const discount = appStore.cachedPublicSettings?.global_discount
-  if (!discount?.active) return null
+  if (!discount?.active || !isDiscountRuntimeActiveNow(discount, nowMs.value)) return null
   return discount
 })
 
@@ -132,6 +136,60 @@ const discountCampaignText = computed(() => {
 function toggleMobileSidebar() {
   appStore.toggleMobileSidebar()
 }
+
+function isDiscountRuntimeActiveNow(discount: GlobalDiscountRuntime, timestamp: number): boolean {
+  if (!discount.enabled || !discount.active || discount.discount_rate <= 0 || discount.discount_rate >= 1) {
+    return false
+  }
+
+  const start = discount.starts_at ? new Date(discount.starts_at).getTime() : Number.NaN
+  const end = discount.ends_at ? new Date(discount.ends_at).getTime() : Number.NaN
+  if (Number.isFinite(start) && timestamp < start) return false
+  if (Number.isFinite(end) && timestamp >= end) return false
+  return true
+}
+
+function clearDiscountBoundaryTimer() {
+  if (discountBoundaryTimer) {
+    clearTimeout(discountBoundaryTimer)
+    discountBoundaryTimer = null
+  }
+}
+
+function scheduleDiscountBoundaryRefresh(discount?: GlobalDiscountRuntime | null) {
+  clearDiscountBoundaryTimer()
+  if (!discount?.active || !discount.ends_at) return
+
+  const end = new Date(discount.ends_at).getTime()
+  if (!Number.isFinite(end)) return
+  const delay = Math.max(0, end - Date.now() + 1)
+  discountBoundaryTimer = setTimeout(() => {
+    nowMs.value = Date.now()
+    void appStore.fetchPublicSettings(true)
+  }, delay)
+}
+
+onMounted(() => {
+  discountClockTimer = setInterval(() => {
+    nowMs.value = Date.now()
+  }, 60_000)
+})
+
+watch(
+  () => appStore.cachedPublicSettings?.global_discount,
+  (discount) => {
+    scheduleDiscountBoundaryRefresh(discount)
+  },
+  { immediate: true }
+)
+
+onUnmounted(() => {
+  if (discountClockTimer) {
+    clearInterval(discountClockTimer)
+    discountClockTimer = null
+  }
+  clearDiscountBoundaryTimer()
+})
 </script>
 
 <style scoped>

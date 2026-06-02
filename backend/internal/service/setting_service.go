@@ -655,6 +655,14 @@ func globalDiscountRuleRuntime(rule GlobalDiscountRule, now time.Time) GlobalDis
 		}
 	}
 	runtime.Active = globalDiscountActive(runtime, now)
+	if runtime.Active && runtime.ScheduleType != "" && runtime.ScheduleType != "once" {
+		if start, end, ok := globalDiscountRecurringWindow(runtime, now); ok {
+			startUTC := start.UTC()
+			endUTC := end.UTC()
+			runtime.StartsAt = &startUTC
+			runtime.EndsAt = &endUTC
+		}
+	}
 	return runtime
 }
 
@@ -672,37 +680,88 @@ func globalDiscountActive(runtime GlobalDiscountRuntime, now time.Time) bool {
 }
 
 func globalDiscountRecurringActive(runtime GlobalDiscountRuntime, now time.Time) bool {
+	_, _, active := globalDiscountRecurringWindow(runtime, now)
+	return active
+}
+
+func globalDiscountRecurringWindow(runtime GlobalDiscountRuntime, now time.Time) (time.Time, time.Time, bool) {
 	startMin, ok := parseGlobalDiscountClockMinutes(runtime.RecurringStartAt)
 	if !ok {
-		return false
+		return time.Time{}, time.Time{}, false
 	}
 	endMin, ok := parseGlobalDiscountClockMinutes(runtime.RecurringEndAt)
 	if !ok || startMin == endMin {
-		return false
+		return time.Time{}, time.Time{}, false
 	}
 	local := now.In(timezone.Location())
 	localMin := local.Hour()*60 + local.Minute()
+	windowForStartDay := func(day time.Time) (time.Time, time.Time) {
+		windowStart := timezone.StartOfDay(day).Add(time.Duration(startMin) * time.Minute)
+		windowEnd := timezone.StartOfDay(day).Add(time.Duration(endMin) * time.Minute)
+		if startMin > endMin {
+			windowEnd = windowEnd.AddDate(0, 0, 1)
+		}
+		return windowStart, windowEnd
+	}
+
 	switch runtime.ScheduleType {
 	case "daily":
-		return clockWindowContains(startMin, endMin, localMin)
+		if startMin < endMin {
+			if !clockWindowContains(startMin, endMin, localMin) {
+				return time.Time{}, time.Time{}, false
+			}
+			start, end := windowForStartDay(local)
+			return start, end, true
+		}
+		if localMin >= startMin {
+			start, end := windowForStartDay(local)
+			return start, end, true
+		}
+		if localMin < endMin {
+			start, end := windowForStartDay(local.AddDate(0, 0, -1))
+			return start, end, true
+		}
+		return time.Time{}, time.Time{}, false
 	case "weekly":
 		today := globalDiscountWeekday(local)
 		yesterday := globalDiscountWeekday(local.AddDate(0, 0, -1))
 		if startMin > endMin {
-			return (containsInt(runtime.Weekdays, today) && localMin >= startMin) ||
-				(containsInt(runtime.Weekdays, yesterday) && localMin < endMin)
+			if containsInt(runtime.Weekdays, today) && localMin >= startMin {
+				start, end := windowForStartDay(local)
+				return start, end, true
+			}
+			if containsInt(runtime.Weekdays, yesterday) && localMin < endMin {
+				start, end := windowForStartDay(local.AddDate(0, 0, -1))
+				return start, end, true
+			}
+			return time.Time{}, time.Time{}, false
 		}
-		return containsInt(runtime.Weekdays, today) && clockWindowContains(startMin, endMin, localMin)
+		if containsInt(runtime.Weekdays, today) && clockWindowContains(startMin, endMin, localMin) {
+			start, end := windowForStartDay(local)
+			return start, end, true
+		}
+		return time.Time{}, time.Time{}, false
 	case "monthly":
 		today := local.Day()
 		yesterday := local.AddDate(0, 0, -1).Day()
 		if startMin > endMin {
-			return (containsInt(runtime.MonthDays, today) && localMin >= startMin) ||
-				(containsInt(runtime.MonthDays, yesterday) && localMin < endMin)
+			if containsInt(runtime.MonthDays, today) && localMin >= startMin {
+				start, end := windowForStartDay(local)
+				return start, end, true
+			}
+			if containsInt(runtime.MonthDays, yesterday) && localMin < endMin {
+				start, end := windowForStartDay(local.AddDate(0, 0, -1))
+				return start, end, true
+			}
+			return time.Time{}, time.Time{}, false
 		}
-		return containsInt(runtime.MonthDays, today) && clockWindowContains(startMin, endMin, localMin)
+		if containsInt(runtime.MonthDays, today) && clockWindowContains(startMin, endMin, localMin) {
+			start, end := windowForStartDay(local)
+			return start, end, true
+		}
+		return time.Time{}, time.Time{}, false
 	default:
-		return false
+		return time.Time{}, time.Time{}, false
 	}
 }
 

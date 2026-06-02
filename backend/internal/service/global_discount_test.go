@@ -105,6 +105,74 @@ func TestGlobalDiscountRuntimeRecurringOvernight(t *testing.T) {
 	}
 }
 
+func TestGlobalDiscountRuntimeDailyScheduleExposesCurrentWindowEnd(t *testing.T) {
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+	if err := timezone.Init("Asia/Shanghai"); err != nil {
+		t.Fatalf("init timezone: %v", err)
+	}
+	t.Cleanup(func() { _ = timezone.Init("UTC") })
+
+	runtime := globalDiscountRuntime(GlobalDiscountSettings{
+		Enabled:          true,
+		DiscountRate:     0.8,
+		ScheduleType:     "daily",
+		RecurringStartAt: "09:00",
+		RecurringEndAt:   "18:00",
+	}, time.Date(2026, 6, 2, 10, 30, 0, 0, loc))
+
+	if !runtime.Active {
+		t.Fatalf("Active = false, want true")
+	}
+	if runtime.EndsAt == nil {
+		t.Fatalf("EndsAt = nil, want current recurring window end")
+	}
+	want := time.Date(2026, 6, 2, 18, 0, 0, 0, loc).UTC()
+	if !runtime.EndsAt.Equal(want) {
+		t.Fatalf("EndsAt = %v, want %v", runtime.EndsAt, want)
+	}
+}
+
+func TestGlobalDiscountRuntimeWeeklyOvernightExposesCurrentWindowEnd(t *testing.T) {
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+	if err := timezone.Init("Asia/Shanghai"); err != nil {
+		t.Fatalf("init timezone: %v", err)
+	}
+	t.Cleanup(func() { _ = timezone.Init("UTC") })
+
+	settings := GlobalDiscountSettings{
+		Enabled: true,
+		Rules: []GlobalDiscountRule{
+			{
+				ID:               "weekday-nights",
+				Enabled:          true,
+				DiscountRate:     0.9,
+				ScheduleType:     "weekly",
+				RecurringStartAt: "22:00",
+				RecurringEndAt:   "08:00",
+				Weekdays:         []int{1, 2, 3, 4, 5},
+			},
+		},
+	}
+
+	runtime := globalDiscountRuntime(settings, time.Date(2026, 6, 2, 7, 59, 0, 0, loc))
+	if !runtime.Active {
+		t.Fatalf("Active = false, want true")
+	}
+	if runtime.EndsAt == nil {
+		t.Fatalf("EndsAt = nil, want current recurring window end")
+	}
+	want := time.Date(2026, 6, 2, 8, 0, 0, 0, loc).UTC()
+	if !runtime.EndsAt.Equal(want) {
+		t.Fatalf("EndsAt = %v, want %v", runtime.EndsAt, want)
+	}
+}
+
 func TestGlobalDiscountRuntimeWeeklySchedule(t *testing.T) {
 	thursday := time.Date(2026, 5, 28, 10, 0, 0, 0, time.Local)
 	runtime := globalDiscountRuntime(GlobalDiscountSettings{

@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 
@@ -52,6 +52,11 @@ const mountHeader = () => mount(AppHeader, {
 })
 
 describe('AppHeader discount campaign', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
   it('shows active global discount copy in the header center', () => {
     setActivePinia(createPinia())
     const appStore = useAppStore()
@@ -110,6 +115,68 @@ describe('AppHeader discount campaign', () => {
     const wrapper = mountHeader()
 
     expect(wrapper.find('.header-discount-campaign').exists()).toBe(false)
+  })
+
+  it('hides active discount copy after the runtime window ends', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-02T11:59:30+08:00'))
+    setActivePinia(createPinia())
+    const appStore = useAppStore()
+    const authStore = useAuthStore()
+    vi.spyOn(appStore, 'fetchPublicSettings').mockResolvedValue(null)
+    authStore.user = { id: 1, username: 'tester', email: 'tester@example.com', role: 'user' } as any
+    appStore.cachedPublicSettings = {
+      global_discount: {
+        enabled: true,
+        active: true,
+        discount_rate: 0.8,
+        schedule_type: 'once',
+        starts_at: '2026-06-02T11:00:00+08:00',
+        ends_at: '2026-06-02T12:00:00+08:00',
+        label: '限时八折活动进行中'
+      }
+    } as any
+
+    const wrapper = mountHeader()
+    expect(wrapper.find('.header-discount-campaign').exists()).toBe(true)
+
+    vi.setSystemTime(new Date('2026-06-02T12:00:01+08:00'))
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(wrapper.find('.header-discount-campaign').exists()).toBe(false)
+  })
+
+  it('refreshes public settings when the active discount window ends', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-02T11:59:30+08:00'))
+    setActivePinia(createPinia())
+    const appStore = useAppStore()
+    const authStore = useAuthStore()
+    const fetchPublicSettingsSpy = vi
+      .spyOn(appStore, 'fetchPublicSettings')
+      .mockResolvedValue(null)
+    authStore.user = { id: 1, username: 'tester', email: 'tester@example.com', role: 'user' } as any
+    appStore.cachedPublicSettings = {
+      global_discount: {
+        enabled: true,
+        active: true,
+        discount_rate: 0.8,
+        schedule_type: 'weekly',
+        starts_at: '2026-06-02T11:00:00+08:00',
+        ends_at: '2026-06-02T12:00:00+08:00',
+        recurring_start_at: '11:00',
+        recurring_end_at: '12:00',
+        weekdays: [2],
+        label: '限时八折活动进行中'
+      }
+    } as any
+
+    mountHeader()
+
+    await vi.advanceTimersByTimeAsync(30_001)
+    await flushPromises()
+
+    expect(fetchPublicSettingsSpy).toHaveBeenCalledWith(true)
   })
 
   it('hides the campaign copy when no activity name is available', () => {
