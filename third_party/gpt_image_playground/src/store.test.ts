@@ -1815,6 +1815,7 @@ describe('agent batch reference resolution', () => {
     expect(postMessage).toHaveBeenCalledWith({
       type: 'image-playground:recreate-key-request',
       reason: 'image_generation_disabled_for_group',
+      apiMode: 'responses',
     }, 'https://code.example.com')
   })
 })

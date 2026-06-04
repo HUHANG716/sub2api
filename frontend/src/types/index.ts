@@ -234,6 +234,7 @@ export interface PublicSettings {
   available_channels_enabled: boolean
   affiliate_enabled: boolean
   image_playground_group_id?: number | null
+  image_playground_responses_group_id?: number | null
   global_discount?: GlobalDiscountRuntime | null
 }
 

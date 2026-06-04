@@ -150,9 +150,9 @@ function getErrorKind(error: unknown) {
   return typeof error
 }
 
-function notifyParentForRecoverableEmbedError(error: unknown) {
+function notifyParentForRecoverableEmbedError(error: unknown, apiMode?: ApiMode) {
   if (isImageGenerationDisabledForGroupError(error)) {
-    requestProductEmbedKeyRecreation('image_generation_disabled_for_group')
+    requestProductEmbedKeyRecreation('image_generation_disabled_for_group', apiMode)
   }
 }
 
@@ -3674,14 +3674,14 @@ async function executeAgentRound(
         const batchItem = batchItems[i]
         if (settled.status === 'fulfilled') {
           const r = settled.value
-          if (r.error) notifyParentForRecoverableEmbedError(r.error)
+          if (r.error) notifyParentForRecoverableEmbedError(r.error, activeProfile.apiMode)
           outputImages.push({
             id: r.batchItemId,
             status: r.image ? 'done' : 'error',
             ...(r.error ? { error: r.error } : {}),
           })
         } else {
-          notifyParentForRecoverableEmbedError(settled.reason)
+          notifyParentForRecoverableEmbedError(settled.reason, activeProfile.apiMode)
           outputImages.push({
             id: batchItem.id,
             status: 'error',
@@ -4003,7 +4003,7 @@ async function executeAgentRound(
       return
     }
 
-    notifyParentForRecoverableEmbedError(err)
+    notifyParentForRecoverableEmbedError(err, activeProfile.apiMode)
 
     let message = err instanceof Error ? err.message : String(err)
     const usesApiProxy = activeProfile.apiProxy ?? requestSettings.apiProxy
@@ -4226,7 +4226,7 @@ async function executeTask(taskId: string) {
     clearOpenAIWatchdogTimer(taskId)
     const latestTask = useStore.getState().tasks.find((t) => t.id === taskId) ?? task
     if (latestTask.status !== 'running') return
-    notifyParentForRecoverableEmbedError(err)
+    notifyParentForRecoverableEmbedError(err, latestTask.apiMode)
     useStore.getState().setTaskStreamPreview(taskId)
     const latestFalRequestInfo = falRequestInfo ?? (latestTask.falRequestId && latestTask.falEndpoint
       ? { requestId: latestTask.falRequestId, endpoint: latestTask.falEndpoint }

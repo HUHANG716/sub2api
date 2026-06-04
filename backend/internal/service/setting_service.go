@@ -1235,6 +1235,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyAffiliateEnabled,
 		SettingKeyRiskControlEnabled,
 		SettingKeyImagePlaygroundGroupID,
+		SettingKeyImagePlaygroundResponsesGroupID,
 	}
 
 	settings, err := s.settingRepo.GetMultiple(ctx, keys)
@@ -1294,6 +1295,10 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 	var imagePlaygroundGroupID int64
 	if v, err := strconv.ParseInt(strings.TrimSpace(settings[SettingKeyImagePlaygroundGroupID]), 10, 64); err == nil && v > 0 {
 		imagePlaygroundGroupID = v
+	}
+	var imagePlaygroundResponsesGroupID int64
+	if v, err := strconv.ParseInt(strings.TrimSpace(settings[SettingKeyImagePlaygroundResponsesGroupID]), 10, 64); err == nil && v > 0 {
+		imagePlaygroundResponsesGroupID = v
 	}
 	var globalDiscount *GlobalDiscountRuntime
 	if runtime := s.GetGlobalDiscountRuntime(ctx); runtime.Active || strings.TrimSpace(runtime.Label) != "" {
@@ -1356,8 +1361,9 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 
 		RiskControlEnabled: settings[SettingKeyRiskControlEnabled] == "true",
 
-		ImagePlaygroundGroupID: imagePlaygroundGroupID,
-		GlobalDiscount:         globalDiscount,
+		ImagePlaygroundGroupID:          imagePlaygroundGroupID,
+		ImagePlaygroundResponsesGroupID: imagePlaygroundResponsesGroupID,
+		GlobalDiscount:                  globalDiscount,
 	}, nil
 }
 
@@ -1727,6 +1733,7 @@ type PublicSettingsInjectionPayload struct {
 	AffiliateEnabled                     bool                   `json:"affiliate_enabled"`
 	RiskControlEnabled                   bool                   `json:"risk_control_enabled"`
 	ImagePlaygroundGroupID               int64                  `json:"image_playground_group_id"`
+	ImagePlaygroundResponsesGroupID      int64                  `json:"image_playground_responses_group_id"`
 	GlobalDiscount                       *GlobalDiscountRuntime `json:"global_discount,omitempty"`
 }
 
@@ -1791,6 +1798,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		AffiliateEnabled:                     settings.AffiliateEnabled,
 		RiskControlEnabled:                   settings.RiskControlEnabled,
 		ImagePlaygroundGroupID:               settings.ImagePlaygroundGroupID,
+		ImagePlaygroundResponsesGroupID:      settings.ImagePlaygroundResponsesGroupID,
 		GlobalDiscount:                       settings.GlobalDiscount,
 	}, nil
 }
@@ -2449,6 +2457,10 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 		settings.ImagePlaygroundGroupID = 0
 	}
 	updates[SettingKeyImagePlaygroundGroupID] = strconv.FormatInt(settings.ImagePlaygroundGroupID, 10)
+	if settings.ImagePlaygroundResponsesGroupID < 0 {
+		settings.ImagePlaygroundResponsesGroupID = 0
+	}
+	updates[SettingKeyImagePlaygroundResponsesGroupID] = strconv.FormatInt(settings.ImagePlaygroundResponsesGroupID, 10)
 
 	// Claude Code version check
 	updates[SettingKeyMinClaudeCodeVersion] = settings.MinClaudeCodeVersion
@@ -3380,7 +3392,8 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyRiskControlEnabled: "false",
 
 		// 生图工作台默认未配置管理员分组
-		SettingKeyImagePlaygroundGroupID: "0",
+		SettingKeyImagePlaygroundGroupID:          "0",
+		SettingKeyImagePlaygroundResponsesGroupID: "0",
 
 		// Claude Code version check (default: empty = disabled)
 		SettingKeyMinClaudeCodeVersion: "",
@@ -3893,6 +3906,11 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	if raw := strings.TrimSpace(settings[SettingKeyImagePlaygroundGroupID]); raw != "" {
 		if v, err := strconv.ParseInt(raw, 10, 64); err == nil && v > 0 {
 			result.ImagePlaygroundGroupID = v
+		}
+	}
+	if raw := strings.TrimSpace(settings[SettingKeyImagePlaygroundResponsesGroupID]); raw != "" {
+		if v, err := strconv.ParseInt(raw, 10, 64); err == nil && v > 0 {
+			result.ImagePlaygroundResponsesGroupID = v
 		}
 	}
 

@@ -90,7 +90,8 @@ func TestSettingHandler_GetPublicSettings_ExposesImagePlaygroundGroupID(t *testi
 
 	h := NewSettingHandler(service.NewSettingService(&settingHandlerPublicRepoStub{
 		values: map[string]string{
-			service.SettingKeyImagePlaygroundGroupID: "16",
+			service.SettingKeyImagePlaygroundGroupID:          "16",
+			service.SettingKeyImagePlaygroundResponsesGroupID: "17",
 		},
 	}, &config.Config{}), "test-version")
 
@@ -105,12 +106,14 @@ func TestSettingHandler_GetPublicSettings_ExposesImagePlaygroundGroupID(t *testi
 	var resp struct {
 		Code int `json:"code"`
 		Data struct {
-			ImagePlaygroundGroupID int64 `json:"image_playground_group_id"`
+			ImagePlaygroundGroupID          int64 `json:"image_playground_group_id"`
+			ImagePlaygroundResponsesGroupID int64 `json:"image_playground_responses_group_id"`
 		} `json:"data"`
 	}
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &resp))
 	require.Equal(t, 0, resp.Code)
 	require.EqualValues(t, 16, resp.Data.ImagePlaygroundGroupID)
+	require.EqualValues(t, 17, resp.Data.ImagePlaygroundResponsesGroupID)
 }
 
 func TestSettingHandler_GetPublicSettings_ExposesWeChatOAuthModeCapabilities(t *testing.T) {

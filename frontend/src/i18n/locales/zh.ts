@@ -5915,9 +5915,11 @@ export default {
         },
         imagePlayground: {
           title: '生图工作台',
-          description: '配置用户侧生图工作台使用的 OpenAI 生图分组。用户进入工作台时会自动使用该分组创建专用 Key。',
-          groupLabel: '工作台分组',
+          description: '分别配置用户侧生图工作台的 Images API 和 Responses API 分组。用户进入工作台时会自动为对应分组创建专用 Key。',
+          groupLabel: 'Images API 分组',
           groupPlaceholder: '不启用生图工作台',
+          responsesGroupLabel: 'Responses API 分组',
+          responsesGroupPlaceholder: '沿用 Images API 分组',
           groupHint: '仅可选择已启用且允许图片生成的 OpenAI 分组。',
           noGroups: '暂无可用 OpenAI 生图分组，请先在分组管理中启用图片生成。',
         },

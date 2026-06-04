@@ -23,7 +23,7 @@ describe('product embed events', () => {
     })
 
     try {
-      requestProductEmbedKeyRecreation('image_generation_disabled_for_group')
+      requestProductEmbedKeyRecreation('image_generation_disabled_for_group', 'responses')
     } finally {
       Object.defineProperty(globalThis, 'window', {
         configurable: true,
@@ -38,6 +38,7 @@ describe('product embed events', () => {
     expect(postMessage).toHaveBeenCalledWith({
       type: PRODUCT_EMBED_RECREATE_KEY_EVENT,
       reason: 'image_generation_disabled_for_group',
+      apiMode: 'responses',
     }, 'https://code.example.com')
   })
 

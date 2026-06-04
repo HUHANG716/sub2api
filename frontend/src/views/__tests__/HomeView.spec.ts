@@ -300,7 +300,7 @@ describe('HomeView', () => {
     expect(heroButtonTextBlock).toContain('line-height: 1')
   })
 
-  it('renders a fullscreen hero with floating AI tool tags instead of the terminal preview', () => {
+  it('renders a fullscreen hero with floating AI tool tags instead of the terminal preview', async () => {
     const wrapper = mount(HomeView, {
       global: {
         stubs: {
@@ -334,10 +334,17 @@ describe('HomeView', () => {
     expect(wrapper.html()).toContain('/landing-support/codex.svg')
     expect(wrapper.html()).toContain('/landing-support/gemini-cli.svg')
     expect(wrapper.html()).toContain('/landing-support/codex-app.png')
+    const codexTag = floatingTags[1]
+    expect(codexTag.classes()).toContain('floating-tool-tag-round')
+    expect(codexTag.get('.floating-tool-depth').classes()).not.toContain('floating-tool-depth-ready')
+    expect(codexTag.get('img').attributes('src')).toBe('/landing-support/codex.svg')
+    await codexTag.get('img').trigger('load')
+    expect(codexTag.get('.floating-tool-depth').classes()).toContain('floating-tool-depth-ready')
     const textTags = wrapper.findAll('.floating-tool-tag-text')
     expect(textTags).toHaveLength(1)
     expect(textTags[0].text()).toBe('OpenAI')
     expect(textTags[0].find('img').exists()).toBe(false)
+    expect(textTags[0].get('.floating-tool-depth').classes()).toContain('floating-tool-depth-ready')
     expect(wrapper.find('.hero-console').exists()).toBe(false)
     expect(wrapper.find('.command-panel').exists()).toBe(false)
     expect(wrapper.find('.code-lines').exists()).toBe(false)
@@ -538,6 +545,13 @@ describe('HomeView', () => {
     expect(floatingDepthBlock).toContain('border: clamp(0.32rem, 0.8vw, 0.56rem) solid var(--landing-sticker-border)')
     expect(floatingDepthBlock).toContain('box-shadow: none')
     expect(floatingDepthBlock).toContain('filter: none')
+    expect(floatingDepthBlock).toContain('opacity: 0')
+    expect(floatingDepthBlock).toContain('transition: opacity 160ms ease')
+    expect(source).toContain('.floating-tool-depth-ready')
+    expect(source).toContain('opacity: 1')
+    expect(source).toContain(':class="{ \'floating-tool-depth-ready\': isHeroFloatingToolReady(tool) }"')
+    expect(source).toContain('@load="markHeroFloatingToolReady(tool.name)"')
+    expect(source).toContain('@error="markHeroFloatingToolReady(tool.name)"')
     expect(floatingDepthBlock).not.toContain('drop-shadow')
     expect(floatingDepthBlock).not.toContain('rgba(217, 119, 50')
     expect(floatingDepthBlock).toContain('translateZ(var(--hero-tag-depth))')
@@ -598,9 +612,9 @@ describe('HomeView', () => {
     expect(floatingIconImageBlock).not.toContain('animation: hero-tag-float')
     expect(source).toContain('.floating-tool-tag')
     expect(source).toContain("'--hero-tag-field-x': `${(field?.fieldX ?? 0).toFixed(1)}px`")
-    expect(source).toContain('const stiffness = 0.34')
-    expect(source).toContain('heroPointerPhysics.active += (heroPointerTarget.active - heroPointerPhysics.active) * 0.28')
-    expect(source).toContain('const travel = viewport.width <= 960 ? 52 : 72')
+    expect(source).toContain('const stiffness = 0.22')
+    expect(source).toContain('heroPointerPhysics.active += (heroPointerTarget.active - heroPointerPhysics.active) * 0.16')
+    expect(source).toContain('const travel = viewport.width <= 960 ? 34 : 46')
     expect(floatingTagBlock).toContain('transition: transform 120ms ease-out')
     expect(source).not.toContain('@keyframes terminal-type')
     expect(source).not.toContain('animation: terminal-type')

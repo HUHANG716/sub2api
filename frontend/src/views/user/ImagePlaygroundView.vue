@@ -103,26 +103,33 @@ import type { ApiKey, Group, PublicSettings } from '@/types'
 import type { ImagePlaygroundEvent, ImagePlaygroundEventName } from '@/api/usage'
 import {
   IMAGE_PLAYGROUND_KEY_NAME,
+  IMAGE_PLAYGROUND_RESPONSES_KEY_NAME,
   buildImagePlaygroundUrl,
+  clearStoredImagePlaygroundImagesKey,
   clearStoredImagePlaygroundKey,
+  clearStoredImagePlaygroundResponsesKey,
   findConfiguredImagePlaygroundGroup,
   type ImagePlaygroundTheme,
   isImagePlaygroundGroup,
   readStoredImagePlaygroundKey,
+  readStoredImagePlaygroundResponsesKey,
   storedKeyMatchesGroup,
   type StoredImagePlaygroundKey,
-  writeStoredImagePlaygroundKey
+  writeStoredImagePlaygroundKey,
+  writeStoredImagePlaygroundResponsesKey
 } from './imagePlayground'
 
 type PlaygroundState = 'loading' | 'ready' | 'missing-config' | 'unavailable-group' | 'failed'
 type EstimateState = 'idle' | 'loading' | 'ready' | 'failed'
 type PrepareReason = 'initial' | 'confirmed-renew' | 'confirmed-create' | 'confirmed-recreate'
 type RenewReason = 'manual' | 'expired' | 'create' | 'unsupported-group'
+type PlaygroundKeyMode = 'images' | 'responses'
 
 interface PlaygroundParamsMessage {
   type?: string
   payload?: {
     model?: unknown
+    apiMode?: unknown
     size?: unknown
     count?: unknown
   }
@@ -139,6 +146,7 @@ interface PlaygroundAnalyticsMessage {
 interface PlaygroundRecreateKeyMessage {
   type?: string
   reason?: unknown
+  apiMode?: unknown
 }
 
 interface PlaygroundThemeMessage {
@@ -194,8 +202,10 @@ const iframeSrc = ref('')
 const iframeRef = ref<HTMLIFrameElement | null>(null)
 const availableGroups = ref<Group[]>([])
 const storedKey = ref<StoredImagePlaygroundKey | null>(null)
+const responsesStoredKey = ref<StoredImagePlaygroundKey | null>(null)
 const creating = ref(false)
 const activeGroup = ref<Group | null>(null)
+const activeResponsesGroup = ref<Group | null>(null)
 const estimateState = ref<EstimateState>('idle')
 const estimateCost = ref<number | null>(null)
 const estimateAbort = ref<AbortController | null>(null)
@@ -204,19 +214,32 @@ const renewConfirmVisible = ref(false)
 const pendingRenewReason = ref<RenewReason>('manual')
 const pendingRenewGroup = ref<Group | null>(null)
 const pendingRenewStoredKey = ref<StoredImagePlaygroundKey | null>(null)
+const pendingRenewMode = ref<PlaygroundKeyMode>('images')
+const recreateKeyMode = ref<PlaygroundKeyMode | null>(null)
 let themeObserver: MutationObserver | null = null
 
 const currentKeyLabel = computed(() =>
-  storedKey.value ? `Key #${storedKey.value.key_id}` : ''
+  responsesStoredKey.value && responsesStoredKey.value.key_id !== storedKey.value?.key_id
+    ? `Images Key #${storedKey.value?.key_id ?? '-'} / Responses Key #${responsesStoredKey.value.key_id}`
+    : storedKey.value
+      ? `Key #${storedKey.value.key_id}`
+      : ''
 )
 
 const currentGroupLabel = computed(() => {
   const key = storedKey.value
   if (!key) return ''
+  const imagesLabel = formatStoredKeyGroupLabel(key)
+  const responsesKey = responsesStoredKey.value
+  if (!responsesKey || responsesKey.group_id === key.group_id) return imagesLabel
+  return `Images: ${imagesLabel} / Responses: ${formatStoredKeyGroupLabel(responsesKey)}`
+})
+
+function formatStoredKeyGroupLabel(key: StoredImagePlaygroundKey) {
   if (key.group_name) return key.group_name
   if (typeof key.group_id === 'number') return `Group #${key.group_id}`
   return t('imagePlayground.groupUnknown')
-})
+}
 
 const estimateLabel = computed(() => {
   if (estimateState.value === 'loading') return t('imagePlayground.estimateLoading')
@@ -273,22 +296,66 @@ function stopThemeBridge() {
   themeObserver = null
 }
 
-function setReady(stored: StoredImagePlaygroundKey) {
+function setReady(stored: StoredImagePlaygroundKey, responsesStored: StoredImagePlaygroundKey = stored) {
   storedKey.value = stored
+  responsesStoredKey.value = responsesStored
   iframeRefreshCounter.value += 1
   iframeSrc.value = buildImagePlaygroundUrl({
     origin: window.location.origin,
     apiKey: stored.key,
+    responsesApiKey: responsesStored.key,
     refreshToken: String(iframeRefreshCounter.value),
     theme: getCurrentTheme()
   })
   state.value = 'ready'
 }
 
-function isReusablePlaygroundKey(apiKey: ApiKey | null | undefined, groupId: number): apiKey is ApiKey {
+function getKeyNameForMode(mode: PlaygroundKeyMode) {
+  return mode === 'responses' ? IMAGE_PLAYGROUND_RESPONSES_KEY_NAME : IMAGE_PLAYGROUND_KEY_NAME
+}
+
+function normalizePlaygroundKeyMode(mode: unknown): PlaygroundKeyMode {
+  return mode === 'responses' ? 'responses' : 'images'
+}
+
+function getEffectiveKeyModeForMessage(mode: PlaygroundKeyMode): PlaygroundKeyMode {
+  if (
+    mode === 'responses' &&
+    activeResponsesGroup.value &&
+    activeGroup.value &&
+    activeResponsesGroup.value.id !== activeGroup.value.id
+  ) {
+    return 'responses'
+  }
+  return 'images'
+}
+
+function getActiveGroupForMode(mode: PlaygroundKeyMode) {
+  return mode === 'responses' ? activeResponsesGroup.value ?? activeGroup.value : activeGroup.value
+}
+
+function getStoredKeyForMode(mode: PlaygroundKeyMode) {
+  return mode === 'responses' ? responsesStoredKey.value : storedKey.value
+}
+
+function clearStoredKeyForMode(mode: PlaygroundKeyMode) {
+  if (mode === 'responses') {
+    clearStoredImagePlaygroundResponsesKey()
+    responsesStoredKey.value = null
+  } else {
+    clearStoredImagePlaygroundImagesKey()
+    storedKey.value = null
+  }
+}
+
+function isReusablePlaygroundKey(
+  apiKey: ApiKey | null | undefined,
+  groupId: number,
+  mode: PlaygroundKeyMode = 'images'
+): apiKey is ApiKey {
   return (
     !!apiKey &&
-    apiKey.name === IMAGE_PLAYGROUND_KEY_NAME &&
+    apiKey.name === getKeyNameForMode(mode) &&
     apiKey.group_id === groupId &&
     apiKey.status === 'active' &&
     typeof apiKey.key === 'string' &&
@@ -296,12 +363,17 @@ function isReusablePlaygroundKey(apiKey: ApiKey | null | undefined, groupId: num
   )
 }
 
-function saveAndUseKey(apiKey: ApiKey, group: Group) {
-  const saved = writeStoredImagePlaygroundKey(apiKey, group)
-  setReady(saved)
+function saveKeyForMode(apiKey: ApiKey, group: Group, mode: PlaygroundKeyMode) {
+  return mode === 'responses'
+    ? writeStoredImagePlaygroundResponsesKey(apiKey, group)
+    : writeStoredImagePlaygroundKey(apiKey, group)
 }
 
-async function verifyStoredKey(stored: StoredImagePlaygroundKey | null, group: Group): Promise<{
+async function verifyStoredKeyForMode(
+  stored: StoredImagePlaygroundKey | null,
+  group: Group,
+  mode: PlaygroundKeyMode
+): Promise<{
   key: ApiKey | null
   missing: boolean
 }> {
@@ -311,7 +383,7 @@ async function verifyStoredKey(stored: StoredImagePlaygroundKey | null, group: G
 
   try {
     const apiKey = await keysAPI.getById(stored.key_id)
-    return { key: isReusablePlaygroundKey(apiKey, group.id) ? apiKey : null, missing: false }
+    return { key: isReusablePlaygroundKey(apiKey, group.id, mode) ? apiKey : null, missing: false }
   } catch (error) {
     const status = typeof error === 'object' && error !== null && 'status' in error
       ? Number((error as { status?: unknown }).status)
@@ -321,36 +393,42 @@ async function verifyStoredKey(stored: StoredImagePlaygroundKey | null, group: G
   }
 }
 
-async function findExistingPlaygroundKey(group: Group): Promise<ApiKey | null> {
+async function findExistingPlaygroundKeyForMode(group: Group, mode: PlaygroundKeyMode): Promise<ApiKey | null> {
   const response = await keysAPI.list(1, 20, {
-    search: IMAGE_PLAYGROUND_KEY_NAME,
+    search: getKeyNameForMode(mode),
     status: 'active',
     group_id: group.id,
     sort_by: 'created_at',
     sort_order: 'desc'
   })
-  return response.items.find((apiKey) => isReusablePlaygroundKey(apiKey, group.id)) ?? null
+  return response.items.find((apiKey) => isReusablePlaygroundKey(apiKey, group.id, mode)) ?? null
 }
 
-async function getConfiguredGroupId(): Promise<number> {
+async function getConfiguredGroupIds(): Promise<{ images: number; responses: number }> {
   const cached = appStore.cachedPublicSettings as PublicSettings | null
   const settings = cached ?? await appStore.fetchPublicSettings()
-  const raw = settings?.image_playground_group_id
-  return typeof raw === 'number' && raw > 0 ? raw : 0
+  const imageRaw = settings?.image_playground_group_id
+  const responsesRaw = settings?.image_playground_responses_group_id
+  const images = typeof imageRaw === 'number' && imageRaw > 0 ? imageRaw : 0
+  const responses = typeof responsesRaw === 'number' && responsesRaw > 0 ? responsesRaw : images
+  return { images, responses }
 }
 
-async function createKeyForGroup(group: Group) {
+async function createKeyForGroupMode(group: Group, mode: PlaygroundKeyMode) {
   creating.value = true
   try {
-    const apiKey = await keysAPI.create(IMAGE_PLAYGROUND_KEY_NAME, group.id)
-    const saved = writeStoredImagePlaygroundKey(apiKey, group)
-    setReady(saved)
+    const apiKey = await keysAPI.create(getKeyNameForMode(mode), group.id)
+    return saveKeyForMode(apiKey, group, mode)
   } catch (error) {
     console.error('Failed to create image playground key:', error)
-    clearStoredImagePlaygroundKey()
-    storedKey.value = null
-    iframeSrc.value = ''
-    state.value = 'failed'
+    if (mode === 'responses') {
+      clearStoredImagePlaygroundResponsesKey()
+      responsesStoredKey.value = null
+    } else {
+      clearStoredImagePlaygroundImagesKey()
+      storedKey.value = null
+    }
+    throw error
   } finally {
     creating.value = false
   }
@@ -370,13 +448,57 @@ async function retireStoredPlaygroundKey(stored: StoredImagePlaygroundKey | null
   }
 }
 
-function requestRenewAccess(reason: RenewReason, group: Group, stored: StoredImagePlaygroundKey | null = null) {
+function requestRenewAccess(
+  reason: RenewReason,
+  group: Group,
+  stored: StoredImagePlaygroundKey | null = null,
+  mode: PlaygroundKeyMode = 'images'
+) {
   pendingRenewReason.value = reason
   pendingRenewGroup.value = group
   pendingRenewStoredKey.value = stored
+  pendingRenewMode.value = mode
   renewConfirmVisible.value = true
   loading.value = false
   state.value = iframeSrc.value ? 'ready' : 'failed'
+}
+
+async function prepareKeyForGroup(
+  group: Group,
+  mode: PlaygroundKeyMode,
+  reason: PrepareReason
+): Promise<{ stored: StoredImagePlaygroundKey | null; expired: StoredImagePlaygroundKey | null }> {
+  const forceRecreate = reason === 'confirmed-recreate' && recreateKeyMode.value === mode
+  const stored = mode === 'responses'
+    ? readStoredImagePlaygroundResponsesKey()
+    : readStoredImagePlaygroundKey()
+  const verified = forceRecreate
+    ? { key: null, missing: false }
+    : await verifyStoredKeyForMode(stored, group, mode)
+  if (verified.key) return { stored: saveKeyForMode(verified.key, group, mode), expired: null }
+
+  if (verified.missing && reason !== 'confirmed-renew') {
+    return { stored: null, expired: stored }
+  }
+
+  if (mode === 'responses') {
+    clearStoredImagePlaygroundResponsesKey()
+    responsesStoredKey.value = null
+  } else {
+    clearStoredImagePlaygroundImagesKey()
+    storedKey.value = null
+  }
+
+  const existingKey = forceRecreate ? null : await findExistingPlaygroundKeyForMode(group, mode)
+  if (existingKey) {
+    return { stored: saveKeyForMode(existingKey, group, mode), expired: null }
+  }
+
+  if (reason === 'initial') {
+    return { stored: null, expired: null }
+  }
+
+  return { stored: await createKeyForGroupMode(group, mode), expired: null }
 }
 
 async function preparePlayground(reason: PrepareReason = 'initial') {
@@ -385,61 +507,75 @@ async function preparePlayground(reason: PrepareReason = 'initial') {
   iframeSrc.value = ''
 
   try {
-    const configuredGroupId = await getConfiguredGroupId()
-    if (!configuredGroupId) {
+    const configuredGroupIds = await getConfiguredGroupIds()
+    if (!configuredGroupIds.images) {
       clearStoredImagePlaygroundKey()
       storedKey.value = null
+      responsesStoredKey.value = null
       state.value = 'missing-config'
       return
     }
 
     const groups = await userGroupsAPI.getAvailable()
     availableGroups.value = groups.filter(isImagePlaygroundGroup)
-    const group = findConfiguredImagePlaygroundGroup(availableGroups.value, configuredGroupId)
+    const group = findConfiguredImagePlaygroundGroup(availableGroups.value, configuredGroupIds.images)
     if (!group) {
       clearStoredImagePlaygroundKey()
       storedKey.value = null
+      responsesStoredKey.value = null
       activeGroup.value = null
+      activeResponsesGroup.value = null
+      state.value = 'unavailable-group'
+      return
+    }
+    const responsesGroup = configuredGroupIds.responses === configuredGroupIds.images
+      ? group
+      : findConfiguredImagePlaygroundGroup(availableGroups.value, configuredGroupIds.responses)
+    if (!responsesGroup) {
+      clearStoredImagePlaygroundResponsesKey()
+      responsesStoredKey.value = null
+      activeGroup.value = group
+      activeResponsesGroup.value = null
       state.value = 'unavailable-group'
       return
     }
     activeGroup.value = group
+    activeResponsesGroup.value = responsesGroup
 
-    const stored = readStoredImagePlaygroundKey()
-    if (storedKeyMatchesGroup(stored, configuredGroupId)) {
-      const verified = await verifyStoredKey(stored, group)
-      if (verified.key) {
-        saveAndUseKey(verified.key, group)
-        return
-      }
-
-      if (verified.missing && reason !== 'confirmed-renew') {
-        requestRenewAccess('expired', group, stored)
-        return
-      }
-      clearStoredImagePlaygroundKey()
-      storedKey.value = null
-    } else {
-      clearStoredImagePlaygroundKey()
-      storedKey.value = null
-    }
-
-    const existingKey = reason === 'confirmed-recreate' ? null : await findExistingPlaygroundKey(group)
-    if (existingKey) {
-      saveAndUseKey(existingKey, group)
+    const imagesPrepared = await prepareKeyForGroup(group, 'images', reason)
+    if (imagesPrepared.expired) {
+      requestRenewAccess('expired', group, imagesPrepared.expired, 'images')
       return
     }
 
-    if (reason === 'initial') {
-      requestRenewAccess('create', group)
+    if (!imagesPrepared.stored && reason === 'initial') {
+      requestRenewAccess('create', group, null, 'images')
       return
     }
 
-    await createKeyForGroup(group)
+    const responsesPrepared = responsesGroup.id === group.id
+      ? { stored: imagesPrepared.stored, expired: null }
+      : await prepareKeyForGroup(responsesGroup, 'responses', reason)
+    if (responsesPrepared.expired) {
+      requestRenewAccess('expired', responsesGroup, responsesPrepared.expired, 'responses')
+      return
+    }
+
+    if (!responsesPrepared.stored && reason === 'initial') {
+      requestRenewAccess('create', responsesGroup, null, 'responses')
+      return
+    }
+    if (!imagesPrepared.stored || !responsesPrepared.stored) {
+      state.value = 'failed'
+      return
+    }
+
+    setReady(imagesPrepared.stored, responsesPrepared.stored)
   } catch (error) {
     console.error('Failed to prepare image playground:', error)
     clearStoredImagePlaygroundKey()
     activeGroup.value = null
+    activeResponsesGroup.value = null
     state.value = 'failed'
   } finally {
     loading.value = false
@@ -447,7 +583,7 @@ async function preparePlayground(reason: PrepareReason = 'initial') {
 }
 
 async function updateEstimate(payload: PlaygroundParamsMessage['payload']) {
-  const group = activeGroup.value
+  const group = getActiveGroupForMode(normalizePlaygroundKeyMode(payload?.apiMode))
   if (!group || !payload) return
   const model = typeof payload.model === 'string' && payload.model.trim()
     ? payload.model.trim()
@@ -549,16 +685,17 @@ function handlePlaygroundMessage(event: MessageEvent) {
     data.type === 'image-playground:recreate-key-request' &&
     (data as PlaygroundRecreateKeyMessage).reason === 'image_generation_disabled_for_group'
   ) {
-    const group = activeGroup.value
+    const mode = getEffectiveKeyModeForMessage(normalizePlaygroundKeyMode((data as PlaygroundRecreateKeyMessage).apiMode))
+    const group = getActiveGroupForMode(mode)
     if (!group || renewConfirmVisible.value) return
-    requestRenewAccess('unsupported-group', group, storedKey.value)
+    requestRenewAccess('unsupported-group', group, getStoredKeyForMode(mode), mode)
   }
 }
 
 async function regenerateKey() {
   const group = activeGroup.value
   if (group) {
-    requestRenewAccess('manual', group, storedKey.value)
+    requestRenewAccess('manual', group, storedKey.value, 'images')
     return
   }
   await preparePlayground('initial')
@@ -566,25 +703,31 @@ async function regenerateKey() {
 
 async function confirmRenewAccess() {
   renewConfirmVisible.value = false
-  clearStoredImagePlaygroundKey()
-  if (pendingRenewStoredKey.value && storedKey.value?.key_id === pendingRenewStoredKey.value.key_id) {
-    storedKey.value = null
-    iframeSrc.value = ''
-  }
   const group = pendingRenewGroup.value
   const reason = pendingRenewReason.value
   const keyToRetire = pendingRenewStoredKey.value
+  const mode = pendingRenewMode.value
   pendingRenewGroup.value = null
   pendingRenewStoredKey.value = null
-  storedKey.value = null
-  if (group) activeGroup.value = group
-  await preparePlayground(
-    reason === 'create'
-      ? 'confirmed-create'
-      : reason === 'unsupported-group'
-      ? 'confirmed-recreate'
-      : 'confirmed-renew'
-  )
+  pendingRenewMode.value = 'images'
+  if (reason !== 'create') clearStoredKeyForMode(mode)
+  if (keyToRetire) iframeSrc.value = ''
+  if (group) {
+    if (mode === 'responses') activeResponsesGroup.value = group
+    else activeGroup.value = group
+  }
+  recreateKeyMode.value = reason === 'unsupported-group' ? mode : null
+  try {
+    await preparePlayground(
+      reason === 'create'
+        ? 'confirmed-create'
+        : reason === 'unsupported-group'
+        ? 'confirmed-recreate'
+        : 'confirmed-renew'
+    )
+  } finally {
+    recreateKeyMode.value = null
+  }
   if (reason === 'unsupported-group' && iframeSrc.value) {
     void retireStoredPlaygroundKey(keyToRetire)
   }
@@ -594,6 +737,7 @@ function cancelRenewAccess() {
   renewConfirmVisible.value = false
   pendingRenewGroup.value = null
   pendingRenewStoredKey.value = null
+  pendingRenewMode.value = 'images'
   loading.value = false
   if (!iframeSrc.value) state.value = 'failed'
 }
