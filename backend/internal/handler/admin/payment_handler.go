@@ -203,6 +203,11 @@ func isMissingPaymentAnalyticsRelation(err error) bool {
 	return errors.As(err, &pqErr) && (pqErr.Code == "42P01" || pqErr.Code == "42703")
 }
 
+func isMissingPaymentAnalyticsColumn(err error) bool {
+	var pqErr *pq.Error
+	return errors.As(err, &pqErr) && pqErr.Code == "42703"
+}
+
 func parsePaymentAnalyticsDays(c *gin.Context) int {
 	days := 30
 	if d := c.Query("days"); d != "" {
@@ -238,7 +243,7 @@ func (h *PaymentHandler) queryPaymentAnalyticsSteps(c *gin.Context, since time.T
 		ORDER BY event_name
 	`, since)
 	if err != nil {
-		if isMissingPaymentAnalyticsRelation(err) {
+		if isMissingPaymentAnalyticsColumn(err) {
 			return h.queryPaymentAnalyticsStepsLegacy(c, since)
 		}
 		return nil, err
@@ -305,7 +310,7 @@ func (h *PaymentHandler) queryPaymentAnalyticsMethods(c *gin.Context, since time
 		ORDER BY payment_type, event_name
 	`, since)
 	if err != nil {
-		if isMissingPaymentAnalyticsRelation(err) {
+		if isMissingPaymentAnalyticsColumn(err) {
 			return []PaymentAnalyticsMethod{}, nil
 		}
 		return nil, err
@@ -333,7 +338,7 @@ func (h *PaymentHandler) queryPaymentAnalyticsRecentEvents(c *gin.Context, since
 		LIMIT 20
 	`, since)
 	if err != nil {
-		if isMissingPaymentAnalyticsRelation(err) {
+		if isMissingPaymentAnalyticsColumn(err) {
 			return h.queryPaymentAnalyticsRecentEventsLegacy(c, since)
 		}
 		return nil, err
@@ -375,7 +380,7 @@ func (h *PaymentHandler) queryPaymentAnalyticsRecentEventsLegacy(c *gin.Context,
 		LIMIT 20
 	`, since)
 	if err != nil {
-		if isMissingPaymentAnalyticsRelation(err) {
+		if isMissingPaymentAnalyticsColumn(err) {
 			return h.queryPaymentAnalyticsRecentEventsMinimal(c, since)
 		}
 		return nil, err
