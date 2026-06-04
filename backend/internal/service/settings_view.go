@@ -145,17 +145,18 @@ type SystemSettings struct {
 	CustomMenuItems             string // JSON array of custom menu items
 	CustomEndpoints             string // JSON array of custom endpoints
 
-	DefaultConcurrency           int
-	DefaultBalance               float64
-	RiskControlEnabled           bool
-	ImagePlaygroundGroupID       int64
-	AffiliateEnabled             bool
-	AffiliateRebateRate          float64
-	AffiliateRebateFreezeHours   int
-	AffiliateRebateDurationDays  int
-	AffiliateRebatePerInviteeCap float64
-	DefaultUserRPMLimit          int
-	DefaultSubscriptions         []DefaultSubscriptionSetting
+	DefaultConcurrency              int
+	DefaultBalance                  float64
+	RiskControlEnabled              bool
+	ImagePlaygroundGroupID          int64
+	ImagePlaygroundResponsesGroupID int64
+	AffiliateEnabled                bool
+	AffiliateRebateRate             float64
+	AffiliateRebateFreezeHours      int
+	AffiliateRebateDurationDays     int
+	AffiliateRebatePerInviteeCap    float64
+	DefaultUserRPMLimit             int
+	DefaultSubscriptions            []DefaultSubscriptionSetting
 
 	// Model fallback configuration
 	EnableModelFallback      bool   `json:"enable_model_fallback"`
@@ -355,7 +356,8 @@ type PublicSettings struct {
 	RiskControlEnabled bool `json:"risk_control_enabled"`
 
 	// 生图工作台使用的管理员配置分组；0 表示未配置。
-	ImagePlaygroundGroupID int64 `json:"image_playground_group_id"`
+	ImagePlaygroundGroupID          int64 `json:"image_playground_group_id"`
+	ImagePlaygroundResponsesGroupID int64 `json:"image_playground_responses_group_id"`
 
 	// 当前生效的全局折扣活动；仅在活动窗口内公开给前端展示。
 	GlobalDiscount *GlobalDiscountRuntime `json:"global_discount,omitempty"`

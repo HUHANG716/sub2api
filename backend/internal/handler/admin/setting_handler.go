@@ -229,6 +229,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		DefaultBalance:                         settings.DefaultBalance,
 		RiskControlEnabled:                     settings.RiskControlEnabled,
 		ImagePlaygroundGroupID:                 settings.ImagePlaygroundGroupID,
+		ImagePlaygroundResponsesGroupID:        settings.ImagePlaygroundResponsesGroupID,
 		AffiliateRebateRate:                    settings.AffiliateRebateRate,
 		AffiliateRebateFreezeHours:             settings.AffiliateRebateFreezeHours,
 		AffiliateRebateDurationDays:            settings.AffiliateRebateDurationDays,
@@ -653,7 +654,8 @@ type UpdateSettingsRequest struct {
 	RiskControlEnabled *bool `json:"risk_control_enabled"`
 
 	// 生图工作台管理员配置分组；nil 表示本次请求不修改，0 表示清空配置。
-	ImagePlaygroundGroupID *int64 `json:"image_playground_group_id"`
+	ImagePlaygroundGroupID          *int64 `json:"image_playground_group_id"`
+	ImagePlaygroundResponsesGroupID *int64 `json:"image_playground_responses_group_id"`
 
 	// OpenAI fast/flex policy (optional, only updated when provided)
 	OpenAIFastPolicySettings *dto.OpenAIFastPolicySettings `json:"openai_fast_policy_settings,omitempty"`
@@ -1785,6 +1787,15 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.ImagePlaygroundGroupID
 		}(),
+		ImagePlaygroundResponsesGroupID: func() int64 {
+			if req.ImagePlaygroundResponsesGroupID != nil {
+				if *req.ImagePlaygroundResponsesGroupID > 0 {
+					return *req.ImagePlaygroundResponsesGroupID
+				}
+				return 0
+			}
+			return previousSettings.ImagePlaygroundResponsesGroupID
+		}(),
 	}
 
 	// req.AuthSourceXxxPlatformQuotas 为 nil 表示本次请求未包含该 source 的 quota 配置（保留 previousAuthSourceDefaults 中的值）；
@@ -2112,7 +2123,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 
 		RiskControlEnabled: updatedSettings.RiskControlEnabled,
 
-		ImagePlaygroundGroupID: updatedSettings.ImagePlaygroundGroupID,
+		ImagePlaygroundGroupID:          updatedSettings.ImagePlaygroundGroupID,
+		ImagePlaygroundResponsesGroupID: updatedSettings.ImagePlaygroundResponsesGroupID,
 	}
 	if fastPolicy, err := h.settingService.GetOpenAIFastPolicySettings(c.Request.Context()); err != nil {
 		slog.Error("openai_fast_policy_settings_get_failed", "error", err)

@@ -637,8 +637,9 @@ export interface SystemSettings {
   // Available Channels feature switch
   available_channels_enabled: boolean;
 
-  // Image playground admin-configured group
+  // Image playground admin-configured groups
   image_playground_group_id: number | null;
+  image_playground_responses_group_id: number | null;
 
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: boolean;
@@ -872,8 +873,9 @@ export interface UpdateSettingsRequest {
   // Available Channels feature switch
   available_channels_enabled?: boolean;
 
-  // Image playground admin-configured group
+  // Image playground admin-configured groups
   image_playground_group_id?: number | null;
+  image_playground_responses_group_id?: number | null;
 
   // Affiliate (邀请返利) feature switch
   affiliate_enabled?: boolean;

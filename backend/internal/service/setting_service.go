@@ -655,6 +655,14 @@ func globalDiscountRuleRuntime(rule GlobalDiscountRule, now time.Time) GlobalDis
 		}
 	}
 	runtime.Active = globalDiscountActive(runtime, now)
+	if runtime.Active && runtime.ScheduleType != "" && runtime.ScheduleType != "once" {
+		if start, end, ok := globalDiscountRecurringWindow(runtime, now); ok {
+			startUTC := start.UTC()
+			endUTC := end.UTC()
+			runtime.StartsAt = &startUTC
+			runtime.EndsAt = &endUTC
+		}
+	}
 	return runtime
 }
 
@@ -672,37 +680,88 @@ func globalDiscountActive(runtime GlobalDiscountRuntime, now time.Time) bool {
 }
 
 func globalDiscountRecurringActive(runtime GlobalDiscountRuntime, now time.Time) bool {
+	_, _, active := globalDiscountRecurringWindow(runtime, now)
+	return active
+}
+
+func globalDiscountRecurringWindow(runtime GlobalDiscountRuntime, now time.Time) (time.Time, time.Time, bool) {
 	startMin, ok := parseGlobalDiscountClockMinutes(runtime.RecurringStartAt)
 	if !ok {
-		return false
+		return time.Time{}, time.Time{}, false
 	}
 	endMin, ok := parseGlobalDiscountClockMinutes(runtime.RecurringEndAt)
 	if !ok || startMin == endMin {
-		return false
+		return time.Time{}, time.Time{}, false
 	}
 	local := now.In(timezone.Location())
 	localMin := local.Hour()*60 + local.Minute()
+	windowForStartDay := func(day time.Time) (time.Time, time.Time) {
+		windowStart := timezone.StartOfDay(day).Add(time.Duration(startMin) * time.Minute)
+		windowEnd := timezone.StartOfDay(day).Add(time.Duration(endMin) * time.Minute)
+		if startMin > endMin {
+			windowEnd = windowEnd.AddDate(0, 0, 1)
+		}
+		return windowStart, windowEnd
+	}
+
 	switch runtime.ScheduleType {
 	case "daily":
-		return clockWindowContains(startMin, endMin, localMin)
+		if startMin < endMin {
+			if !clockWindowContains(startMin, endMin, localMin) {
+				return time.Time{}, time.Time{}, false
+			}
+			start, end := windowForStartDay(local)
+			return start, end, true
+		}
+		if localMin >= startMin {
+			start, end := windowForStartDay(local)
+			return start, end, true
+		}
+		if localMin < endMin {
+			start, end := windowForStartDay(local.AddDate(0, 0, -1))
+			return start, end, true
+		}
+		return time.Time{}, time.Time{}, false
 	case "weekly":
 		today := globalDiscountWeekday(local)
 		yesterday := globalDiscountWeekday(local.AddDate(0, 0, -1))
 		if startMin > endMin {
-			return (containsInt(runtime.Weekdays, today) && localMin >= startMin) ||
-				(containsInt(runtime.Weekdays, yesterday) && localMin < endMin)
+			if containsInt(runtime.Weekdays, today) && localMin >= startMin {
+				start, end := windowForStartDay(local)
+				return start, end, true
+			}
+			if containsInt(runtime.Weekdays, yesterday) && localMin < endMin {
+				start, end := windowForStartDay(local.AddDate(0, 0, -1))
+				return start, end, true
+			}
+			return time.Time{}, time.Time{}, false
 		}
-		return containsInt(runtime.Weekdays, today) && clockWindowContains(startMin, endMin, localMin)
+		if containsInt(runtime.Weekdays, today) && clockWindowContains(startMin, endMin, localMin) {
+			start, end := windowForStartDay(local)
+			return start, end, true
+		}
+		return time.Time{}, time.Time{}, false
 	case "monthly":
 		today := local.Day()
 		yesterday := local.AddDate(0, 0, -1).Day()
 		if startMin > endMin {
-			return (containsInt(runtime.MonthDays, today) && localMin >= startMin) ||
-				(containsInt(runtime.MonthDays, yesterday) && localMin < endMin)
+			if containsInt(runtime.MonthDays, today) && localMin >= startMin {
+				start, end := windowForStartDay(local)
+				return start, end, true
+			}
+			if containsInt(runtime.MonthDays, yesterday) && localMin < endMin {
+				start, end := windowForStartDay(local.AddDate(0, 0, -1))
+				return start, end, true
+			}
+			return time.Time{}, time.Time{}, false
 		}
-		return containsInt(runtime.MonthDays, today) && clockWindowContains(startMin, endMin, localMin)
+		if containsInt(runtime.MonthDays, today) && clockWindowContains(startMin, endMin, localMin) {
+			start, end := windowForStartDay(local)
+			return start, end, true
+		}
+		return time.Time{}, time.Time{}, false
 	default:
-		return false
+		return time.Time{}, time.Time{}, false
 	}
 }
 
@@ -1176,6 +1235,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyAffiliateEnabled,
 		SettingKeyRiskControlEnabled,
 		SettingKeyImagePlaygroundGroupID,
+		SettingKeyImagePlaygroundResponsesGroupID,
 	}
 
 	settings, err := s.settingRepo.GetMultiple(ctx, keys)
@@ -1235,6 +1295,10 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 	var imagePlaygroundGroupID int64
 	if v, err := strconv.ParseInt(strings.TrimSpace(settings[SettingKeyImagePlaygroundGroupID]), 10, 64); err == nil && v > 0 {
 		imagePlaygroundGroupID = v
+	}
+	var imagePlaygroundResponsesGroupID int64
+	if v, err := strconv.ParseInt(strings.TrimSpace(settings[SettingKeyImagePlaygroundResponsesGroupID]), 10, 64); err == nil && v > 0 {
+		imagePlaygroundResponsesGroupID = v
 	}
 	var globalDiscount *GlobalDiscountRuntime
 	if runtime := s.GetGlobalDiscountRuntime(ctx); runtime.Active || strings.TrimSpace(runtime.Label) != "" {
@@ -1297,8 +1361,9 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 
 		RiskControlEnabled: settings[SettingKeyRiskControlEnabled] == "true",
 
-		ImagePlaygroundGroupID: imagePlaygroundGroupID,
-		GlobalDiscount:         globalDiscount,
+		ImagePlaygroundGroupID:          imagePlaygroundGroupID,
+		ImagePlaygroundResponsesGroupID: imagePlaygroundResponsesGroupID,
+		GlobalDiscount:                  globalDiscount,
 	}, nil
 }
 
@@ -1668,6 +1733,7 @@ type PublicSettingsInjectionPayload struct {
 	AffiliateEnabled                     bool                   `json:"affiliate_enabled"`
 	RiskControlEnabled                   bool                   `json:"risk_control_enabled"`
 	ImagePlaygroundGroupID               int64                  `json:"image_playground_group_id"`
+	ImagePlaygroundResponsesGroupID      int64                  `json:"image_playground_responses_group_id"`
 	GlobalDiscount                       *GlobalDiscountRuntime `json:"global_discount,omitempty"`
 }
 
@@ -1732,6 +1798,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		AffiliateEnabled:                     settings.AffiliateEnabled,
 		RiskControlEnabled:                   settings.RiskControlEnabled,
 		ImagePlaygroundGroupID:               settings.ImagePlaygroundGroupID,
+		ImagePlaygroundResponsesGroupID:      settings.ImagePlaygroundResponsesGroupID,
 		GlobalDiscount:                       settings.GlobalDiscount,
 	}, nil
 }
@@ -2390,6 +2457,10 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 		settings.ImagePlaygroundGroupID = 0
 	}
 	updates[SettingKeyImagePlaygroundGroupID] = strconv.FormatInt(settings.ImagePlaygroundGroupID, 10)
+	if settings.ImagePlaygroundResponsesGroupID < 0 {
+		settings.ImagePlaygroundResponsesGroupID = 0
+	}
+	updates[SettingKeyImagePlaygroundResponsesGroupID] = strconv.FormatInt(settings.ImagePlaygroundResponsesGroupID, 10)
 
 	// Claude Code version check
 	updates[SettingKeyMinClaudeCodeVersion] = settings.MinClaudeCodeVersion
@@ -3321,7 +3392,8 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyRiskControlEnabled: "false",
 
 		// 生图工作台默认未配置管理员分组
-		SettingKeyImagePlaygroundGroupID: "0",
+		SettingKeyImagePlaygroundGroupID:          "0",
+		SettingKeyImagePlaygroundResponsesGroupID: "0",
 
 		// Claude Code version check (default: empty = disabled)
 		SettingKeyMinClaudeCodeVersion: "",
@@ -3834,6 +3906,11 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	if raw := strings.TrimSpace(settings[SettingKeyImagePlaygroundGroupID]); raw != "" {
 		if v, err := strconv.ParseInt(raw, 10, 64); err == nil && v > 0 {
 			result.ImagePlaygroundGroupID = v
+		}
+	}
+	if raw := strings.TrimSpace(settings[SettingKeyImagePlaygroundResponsesGroupID]); raw != "" {
+		if v, err := strconv.ParseInt(raw, 10, 64); err == nil && v > 0 {
+			result.ImagePlaygroundResponsesGroupID = v
 		}
 	}
 

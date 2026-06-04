@@ -71,9 +71,15 @@
               :class="`floating-tool-tag-${tool.shape}`"
               :style="heroTagStyle(tool)"
             >
-              <span class="floating-tool-depth">
+              <span class="floating-tool-depth" :class="{ 'floating-tool-depth-ready': isHeroFloatingToolReady(tool) }">
                 <span v-if="tool.icon" class="floating-tool-icon" :class="{ 'floating-tool-icon-backed': tool.needsBadge }">
-                  <img :src="tool.icon" :alt="tool.name" decoding="async" />
+                  <img
+                    :src="tool.icon"
+                    :alt="tool.name"
+                    decoding="async"
+                    @load="markHeroFloatingToolReady(tool.name)"
+                    @error="markHeroFloatingToolReady(tool.name)"
+                  />
                 </span>
                 <span class="floating-tool-name">{{ tool.name }}</span>
               </span>
@@ -350,6 +356,7 @@ const heroActionsRef = ref<HTMLElement | null>(null)
 const testimonialSectionRef = ref<HTMLElement | null>(null)
 const heroTagLayouts = ref<HeroTagLayout[]>([])
 const heroTagFields = ref<HeroTagField[]>([])
+const heroReadyToolNames = ref<Set<string>>(new Set())
 const shouldLoadTestimonials = ref(false)
 let heroResizeObserver: ResizeObserver | null = null
 let testimonialObserver: IntersectionObserver | null = null
@@ -567,6 +574,15 @@ function avatarStyle(backgroundPosition: string) {
   }
 }
 
+function isHeroFloatingToolReady(tool: HeroFloatingTool) {
+  return !tool.icon || heroReadyToolNames.value.has(tool.name)
+}
+
+function markHeroFloatingToolReady(name: string) {
+  if (heroReadyToolNames.value.has(name)) return
+  heroReadyToolNames.value = new Set([...heroReadyToolNames.value, name])
+}
+
 function syncHeaderScrollState() {
   isHeaderCompact.value = window.scrollY > 18
   syncHeaderSurface()
@@ -677,13 +693,13 @@ function scheduleHeroFieldFrame() {
 
 function tickHeroField() {
   heroFieldFrame = 0
-  const stiffness = 0.34
+  const stiffness = 0.22
 
   heroPointerPhysics.x += (heroPointerTarget.x - heroPointerPhysics.x) * stiffness
   heroPointerPhysics.y += (heroPointerTarget.y - heroPointerPhysics.y) * stiffness
   heroPointerPhysics.stageX += (heroPointerTarget.stageX - heroPointerPhysics.stageX) * stiffness
   heroPointerPhysics.stageY += (heroPointerTarget.stageY - heroPointerPhysics.stageY) * stiffness
-  heroPointerPhysics.active += (heroPointerTarget.active - heroPointerPhysics.active) * 0.28
+  heroPointerPhysics.active += (heroPointerTarget.active - heroPointerPhysics.active) * 0.16
 
   heroPointer.value = {
     x: heroPointerPhysics.x * heroPointerPhysics.active,
@@ -737,7 +753,7 @@ function computeHeroTagFields(pointer: HeroPointerState): HeroTagField[] {
       : viewport.width <= 960
         ? 0.62
         : 0.95
-    const travel = viewport.width <= 960 ? 52 : 72
+    const travel = viewport.width <= 960 ? 34 : 46
     const targetFieldX = pointer.x * active * parallaxScale * travel * depthFactor
     const targetFieldY = pointer.y * active * parallaxScale * travel * depthFactor
 
@@ -1335,9 +1351,14 @@ onUnmounted(() => {
   overflow: hidden;
   box-shadow: none;
   filter: none;
+  opacity: 0;
   transform: translateZ(var(--hero-tag-depth));
-  transition: none;
+  transition: opacity 160ms ease;
   transform-style: preserve-3d;
+}
+
+.floating-tool-depth-ready {
+  opacity: 1;
 }
 
 .floating-tool-tag::before {

@@ -99,7 +99,8 @@ func TestSettingService_GetPublicSettings_ExposesForceEmailOnThirdPartySignup(t 
 func TestSettingService_GetPublicSettings_ExposesImagePlaygroundGroupID(t *testing.T) {
 	repo := &settingPublicRepoStub{
 		values: map[string]string{
-			SettingKeyImagePlaygroundGroupID: "16",
+			SettingKeyImagePlaygroundGroupID:          "16",
+			SettingKeyImagePlaygroundResponsesGroupID: "17",
 		},
 	}
 	svc := NewSettingService(repo, &config.Config{})
@@ -107,6 +108,7 @@ func TestSettingService_GetPublicSettings_ExposesImagePlaygroundGroupID(t *testi
 	settings, err := svc.GetPublicSettings(context.Background())
 	require.NoError(t, err)
 	require.EqualValues(t, 16, settings.ImagePlaygroundGroupID)
+	require.EqualValues(t, 17, settings.ImagePlaygroundResponsesGroupID)
 }
 
 func TestSettingService_GetPublicSettings_ExposesActiveGlobalDiscount(t *testing.T) {

@@ -5413,27 +5413,50 @@
               {{ t('admin.settings.features.imagePlayground.description') }}
             </p>
           </div>
-          <div class="space-y-3 p-6">
-            <label class="input-label">
-              {{ t('admin.settings.features.imagePlayground.groupLabel') }}
-            </label>
-            <select
-              v-model.number="form.image_playground_group_id"
-              class="input"
-              data-test="image-playground-admin-group-select"
-            >
-              <option :value="0">
-                {{ t('admin.settings.features.imagePlayground.groupPlaceholder') }}
-              </option>
-              <option
-                v-for="group in imagePlaygroundGroups"
-                :key="group.id"
-                :value="group.id"
+          <div class="grid gap-4 p-6 md:grid-cols-2">
+            <div class="space-y-3">
+              <label class="input-label">
+                {{ t('admin.settings.features.imagePlayground.groupLabel') }}
+              </label>
+              <select
+                v-model.number="form.image_playground_group_id"
+                class="input"
+                data-test="image-playground-admin-group-select"
               >
-                {{ group.name }} (#{{ group.id }})
-              </option>
-            </select>
-            <p class="text-xs text-gray-400">
+                <option :value="0">
+                  {{ t('admin.settings.features.imagePlayground.groupPlaceholder') }}
+                </option>
+                <option
+                  v-for="group in imagePlaygroundGroups"
+                  :key="group.id"
+                  :value="group.id"
+                >
+                  {{ group.name }} (#{{ group.id }})
+                </option>
+              </select>
+            </div>
+            <div class="space-y-3">
+              <label class="input-label">
+                {{ t('admin.settings.features.imagePlayground.responsesGroupLabel') }}
+              </label>
+              <select
+                v-model.number="form.image_playground_responses_group_id"
+                class="input"
+                data-test="image-playground-responses-admin-group-select"
+              >
+                <option :value="0">
+                  {{ t('admin.settings.features.imagePlayground.responsesGroupPlaceholder') }}
+                </option>
+                <option
+                  v-for="group in imagePlaygroundGroups"
+                  :key="group.id"
+                  :value="group.id"
+                >
+                  {{ group.name }} (#{{ group.id }})
+                </option>
+              </select>
+            </div>
+            <p class="text-xs text-gray-400 md:col-span-2">
               {{ imagePlaygroundGroups.length > 0
                 ? t('admin.settings.features.imagePlayground.groupHint')
                 : t('admin.settings.features.imagePlayground.noGroups') }}
@@ -7573,6 +7596,7 @@ const form = reactive<SettingsForm>({
   available_channels_enabled: false,
   // Image Playground group selected by admin; 0 means disabled/unconfigured.
   image_playground_group_id: 0,
+  image_playground_responses_group_id: 0,
   // Affiliate (邀请返利) feature switch
   affiliate_enabled: false,
 });
@@ -9210,6 +9234,10 @@ async function saveSettings() {
       image_playground_group_id:
         Number(form.image_playground_group_id) > 0
           ? Math.floor(Number(form.image_playground_group_id))
+          : 0,
+      image_playground_responses_group_id:
+        Number(form.image_playground_responses_group_id) > 0
+          ? Math.floor(Number(form.image_playground_responses_group_id))
           : 0,
       payment_min_amount: Number(form.payment_min_amount) || 0,
       payment_max_amount: Number(form.payment_max_amount) || 0,

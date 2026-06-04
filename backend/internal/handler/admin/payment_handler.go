@@ -165,20 +165,29 @@ func (h *PaymentHandler) GetAnalytics(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
+	result.Steps = steps
+	result.Methods = methods
+	result.RecentEvents = recentEvents
+
 	operators, err := h.queryPaymentAnalyticsOperators(c, since)
 	if err != nil {
+		if isMissingPaymentAnalyticsRelation(err) {
+			response.Success(c, result)
+			return
+		}
 		response.ErrorFrom(c, err)
 		return
 	}
 	auditEvents, err := h.queryPaymentAnalyticsAuditEvents(c, since)
 	if err != nil {
+		if isMissingPaymentAnalyticsRelation(err) {
+			result.Operators = operators
+			response.Success(c, result)
+			return
+		}
 		response.ErrorFrom(c, err)
 		return
 	}
-
-	result.Steps = steps
-	result.Methods = methods
-	result.RecentEvents = recentEvents
 	result.Operators = operators
 	result.AuditEvents = auditEvents
 	response.Success(c, result)
@@ -187,6 +196,16 @@ func (h *PaymentHandler) GetAnalytics(c *gin.Context) {
 func isMissingPaymentEventsTable(err error) bool {
 	var pqErr *pq.Error
 	return errors.As(err, &pqErr) && pqErr.Code == "42P01"
+}
+
+func isMissingPaymentAnalyticsRelation(err error) bool {
+	var pqErr *pq.Error
+	return errors.As(err, &pqErr) && (pqErr.Code == "42P01" || pqErr.Code == "42703")
+}
+
+func isMissingPaymentAnalyticsColumn(err error) bool {
+	var pqErr *pq.Error
+	return errors.As(err, &pqErr) && pqErr.Code == "42703"
 }
 
 func parsePaymentAnalyticsDays(c *gin.Context) int {
@@ -221,6 +240,33 @@ func (h *PaymentHandler) queryPaymentAnalyticsSteps(c *gin.Context, since time.T
 		      AND status IN ('COMPLETED', 'PAID', 'RECHARGING')
 		    )
 		  )
+		ORDER BY event_name
+	`, since)
+	if err != nil {
+		if isMissingPaymentAnalyticsColumn(err) {
+			return h.queryPaymentAnalyticsStepsLegacy(c, since)
+		}
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	steps := make([]PaymentAnalyticsStep, 0)
+	for rows.Next() {
+		var step PaymentAnalyticsStep
+		if err := rows.Scan(&step.Name, &step.Count, &step.UniqueUsers); err != nil {
+			return nil, err
+		}
+		steps = append(steps, step)
+	}
+	return steps, rows.Err()
+}
+
+func (h *PaymentHandler) queryPaymentAnalyticsStepsLegacy(c *gin.Context, since time.Time) ([]PaymentAnalyticsStep, error) {
+	rows, err := h.sqlDB.QueryContext(c.Request.Context(), `
+		SELECT event_name, COUNT(*) AS count, COUNT(DISTINCT user_id) AS unique_users
+		FROM payment_events
+		WHERE created_at >= $1
+		GROUP BY event_name
 		ORDER BY event_name
 	`, since)
 	if err != nil {
@@ -264,6 +310,9 @@ func (h *PaymentHandler) queryPaymentAnalyticsMethods(c *gin.Context, since time
 		ORDER BY payment_type, event_name
 	`, since)
 	if err != nil {
+		if isMissingPaymentAnalyticsColumn(err) {
+			return []PaymentAnalyticsMethod{}, nil
+		}
 		return nil, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -289,6 +338,9 @@ func (h *PaymentHandler) queryPaymentAnalyticsRecentEvents(c *gin.Context, since
 		LIMIT 20
 	`, since)
 	if err != nil {
+		if isMissingPaymentAnalyticsColumn(err) {
+			return h.queryPaymentAnalyticsRecentEventsLegacy(c, since)
+		}
 		return nil, err
 	}
 	defer func() { _ = rows.Close() }()
@@ -311,6 +363,71 @@ func (h *PaymentHandler) queryPaymentAnalyticsRecentEvents(c *gin.Context, since
 			&event.ErrorKind,
 			&event.CreatedAt,
 		); err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	return events, rows.Err()
+}
+
+func (h *PaymentHandler) queryPaymentAnalyticsRecentEventsLegacy(c *gin.Context, since time.Time) ([]PaymentAnalyticsRecentEvent, error) {
+	rows, err := h.sqlDB.QueryContext(c.Request.Context(), `
+		SELECT event_name, tab, order_type, payment_type, launch_kind, status,
+		       amount, pay_amount, plan_id, order_id, error_kind, created_at
+		FROM payment_events
+		WHERE created_at >= $1
+		ORDER BY created_at DESC
+		LIMIT 20
+	`, since)
+	if err != nil {
+		if isMissingPaymentAnalyticsColumn(err) {
+			return h.queryPaymentAnalyticsRecentEventsMinimal(c, since)
+		}
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	events := make([]PaymentAnalyticsRecentEvent, 0)
+	for rows.Next() {
+		var event PaymentAnalyticsRecentEvent
+		if err := rows.Scan(
+			&event.Name,
+			&event.Tab,
+			&event.OrderType,
+			&event.PaymentType,
+			&event.LaunchKind,
+			&event.Status,
+			&event.Amount,
+			&event.PayAmount,
+			&event.PlanID,
+			&event.OrderID,
+			&event.ErrorKind,
+			&event.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	return events, rows.Err()
+}
+
+func (h *PaymentHandler) queryPaymentAnalyticsRecentEventsMinimal(c *gin.Context, since time.Time) ([]PaymentAnalyticsRecentEvent, error) {
+	rows, err := h.sqlDB.QueryContext(c.Request.Context(), `
+		SELECT event_name, created_at
+		FROM payment_events
+		WHERE created_at >= $1
+		ORDER BY created_at DESC
+		LIMIT 20
+	`, since)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	events := make([]PaymentAnalyticsRecentEvent, 0)
+	for rows.Next() {
+		var event PaymentAnalyticsRecentEvent
+		if err := rows.Scan(&event.Name, &event.CreatedAt); err != nil {
 			return nil, err
 		}
 		events = append(events, event)

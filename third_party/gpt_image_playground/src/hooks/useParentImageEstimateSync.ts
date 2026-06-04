@@ -15,10 +15,10 @@ export function useParentImageEstimateSync() {
       type: MESSAGE_TYPE,
       payload: {
         model: profile.model,
+        apiMode: profile.apiMode,
         size: params.size,
         count: params.n,
       },
     }, window.location.origin)
   }, [params.n, params.size, settings])
 }
-

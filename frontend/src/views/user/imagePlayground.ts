@@ -1,8 +1,10 @@
 import type { ApiKey, Group } from '@/types'
 
 export const IMAGE_PLAYGROUND_STORAGE_KEY = 'image_playground_api_key'
+export const IMAGE_PLAYGROUND_RESPONSES_STORAGE_KEY = 'image_playground_responses_api_key'
 export const IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY = 'hahacode.imagePlayground.settings'
 export const IMAGE_PLAYGROUND_KEY_NAME = 'Image Playground'
+export const IMAGE_PLAYGROUND_RESPONSES_KEY_NAME = 'Image Playground Responses'
 export const IMAGE_PLAYGROUND_APP_PATH = '/image-playground-app/'
 export const IMAGE_PLAYGROUND_MODEL = 'gpt-image-2'
 export const IMAGE_PLAYGROUND_AGENT_MODEL = 'gpt-5.5'
@@ -43,11 +45,13 @@ export function storedKeyMatchesGroup(
 export function buildImagePlaygroundUrl(options: {
   origin: string
   apiKey: string
+  responsesApiKey?: string
   refreshToken?: string
   theme?: ImagePlaygroundTheme
 }): string {
   const origin = options.origin.replace(/\/+$/, '')
   const url = new URL(IMAGE_PLAYGROUND_APP_PATH, `${origin}/`)
+  const responsesApiKey = options.responsesApiKey?.trim() || options.apiKey
   const settings = {
     profiles: [
       {
@@ -69,7 +73,7 @@ export function buildImagePlaygroundUrl(options: {
         name: 'Hahacode Agent Responses API',
         provider: 'openai',
         baseUrl: `${origin}/v1`,
-        apiKey: options.apiKey,
+        apiKey: responsesApiKey,
         model: IMAGE_PLAYGROUND_AGENT_MODEL,
         timeout: 600,
         apiMode: 'responses',
@@ -90,7 +94,15 @@ export function buildImagePlaygroundUrl(options: {
 }
 
 export function readStoredImagePlaygroundKey(): StoredImagePlaygroundKey | null {
-  const raw = window.localStorage.getItem(IMAGE_PLAYGROUND_STORAGE_KEY)
+  return readStoredImagePlaygroundKeyFromStorage(IMAGE_PLAYGROUND_STORAGE_KEY)
+}
+
+export function readStoredImagePlaygroundResponsesKey(): StoredImagePlaygroundKey | null {
+  return readStoredImagePlaygroundKeyFromStorage(IMAGE_PLAYGROUND_RESPONSES_STORAGE_KEY)
+}
+
+function readStoredImagePlaygroundKeyFromStorage(storageKey: string): StoredImagePlaygroundKey | null {
+  const raw = window.localStorage.getItem(storageKey)
   if (!raw) return null
 
   try {
@@ -115,6 +127,18 @@ export function readStoredImagePlaygroundKey(): StoredImagePlaygroundKey | null 
 }
 
 export function writeStoredImagePlaygroundKey(apiKey: ApiKey, group?: Group | null): StoredImagePlaygroundKey {
+  return writeStoredImagePlaygroundKeyToStorage(IMAGE_PLAYGROUND_STORAGE_KEY, apiKey, group)
+}
+
+export function writeStoredImagePlaygroundResponsesKey(apiKey: ApiKey, group?: Group | null): StoredImagePlaygroundKey {
+  return writeStoredImagePlaygroundKeyToStorage(IMAGE_PLAYGROUND_RESPONSES_STORAGE_KEY, apiKey, group)
+}
+
+function writeStoredImagePlaygroundKeyToStorage(
+  storageKey: string,
+  apiKey: ApiKey,
+  group?: Group | null
+): StoredImagePlaygroundKey {
   if (!apiKey.key?.trim()) {
     throw new Error('Created API key did not include a plaintext key')
   }
@@ -126,11 +150,20 @@ export function writeStoredImagePlaygroundKey(apiKey: ApiKey, group?: Group | nu
     group_name: group?.name ?? apiKey.group?.name ?? null,
     created_at: new Date().toISOString()
   }
-  window.localStorage.setItem(IMAGE_PLAYGROUND_STORAGE_KEY, JSON.stringify(stored))
+  window.localStorage.setItem(storageKey, JSON.stringify(stored))
   return stored
 }
 
 export function clearStoredImagePlaygroundKey() {
-  window.localStorage.removeItem(IMAGE_PLAYGROUND_STORAGE_KEY)
+  clearStoredImagePlaygroundImagesKey()
+  clearStoredImagePlaygroundResponsesKey()
   window.sessionStorage.removeItem(IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY)
+}
+
+export function clearStoredImagePlaygroundImagesKey() {
+  window.localStorage.removeItem(IMAGE_PLAYGROUND_STORAGE_KEY)
+}
+
+export function clearStoredImagePlaygroundResponsesKey() {
+  window.localStorage.removeItem(IMAGE_PLAYGROUND_RESPONSES_STORAGE_KEY)
 }

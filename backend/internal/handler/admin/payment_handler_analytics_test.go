@@ -41,6 +41,178 @@ func TestAdminPaymentAnalyticsReturnsMissingWhenTableDoesNotExist(t *testing.T) 
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestAdminPaymentAnalyticsRecentEventsFallbackWhenSourceColumnMissing(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	h := NewPaymentHandler(nil, nil, db)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/payment/analytics", nil)
+	createdAt := time.Now()
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, tab, order_type, payment_type, launch_kind, source, status,")).
+		WillReturnError(&pq.Error{Code: "42703"})
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, tab, order_type, payment_type, launch_kind, status,")).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"event_name", "tab", "order_type", "payment_type", "launch_kind", "status",
+			"amount", "pay_amount", "plan_id", "order_id", "error_kind", "created_at",
+		}).AddRow(
+			"payment_order_submit", "balance", "balance", "alipay", "web", "SUBMITTED",
+			12.5, 12.5, int64(0), int64(123), "", createdAt,
+		))
+
+	events, err := h.queryPaymentAnalyticsRecentEvents(c, time.Now().Add(-24*time.Hour))
+
+	require.NoError(t, err)
+	require.Len(t, events, 1)
+	require.Equal(t, "payment_order_submit", events[0].Name)
+	require.Nil(t, events[0].Source)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAdminPaymentAnalyticsStepsFallbackWhenResultColumnsMissing(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	h := NewPaymentHandler(nil, nil, db)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/payment/analytics", nil)
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, COUNT(*) AS count, COUNT(DISTINCT user_id) AS unique_users")).
+		WillReturnError(&pq.Error{Code: "42703"})
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, COUNT(*) AS count, COUNT(DISTINCT user_id) AS unique_users")).
+		WillReturnRows(sqlmock.NewRows([]string{"event_name", "count", "unique_users"}).
+			AddRow("payment_page_view", int64(3), int64(2)))
+
+	steps, err := h.queryPaymentAnalyticsSteps(c, time.Now().Add(-24*time.Hour))
+
+	require.NoError(t, err)
+	require.Equal(t, []PaymentAnalyticsStep{
+		{Name: "payment_page_view", Count: 3, UniqueUsers: 2},
+	}, steps)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAdminPaymentAnalyticsMethodsEmptyWhenPaymentTypeColumnMissing(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	h := NewPaymentHandler(nil, nil, db)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/payment/analytics", nil)
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COALESCE(payment_type, ''), event_name, COUNT(*) AS count")).
+		WillReturnError(&pq.Error{Code: "42703"})
+
+	methods, err := h.queryPaymentAnalyticsMethods(c, time.Now().Add(-24*time.Hour))
+
+	require.NoError(t, err)
+	require.Empty(t, methods)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAdminPaymentAnalyticsRecentEventsMinimalFallbackWhenLegacyColumnsMissing(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	h := NewPaymentHandler(nil, nil, db)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/payment/analytics", nil)
+	createdAt := time.Now()
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, tab, order_type, payment_type, launch_kind, source, status,")).
+		WillReturnError(&pq.Error{Code: "42703"})
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, tab, order_type, payment_type, launch_kind, status,")).
+		WillReturnError(&pq.Error{Code: "42703"})
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, created_at")).
+		WillReturnRows(sqlmock.NewRows([]string{"event_name", "created_at"}).
+			AddRow("payment_page_view", createdAt))
+
+	events, err := h.queryPaymentAnalyticsRecentEvents(c, time.Now().Add(-24*time.Hour))
+
+	require.NoError(t, err)
+	require.Len(t, events, 1)
+	require.Equal(t, "payment_page_view", events[0].Name)
+	require.Equal(t, createdAt, *events[0].CreatedAt)
+	require.Nil(t, events[0].PaymentType)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAdminPaymentAnalyticsReturnsAvailableDataWhenEventMetadataColumnsMissing(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	h := NewPaymentHandler(nil, nil, db)
+	router := newAdminPaymentAnalyticsTestRouter(h)
+	createdAt := time.Now()
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, COUNT(*) AS count, COUNT(DISTINCT user_id) AS unique_users")).
+		WillReturnError(&pq.Error{Code: "42703"})
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, COUNT(*) AS count, COUNT(DISTINCT user_id) AS unique_users")).
+		WillReturnRows(sqlmock.NewRows([]string{"event_name", "count", "unique_users"}).
+			AddRow("payment_page_view", int64(1), int64(1)))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COALESCE(payment_type, ''), event_name, COUNT(*) AS count")).
+		WillReturnError(&pq.Error{Code: "42703"})
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, tab, order_type, payment_type, launch_kind, source, status,")).
+		WillReturnError(&pq.Error{Code: "42703"})
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, tab, order_type, payment_type, launch_kind, status,")).
+		WillReturnError(&pq.Error{Code: "42703"})
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, created_at")).
+		WillReturnRows(sqlmock.NewRows([]string{"event_name", "created_at"}).
+			AddRow("payment_page_view", createdAt))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT operator, action, COUNT(*) AS count, MAX(created_at) AS last_action_at")).
+		WillReturnError(&pq.Error{Code: "42P01"})
+
+	req := httptest.NewRequest(http.MethodGet, "/admin/payment/analytics?days=30", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Contains(t, rec.Body.String(), `"steps":[{"name":"payment_page_view","count":1,"unique_users":1}]`)
+	require.Contains(t, rec.Body.String(), `"methods":[]`)
+	require.Contains(t, rec.Body.String(), `"recent_events":[{"name":"payment_page_view"`)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAdminPaymentAnalyticsSkipsMissingAuditTable(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	h := NewPaymentHandler(nil, nil, db)
+	router := newAdminPaymentAnalyticsTestRouter(h)
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, COUNT(*) AS count, COUNT(DISTINCT user_id) AS unique_users")).
+		WillReturnRows(sqlmock.NewRows([]string{"event_name", "count", "unique_users"}))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COALESCE(payment_type, ''), event_name, COUNT(*) AS count")).
+		WillReturnRows(sqlmock.NewRows([]string{"payment_type", "event_name", "count"}))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, tab, order_type, payment_type, launch_kind, source, status,")).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"event_name", "tab", "order_type", "payment_type", "launch_kind", "source", "status",
+			"amount", "pay_amount", "plan_id", "order_id", "error_kind", "created_at",
+		}))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT operator, action, COUNT(*) AS count, MAX(created_at) AS last_action_at")).
+		WillReturnError(&pq.Error{Code: "42P01"})
+
+	req := httptest.NewRequest(http.MethodGet, "/admin/payment/analytics?days=30", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Contains(t, rec.Body.String(), `"operators":null`)
+	require.Contains(t, rec.Body.String(), `"audit_events":null`)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestAdminPaymentAnalyticsMethodsUseResultStatusAsCanonicalSuccess(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)

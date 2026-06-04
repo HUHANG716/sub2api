@@ -5755,9 +5755,11 @@ export default {
         },
         imagePlayground: {
           title: 'Image Playground',
-          description: 'Choose the OpenAI image group used by the user playground. Users automatically get a dedicated key for this group when they enter.',
-          groupLabel: 'Playground group',
+          description: 'Choose separate OpenAI groups for the playground Images API and Responses API profiles. Users automatically get dedicated keys for those groups when they enter.',
+          groupLabel: 'Images API group',
           groupPlaceholder: 'Do not enable image playground',
+          responsesGroupLabel: 'Responses API group',
+          responsesGroupPlaceholder: 'Use Images API group',
           groupHint: 'Only active OpenAI groups with image generation enabled can be selected.',
           noGroups: 'No OpenAI image groups are available yet. Enable image generation on a group first.',
         },

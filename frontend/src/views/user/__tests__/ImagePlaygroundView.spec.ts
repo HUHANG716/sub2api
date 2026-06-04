@@ -5,6 +5,7 @@ import ImagePlaygroundView from '../ImagePlaygroundView.vue'
 import {
   IMAGE_PLAYGROUND_AGENT_MODEL,
   IMAGE_PLAYGROUND_MODEL,
+  IMAGE_PLAYGROUND_RESPONSES_STORAGE_KEY,
   IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY,
   IMAGE_PLAYGROUND_STORAGE_KEY,
   buildImagePlaygroundUrl,
@@ -184,7 +185,8 @@ describe('image playground helpers', () => {
   it('builds a same-origin playground URL for the OpenAI Images API', () => {
     const url = buildImagePlaygroundUrl({
       origin: 'https://code.example.com',
-      apiKey: 'sk-url'
+      apiKey: 'sk-url',
+      responsesApiKey: 'sk-responses-url'
     })
     const parsed = new URL(url)
     const settings = JSON.parse(window.sessionStorage.getItem(IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY) ?? '{}')
@@ -212,7 +214,7 @@ describe('image playground helpers', () => {
         name: 'Hahacode Agent Responses API',
         provider: 'openai',
         baseUrl: 'https://code.example.com/v1',
-        apiKey: 'sk-url',
+        apiKey: 'sk-responses-url',
         model: IMAGE_PLAYGROUND_AGENT_MODEL,
         apiMode: 'responses',
         streamImages: true,
@@ -308,6 +310,61 @@ describe('ImagePlaygroundView', () => {
       expect.objectContaining({ apiKey: 'sk-created', apiMode: 'responses', model: IMAGE_PLAYGROUND_AGENT_MODEL })
     ])
     expect(wrapper.get('[data-test="image-playground-estimate"]').text()).toContain('Waiting')
+  })
+
+  it('creates separate Images and Responses playground keys when both groups are configured', async () => {
+    appState.cachedPublicSettings = {
+      image_playground_group_id: 11,
+      image_playground_responses_group_id: 12
+    }
+    getAvailableGroups.mockResolvedValue([
+      makeGroup({ id: 11, name: 'OpenAI Images' }),
+      makeGroup({ id: 12, name: 'OpenAI Responses' })
+    ])
+    createKey.mockImplementation((name: string, groupId: number) => Promise.resolve(makeApiKey({
+      id: groupId === 12 ? 52 : 42,
+      key: groupId === 12 ? 'sk-responses-created' : 'sk-images-created',
+      name,
+      group_id: groupId
+    })))
+
+    const wrapper = mount(ImagePlaygroundView, {
+      global: {
+        stubs: {
+          AppLayout: BaseLayoutStub,
+          Icon: true,
+          ConfirmDialog: true
+        }
+      }
+    })
+
+    await flushPromises()
+    expect(wrapper.findComponent({ name: 'ConfirmDialog' }).props('show')).toBe(true)
+
+    await wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm')
+    await flushPromises()
+
+    expect(createKey).toHaveBeenCalledWith('Image Playground', 11)
+    expect(createKey).toHaveBeenCalledWith('Image Playground Responses', 12)
+    expect(JSON.parse(window.localStorage.getItem(IMAGE_PLAYGROUND_STORAGE_KEY) || '{}')).toMatchObject({
+      key: 'sk-images-created',
+      key_id: 42,
+      group_id: 11,
+      group_name: 'OpenAI Images'
+    })
+    expect(JSON.parse(window.localStorage.getItem(IMAGE_PLAYGROUND_RESPONSES_STORAGE_KEY) || '{}')).toMatchObject({
+      key: 'sk-responses-created',
+      key_id: 52,
+      group_id: 12,
+      group_name: 'OpenAI Responses'
+    })
+    const iframeSettings = JSON.parse(window.sessionStorage.getItem(IMAGE_PLAYGROUND_SETTINGS_STORAGE_KEY) ?? '{}')
+    expect(iframeSettings.profiles).toEqual([
+      expect.objectContaining({ apiKey: 'sk-images-created', apiMode: 'images', model: IMAGE_PLAYGROUND_MODEL }),
+      expect.objectContaining({ apiKey: 'sk-responses-created', apiMode: 'responses', model: IMAGE_PLAYGROUND_AGENT_MODEL })
+    ])
+    expect(wrapper.get('[data-test="image-playground-key-summary"]').text()).toContain('Images: OpenAI Images')
+    expect(wrapper.get('[data-test="image-playground-key-summary"]').text()).toContain('Responses: OpenAI Responses')
   })
 
   it('sends the outer app theme to the embedded playground and updates it when the theme changes', async () => {
@@ -432,6 +489,69 @@ describe('ImagePlaygroundView', () => {
       count: 2
     }, expect.any(Object))
     expect(wrapper.get('[data-test="image-playground-estimate"]').text()).toContain('$0.0900')
+  })
+
+  it('estimates Responses API image cost against the configured Responses group', async () => {
+    appState.cachedPublicSettings = {
+      image_playground_group_id: 11,
+      image_playground_responses_group_id: 12
+    }
+    getAvailableGroups.mockResolvedValue([
+      makeGroup({ id: 11, name: 'OpenAI Images' }),
+      makeGroup({ id: 12, name: 'OpenAI Responses' })
+    ])
+    createKey.mockImplementation((name: string, groupId: number) => Promise.resolve(makeApiKey({
+      id: groupId === 12 ? 52 : 42,
+      key: groupId === 12 ? 'sk-responses-created' : 'sk-images-created',
+      name,
+      group_id: groupId
+    })))
+    estimateImageCost.mockResolvedValue({
+      model: IMAGE_PLAYGROUND_AGENT_MODEL,
+      image_size: 'auto',
+      image_count: 1,
+      unit_cost: 0.03,
+      total_cost: 0.03,
+      actual_cost: 0.045,
+      rate_multiplier: 1.5,
+      billing_mode: 'image',
+      pricing_source: 'fallback'
+    })
+
+    const wrapper = mount(ImagePlaygroundView, {
+      global: {
+        stubs: {
+          AppLayout: BaseLayoutStub,
+          Icon: true,
+          ConfirmDialog: true
+        }
+      }
+    })
+
+    await flushPromises()
+    await wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm')
+    await flushPromises()
+    window.dispatchEvent(new MessageEvent('message', {
+      origin: window.location.origin,
+      data: {
+        type: 'hahacode:image-playground-params',
+        payload: {
+          model: IMAGE_PLAYGROUND_AGENT_MODEL,
+          apiMode: 'responses',
+          size: 'auto',
+          count: 1
+        }
+      }
+    }))
+    await flushPromises()
+
+    expect(estimateImageCost).toHaveBeenCalledWith({
+      group_id: 12,
+      model: IMAGE_PLAYGROUND_AGENT_MODEL,
+      size: 'auto',
+      count: 1
+    }, expect.any(Object))
+    expect(wrapper.get('[data-test="image-playground-estimate"]').text()).toContain('$0.0450')
   })
 
   it('records whitelisted iframe analytics without sensitive payload fields', async () => {
@@ -936,6 +1056,95 @@ describe('ImagePlaygroundView', () => {
       key_id: 99,
       group_id: 11,
       group_name: 'OpenAI Images'
+    })
+  })
+
+  it('recreates only the Responses key when the embedded Responses profile reports unsupported image generation', async () => {
+    appState.cachedPublicSettings = {
+      image_playground_group_id: 11,
+      image_playground_responses_group_id: 12
+    }
+    getAvailableGroups.mockResolvedValue([
+      makeGroup({ id: 11, name: 'OpenAI Images' }),
+      makeGroup({ id: 12, name: 'OpenAI Responses' })
+    ])
+    getKeyById.mockImplementation((id: number) => Promise.resolve(id === 88
+      ? makeApiKey({
+        id: 88,
+        key: 'sk-responses-stored',
+        name: 'Image Playground Responses',
+        group_id: 12,
+        status: 'active'
+      })
+      : makeApiKey({
+        id: 77,
+        key: 'sk-images-stored',
+        name: 'Image Playground',
+        group_id: 11,
+        status: 'active'
+      })
+    ))
+    createKey.mockResolvedValue(makeApiKey({
+      id: 99,
+      key: 'sk-responses-recreated',
+      name: 'Image Playground Responses',
+      group_id: 12
+    }))
+    window.localStorage.setItem(IMAGE_PLAYGROUND_STORAGE_KEY, JSON.stringify({
+      key: 'sk-images-stored',
+      key_id: 77,
+      group_id: 11,
+      group_name: 'OpenAI Images',
+      created_at: '2026-05-27T00:00:00.000Z'
+    }))
+    window.localStorage.setItem(IMAGE_PLAYGROUND_RESPONSES_STORAGE_KEY, JSON.stringify({
+      key: 'sk-responses-stored',
+      key_id: 88,
+      group_id: 12,
+      group_name: 'OpenAI Responses',
+      created_at: '2026-05-27T00:00:00.000Z'
+    }))
+
+    const wrapper = mount(ImagePlaygroundView, {
+      global: {
+        stubs: {
+          AppLayout: BaseLayoutStub,
+          Icon: true,
+          ConfirmDialog: true
+        }
+      }
+    })
+
+    await flushPromises()
+    expect(wrapper.get('[data-test="image-playground-frame"]').exists()).toBe(true)
+
+    window.dispatchEvent(new MessageEvent('message', {
+      origin: window.location.origin,
+      data: {
+        type: 'image-playground:recreate-key-request',
+        reason: 'image_generation_disabled_for_group',
+        apiMode: 'responses'
+      }
+    }))
+    await flushPromises()
+
+    await wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm')
+    await flushPromises()
+
+    expect(createKey).toHaveBeenCalledTimes(1)
+    expect(createKey).toHaveBeenCalledWith('Image Playground Responses', 12)
+    expect(deleteKey).toHaveBeenCalledWith(88)
+    expect(deleteKey).not.toHaveBeenCalledWith(77)
+    expect(JSON.parse(window.localStorage.getItem(IMAGE_PLAYGROUND_STORAGE_KEY) || '{}')).toMatchObject({
+      key: 'sk-images-stored',
+      key_id: 77,
+      group_id: 11
+    })
+    expect(JSON.parse(window.localStorage.getItem(IMAGE_PLAYGROUND_RESPONSES_STORAGE_KEY) || '{}')).toMatchObject({
+      key: 'sk-responses-recreated',
+      key_id: 99,
+      group_id: 12,
+      group_name: 'OpenAI Responses'
     })
   })
 
