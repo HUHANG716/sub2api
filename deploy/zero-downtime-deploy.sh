@@ -15,6 +15,7 @@ STATE_FILE="${STATE_FILE:-.zero-downtime-active-port}"
 PREVIOUS_STATE_FILE="${PREVIOUS_STATE_FILE:-${STATE_FILE}.previous}"
 ACTIVE_MARKER="${ACTIVE_MARKER:-sub2api-zero-downtime-active-port}"
 LOCK_FILE="${LOCK_FILE:-.zero-downtime-deploy.lock}"
+CADDY_RESTART_ON_RELOAD_FAILURE="${CADDY_RESTART_ON_RELOAD_FAILURE:-true}"
 TEMP_FILES=""
 LOCK_DIR=""
 
@@ -53,6 +54,7 @@ Environment:
   GREEN_PORT=8082
   DRAIN_SECONDS=60
   LOCK_FILE=.zero-downtime-deploy.lock
+  CADDY_RESTART_ON_RELOAD_FAILURE=true
 USAGE
 }
 
@@ -362,7 +364,26 @@ restore_caddy_backup() {
   local backup="$1"
   sudo cp "$backup" "$CADDYFILE"
   sudo caddy validate --config "$CADDYFILE" >/dev/null || true
-  sudo systemctl reload caddy || sudo systemctl restart caddy || true
+  if ! sudo systemctl reload caddy; then
+    if [ "$CADDY_RESTART_ON_RELOAD_FAILURE" = "true" ]; then
+      sudo systemctl restart caddy || true
+    else
+      echo "Caddy reload failed while restoring backup; restart disabled." >&2
+    fi
+  fi
+}
+
+reload_caddy() {
+  if sudo systemctl reload caddy; then
+    return 0
+  fi
+  if [ "$CADDY_RESTART_ON_RELOAD_FAILURE" = "true" ]; then
+    echo "Caddy reload failed; restarting caddy." >&2
+    sudo systemctl restart caddy
+    return
+  fi
+  echo "Caddy reload failed; restart disabled by CADDY_RESTART_ON_RELOAD_FAILURE=false." >&2
+  return 1
 }
 
 switch_caddy_upstream() {
@@ -430,13 +451,9 @@ PY
   fi
 
   if sudo caddy validate --config "$CADDYFILE"; then
-    if ! sudo systemctl reload caddy; then
-      echo "Caddy reload failed; restarting caddy." >&2
-      if ! sudo systemctl restart caddy; then
-        echo "Caddy restart failed." >&2
-        restore_caddy_backup "$backup"
-        return 1
-      fi
+    if ! reload_caddy; then
+      restore_caddy_backup "$backup"
+      return 1
     fi
     if ! sudo systemctl is-active --quiet caddy; then
       echo "Caddy is not active after reload/restart." >&2

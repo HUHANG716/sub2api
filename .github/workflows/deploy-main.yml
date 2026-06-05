@@ -345,6 +345,7 @@ jobs:
           CADDYFILE=/etc/caddy/Caddyfile \
           CADDY_SITE_HOST=code.hahacode.top \
           PUBLIC_HEALTH_URL=https://code.hahacode.top/health \
+          CADDY_RESTART_ON_RELOAD_FAILURE=false \
           DRAIN_SECONDS=90 \
             bash "$REPO_DIR/deploy/zero-downtime-deploy.sh" deploy "$IMAGE"
 
@@ -352,7 +353,7 @@ jobs:
           docker exec "$active_container" sh -c 'if [ -d /app/data/public ]; then echo "Removing stale runtime frontend override so the deployed image serves its embedded frontend."; rm -rf /app/data/public.previous-image-deploy; mv /app/data/public /app/data/public.previous-image-deploy; fi'
           if ! curl -fsS https://code.hahacode.top/health || ! curl -fsS https://code.hahacode.top/ -o /tmp/sub2api-main-root.html; then
             docker exec "$active_container" sh -c 'if [ -d /app/data/public.previous-image-deploy ]; then rm -rf /app/data/public; mv /app/data/public.previous-image-deploy /app/data/public; fi'
-            CADDYFILE=/etc/caddy/Caddyfile CADDY_SITE_HOST=code.hahacode.top PUBLIC_HEALTH_URL=https://code.hahacode.top/health DRAIN_SECONDS=0 \
+            CADDYFILE=/etc/caddy/Caddyfile CADDY_SITE_HOST=code.hahacode.top PUBLIC_HEALTH_URL=https://code.hahacode.top/health CADDY_RESTART_ON_RELOAD_FAILURE=false DRAIN_SECONDS=0 \
               bash "$REPO_DIR/deploy/zero-downtime-deploy.sh" rollback || true
             echo "Image deploy failed after removing runtime frontend override; restored override and attempted rollback." >&2
             exit 1
