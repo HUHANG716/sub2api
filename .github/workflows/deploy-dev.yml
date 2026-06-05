@@ -235,12 +235,22 @@ jobs:
             caddyfile="/etc/caddy/Caddyfile"
             backup="${caddyfile}.bak-image-playground-${SHORT_SHA}-$(date +%Y%m%d%H%M%S)"
             sudo cp "$caddyfile" "$backup"
-            sudo python3 - "$caddyfile" <<'PY'
+            restore_image_playground_caddy() {
+              sudo cp "$backup" "$caddyfile"
+              sudo caddy validate --config "$caddyfile" >/dev/null || true
+              sudo systemctl reload caddy || sudo systemctl restart caddy || true
+              echo "Failed to apply image playground Caddy headers; restored previous Caddyfile" >&2
+            }
+            active_port="$(
+              CADDY_SITE_HOST=code.hahacode.work bash "$REPO_DIR/deploy/zero-downtime-deploy.sh" active-port 2>/dev/null || printf '%s\n' 8080
+            )"
+            if ! sudo python3 - "$caddyfile" "$active_port" <<'PY'
           import re
           import sys
           from pathlib import Path
 
           path = Path(sys.argv[1])
+          active_port = sys.argv[2]
           text = path.read_text()
 
           block = """
@@ -273,6 +283,7 @@ jobs:
 
               # sub2api-dev-image-playground-csp-end
           """
+          block = block.replace("127.0.0.1:8080", f"127.0.0.1:{active_port}")
           managed_block_pattern = re.compile(
               r"\n[ \t]*# sub2api-dev-image-playground-csp\n"
               r".*?\n[ \t]*# sub2api-dev-image-playground-csp-end\n?",
@@ -307,20 +318,29 @@ jobs:
           text = text[:open_brace + 1] + block + text[open_brace + 1:]
           path.write_text(text)
           PY
+            then
+              restore_image_playground_caddy
+              exit 1
+            fi
             sudo sed -n '/sub2api-dev-image-playground-csp/,+35p' "$caddyfile"
             if sudo caddy validate --config "$caddyfile"; then
               if ! sudo systemctl reload caddy; then
                 echo "Caddy reload failed; restarting caddy because this server does not expose the admin reload endpoint." >&2
-                sudo systemctl restart caddy
+                if ! sudo systemctl restart caddy; then
+                  restore_image_playground_caddy
+                  exit 1
+                fi
               fi
-              sudo systemctl is-active --quiet caddy
+              if ! sudo systemctl is-active --quiet caddy; then
+                sudo systemctl status caddy --no-pager -l || true
+                sudo journalctl -u caddy --no-pager -n 80 || true
+                restore_image_playground_caddy
+                exit 1
+              fi
             else
               sudo systemctl status caddy --no-pager -l || true
               sudo journalctl -u caddy --no-pager -n 80 || true
-              sudo cp "$backup" "$caddyfile"
-              sudo caddy validate --config "$caddyfile"
-              sudo systemctl restart caddy || true
-              echo "Failed to apply image playground Caddy headers; restored previous Caddyfile" >&2
+              restore_image_playground_caddy
               exit 1
             fi
           fi
@@ -375,27 +395,81 @@ jobs:
             exit 1
           fi
 
-          app_containers="$(docker ps -aq --filter "label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}" --filter "label=com.docker.compose.service=sub2api")"
-          if [ -n "$app_containers" ]; then
-            docker rm -f $app_containers
+          active_container="$(CADDY_SITE_HOST=code.hahacode.work bash "$REPO_DIR/deploy/zero-downtime-deploy.sh" active-container 2>/dev/null || true)"
+          if [ -z "$active_container" ]; then
+            echo "sub2api active container not found" >&2
+            exit 1
           fi
-          $compose_cmd up -d --no-build --no-deps sub2api < /dev/null
-          for i in $(seq 1 30); do
-            app_health="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' sub2api 2>/dev/null || true)"
-            if [ "$app_health" = "healthy" ] || [ "$app_health" = "running" ]; then
-              break
-            fi
-            sleep 2
-            if [ "$i" -eq 30 ]; then
-              echo "sub2api did not become healthy before deployment verification" >&2
-              docker logs --tail 100 sub2api >&2 || true
-              exit 1
-            fi
-          done
+          active_image="$(docker inspect -f '{{.Config.Image}}' "$active_container")"
+          python3 "$REPO_DIR/.github/ci/check-destructive-migrations.py" deploy \
+            --applied-list /tmp/sub2api-dev-migrations.applied \
+            --active-image "$active_image"
+
+          CADDYFILE=/etc/caddy/Caddyfile \
+          CADDY_SITE_HOST=code.hahacode.work \
+          PUBLIC_HEALTH_URL=https://code.hahacode.work/health \
+          DRAIN_SECONDS=60 \
+            bash "$REPO_DIR/deploy/zero-downtime-deploy.sh" deploy "$IMAGE"
+          CADDYFILE=/etc/caddy/Caddyfile CADDY_SITE_HOST=code.hahacode.work \
+            bash "$REPO_DIR/deploy/zero-downtime-deploy.sh" status
           $compose_cmd ps
 
-          curl -fsS http://127.0.0.1:8080/health
+          active_port="$(CADDY_SITE_HOST=code.hahacode.work bash "$REPO_DIR/deploy/zero-downtime-deploy.sh" active-port)"
+          caddyfile="/etc/caddy/Caddyfile"
+          backup="${caddyfile}.bak-active-port-${SHORT_SHA}-$(date +%Y%m%d%H%M%S)"
+          sudo cp "$caddyfile" "$backup"
+          restore_active_port_caddy() {
+            sudo cp "$backup" "$caddyfile"
+            sudo caddy validate --config "$caddyfile" >/dev/null || true
+            sudo systemctl reload caddy || sudo systemctl restart caddy || true
+            echo "Failed to update image playground active port; restored previous Caddyfile" >&2
+          }
+          if ! sudo python3 - "$caddyfile" "$active_port" <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          active_port = sys.argv[2]
+          text = path.read_text()
+          pattern = re.compile(
+              r"(?P<prefix># sub2api-dev-image-playground-csp\n)"
+              r"(?P<body>.*?)"
+              r"(?P<suffix>\n[ \t]*# sub2api-dev-image-playground-csp-end)",
+              re.S,
+          )
+          match = pattern.search(text)
+          if match is None:
+              raise SystemExit("image playground managed Caddy block not found")
+          body = re.sub(r"127\.0\.0\.1:(?:8080|8081|8082)", f"127.0.0.1:{active_port}", match.group("body"))
+          text = text[:match.start()] + match.group("prefix") + body + match.group("suffix") + text[match.end():]
+          path.write_text(text)
+          PY
+          then
+            restore_active_port_caddy
+            exit 1
+          fi
+          if ! sudo caddy validate --config "$caddyfile"; then
+            sudo systemctl status caddy --no-pager -l || true
+            sudo journalctl -u caddy --no-pager -n 80 || true
+            restore_active_port_caddy
+            exit 1
+          fi
+          if ! sudo systemctl reload caddy; then
+            if ! sudo systemctl restart caddy; then
+              restore_active_port_caddy
+              exit 1
+            fi
+          fi
+          if ! sudo systemctl is-active --quiet caddy; then
+            sudo systemctl status caddy --no-pager -l || true
+            sudo journalctl -u caddy --no-pager -n 80 || true
+            restore_active_port_caddy
+            exit 1
+          fi
+
           curl -fsS https://code.hahacode.work/health
+          curl -fsS https://code.hahacode.work/ -o /tmp/sub2api-dev-root.html
           app_headers="$(mktemp)"
           shell_headers="$(mktemp)"
           curl -fsSI https://code.hahacode.work/image-playground-app/ -o "$app_headers"
@@ -483,7 +557,7 @@ jobs:
           else
             compose_cmd="docker-compose"
           fi
-          CONTAINER_ID="$($compose_cmd ps -q sub2api)"
+          CONTAINER_ID="$(CADDY_SITE_HOST=code.hahacode.work bash /opt/sub2api-dev/repo/deploy/zero-downtime-deploy.sh active-container 2>/dev/null || $compose_cmd ps -q sub2api)"
           if [ -z "$CONTAINER_ID" ]; then
             echo "sub2api container not found" >&2
             exit 1
@@ -492,10 +566,12 @@ jobs:
           docker exec "$CONTAINER_ID" sh -c 'rm -rf /app/data/public.next /app/data/public.previous && mkdir -p /app/data/public.next'
           docker cp "${RELEASE_DIR}/." "$CONTAINER_ID:/app/data/public.next/"
           docker exec "$CONTAINER_ID" sh -c 'test -f /app/data/public.next/index.html && if [ -d /app/data/public ]; then mv /app/data/public /app/data/public.previous; fi && mv /app/data/public.next /app/data/public'
+          if ! curl -fsS https://code.hahacode.work/health || ! curl -fsS https://code.hahacode.work/ -o /tmp/sub2api-dev-root.html; then
+            docker exec "$CONTAINER_ID" sh -c 'rm -rf /app/data/public.failed && if [ -d /app/data/public ]; then mv /app/data/public /app/data/public.failed; fi && if [ -d /app/data/public.previous ]; then mv /app/data/public.previous /app/data/public; fi'
+            echo "Frontend artifact health check failed; restored previous public directory." >&2
+            exit 1
+          fi
 
           rm -rf "$RELEASE_DIR"
           rm -f /tmp/sub2api-dev-frontend-dist.tar.gz
-
-          curl -fsS http://127.0.0.1:8080/health
-          curl -fsS https://code.hahacode.work/health
           REMOTE

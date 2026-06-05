@@ -113,26 +113,77 @@ jobs:
 
           echo "remote: entering /opt/sub2api/runtime" >&2
           cd /opt/sub2api/runtime
-          echo "remote: reading compose image" >&2
-          timeout 20s docker compose config | awk '
-            /^services:[[:space:]]*$/ {
-              in_services = 1
-              next
-            }
-            in_services && /^  sub2api:[[:space:]]*$/ {
-              in_sub2api = 1
-              next
-            }
-            in_sub2api && /^  [A-Za-z0-9_-]+:[[:space:]]*$/ {
-              in_sub2api = 0
-            }
-            in_sub2api && /^[[:space:]]+image:[[:space:]]*/ {
-              print $2
-              exit
-            }
-          '
+          echo "remote: reading active container image" >&2
+          active_port="$(
+            python3 - /etc/caddy/Caddyfile .zero-downtime-active-port code.hahacode.top <<'PY' 2>/dev/null || true
+          import re
+          import sys
+          from pathlib import Path
+
+          caddyfile = Path(sys.argv[1])
+          state_file = Path(sys.argv[2])
+          site_host = sys.argv[3]
+          ports = {"8080", "8081", "8082"}
+          text = caddyfile.read_text()
+
+          def find_site_block(source: str, host: str) -> str:
+              for match in re.finditer(r"(?m)^[ \t]*([^#\n{]*\b" + re.escape(host) + r"\b[^{}\n]*)\{", source):
+                  open_brace = match.end() - 1
+                  depth = 0
+                  for index in range(open_brace, len(source)):
+                      char = source[index]
+                      if char == "{":
+                          depth += 1
+                      elif char == "}":
+                          depth -= 1
+                          if depth == 0:
+                              return source[open_brace:index + 1]
+              return ""
+
+          text = find_site_block(text, site_host)
+          marker = re.search(r"(?m)^[ \t]*#\s*sub2api-zero-downtime-active-port:\s*(8080|8081|8082)\s*$", text)
+          if marker:
+              print(marker.group(1))
+              raise SystemExit(0)
+          if state_file.exists():
+              state = state_file.read_text().strip()
+              if state in ports:
+                  print(state)
+                  raise SystemExit(0)
+          matches = re.findall(r"\breverse_proxy\s+(?:localhost|127\.0\.0\.1):(8080|8081|8082)\b", text)
+          if matches:
+              print(matches[-1])
+          PY
+          )"
+          case "$active_port" in
+            8081) active_name="sub2api-blue" ;;
+            8082) active_name="sub2api-green" ;;
+            *) active_name="sub2api" ;;
+          esac
+          active_container="$(timeout 10s docker ps -q --filter "name=^/${active_name}$" | head -n 1)"
+          if [ -n "$active_container" ]; then
+            timeout 10s docker inspect -f '{{.Config.Image}}' "$active_container"
+          else
+            timeout 20s docker compose config | awk '
+              /^services:[[:space:]]*$/ {
+                in_services = 1
+                next
+              }
+              in_services && /^  sub2api:[[:space:]]*$/ {
+                in_sub2api = 1
+                next
+              }
+              in_sub2api && /^  [A-Za-z0-9_-]+:[[:space:]]*$/ {
+                in_sub2api = 0
+              }
+              in_sub2api && /^[[:space:]]+image:[[:space:]]*/ {
+                print $2
+                exit
+              }
+            '
+          fi
           echo "remote: reading deployed frontend sha" >&2
-          container_id="$(timeout 10s docker compose ps -q sub2api 2>/dev/null || true)"
+          container_id="${active_container:-$(timeout 10s docker compose ps -q sub2api 2>/dev/null || true)}"
           if [ -n "$container_id" ]; then
             timeout 10s docker exec "$container_id" sh -c 'cat /app/data/public/.deploy-sha 2>/dev/null || true' < /dev/null || true
           else
@@ -241,7 +292,7 @@ jobs:
           SHORT_SHA="${DEPLOY_SHA:0:12}"
           IMAGE="${DEPLOY_IMAGE_NAME}:main-${SHORT_SHA}"
 
-          find backend/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort > /tmp/sub2api-main-migrations.expected
+          find backend/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | LC_ALL=C sort > /tmp/sub2api-main-migrations.expected
 
           cd "$RUNTIME_DIR"
           if [ -n "${GHCR_USERNAME:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then
@@ -263,7 +314,7 @@ jobs:
 
           if [ "$(docker compose exec -T postgres psql -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" -Atc "SELECT to_regclass('public.schema_migrations') IS NOT NULL" < /dev/null)" = "t" ]; then
             docker compose exec -T postgres psql -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" -Atc \
-              "SELECT filename FROM schema_migrations ORDER BY filename" < /dev/null > /tmp/sub2api-main-migrations.applied
+              "SELECT filename FROM schema_migrations ORDER BY filename" < /dev/null | LC_ALL=C sort > /tmp/sub2api-main-migrations.applied
           else
             : > /tmp/sub2api-main-migrations.applied
           fi
@@ -281,25 +332,38 @@ jobs:
             exit 1
           fi
 
-          docker compose run --rm --no-deps --entrypoint sh sub2api -c 'if [ -d /app/data/public ]; then echo "Removing stale runtime frontend override so the deployed image serves its embedded frontend."; rm -rf /app/data/public.previous-image-deploy; mv /app/data/public /app/data/public.previous-image-deploy; fi' < /dev/null
+          active_container="$(CADDY_SITE_HOST=code.hahacode.top bash "$REPO_DIR/deploy/zero-downtime-deploy.sh" active-container 2>/dev/null || true)"
+          if [ -z "$active_container" ]; then
+            echo "sub2api active container not found" >&2
+            exit 1
+          fi
+          active_image="$(docker inspect -f '{{.Config.Image}}' "$active_container")"
+          python3 "$REPO_DIR/.github/ci/check-destructive-migrations.py" deploy \
+            --applied-list /tmp/sub2api-main-migrations.applied \
+            --active-image "$active_image"
 
-          docker compose up -d --no-build --force-recreate sub2api < /dev/null
-          for i in $(seq 1 60); do
-            if curl -fsS http://127.0.0.1:8080/health < /dev/null >/dev/null 2>&1; then
-              break
-            fi
-            sleep 2
-            if [ "$i" -eq 60 ]; then
-              docker compose ps
-              docker compose logs --tail=120 sub2api || true
-              echo "sub2api did not become healthy before deployment verification timed out" >&2
-              exit 1
-            fi
-          done
+          CADDYFILE=/etc/caddy/Caddyfile \
+          CADDY_SITE_HOST=code.hahacode.top \
+          PUBLIC_HEALTH_URL=https://code.hahacode.top/health \
+          CADDY_RESTART_ON_RELOAD_FAILURE=false \
+          DRAIN_SECONDS=90 \
+            bash "$REPO_DIR/deploy/zero-downtime-deploy.sh" deploy "$IMAGE"
 
+          active_container="$(CADDY_SITE_HOST=code.hahacode.top bash "$REPO_DIR/deploy/zero-downtime-deploy.sh" active-container)"
+          docker exec "$active_container" sh -c 'if [ -d /app/data/public ]; then echo "Removing stale runtime frontend override so the deployed image serves its embedded frontend."; rm -rf /app/data/public.previous-image-deploy; mv /app/data/public /app/data/public.previous-image-deploy; fi'
+          if ! curl -fsS https://code.hahacode.top/health || ! curl -fsS https://code.hahacode.top/ -o /tmp/sub2api-main-root.html; then
+            docker exec "$active_container" sh -c 'if [ -d /app/data/public.previous-image-deploy ]; then rm -rf /app/data/public; mv /app/data/public.previous-image-deploy /app/data/public; fi'
+            CADDYFILE=/etc/caddy/Caddyfile CADDY_SITE_HOST=code.hahacode.top PUBLIC_HEALTH_URL=https://code.hahacode.top/health CADDY_RESTART_ON_RELOAD_FAILURE=false DRAIN_SECONDS=0 \
+              bash "$REPO_DIR/deploy/zero-downtime-deploy.sh" rollback || true
+            echo "Image deploy failed after removing runtime frontend override; restored override and attempted rollback." >&2
+            exit 1
+          fi
+
+          CADDYFILE=/etc/caddy/Caddyfile CADDY_SITE_HOST=code.hahacode.top \
+            bash "$REPO_DIR/deploy/zero-downtime-deploy.sh" status
           docker compose ps
-          curl -fsS http://127.0.0.1:8080/health
           curl -fsS https://code.hahacode.top/health
+          curl -fsS https://code.hahacode.top/ -o /tmp/sub2api-main-root.html
           REMOTE
           } | ssh -i ~/.ssh/id_deploy "${DEPLOY_USER}@${DEPLOY_HOST}" "env DEPLOY_REF=${DEPLOY_REF_Q} DEPLOY_SHA=${DEPLOY_SHA_Q} DEPLOY_IMAGE_NAME=${DEPLOY_IMAGE_NAME_Q} GHCR_USERNAME=${GHCR_USERNAME_Q} sh -c 'IFS= read -r GHCR_TOKEN; export GHCR_TOKEN; bash -se'"
 
@@ -323,7 +387,7 @@ jobs:
           test -f "$RELEASE_DIR/index.html"
 
           cd "$RUNTIME_DIR"
-          CONTAINER_ID="$(docker compose ps -q sub2api)"
+          CONTAINER_ID="$(CADDY_SITE_HOST=code.hahacode.top bash /opt/sub2api/repo/deploy/zero-downtime-deploy.sh active-container 2>/dev/null || docker compose ps -q sub2api)"
           if [ -z "$CONTAINER_ID" ]; then
             echo "sub2api container not found" >&2
             exit 1
@@ -334,12 +398,14 @@ jobs:
           printf '%s\n' "${{ steps.plan.outputs.target_sha }}" > "$RELEASE_DIR/.deploy-sha"
           docker cp "$RELEASE_DIR/.deploy-sha" "$CONTAINER_ID:/app/data/public.next/.deploy-sha"
           docker exec "$CONTAINER_ID" sh -c 'test -f /app/data/public.next/index.html && if [ -d /app/data/public ]; then mv /app/data/public /app/data/public.previous; fi && mv /app/data/public.next /app/data/public'
+          if ! curl -fsS https://code.hahacode.top/health || ! curl -fsS https://code.hahacode.top/ -o /tmp/sub2api-main-root.html; then
+            docker exec "$CONTAINER_ID" sh -c 'rm -rf /app/data/public.failed && if [ -d /app/data/public ]; then mv /app/data/public /app/data/public.failed; fi && if [ -d /app/data/public.previous ]; then mv /app/data/public.previous /app/data/public; fi'
+            echo "Frontend artifact health check failed; restored previous public directory." >&2
+            exit 1
+          fi
 
           rm -rf "$RELEASE_DIR"
           rm -f /tmp/sub2api-main-frontend-dist.tar.gz
-
-          curl -fsS http://127.0.0.1:8080/health
-          curl -fsS https://code.hahacode.top/health
           REMOTE
 
       - name: Skip unchanged deployment

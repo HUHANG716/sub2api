@@ -48,16 +48,20 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
+              - '.github/ci/check-destructive-migrations.py'
               - 'deploy/**'
               - 'Dockerfile'
               - 'Dockerfile.goreleaser'
               - '.goreleaser*.yaml'
               - 'Makefile'
               - '.github/workflows/backend-ci.yml'
+              - '.github/workflows/deploy-dev.yml'
               - '.github/workflows/deploy-main.yml'
             ci:
               - '.github/ci/**'
+              - '.github/ci/check-destructive-migrations.py'
               - '.github/workflows/backend-ci.yml'
+              - '.github/workflows/deploy-dev.yml'
               - '.github/workflows/deploy-main.yml'
             frontend:
               - 'frontend/**'
@@ -82,6 +86,24 @@ jobs:
         run: |
           bash -n .github/ci/resolve-main-deploy-plan.sh .github/ci/resolve-main-deploy-plan.test.sh
           bash .github/ci/resolve-main-deploy-plan.test.sh
+          python3 -m py_compile .github/ci/check-destructive-migrations.py .github/ci/check-destructive-migrations.test.py
+          python3 .github/ci/check-destructive-migrations.test.py
+
+  migration-safety:
+    name: Migration Safety
+    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check destructive migrations
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: python3 .github/ci/check-destructive-migrations.py ci "$BASE_SHA" "$HEAD_SHA"
 
   backend:
     name: Backend
@@ -186,7 +208,8 @@ jobs:
       - changes
       - backend
       - golangci-lint
-    if: ${{ always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && (needs.changes.outputs.backend == 'true' || inputs.force_backend_image) && needs.backend.result == 'success' && needs.golangci-lint.result == 'success' }}
+      - migration-safety
+    if: ${{ always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && (needs.changes.outputs.backend == 'true' || inputs.force_backend_image) && needs.backend.result == 'success' && needs.golangci-lint.result == 'success' && (needs.migration-safety.result == 'success' || needs.migration-safety.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
