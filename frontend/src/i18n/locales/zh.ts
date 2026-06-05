@@ -968,6 +968,7 @@ export default {
     actual: '实际',
     standard: '标准',
     discountSaved: '今日 / 累计节省',
+    discountSavedTotal: '累计已省',
     discountActive: '全局折扣进行中',
     discountRate: '优惠 {percent}%',
     discountFrequencyOnce: '一次性',

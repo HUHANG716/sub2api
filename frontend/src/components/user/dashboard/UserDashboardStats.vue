@@ -1,8 +1,8 @@
 <template>
   <!-- Summary Stats -->
-  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6 lg:auto-rows-fr">
     <!-- Balance -->
-    <div v-if="!isSimple" class="card p-4 lg:col-span-2">
+    <div v-if="!isSimple" class="card flex h-full items-center p-4 lg:col-span-2">
       <div class="flex min-h-[4.75rem] items-center gap-3">
         <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
           <svg class="h-5 w-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -18,7 +18,7 @@
     </div>
 
     <!-- API Keys -->
-    <div class="card p-4 lg:col-span-2">
+    <div class="card flex h-full items-center p-4 lg:col-span-2">
       <div class="flex min-h-[4.75rem] items-center gap-3">
         <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
           <Icon name="key" size="md" class="text-blue-600 dark:text-blue-400" :stroke-width="2" />
@@ -32,7 +32,7 @@
     </div>
 
     <!-- Today Requests -->
-    <div class="card p-4 lg:col-span-2">
+    <div class="card flex h-full items-center p-4 lg:col-span-2">
       <div class="flex min-h-[4.75rem] items-center gap-3">
         <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30">
           <Icon name="chart" size="md" class="text-green-600 dark:text-green-400" :stroke-width="2" />
@@ -46,7 +46,7 @@
     </div>
 
     <!-- Today Cost -->
-    <div class="card p-4 lg:col-span-2">
+    <div class="card flex h-full items-center p-4 lg:col-span-2">
       <div class="flex min-h-[4.75rem] items-center gap-3">
         <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
           <Icon name="dollar" size="md" class="text-purple-600 dark:text-purple-400" :stroke-width="2" />
@@ -55,33 +55,22 @@
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.todayCost') }}</p>
           <p class="truncate text-xl font-bold leading-tight text-gray-900 dark:text-white">
             <span class="text-purple-600 dark:text-purple-400" :title="t('dashboard.actual')">${{ formatCost(stats?.today_actual_cost || 0) }}</span>
-            <span class="text-sm font-normal text-gray-400 dark:text-gray-500" :title="t('dashboard.standard')"> / ${{ formatCost(stats?.today_cost || 0) }}</span>
           </p>
           <p class="truncate text-xs">
             <span class="text-gray-500 dark:text-gray-400">{{ t('common.total') }}: </span>
             <span class="text-purple-600 dark:text-purple-400" :title="t('dashboard.actual')">${{ formatCost(stats?.total_actual_cost || 0) }}</span>
-            <span class="text-gray-400 dark:text-gray-500" :title="t('dashboard.standard')"> / ${{ formatCost(stats?.total_cost || 0) }}</span>
           </p>
           <p
             v-if="(stats?.today_discount_amount || 0) > 0 || (stats?.total_discount_amount || 0) > 0"
             class="truncate text-xs font-medium text-emerald-600 dark:text-emerald-400"
           >
-            {{ t('dashboard.discountSaved') }} ${{ formatCost(stats?.today_discount_amount || 0) }}
-            <span class="text-gray-400 dark:text-gray-500">
-              / ${{ formatCost(stats?.total_discount_amount || 0) }}
-            </span>
-          </p>
-          <p
-            v-if="activeGlobalDiscountLabel"
-            class="mt-1 inline-flex max-w-full items-center rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-          >
-            <span class="truncate">{{ activeGlobalDiscountLabel }}</span>
+            {{ t('dashboard.discountSavedTotal') }} ${{ formatCost(stats?.total_discount_amount || 0) }}
           </p>
         </div>
       </div>
     </div>
     <!-- Today Tokens -->
-    <div class="card p-4 lg:col-span-2">
+    <div class="card flex h-full items-center p-4 lg:col-span-2">
       <div class="flex min-h-[4.75rem] items-center gap-3">
         <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
           <Icon name="cube" size="md" class="text-amber-600 dark:text-amber-400" :stroke-width="2" />
@@ -95,7 +84,7 @@
     </div>
 
     <!-- Total Tokens -->
-    <div class="card p-4 lg:col-span-2">
+    <div class="card flex h-full items-center p-4 lg:col-span-2">
       <div class="flex min-h-[4.75rem] items-center gap-3">
         <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
           <Icon name="database" size="md" class="text-indigo-600 dark:text-indigo-400" :stroke-width="2" />
@@ -237,12 +226,6 @@ const platformLabel = (p: string) => PLATFORM_LABELS[p] ?? p
 const sortedPlatforms = computed(() => {
   const list = props.stats?.by_platform ?? []
   return [...list].sort((a, b) => b.total_actual_cost - a.total_actual_cost)
-})
-
-const activeGlobalDiscountLabel = computed(() => {
-  const discount = props.stats?.global_discount
-  if (!discount?.active) return ''
-  return discount.label?.trim() || ''
 })
 
 // 处理"各平台之和 < 总值"的差值：后端按平台聚合时过滤了无法归属平台的行

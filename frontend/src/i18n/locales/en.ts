@@ -969,6 +969,7 @@ export default {
     actual: 'Actual',
     standard: 'Standard',
     discountSaved: 'Discount saved today / total',
+    discountSavedTotal: 'Total saved',
     discountActive: 'Global discount active',
     discountRate: '{percent}% off',
     discountFrequencyOnce: 'One-time',
