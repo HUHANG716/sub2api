@@ -371,8 +371,8 @@ func TestListPublicModelPricing_UsesNilForMissingOptionalPrices(t *testing.T) {
 	svc := &PricingService{
 		pricingData: map[string]*LiteLLMModelPricing{
 			"gpt-image-2": {
-				LiteLLMProvider:    "openai",
-				Mode:               "image_generation",
+				LiteLLMProvider:     "openai",
+				Mode:                "image_generation",
 				OutputCostPerImage:  0.04,
 				InputCostPerToken:   0,
 				OutputCostPerToken:  0,

@@ -78,16 +78,16 @@ type LiteLLMModelPricing struct {
 // PublicModelPricingItem is the whitelisted public model-pricing row exposed to
 // unauthenticated visitors.
 type PublicModelPricingItem struct {
-	Provider                   string   `json:"provider"`
-	Model                      string   `json:"model"`
-	Mode                       string   `json:"mode"`
-	InputPricePerMillion       *float64 `json:"input_price_per_million"`
-	OutputPricePerMillion      *float64 `json:"output_price_per_million"`
-	CacheWritePricePerMillion  *float64 `json:"cache_write_price_per_million"`
-	CacheReadPricePerMillion   *float64 `json:"cache_read_price_per_million"`
-	ImageOutputPrice           *float64 `json:"image_output_price"`
-	SupportsPromptCaching      bool     `json:"supports_prompt_caching"`
-	SupportsServiceTier        bool     `json:"supports_service_tier"`
+	Provider                  string   `json:"provider"`
+	Model                     string   `json:"model"`
+	Mode                      string   `json:"mode"`
+	InputPricePerMillion      *float64 `json:"input_price_per_million"`
+	OutputPricePerMillion     *float64 `json:"output_price_per_million"`
+	CacheWritePricePerMillion *float64 `json:"cache_write_price_per_million"`
+	CacheReadPricePerMillion  *float64 `json:"cache_read_price_per_million"`
+	ImageOutputPrice          *float64 `json:"image_output_price"`
+	SupportsPromptCaching     bool     `json:"supports_prompt_caching"`
+	SupportsServiceTier       bool     `json:"supports_service_tier"`
 }
 
 // PublicModelPricingCatalog is the public pricing response payload.
