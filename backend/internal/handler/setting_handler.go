@@ -102,6 +102,7 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		ImagePlaygroundGroupID:          settings.ImagePlaygroundGroupID,
 		ImagePlaygroundResponsesGroupID: settings.ImagePlaygroundResponsesGroupID,
 		GlobalDiscount:                  settings.GlobalDiscount,
+		AllowUserViewErrorRequests:      settings.AllowUserViewErrorRequests,
 	})
 }
 

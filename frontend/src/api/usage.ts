@@ -11,7 +11,10 @@ import type {
   PaginatedResponse,
   TrendDataPoint,
   ModelStat,
-  GlobalDiscountRuntime
+  GlobalDiscountRuntime,
+  UserErrorRequest,
+  UserErrorRequestDetail,
+  UserErrorListParams
 } from '@/types'
 
 // ==================== Dashboard Types ====================
@@ -384,6 +387,22 @@ export async function recordImagePlaygroundEvents(
   return data
 }
 
+export async function listMyErrorRequests(
+  params: UserErrorListParams,
+  config: { signal?: AbortSignal } = {}
+): Promise<PaginatedResponse<UserErrorRequest>> {
+  const { data } = await apiClient.get<PaginatedResponse<UserErrorRequest>>('/usage/errors', {
+    ...config,
+    params
+  })
+  return data
+}
+
+export async function getMyErrorDetail(id: number): Promise<UserErrorRequestDetail> {
+  const { data } = await apiClient.get<UserErrorRequestDetail>(`/usage/errors/${id}`)
+  return data
+}
+
 export const usageAPI = {
   list,
   query,
@@ -398,7 +417,10 @@ export const usageAPI = {
   getMyApiKeyDailyUsage,
   getDashboardApiKeysUsage,
   estimateImageCost,
-  recordImagePlaygroundEvents
+  recordImagePlaygroundEvents,
+  // Error requests
+  listMyErrorRequests,
+  getMyErrorDetail,
 }
 
 export default usageAPI

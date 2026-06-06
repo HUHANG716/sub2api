@@ -231,6 +231,9 @@ type SystemSettings struct {
 
 	// 全局折扣配置。启用且当前时间落在配置窗口内时，用户实际扣费乘以 discount_rate。
 	GlobalDiscountSettings GlobalDiscountSettings `json:"global_discount_settings"`
+
+	// 允许终端用户在用量页查看自己的失败请求
+	AllowUserViewErrorRequests bool
 }
 
 type GlobalDiscountSettings struct {
@@ -361,6 +364,9 @@ type PublicSettings struct {
 
 	// 当前生效的全局折扣活动；仅在活动窗口内公开给前端展示。
 	GlobalDiscount *GlobalDiscountRuntime `json:"global_discount,omitempty"`
+
+	// 允许终端用户在用量页查看自己的失败请求
+	AllowUserViewErrorRequests bool `json:"allow_user_view_error_requests"`
 }
 
 type LoginAgreementDocument struct {

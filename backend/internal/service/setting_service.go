@@ -1236,6 +1236,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyRiskControlEnabled,
 		SettingKeyImagePlaygroundGroupID,
 		SettingKeyImagePlaygroundResponsesGroupID,
+		SettingKeyAllowUserViewErrorRequests,
 	}
 
 	settings, err := s.settingRepo.GetMultiple(ctx, keys)
@@ -1364,6 +1365,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		ImagePlaygroundGroupID:          imagePlaygroundGroupID,
 		ImagePlaygroundResponsesGroupID: imagePlaygroundResponsesGroupID,
 		GlobalDiscount:                  globalDiscount,
+		AllowUserViewErrorRequests:      settings[SettingKeyAllowUserViewErrorRequests] == "true",
 	}, nil
 }
 
@@ -1505,6 +1507,17 @@ func ApplyGlobalDiscountToCost(cost *CostBreakdown, discount GlobalDiscountRunti
 
 func applyGlobalDiscountToCost(cost *CostBreakdown, discount GlobalDiscountRuntime) {
 	ApplyGlobalDiscountToCost(cost, discount)
+}
+
+// IsUserErrorViewAllowed reads the user-facing error-requests visibility switch
+// directly from the settings store. Fail-closed: on error returns false (opt-in default).
+func (s *SettingService) IsUserErrorViewAllowed(ctx context.Context) bool {
+	vals, err := s.settingRepo.GetMultiple(ctx, []string{SettingKeyAllowUserViewErrorRequests})
+	if err != nil {
+		slog.Warn("failed to get allow_user_view_error_requests setting, defaulting to false", "error", err)
+		return false
+	}
+	return vals[SettingKeyAllowUserViewErrorRequests] == "true"
 }
 
 // GetAntigravityUserAgentVersion 返回 Antigravity 上游请求使用的版本号。
@@ -1735,6 +1748,7 @@ type PublicSettingsInjectionPayload struct {
 	ImagePlaygroundGroupID               int64                  `json:"image_playground_group_id"`
 	ImagePlaygroundResponsesGroupID      int64                  `json:"image_playground_responses_group_id"`
 	GlobalDiscount                       *GlobalDiscountRuntime `json:"global_discount,omitempty"`
+	AllowUserViewErrorRequests           bool                   `json:"allow_user_view_error_requests"`
 }
 
 // GetPublicSettingsForInjection returns public settings in a format suitable for HTML injection.
@@ -1800,6 +1814,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ImagePlaygroundGroupID:               settings.ImagePlaygroundGroupID,
 		ImagePlaygroundResponsesGroupID:      settings.ImagePlaygroundResponsesGroupID,
 		GlobalDiscount:                       settings.GlobalDiscount,
+		AllowUserViewErrorRequests:           settings.AllowUserViewErrorRequests,
 	}, nil
 }
 
@@ -2506,6 +2521,8 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 		}
 		updates[SettingKeyDefaultPlatformQuotas] = string(blob)
 	}
+
+	updates[SettingKeyAllowUserViewErrorRequests] = strconv.FormatBool(settings.AllowUserViewErrorRequests)
 
 	return updates, nil
 }
@@ -3410,6 +3427,8 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingPaymentVisibleMethodAlipayEnabled:     "false",
 		SettingPaymentVisibleMethodWxpayEnabled:      "false",
 		openAIAdvancedSchedulerSettingKey:            "false",
+
+		SettingKeyAllowUserViewErrorRequests: "false",
 	}
 
 	return s.settingRepo.SetMultiple(ctx, defaults)
@@ -3978,6 +3997,8 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 			result.DefaultPlatformQuotas = parsed
 		}
 	}
+
+	result.AllowUserViewErrorRequests = settings[SettingKeyAllowUserViewErrorRequests] == "true" // default false
 
 	return result
 }

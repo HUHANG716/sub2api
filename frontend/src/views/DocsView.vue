@@ -18,6 +18,10 @@
             <Icon name="key" size="sm" />
             创建 API Key
           </router-link>
+          <router-link to="/model-pricing" class="docs-secondary-action docs-pricing-action">
+            <Icon name="database" size="sm" />
+            查看模型定价
+          </router-link>
         </div>
       </div>
 
@@ -229,6 +233,7 @@
           <span>相关入口</span>
           <router-link to="/keys">我的密钥</router-link>
           <router-link to="/subscriptions">订阅套餐</router-link>
+          <router-link to="/model-pricing">模型定价</router-link>
           <router-link to="/usage">用量记录</router-link>
         </nav>
 

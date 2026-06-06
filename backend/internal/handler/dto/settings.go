@@ -260,6 +260,9 @@ type SystemSettings struct {
 
 	// 全局折扣配置
 	GlobalDiscountSettings service.GlobalDiscountSettings `json:"global_discount_settings"`
+
+	// 允许终端用户在用量页查看自己的失败请求
+	AllowUserViewErrorRequests bool `json:"allow_user_view_error_requests"`
 }
 
 type DefaultSubscriptionSetting struct {
@@ -328,6 +331,7 @@ type PublicSettings struct {
 	ImagePlaygroundGroupID          int64                          `json:"image_playground_group_id"`
 	ImagePlaygroundResponsesGroupID int64                          `json:"image_playground_responses_group_id"`
 	GlobalDiscount                  *service.GlobalDiscountRuntime `json:"global_discount,omitempty"`
+	AllowUserViewErrorRequests      bool                           `json:"allow_user_view_error_requests"`
 }
 
 type LoginAgreementDocument struct {

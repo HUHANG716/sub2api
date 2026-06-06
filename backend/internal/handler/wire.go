@@ -1,11 +1,25 @@
 package handler
 
 import (
+	"database/sql"
+
 	"github.com/Wei-Shaw/sub2api/internal/handler/admin"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/google/wire"
 )
+
+func ProvideSQLDBSlice(db *sql.DB) []*sql.DB {
+	return []*sql.DB{db}
+}
+
+func ProvidePublicModelPricingCatalogProvider(pricing *service.PricingService) publicModelPricingCatalogProvider {
+	return pricing
+}
+
+func ProvidePublicAvailableChannelProvider(channels *service.ChannelService) publicAvailableChannelProvider {
+	return channels
+}
 
 // ProvideAdminHandlers creates the AdminHandlers struct
 func ProvideAdminHandlers(
@@ -111,26 +125,28 @@ func ProvideHandlers(
 	paymentHandler *PaymentHandler,
 	paymentWebhookHandler *PaymentWebhookHandler,
 	availableChannelHandler *AvailableChannelHandler,
+	publicModelPricingHandler *PublicModelPricingHandler,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 ) *Handlers {
 	return &Handlers{
-		Auth:             authHandler,
-		User:             userHandler,
-		APIKey:           apiKeyHandler,
-		Usage:            usageHandler,
-		Redeem:           redeemHandler,
-		Subscription:     subscriptionHandler,
-		Announcement:     announcementHandler,
-		ChannelMonitor:   channelMonitorUserHandler,
-		Admin:            adminHandlers,
-		Gateway:          gatewayHandler,
-		OpenAIGateway:    openaiGatewayHandler,
-		Setting:          settingHandler,
-		Totp:             totpHandler,
-		Payment:          paymentHandler,
-		PaymentWebhook:   paymentWebhookHandler,
-		AvailableChannel: availableChannelHandler,
+		Auth:               authHandler,
+		User:               userHandler,
+		APIKey:             apiKeyHandler,
+		Usage:              usageHandler,
+		Redeem:             redeemHandler,
+		Subscription:       subscriptionHandler,
+		Announcement:       announcementHandler,
+		ChannelMonitor:     channelMonitorUserHandler,
+		Admin:              adminHandlers,
+		Gateway:            gatewayHandler,
+		OpenAIGateway:      openaiGatewayHandler,
+		Setting:            settingHandler,
+		Totp:               totpHandler,
+		Payment:            paymentHandler,
+		PaymentWebhook:     paymentWebhookHandler,
+		AvailableChannel:   availableChannelHandler,
+		PublicModelPricing: publicModelPricingHandler,
 	}
 }
 
@@ -152,6 +168,10 @@ var ProviderSet = wire.NewSet(
 	ProvidePaymentHandler,
 	NewPaymentWebhookHandler,
 	NewAvailableChannelHandler,
+	NewPublicModelPricingHandler,
+	ProvideSQLDBSlice,
+	ProvidePublicModelPricingCatalogProvider,
+	ProvidePublicAvailableChannelProvider,
 
 	// Admin handlers
 	admin.NewDashboardHandler,

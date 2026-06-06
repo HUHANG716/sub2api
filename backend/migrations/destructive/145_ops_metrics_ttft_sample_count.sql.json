@@ -1,0 +1,8 @@
+{
+  "migration": "145_ops_metrics_ttft_sample_count.sql",
+  "phase": "review",
+  "reason": "Adds ttft_sample_count to ops_metrics_hourly and ops_metrics_daily so TTFT aggregates are weighted by streaming rows instead of all successful requests.",
+  "risk": "The migration adds NOT NULL columns with DEFAULT 0 to existing ops metrics tables, which can briefly take table locks while PostgreSQL updates metadata and validates the default.",
+  "mitigation": "The change is additive and idempotent, uses a 5s lock_timeout, and leaves existing rows with a safe zero count until the normal ops metrics re-aggregation repopulates them.",
+  "approved_by": "hang"
+}

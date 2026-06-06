@@ -75,6 +75,41 @@ type LiteLLMModelPricing struct {
 	OutputCostPerImageToken             float64 `json:"output_cost_per_image_token"` // 图片输出 token 价格
 }
 
+// PublicModelPricingItem is the whitelisted public model-pricing row exposed to
+// unauthenticated visitors.
+type PublicModelPricingItem struct {
+	Provider                  string   `json:"provider"`
+	Model                     string   `json:"model"`
+	Mode                      string   `json:"mode"`
+	BillingMode               string   `json:"billing_mode"`
+	GroupIDs                  []int64  `json:"group_ids,omitempty"`
+	InputPricePerMillion      *float64 `json:"input_price_per_million"`
+	OutputPricePerMillion     *float64 `json:"output_price_per_million"`
+	CacheWritePricePerMillion *float64 `json:"cache_write_price_per_million"`
+	CacheReadPricePerMillion  *float64 `json:"cache_read_price_per_million"`
+	ImageOutputPrice          *float64 `json:"image_output_price"`
+	PerRequestPrice           *float64 `json:"per_request_price"`
+	SupportsPromptCaching     bool     `json:"supports_prompt_caching"`
+	SupportsServiceTier       bool     `json:"supports_service_tier"`
+}
+
+// PublicModelPricingGroup is a public group summary used by the model catalog.
+type PublicModelPricingGroup struct {
+	ID               int64   `json:"id"`
+	Name             string  `json:"name"`
+	Platform         string  `json:"platform"`
+	RateMultiplier   float64 `json:"rate_multiplier"`
+	SubscriptionType string  `json:"subscription_type"`
+	IsExclusive      bool    `json:"is_exclusive"`
+}
+
+// PublicModelPricingCatalog is the public pricing response payload.
+type PublicModelPricingCatalog struct {
+	Groups      []PublicModelPricingGroup `json:"groups,omitempty"`
+	Items       []PublicModelPricingItem  `json:"items"`
+	LastUpdated time.Time                 `json:"last_updated"`
+}
+
 // PricingRemoteClient 远程价格数据获取接口
 type PricingRemoteClient interface {
 	FetchPricingJSON(ctx context.Context, url string) ([]byte, error)
@@ -920,6 +955,74 @@ func (s *PricingService) ListModelNamesByProvider(provider string) []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+// ListPublicModelPricing returns a provider-filtered, field-whitelisted copy of
+// the pricing catalog for the public reference page.
+func (s *PricingService) ListPublicModelPricing() PublicModelPricingCatalog {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	items := make([]PublicModelPricingItem, 0)
+	for model, pricing := range s.pricingData {
+		provider, ok := publicPricingProviderLabel(pricing.LiteLLMProvider)
+		if !ok {
+			continue
+		}
+
+		items = append(items, PublicModelPricingItem{
+			Provider:                  provider,
+			Model:                     model,
+			Mode:                      pricing.Mode,
+			InputPricePerMillion:      perTokenToPerMillionPtr(pricing.InputCostPerToken),
+			OutputPricePerMillion:     perTokenToPerMillionPtr(pricing.OutputCostPerToken),
+			CacheWritePricePerMillion: perTokenToPerMillionPtr(pricing.CacheCreationInputTokenCost),
+			CacheReadPricePerMillion:  perTokenToPerMillionPtr(pricing.CacheReadInputTokenCost),
+			ImageOutputPrice:          positiveFloatPtr(pricing.OutputCostPerImage),
+			SupportsPromptCaching:     pricing.SupportsPromptCaching,
+			SupportsServiceTier:       pricing.SupportsServiceTier,
+		})
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].Provider != items[j].Provider {
+			return items[i].Provider < items[j].Provider
+		}
+		return items[i].Model < items[j].Model
+	})
+
+	return PublicModelPricingCatalog{
+		Items:       items,
+		LastUpdated: s.lastUpdated,
+	}
+}
+
+func publicPricingProviderLabel(provider string) (string, bool) {
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case "anthropic":
+		return "anthropic", true
+	case "google", "gemini":
+		return "gemini", true
+	case "openai":
+		return "openai", true
+	default:
+		return "", false
+	}
+}
+
+func perTokenToPerMillionPtr(value float64) *float64 {
+	if value <= 0 {
+		return nil
+	}
+	converted := value * 1_000_000
+	return &converted
+}
+
+func positiveFloatPtr(value float64) *float64 {
+	if value <= 0 {
+		return nil
+	}
+	return &value
 }
 
 // isNumeric 检查字符串是否为纯数字

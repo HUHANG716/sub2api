@@ -84,6 +84,8 @@ func RegisterUserRoutes(
 			usage.GET("", h.Usage.List)
 			usage.POST("/image-estimate", h.Usage.ImageEstimate)
 			usage.POST("/image-playground-events", h.Usage.RecordImagePlaygroundEvents)
+			usage.GET("/errors", h.Usage.ListErrors)
+			usage.GET("/errors/:id", h.Usage.GetErrorDetail)
 			usage.GET("/:id", h.Usage.GetByID)
 			usage.GET("/stats", h.Usage.Stats)
 			// User dashboard endpoints
