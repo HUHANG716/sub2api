@@ -93,8 +93,10 @@ describe('DocsView', () => {
     expect(wrapper.find('#models').exists()).toBe(false)
     expect(wrapper.find('#legal').exists()).toBe(false)
     expect(wrapper.find('.docs-endpoint-panel p').exists()).toBe(false)
+    expect(wrapper.get('.docs-hero-actions a[href="/model-pricing"]').text()).toContain('查看模型定价')
     expect(wrapper.get('.docs-related-links a[href="/keys"]').text()).toContain('我的密钥')
     expect(wrapper.get('.docs-related-links a[href="/subscriptions"]').text()).toContain('订阅套餐')
+    expect(wrapper.get('.docs-related-links a[href="/model-pricing"]').text()).toContain('模型定价')
     expect(wrapper.get('.docs-related-links a[href="/usage"]').text()).toContain('用量记录')
     expect(wrapper.find('.docs-related-links a[href="/available-channels"]').exists()).toBe(false)
     expect(wrapper.find('.docs-related-links a[href="/monitor"]').exists()).toBe(false)
@@ -510,7 +512,7 @@ describe('DocsView', () => {
     expect(routerSource).toContain("path: '/docs'")
     expect(routerSource).toContain("name: 'Docs'")
     expect(routerSource).toContain("component: () => import('@/views/DocsView.vue')")
-    expect(routerSource).toContain("const BACKEND_MODE_ALLOWED_PATHS = ['/login', '/key-usage', '/setup', '/payment/result', '/payment/airwallex', '/legal', '/docs']")
+    expect(routerSource).toContain("const BACKEND_MODE_ALLOWED_PATHS = ['/login', '/key-usage', '/setup', '/payment/result', '/payment/airwallex', '/legal', '/docs', '/model-pricing']")
   })
 
   it('uses restrained docs layout styles instead of landing-page marketing patterns', () => {
