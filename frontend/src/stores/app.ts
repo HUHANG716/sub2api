@@ -358,10 +358,12 @@ export const useAppStore = defineStore('app', () => {
         channel_monitor_default_interval_seconds: 60,
         available_channels_enabled: false,
         risk_control_enabled: false,
+        service_quota_enabled: false,
         affiliate_enabled: false,
         image_playground_group_id: 0,
         image_playground_responses_group_id: 0,
         global_discount: null,
+        allow_user_view_error_requests: false,
       }
     }
 
