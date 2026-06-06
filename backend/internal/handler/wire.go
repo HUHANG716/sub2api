@@ -17,6 +17,10 @@ func ProvidePublicModelPricingCatalogProvider(pricing *service.PricingService) p
 	return pricing
 }
 
+func ProvidePublicAvailableChannelProvider(channels *service.ChannelService) publicAvailableChannelProvider {
+	return channels
+}
+
 // ProvideAdminHandlers creates the AdminHandlers struct
 func ProvideAdminHandlers(
 	dashboardHandler *admin.DashboardHandler,
@@ -167,6 +171,7 @@ var ProviderSet = wire.NewSet(
 	NewPublicModelPricingHandler,
 	ProvideSQLDBSlice,
 	ProvidePublicModelPricingCatalogProvider,
+	ProvidePublicAvailableChannelProvider,
 
 	// Admin handlers
 	admin.NewDashboardHandler,

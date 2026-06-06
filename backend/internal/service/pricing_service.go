@@ -81,19 +81,33 @@ type PublicModelPricingItem struct {
 	Provider                  string   `json:"provider"`
 	Model                     string   `json:"model"`
 	Mode                      string   `json:"mode"`
+	BillingMode               string   `json:"billing_mode"`
+	GroupIDs                  []int64  `json:"group_ids,omitempty"`
 	InputPricePerMillion      *float64 `json:"input_price_per_million"`
 	OutputPricePerMillion     *float64 `json:"output_price_per_million"`
 	CacheWritePricePerMillion *float64 `json:"cache_write_price_per_million"`
 	CacheReadPricePerMillion  *float64 `json:"cache_read_price_per_million"`
 	ImageOutputPrice          *float64 `json:"image_output_price"`
+	PerRequestPrice           *float64 `json:"per_request_price"`
 	SupportsPromptCaching     bool     `json:"supports_prompt_caching"`
 	SupportsServiceTier       bool     `json:"supports_service_tier"`
 }
 
+// PublicModelPricingGroup is a public group summary used by the model catalog.
+type PublicModelPricingGroup struct {
+	ID               int64   `json:"id"`
+	Name             string  `json:"name"`
+	Platform         string  `json:"platform"`
+	RateMultiplier   float64 `json:"rate_multiplier"`
+	SubscriptionType string  `json:"subscription_type"`
+	IsExclusive      bool    `json:"is_exclusive"`
+}
+
 // PublicModelPricingCatalog is the public pricing response payload.
 type PublicModelPricingCatalog struct {
-	Items       []PublicModelPricingItem `json:"items"`
-	LastUpdated time.Time                `json:"last_updated"`
+	Groups      []PublicModelPricingGroup `json:"groups,omitempty"`
+	Items       []PublicModelPricingItem  `json:"items"`
+	LastUpdated time.Time                 `json:"last_updated"`
 }
 
 // PricingRemoteClient 远程价格数据获取接口
