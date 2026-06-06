@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -290,4 +291,104 @@ func TestListModelNamesByProvider_EmptyCatalog(t *testing.T) {
 	got := svc.ListModelNamesByProvider("openai")
 	require.NotNil(t, got)
 	require.Empty(t, got)
+}
+
+// ---------------------------------------------------------------------------
+// ListPublicModelPricing
+// ---------------------------------------------------------------------------
+
+func TestListPublicModelPricing_FiltersConvertsAndSortsCatalog(t *testing.T) {
+	lastUpdated := time.Date(2026, 6, 6, 10, 30, 0, 0, time.UTC)
+	svc := &PricingService{
+		pricingData: map[string]*LiteLLMModelPricing{
+			"gpt-5.4": {
+				LiteLLMProvider:             "openai",
+				Mode:                        "chat",
+				InputCostPerToken:           2.5e-6,
+				OutputCostPerToken:          15e-6,
+				CacheCreationInputTokenCost: 2.5e-6,
+				CacheReadInputTokenCost:     0.25e-6,
+				SupportsPromptCaching:       true,
+				SupportsServiceTier:         true,
+			},
+			"claude-sonnet-4": {
+				LiteLLMProvider:       "anthropic",
+				Mode:                  "chat",
+				InputCostPerToken:     3e-6,
+				OutputCostPerToken:    15e-6,
+				SupportsServiceTier:   false,
+				SupportsPromptCaching: true,
+			},
+			"gemini-2.5-pro": {
+				LiteLLMProvider:    "google",
+				Mode:               "chat",
+				InputCostPerToken:  1.25e-6,
+				OutputCostPerToken: 10e-6,
+			},
+			"gemini-2.5-flash": {
+				LiteLLMProvider:    "gemini",
+				Mode:               "chat",
+				InputCostPerToken:  0.3e-6,
+				OutputCostPerToken: 2.5e-6,
+			},
+			"mistral-large": {
+				LiteLLMProvider:    "mistral",
+				InputCostPerToken:  2e-6,
+				OutputCostPerToken: 6e-6,
+			},
+		},
+		lastUpdated: lastUpdated,
+	}
+
+	got := svc.ListPublicModelPricing()
+
+	require.Equal(t, lastUpdated, got.LastUpdated)
+	require.Len(t, got.Items, 4)
+	require.Equal(t, "anthropic", got.Items[0].Provider)
+	require.Equal(t, "claude-sonnet-4", got.Items[0].Model)
+	require.Equal(t, "gemini", got.Items[1].Provider)
+	require.Equal(t, "gemini-2.5-flash", got.Items[1].Model)
+	require.Equal(t, "gemini", got.Items[2].Provider)
+	require.Equal(t, "gemini-2.5-pro", got.Items[2].Model)
+	require.Equal(t, "openai", got.Items[3].Provider)
+	require.Equal(t, "gpt-5.4", got.Items[3].Model)
+
+	openai := got.Items[3]
+	require.NotNil(t, openai.InputPricePerMillion)
+	require.InDelta(t, 2.5, *openai.InputPricePerMillion, 1e-12)
+	require.NotNil(t, openai.OutputPricePerMillion)
+	require.InDelta(t, 15.0, *openai.OutputPricePerMillion, 1e-12)
+	require.NotNil(t, openai.CacheWritePricePerMillion)
+	require.InDelta(t, 2.5, *openai.CacheWritePricePerMillion, 1e-12)
+	require.NotNil(t, openai.CacheReadPricePerMillion)
+	require.InDelta(t, 0.25, *openai.CacheReadPricePerMillion, 1e-12)
+	require.Nil(t, openai.ImageOutputPrice)
+	require.True(t, openai.SupportsPromptCaching)
+	require.True(t, openai.SupportsServiceTier)
+}
+
+func TestListPublicModelPricing_UsesNilForMissingOptionalPrices(t *testing.T) {
+	svc := &PricingService{
+		pricingData: map[string]*LiteLLMModelPricing{
+			"gpt-image-2": {
+				LiteLLMProvider:    "openai",
+				Mode:               "image_generation",
+				OutputCostPerImage:  0.04,
+				InputCostPerToken:   0,
+				OutputCostPerToken:  0,
+				SupportsServiceTier: false,
+			},
+		},
+	}
+
+	got := svc.ListPublicModelPricing()
+
+	require.Len(t, got.Items, 1)
+	item := got.Items[0]
+	require.Nil(t, item.InputPricePerMillion)
+	require.Nil(t, item.OutputPricePerMillion)
+	require.Nil(t, item.CacheWritePricePerMillion)
+	require.Nil(t, item.CacheReadPricePerMillion)
+	require.NotNil(t, item.ImageOutputPrice)
+	require.InDelta(t, 0.04, *item.ImageOutputPrice, 1e-12)
 }
