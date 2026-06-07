@@ -32,6 +32,17 @@ const messages: Record<string, string> = {
   'usage.original': 'Original',
   'usage.paidAmount': 'Paid',
   'usage.billed': 'Billed',
+  'usage.totalRequests': 'Total Requests',
+  'usage.totalTokens': 'Total Tokens',
+  'usage.inSelectedRange': 'In selected range',
+  'usage.in': 'in',
+  'usage.out': 'out',
+  'usage.cacheHit': 'Cache hit',
+  'usage.cacheCreate': 'Cache create',
+  'usage.cacheHitRate': 'Cache hit rate',
+  'usage.totalCost': 'Total Cost',
+  'usage.actualCost': 'Actual',
+  'usage.standardCost': 'Standard',
   'usage.allApiKeys': 'All API Keys',
   'usage.apiKeyFilter': 'API Key',
   'usage.model': 'Model',
@@ -132,6 +143,53 @@ describe('user UsageView tooltip', () => {
       observe() {}
       disconnect() {}
     }
+  })
+
+  it('keeps cache metrics out of the top token summary card', async () => {
+    query.mockResolvedValue({
+      items: [],
+      total: 0,
+      pages: 0,
+    })
+    getStatsByDateRange.mockResolvedValue({
+      total_requests: 1,
+      total_tokens: 73410000,
+      total_input_tokens: 69410000,
+      total_output_tokens: 4360000,
+      total_cache_read_tokens: 123456,
+      total_cache_creation_tokens: 7890,
+      total_cost: 0.1,
+      total_actual_cost: 0.1,
+      avg_duration_ms: 1,
+    })
+    list.mockResolvedValue({ items: [] })
+
+    const wrapper = mount(UsageView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          TablePageLayout: TablePageLayoutStub,
+          Pagination: true,
+          EmptyState: true,
+          Select: true,
+          DateRangePicker: true,
+          DataTable: DataTableStub,
+          Icon: true,
+          Teleport: true,
+        },
+      },
+    })
+
+    await flushPromises()
+    await nextTick()
+
+    const text = wrapper.text()
+    expect(text).toContain('Total Tokens')
+    expect(text).toContain('in 69.41M')
+    expect(text).toContain('out 4.36M')
+    expect(text).not.toContain('Cache hit')
+    expect(text).not.toContain('Cache create')
+    expect(text).not.toContain('Cache hit rate')
   })
 
   it('shows fast service tier and unit prices in user tooltip', async () => {
