@@ -23,7 +23,6 @@ function isInstalledPwa() {
 const NAV_ITEMS = [
   { mode: 'gallery', label: '画廊' },
   { mode: 'templates', label: '模板' },
-  { mode: 'agent', label: 'Agent' },
 ] as const
 
 export default function Header() {
@@ -322,7 +321,7 @@ export default function Header() {
           </div>
         </div>
         {!productEmbed && <div className={`safe-area-x sm:hidden overflow-hidden transition-all duration-300 ease-in-out ${appMode === 'gallery' && scrollDirection === 'down' ? 'max-h-0 opacity-0 pb-0' : 'max-h-20 opacity-100 pb-2'}`}>
-          <div className="grid grid-cols-3 gap-1 rounded-xl border border-gray-200 dark:border-white/[0.08] bg-gray-100/70 dark:bg-white/[0.04] p-1 mx-2">
+          <div className="grid grid-cols-2 gap-1 rounded-xl border border-gray-200 dark:border-white/[0.08] bg-gray-100/70 dark:bg-white/[0.04] p-1 mx-2">
             {NAV_ITEMS.map((item) => (
               <button
                 key={item.mode}

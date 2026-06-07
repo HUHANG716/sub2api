@@ -750,7 +750,8 @@ function mergePersistedState(persistedState: unknown, currentState: AppState): A
     typeof persisted.activeAgentConversationId === 'string' && (!hasPersistedAgentConversations || agentConversations.some((conversation) => conversation.id === persisted.activeAgentConversationId))
       ? persisted.activeAgentConversationId
       : agentConversations[0]?.id ?? null
-  const appMode = persisted.appMode === 'agent' || persisted.appMode === 'templates' ? persisted.appMode : 'gallery'
+  const persistedAppMode = persisted.appMode === 'agent' || persisted.appMode === 'templates' ? persisted.appMode : 'gallery'
+  const appMode = persistedAppMode === 'templates' ? 'templates' : 'gallery'
   const galleryInputDraft = settings.persistInputOnRestart
     ? normalizeAgentInputDraft(persisted.galleryInputDraft ?? {
         prompt: persisted.prompt,
@@ -763,7 +764,7 @@ function mergePersistedState(persistedState: unknown, currentState: AppState): A
     ? normalizeAgentInputDrafts(persisted.agentInputDrafts, agentConversations)
     : normalizeAgentInputDraftsByKey(persisted.agentInputDrafts)
   let agentInputDrafts = cleanStaleAgentInputDrafts(normalizedAgentInputDrafts, activeAgentConversationId)
-  if (appMode === 'agent' && activeAgentConversationId && !agentInputDrafts[activeAgentConversationId] && settings.persistInputOnRestart && typeof persisted.prompt === 'string') {
+  if (persistedAppMode === 'agent' && activeAgentConversationId && !agentInputDrafts[activeAgentConversationId] && settings.persistInputOnRestart && typeof persisted.prompt === 'string') {
     agentInputDrafts = {
       ...agentInputDrafts,
       [activeAgentConversationId]: normalizeAgentInputDraft({
@@ -774,9 +775,6 @@ function mergePersistedState(persistedState: unknown, currentState: AppState): A
       }, Date.now()),
     }
   }
-  const restoredAgentDraft = appMode === 'agent' && activeAgentConversationId
-    ? agentInputDrafts[activeAgentConversationId] ?? null
-    : null
   const favoriteCollections = Array.isArray(persisted.favoriteCollections)
     ? ensureDefaultFavoriteCollection(normalizeFavoriteCollections(persisted.favoriteCollections))
     : currentState.favoriteCollections
@@ -800,11 +798,15 @@ function mergePersistedState(persistedState: unknown, currentState: AppState): A
     supportPromptDismissed: Boolean(persisted.supportPromptDismissed),
     supportPromptOpen: Boolean(persisted.supportPromptOpen),
     supportPromptSkippedForImportedData: Boolean(persisted.supportPromptSkippedForImportedData),
-    prompt: restoredAgentDraft ? restoredAgentDraft.prompt : galleryInputDraft?.prompt ?? '',
-    inputImages: restoredAgentDraft ? restoredAgentDraft.inputImages : galleryInputDraft?.inputImages ?? [],
-    maskDraft: restoredAgentDraft ? restoredAgentDraft.maskDraft : galleryInputDraft?.maskDraft ?? null,
-    maskEditorImageId: restoredAgentDraft ? restoredAgentDraft.maskEditorImageId : galleryInputDraft?.maskEditorImageId ?? null,
+    prompt: galleryInputDraft?.prompt ?? '',
+    inputImages: galleryInputDraft?.inputImages ?? [],
+    maskDraft: galleryInputDraft?.maskDraft ?? null,
+    maskEditorImageId: galleryInputDraft?.maskEditorImageId ?? null,
   }
+}
+
+export function mergePersistedStateForTest(persistedState: unknown, currentState: AppState): AppState {
+  return mergePersistedState(persistedState, currentState)
 }
 
 // ===== Store 类型 =====

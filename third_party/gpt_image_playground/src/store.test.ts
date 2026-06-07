@@ -97,7 +97,7 @@ vi.mock('./lib/agentApi', () => ({
 }))
 import { clearAgentConversations, clearImages, clearTasks, getAllAgentConversations, getAllTasks, putAgentConversation, putImage, putTask as putDbTask } from './lib/db'
 import { callAgentResponsesApi, callBatchImageSingle } from './lib/agentApi'
-import { addTasksToFavoriteCollections, cleanStaleAgentInputDrafts, deleteAgentRoundFromConversation, deleteFavoriteCollection, editOutputs, getActiveAgentRounds, getErrorToastMessage, getPersistedState, getTaskApiProfile, importData, initStore, markInterruptedOpenAIRunningTasks, migratePersistedState, regenerateAgentAssistantMessage, remapAgentRoundMentionsForPathChange, removeTask, reuseConfig, submitAgentMessage, submitTask, useStore } from './store'
+import { addTasksToFavoriteCollections, cleanStaleAgentInputDrafts, deleteAgentRoundFromConversation, deleteFavoriteCollection, editOutputs, getActiveAgentRounds, getErrorToastMessage, getPersistedState, getTaskApiProfile, importData, initStore, markInterruptedOpenAIRunningTasks, mergePersistedStateForTest, migratePersistedState, regenerateAgentAssistantMessage, remapAgentRoundMentionsForPathChange, removeTask, reuseConfig, submitAgentMessage, submitTask, useStore } from './store'
 
 const imageA = { id: 'image-a', dataUrl: 'data:image/png;base64,a' }
 const imageB = { id: 'image-b', dataUrl: 'data:image/png;base64,b' }
@@ -509,11 +509,11 @@ describe('agent conversation persistence', () => {
     expect(stored.map((conversation) => conversation.id)).toEqual(['legacy-conversation', 'early-conversation'])
   })
 
-  it('restores active conversation and draft when localStorage no longer stores conversations', async () => {
+  it('loads active conversation and draft without reopening hidden agent mode from persisted state', () => {
     const storedConversation = agentConversation({ id: 'stored-conversation', createdAt: 1, updatedAt: 1 })
-    useStore.setState({
+    const state = mergePersistedStateForTest({
       appMode: 'agent',
-      agentConversations: [],
+      agentConversations: [storedConversation],
       activeAgentConversationId: storedConversation.id,
       agentInputDrafts: {
         [storedConversation.id]: {
@@ -528,16 +528,13 @@ describe('agent conversation persistence', () => {
       inputImages: [],
       maskDraft: null,
       maskEditorImageId: null,
-    })
-    await putAgentConversation(storedConversation)
+    }, useStore.getState())
 
-    await initStore()
-
-    const state = useStore.getState()
     expect(state.agentConversations.map((conversation) => conversation.id)).toEqual(['stored-conversation'])
     expect(state.activeAgentConversationId).toBe('stored-conversation')
     expect(state.agentInputDrafts['stored-conversation']?.prompt).toBe('未发送草稿')
-    expect(state.prompt).toBe('未发送草稿')
+    expect(state.appMode).toBe('gallery')
+    expect(state.prompt).toBe('')
   })
 
   it('strips generated image payloads when migrating old persisted state', () => {
