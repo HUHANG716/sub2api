@@ -11,7 +11,7 @@ import { useNavigationLoadingState } from '@/composables/useNavigationLoading'
 import { useRoutePrefetch } from '@/composables/useRoutePrefetch'
 import { getSetupStatus } from '@/api/setup'
 import { resolveCompletedSetupRedirectPath } from './setupRedirect'
-import { resolveDocumentTitle } from './title'
+import { applyRouteSeo } from './seo'
 
 /**
  * Route definitions with lazy loading
@@ -35,7 +35,27 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/HomeView.vue'),
     meta: {
       requiresAuth: false,
-      title: 'Home'
+      title: 'Home',
+      seoTitle: 'OpenAI Claude Gemini API 中转站',
+      seoDescription: 'Hahacode 提供 OpenAI、Claude、Gemini 等 AI 模型的统一 API 网关，支持国内访问、OpenAI 兼容接口、Claude Code、Cursor、Codex 与 Gemini CLI 快速接入。',
+      seoKeywords: [
+        'OpenAI API 中转站',
+        'Claude API 中转站',
+        'Gemini API 中转站',
+        'AI API Gateway',
+        '国内 AI API',
+        'OpenAI 兼容接口',
+      ],
+      canonicalPath: '/home',
+      structuredData: {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'Hahacode',
+        applicationCategory: 'DeveloperApplication',
+        operatingSystem: 'Web',
+        description: 'AI API Gateway for OpenAI, Claude and Gemini compatible API access.',
+        url: 'https://code.hahacode.top/home',
+      },
     }
   },
   {
@@ -45,7 +65,24 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: false,
       title: 'Docs',
-      titleKey: 'nav.docs'
+      titleKey: 'nav.docs',
+      seoTitle: 'Claude Code Cursor Codex API 配置文档',
+      seoDescription: '查看 Hahacode 在 Claude Code、Cursor、Codex、Gemini CLI 等工具中配置 API Base URL 与 API Key 的快速教程。',
+      seoKeywords: [
+        'Claude Code API 配置',
+        'Cursor OpenAI API',
+        'Codex API Base URL',
+        'Gemini CLI API',
+        'OpenAI API Base URL',
+      ],
+      canonicalPath: '/docs',
+      structuredData: {
+        '@context': 'https://schema.org',
+        '@type': 'TechArticle',
+        headline: 'Claude Code Cursor Codex API 配置文档',
+        description: 'Hahacode API Base URL and API Key setup guide for AI coding tools.',
+        url: 'https://code.hahacode.top/docs',
+      },
     }
   },
   {
@@ -54,7 +91,24 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/public/ModelPricingView.vue'),
     meta: {
       requiresAuth: false,
-      title: 'Model Pricing'
+      title: 'Model Pricing',
+      seoTitle: 'OpenAI Claude Gemini 模型价格与 API 计费查询',
+      seoDescription: '浏览 Hahacode 支持的 OpenAI、Claude、Gemini 等模型目录、供应商分组、价格单位和计费字段，快速选择可用 AI API 模型。',
+      seoKeywords: [
+        'OpenAI API 价格',
+        'Claude API 价格',
+        'Gemini API 价格',
+        'AI 模型价格',
+        '模型计费查询',
+      ],
+      canonicalPath: '/model-pricing',
+      structuredData: {
+        '@context': 'https://schema.org',
+        '@type': 'Dataset',
+        name: 'Hahacode AI Model Pricing',
+        description: 'Public AI model pricing catalog for OpenAI, Claude and Gemini compatible API access.',
+        url: 'https://code.hahacode.top/model-pricing',
+      },
     }
   },
   {
@@ -771,13 +825,12 @@ router.beforeEach(async (to, _from, next) => {
     const menuItem = publicItems.find((item) => item.id === id)
       ?? (authStore.isAdmin ? adminSettingsStore.customMenuItems.find((item) => item.id === id) : undefined)
     if (menuItem?.label) {
-      const siteName = appStore.siteName || 'Hahacode'
-      document.title = `${menuItem.label} - ${siteName}`
+      applyRouteSeo({ title: menuItem.label, canonicalPath: to.path }, appStore.siteName)
     } else {
-      document.title = resolveDocumentTitle(to.meta.title, appStore.siteName, to.meta.titleKey as string)
+      applyRouteSeo(to.meta, appStore.siteName)
     }
   } else {
-    document.title = resolveDocumentTitle(to.meta.title, appStore.siteName, to.meta.titleKey as string)
+    applyRouteSeo(to.meta, appStore.siteName)
   }
 
   // Check if route requires authentication

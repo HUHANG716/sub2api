@@ -4,6 +4,7 @@ import App from './App.vue'
 import router from './router'
 import i18n, { initI18n } from './i18n'
 import { useAppStore } from '@/stores/app'
+import { applyRouteSeo } from '@/router/seo'
 import { initThemeClass } from '@/utils/themeBootstrap'
 import './style.css'
 
@@ -22,7 +23,7 @@ async function bootstrap() {
 
   // Set document title immediately after config is loaded
   if (appStore.siteName && appStore.siteName !== 'Hahacode') {
-    document.title = `${appStore.siteName} - AI API Gateway`
+    applyRouteSeo({ seoTitle: 'OpenAI Claude Gemini API 中转站', canonicalPath: '/home' }, appStore.siteName)
   }
 
   await initI18n()

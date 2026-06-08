@@ -3,7 +3,7 @@ import { RouterView, useRouter, useRoute } from 'vue-router'
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import Toast from '@/components/common/Toast.vue'
 import NavigationProgress from '@/components/common/NavigationProgress.vue'
-import { resolveDocumentTitle } from '@/router/title'
+import { applyRouteSeo } from '@/router/seo'
 import AnnouncementPopup from '@/components/common/AnnouncementPopup.vue'
 import ImagePlaygroundView from '@/views/user/ImagePlaygroundView.vue'
 import { clearStoredImagePlaygroundKey } from '@/views/user/imagePlayground'
@@ -141,8 +141,8 @@ onMounted(async () => {
   // Load public settings into appStore (will be cached for other components)
   await appStore.fetchPublicSettings()
 
-  // Re-resolve document title now that siteName is available
-  document.title = resolveDocumentTitle(route.meta.title, appStore.siteName, route.meta.titleKey as string)
+  // Re-resolve SEO tags now that siteName is available
+  applyRouteSeo(route.meta, appStore.siteName)
 })
 </script>
 

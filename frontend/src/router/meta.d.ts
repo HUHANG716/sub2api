@@ -66,6 +66,31 @@ declare module 'vue-router' {
     descriptionKey?: string
 
     /**
+     * Search-optimized page title used for public pages
+     */
+    seoTitle?: string
+
+    /**
+     * Search result and social preview description
+     */
+    seoDescription?: string
+
+    /**
+     * Search keyword hints for public pages
+     */
+    seoKeywords?: string[]
+
+    /**
+     * Canonical path for the route
+     */
+    canonicalPath?: string
+
+    /**
+     * JSON-LD structured data for public pages
+     */
+    structuredData?: Record<string, unknown>
+
+    /**
      * Whether the route should use a flush workspace layout inside AppLayout
      * @default false
      */

@@ -22,6 +22,7 @@ import (
 const (
 	// NonceHTMLPlaceholder is the placeholder for nonce in HTML script tags
 	NonceHTMLPlaceholder    = "__CSP_NONCE_VALUE__"
+	defaultSEOTitle         = "OpenAI Claude Gemini API 中转站"
 	imagePlaygroundEmbedCSP = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; frame-src 'self'; worker-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
 	imagePlaygroundShellCSP = "default-src 'self'; script-src 'self' 'nonce-__CSP_NONCE_VALUE__' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://*.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https:; frame-src 'self' https://challenges.cloudflare.com https://*.stripe.com https://pay.ldxp.cn; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
 )
@@ -328,7 +329,7 @@ func injectSiteTitle(html, settingsJSON []byte) []byte {
 		return html
 	}
 
-	newTitle := []byte("<title>" + cfg.SiteName + " - AI API Gateway</title>")
+	newTitle := []byte("<title>" + defaultSEOTitle + " - " + cfg.SiteName + "</title>")
 	var buf bytes.Buffer
 	buf.Write(html[:titleStart])
 	buf.Write(newTitle)

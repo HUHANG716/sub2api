@@ -30,7 +30,7 @@ func TestInjectSiteTitle(t *testing.T) {
 
 		result := injectSiteTitle(html, settingsJSON)
 
-		assert.Contains(t, string(result), "<title>MyCustomSite - AI API Gateway</title>")
+		assert.Contains(t, string(result), "<title>OpenAI Claude Gemini API 中转站 - MyCustomSite</title>")
 		assert.NotContains(t, string(result), "Sub2API")
 	})
 
@@ -91,7 +91,7 @@ func TestInjectSiteTitle(t *testing.T) {
 		assert.Contains(t, string(result), `<meta charset="UTF-8">`)
 		assert.Contains(t, string(result), `<script src="app.js"></script>`)
 		assert.Contains(t, string(result), `<div id="app"></div>`)
-		assert.Contains(t, string(result), "<title>TestSite - AI API Gateway</title>")
+		assert.Contains(t, string(result), "<title>OpenAI Claude Gemini API 中转站 - TestSite</title>")
 	})
 }
 
@@ -401,7 +401,7 @@ func TestFrontendServer_ServeIndexHTML(t *testing.T) {
 		body := w.Body.String()
 		assert.Contains(t, body, `override shell`)
 		assert.Contains(t, body, `<script nonce="override-nonce">window.__APP_CONFIG__={"site_name":"Override Site"};</script>`)
-		assert.Contains(t, body, `<title>Override Site - AI API Gateway</title>`)
+		assert.Contains(t, body, `<title>OpenAI Claude Gemini API 中转站 - Override Site</title>`)
 	})
 
 	t.Run("injects_empty_config_for_override_index_when_settings_fail", func(t *testing.T) {
