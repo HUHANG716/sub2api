@@ -31,6 +31,28 @@ describe('AppSidebar header styles', () => {
     expect(sidebarHeaderBlockMatch?.[0]).not.toContain('@apply overflow-hidden;')
     expect(sidebarBrandBlockMatch?.[0]).not.toContain('overflow: hidden;')
   })
+
+  it('keeps the logo visible when the sidebar is collapsed', () => {
+    const logoTemplateBlock = componentSource.match(/<div\s+class="sidebar-logo[\s\S]*?<\/div>/)?.[0] ?? ''
+    const logoCollapsedBlock = componentSource.match(/\.sidebar-logo-collapsed\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(logoCollapsedBlock).toContain('max-width: 2.25rem')
+    expect(logoCollapsedBlock).toContain('opacity: 1')
+    expect(logoCollapsedBlock).not.toContain('pointer-events: none')
+    expect(logoTemplateBlock).not.toContain('aria-hidden')
+  })
+
+  it('pins the collapse control across the sidebar right border', () => {
+    const collapseButtonBlock = componentSource.match(/\.sidebar-collapse-button\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const collapseButtonHoverBlock = componentSource.match(/\.sidebar-collapse-button:hover\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(collapseButtonBlock).toContain('position: absolute')
+    expect(collapseButtonBlock).toContain('right: 0')
+    expect(collapseButtonBlock).toContain('bottom: 0')
+    expect(collapseButtonBlock).toContain('transform: translate(50%, 50%)')
+    expect(collapseButtonBlock).toContain('border: 1px solid var(--theme-border)')
+    expect(collapseButtonHoverBlock).toContain('transform: translate(50%, calc(50% - 1px))')
+  })
 })
 
 describe('AppSidebar active state styles', () => {

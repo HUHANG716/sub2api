@@ -30,7 +30,6 @@ const { appState, createKey, deleteKey, estimateImageCost, getAvailableGroups, g
 }))
 
 const messages: Record<string, string> = {
-  'imagePlayground.kicker': 'Images API',
   'imagePlayground.title': 'Image Playground',
   'imagePlayground.description': 'Create and edit images through your OpenAI image group.',
   'imagePlayground.loading': 'Preparing image playground...',

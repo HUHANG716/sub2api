@@ -1003,7 +1003,6 @@ export default {
   },
 
   imagePlayground: {
-    kicker: 'Images API',
     title: 'Image Playground',
     description: 'Create, edit, and manage images through this site\'s OpenAI image group.',
     loading: 'Preparing image playground...',

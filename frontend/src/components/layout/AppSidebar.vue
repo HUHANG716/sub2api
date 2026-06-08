@@ -12,7 +12,6 @@
       <div
         class="sidebar-logo flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-glow"
         :class="{ 'sidebar-logo-collapsed': sidebarCollapsed }"
-        :aria-hidden="sidebarCollapsed ? 'true' : 'false'"
       >
         <img v-if="settingsLoaded" :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain" />
       </div>
@@ -30,8 +29,8 @@
         :title="sidebarCollapsed ? t('nav.expand') : t('nav.collapse')"
         :aria-label="sidebarCollapsed ? t('nav.expand') : t('nav.collapse')"
       >
-        <ChevronDoubleLeftIcon v-if="!sidebarCollapsed" class="h-5 w-5 flex-shrink-0" />
-        <ChevronDoubleRightIcon v-else class="h-5 w-5 flex-shrink-0" />
+        <ChevronDoubleLeftIcon v-if="!sidebarCollapsed" class="h-4 w-4 flex-shrink-0" />
+        <ChevronDoubleRightIcon v-else class="h-4 w-4 flex-shrink-0" />
       </button>
     </div>
 
@@ -769,11 +768,10 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-logo-collapsed {
-  max-width: 0;
-  min-width: 0;
-  opacity: 0;
-  transform: translateX(-4px);
-  pointer-events: none;
+  max-width: 2.25rem;
+  min-width: 2.25rem;
+  opacity: 1;
+  transform: none;
 }
 
 .sidebar-header-collapsed {
@@ -781,6 +779,10 @@ onBeforeUnmount(() => {
   gap: 0;
   padding-left: 0.375rem;
   padding-right: 0.375rem;
+}
+
+.sidebar-header {
+  position: relative;
 }
 
 .sidebar-brand {
@@ -810,31 +812,40 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-collapse-button {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  z-index: 2;
   display: inline-flex;
-  height: 2rem;
-  width: 2rem;
-  flex: 0 0 2rem;
+  height: 1.75rem;
+  width: 1.75rem;
+  flex: 0 0 1.75rem;
   align-items: center;
   justify-content: center;
-  border-radius: 0.75rem;
+  border: 1px solid var(--theme-border);
+  border-radius: 9999px;
+  background: var(--theme-surface);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--theme-shadow-color, rgb(15 23 42)) 12%, transparent);
   color: var(--theme-text-muted);
+  transform: translate(50%, 50%);
   transition:
     background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
     color 0.18s ease,
     transform 0.18s ease;
 }
 
 .sidebar-collapse-button:hover {
-  background: var(--theme-surface-muted);
+  border-color: color-mix(in srgb, var(--theme-primary) 28%, var(--theme-border));
+  background: color-mix(in srgb, var(--theme-surface) 78%, var(--theme-primary-soft));
   color: var(--theme-primary);
-  transform: translateY(-1px);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--theme-primary) 16%, transparent);
+  transform: translate(50%, calc(50% - 1px));
 }
 
 .sidebar-collapse-button-collapsed {
-  margin-left: 0;
-  height: 2.25rem;
-  width: 2.25rem;
-  flex-basis: 2.25rem;
+  right: 0;
 }
 
 .sidebar-link-collapsed {

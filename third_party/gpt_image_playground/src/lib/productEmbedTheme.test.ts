@@ -64,4 +64,23 @@ describe('product embed theme sync', () => {
     cleanup()
     expect(window.removeEventListener).toHaveBeenCalledWith('message', expect.any(Function))
   })
+
+  it('applies the explicit URL theme before waiting for parent messages', () => {
+    const postMessage = vi.fn()
+    const documentElement = stubDocument('https://code.example.com/image-playground')
+    vi.stubGlobal('window', {
+      location: { search: '?embed=product&theme=light' },
+      sessionStorage: { getItem: vi.fn() },
+      parent: { postMessage },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })
+
+    const cleanup = syncInitialProductEmbedTheme()
+
+    expect(documentElement.classList.contains('dark')).toBe(false)
+    expect(documentElement.dataset.theme).toBe('light')
+
+    cleanup()
+  })
 })

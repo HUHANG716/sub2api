@@ -1002,7 +1002,6 @@ export default {
   },
 
   imagePlayground: {
-    kicker: 'Images API',
     title: '生图工作台',
     description: '使用当前站点的 OpenAI 生图分组创建、编辑和管理图片。',
     loading: '正在准备生图工作台...',

@@ -3,7 +3,6 @@
     <div class="image-playground-page image-playground-page--flush" data-test="image-playground-page">
       <header class="image-playground-header image-playground-toolbar" data-test="image-playground-header">
         <div class="image-playground-title-block">
-          <span class="image-playground-kicker">{{ t('imagePlayground.kicker') }}</span>
           <h1>{{ t('imagePlayground.title') }}</h1>
           <p>{{ t('imagePlayground.description') }}</p>
         </div>
@@ -809,22 +808,6 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-.image-playground-kicker {
-  display: inline-flex;
-  min-height: 1.25rem;
-  align-items: center;
-  border: 1px solid color-mix(in srgb, var(--theme-primary) 24%, var(--theme-border));
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--theme-primary) 8%, transparent);
-  color: var(--theme-primary);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  line-height: 1;
-  padding: 0 0.5rem;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
 .image-playground-session {
   display: flex;
   min-width: 0;
@@ -992,10 +975,6 @@ onBeforeUnmount(() => {
   }
 
   .image-playground-header p {
-    display: none;
-  }
-
-  .image-playground-kicker {
     display: none;
   }
 
