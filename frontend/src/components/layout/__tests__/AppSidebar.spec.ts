@@ -53,6 +53,14 @@ describe('AppSidebar header styles', () => {
     expect(collapseButtonBlock).toContain('border: 1px solid var(--theme-border)')
     expect(collapseButtonHoverBlock).toContain('transform: translate(50%, calc(50% - 1px))')
   })
+
+  it('hides the collapse control on mobile sidebars', () => {
+    const collapseButtonBlock = componentSource.match(/\.sidebar-collapse-button\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const desktopCollapseButtonBlock = componentSource.match(/@media \(min-width: 1024px\)\s*\{[\s\S]*?\.sidebar-collapse-button\s*\{[\s\S]*?\n  \}/)?.[0] ?? ''
+
+    expect(collapseButtonBlock).toContain('display: none')
+    expect(desktopCollapseButtonBlock).toContain('display: inline-flex')
+  })
 })
 
 describe('AppSidebar active state styles', () => {

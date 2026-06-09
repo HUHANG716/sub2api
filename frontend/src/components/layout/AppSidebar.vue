@@ -816,7 +816,7 @@ onBeforeUnmount(() => {
   bottom: 0;
   right: 0;
   z-index: 2;
-  display: inline-flex;
+  display: none;
   height: 1.75rem;
   width: 1.75rem;
   flex: 0 0 1.75rem;
@@ -846,6 +846,12 @@ onBeforeUnmount(() => {
 
 .sidebar-collapse-button-collapsed {
   right: 0;
+}
+
+@media (min-width: 1024px) {
+  .sidebar-collapse-button {
+    display: inline-flex;
+  }
 }
 
 .sidebar-link-collapsed {
