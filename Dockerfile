@@ -30,6 +30,7 @@ RUN pnpm install --frozen-lockfile
 # Copy frontend source and build
 COPY frontend/ ./
 COPY third_party/gpt_image_playground /app/third_party/gpt_image_playground
+COPY docs/legal /app/docs/legal
 RUN pnpm run build
 
 # -----------------------------------------------------------------------------

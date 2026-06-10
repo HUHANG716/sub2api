@@ -56,7 +56,7 @@ describe('AppSidebar header styles', () => {
 
   it('hides the collapse control on mobile sidebars', () => {
     const collapseButtonBlock = componentSource.match(/\.sidebar-collapse-button\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
-    const desktopCollapseButtonBlock = componentSource.match(/@media \(min-width: 1024px\)\s*\{[\s\S]*?\.sidebar-collapse-button\s*\{[\s\S]*?\n  \}/)?.[0] ?? ''
+    const desktopCollapseButtonBlock = componentSource.match(/@media \(min-width: 1024px\)\s*\{[\s\S]*?\.sidebar-collapse-button\s*\{[\s\S]*?\n {2}\}/)?.[0] ?? ''
 
     expect(collapseButtonBlock).toContain('display: none')
     expect(desktopCollapseButtonBlock).toContain('display: inline-flex')
