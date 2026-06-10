@@ -129,7 +129,7 @@ func TestSettingService_GetPublicSettings_ExposesActiveGlobalDiscount(t *testing
 }
 
 func TestSettingService_GetPublicSettings_ExposesFutureGlobalDiscountWindow(t *testing.T) {
-	start := time.Now().Add(time.Hour).UTC()
+	start := time.Now().Add(time.Hour).UTC().Truncate(time.Second)
 	end := start.Add(time.Hour)
 	svc := NewSettingService(&settingPublicRepoStub{
 		values: map[string]string{
