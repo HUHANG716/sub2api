@@ -128,9 +128,9 @@ const activeGlobalDiscount = computed(() => {
 
 const discountCampaignText = computed(() => {
   const discount = activeGlobalDiscount.value
+  if (!discount) return ''
   const label = discount?.label
-  if (!label?.trim()) return ''
-  return label
+  return label?.trim() || t('usage.discountActive')
 })
 
 function toggleMobileSidebar() {

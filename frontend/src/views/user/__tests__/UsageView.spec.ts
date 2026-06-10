@@ -43,6 +43,7 @@ const messages: Record<string, string> = {
   'usage.totalCost': 'Total Cost',
   'usage.actualCost': 'Actual',
   'usage.standardCost': 'Standard',
+  'usage.discountActive': 'Global discount active',
   'usage.allApiKeys': 'All API Keys',
   'usage.apiKeyFilter': 'API Key',
   'usage.model': 'Model',
@@ -190,6 +191,51 @@ describe('user UsageView tooltip', () => {
     expect(text).not.toContain('Cache hit')
     expect(text).not.toContain('Cache create')
     expect(text).not.toContain('Cache hit rate')
+  })
+
+  it('shows active global discount banner even when the campaign label is empty', async () => {
+    query.mockResolvedValue({
+      items: [],
+      total: 0,
+      pages: 0,
+    })
+    getStatsByDateRange.mockResolvedValue({
+      total_requests: 1,
+      total_tokens: 100,
+      total_cost: 0.1,
+      total_actual_cost: 0.08,
+      total_discount_amount: 0.02,
+      avg_duration_ms: 1,
+      global_discount: {
+        enabled: true,
+        active: true,
+        discount_rate: 0.8,
+        schedule_type: 'once',
+        label: '',
+      },
+    })
+    list.mockResolvedValue({ items: [] })
+
+    const wrapper = mount(UsageView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          TablePageLayout: TablePageLayoutStub,
+          Pagination: true,
+          EmptyState: true,
+          Select: true,
+          DateRangePicker: true,
+          DataTable: DataTableStub,
+          Icon: true,
+          Teleport: true,
+        },
+      },
+    })
+
+    await flushPromises()
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Global discount active')
   })
 
   it('shows fast service tier and unit prices in user tooltip', async () => {

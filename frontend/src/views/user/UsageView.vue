@@ -92,7 +92,7 @@
         </div>
         </div>
         <div
-          v-if="activeGlobalDiscountLabel"
+          v-if="hasActiveGlobalDiscount"
           class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-900/10 dark:text-emerald-200"
         >
           {{ activeGlobalDiscountLabel }}
@@ -815,10 +815,21 @@ const actualRateMultiplier = (row: Pick<UsageLog, 'actual_cost' | 'total_cost'> 
   return Number.isFinite(multiplier) ? multiplier : null
 }
 
-const activeGlobalDiscountLabel = computed(() => {
+const hasActiveGlobalDiscount = computed(() => {
   const discount = usageStats.value?.global_discount
-  if (!discount?.active) return ''
-  return discount.label?.trim() || ''
+  return Boolean(
+    discount?.active
+    && discount.enabled
+    && Number.isFinite(discount.discount_rate)
+    && discount.discount_rate > 0
+    && discount.discount_rate < 1
+  )
+})
+
+const activeGlobalDiscountLabel = computed(() => {
+  if (!hasActiveGlobalDiscount.value) return ''
+  const label = usageStats.value?.global_discount?.label?.trim()
+  return label || t('usage.discountActive')
 })
 
 const formatUserAgent = (ua: string): string => {

@@ -15,6 +15,9 @@ const i18n = createI18n({
         dashboard: '仪表盘',
         buySubscription: '充值/订阅',
         docs: '文档'
+      },
+      usage: {
+        discountActive: '全局折扣进行中'
       }
     }
   }
@@ -95,6 +98,26 @@ describe('AppHeader discount campaign', () => {
     const wrapper = mountHeader()
 
     expect(wrapper.get('.header-discount-campaign span').text()).toBe('🎁  周末全天享  9 折计费  🎁')
+  })
+
+  it('falls back to default copy when the active discount has no label', () => {
+    setActivePinia(createPinia())
+    const appStore = useAppStore()
+    const authStore = useAuthStore()
+    authStore.user = { id: 1, username: 'tester', email: 'tester@example.com', role: 'user' } as any
+    appStore.cachedPublicSettings = {
+      global_discount: {
+        enabled: true,
+        active: true,
+        discount_rate: 0.8,
+        schedule_type: 'once',
+        label: ''
+      }
+    } as any
+
+    const wrapper = mountHeader()
+
+    expect(wrapper.get('.header-discount-campaign').text()).toContain('usage.discountActive')
   })
 
   it('hides the campaign copy when the discount is inactive', () => {
