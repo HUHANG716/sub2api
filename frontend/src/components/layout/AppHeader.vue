@@ -158,11 +158,18 @@ function clearDiscountBoundaryTimer() {
 
 function scheduleDiscountBoundaryRefresh(discount?: GlobalDiscountRuntime | null) {
   clearDiscountBoundaryTimer()
-  if (!discount?.active || !discount.ends_at) return
+  if (!discount) return
 
-  const end = new Date(discount.ends_at).getTime()
-  if (!Number.isFinite(end)) return
-  const delay = Math.max(0, end - Date.now() + 1)
+  const now = Date.now()
+  const start = discount.starts_at ? new Date(discount.starts_at).getTime() : Number.NaN
+  const end = discount.ends_at ? new Date(discount.ends_at).getTime() : Number.NaN
+  const boundary = Number.isFinite(start) && start > now
+    ? start
+    : Number.isFinite(end) && end > now
+      ? end
+      : Number.NaN
+  if (!Number.isFinite(boundary)) return
+  const delay = Math.max(0, boundary - now + 1)
   discountBoundaryTimer = setTimeout(() => {
     nowMs.value = Date.now()
     void appStore.fetchPublicSettings(true)

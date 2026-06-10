@@ -91,6 +91,61 @@ func TestGlobalDiscountRuntimeDailySchedule(t *testing.T) {
 	}
 }
 
+func TestGlobalDiscountRuntimeExposesFutureOnceWindow(t *testing.T) {
+	now := time.Date(2026, 6, 10, 10, 0, 0, 0, time.UTC)
+	start := now.Add(30 * time.Minute)
+	end := now.Add(90 * time.Minute)
+
+	runtime := globalDiscountRuntime(GlobalDiscountSettings{
+		Enabled: true,
+		Rules: []GlobalDiscountRule{{
+			Enabled:      true,
+			DiscountRate: 0.8,
+			ScheduleType: "once",
+			StartsAt:     start.Format(time.RFC3339),
+			EndsAt:       end.Format(time.RFC3339),
+		}},
+	}, now)
+
+	if runtime.Active {
+		t.Fatalf("Active = true, want false before the window")
+	}
+	if runtime.StartsAt == nil || !runtime.StartsAt.Equal(start) {
+		t.Fatalf("StartsAt = %v, want %v", runtime.StartsAt, start)
+	}
+	if runtime.EndsAt == nil || !runtime.EndsAt.Equal(end) {
+		t.Fatalf("EndsAt = %v, want %v", runtime.EndsAt, end)
+	}
+}
+
+func TestGlobalDiscountRuntimeExposesFutureDailyWindow(t *testing.T) {
+	loc := timezone.Location()
+	now := time.Date(2026, 6, 10, 10, 0, 0, 0, loc)
+
+	runtime := globalDiscountRuntime(GlobalDiscountSettings{
+		Enabled: true,
+		Rules: []GlobalDiscountRule{{
+			Enabled:          true,
+			DiscountRate:     0.8,
+			ScheduleType:     "daily",
+			RecurringStartAt: "11:00",
+			RecurringEndAt:   "12:00",
+		}},
+	}, now)
+
+	wantStart := time.Date(2026, 6, 10, 11, 0, 0, 0, loc).UTC()
+	wantEnd := time.Date(2026, 6, 10, 12, 0, 0, 0, loc).UTC()
+	if runtime.Active {
+		t.Fatalf("Active = true, want false before the daily window")
+	}
+	if runtime.StartsAt == nil || !runtime.StartsAt.Equal(wantStart) {
+		t.Fatalf("StartsAt = %v, want %v", runtime.StartsAt, wantStart)
+	}
+	if runtime.EndsAt == nil || !runtime.EndsAt.Equal(wantEnd) {
+		t.Fatalf("EndsAt = %v, want %v", runtime.EndsAt, wantEnd)
+	}
+}
+
 func TestGlobalDiscountRuntimeRecurringOvernight(t *testing.T) {
 	runtime := globalDiscountRuntime(GlobalDiscountSettings{
 		Enabled:          true,

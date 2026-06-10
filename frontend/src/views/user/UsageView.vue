@@ -815,8 +815,16 @@ const actualRateMultiplier = (row: Pick<UsageLog, 'actual_cost' | 'total_cost'> 
   return Number.isFinite(multiplier) ? multiplier : null
 }
 
+const currentGlobalDiscount = computed(() => {
+  const publicDiscount = appStore.cachedPublicSettings?.global_discount
+  const statsDiscount = usageStats.value?.global_discount
+  if (publicDiscount?.active) return publicDiscount
+  if (statsDiscount?.active) return statsDiscount
+  return publicDiscount || statsDiscount || null
+})
+
 const hasActiveGlobalDiscount = computed(() => {
-  const discount = usageStats.value?.global_discount
+  const discount = currentGlobalDiscount.value
   return Boolean(
     discount?.active
     && discount.enabled
@@ -828,7 +836,7 @@ const hasActiveGlobalDiscount = computed(() => {
 
 const activeGlobalDiscountLabel = computed(() => {
   if (!hasActiveGlobalDiscount.value) return ''
-  const label = usageStats.value?.global_discount?.label?.trim()
+  const label = currentGlobalDiscount.value?.label?.trim()
   return label || t('usage.discountActive')
 })
 

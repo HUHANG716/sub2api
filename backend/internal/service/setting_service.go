@@ -577,6 +577,7 @@ func globalDiscountRuntime(settings GlobalDiscountSettings, now time.Time) Globa
 	}
 	var best *GlobalDiscountRuntime
 	bestDuration := time.Duration(0)
+	var next *GlobalDiscountRuntime
 	for _, rule := range settings.Rules {
 		runtime := globalDiscountRuleRuntime(rule, now)
 		runtime.Enabled = settings.Enabled && rule.Enabled
@@ -590,10 +591,26 @@ func globalDiscountRuntime(settings GlobalDiscountSettings, now time.Time) Globa
 				best = &candidate
 				bestDuration = duration
 			}
+			continue
+		}
+		if runtime.Enabled && runtime.DiscountRate > 0 && runtime.DiscountRate < 1 {
+			if start, end, ok := globalDiscountNextWindow(runtime, now); ok {
+				startUTC := start.UTC()
+				endUTC := end.UTC()
+				runtime.StartsAt = &startUTC
+				runtime.EndsAt = &endUTC
+				candidate := runtime
+				if next == nil || (candidate.StartsAt != nil && next.StartsAt != nil && candidate.StartsAt.Before(*next.StartsAt)) {
+					next = &candidate
+				}
+			}
 		}
 	}
 	if best != nil {
 		return *best
+	}
+	if next != nil {
+		return *next
 	}
 	runtime := GlobalDiscountRuntime{
 		Enabled:      settings.Enabled,
@@ -606,6 +623,64 @@ func globalDiscountRuntime(settings GlobalDiscountSettings, now time.Time) Globa
 		runtime.Active = false
 	}
 	return runtime
+}
+
+func globalDiscountNextWindow(runtime GlobalDiscountRuntime, now time.Time) (time.Time, time.Time, bool) {
+	if !runtime.Enabled || runtime.DiscountRate <= 0 || runtime.DiscountRate >= 1 {
+		return time.Time{}, time.Time{}, false
+	}
+	if runtime.ScheduleType == "" || runtime.ScheduleType == "once" {
+		if runtime.StartsAt == nil || runtime.EndsAt == nil {
+			return time.Time{}, time.Time{}, false
+		}
+		if now.Before(*runtime.StartsAt) && runtime.EndsAt.After(*runtime.StartsAt) {
+			return *runtime.StartsAt, *runtime.EndsAt, true
+		}
+		return time.Time{}, time.Time{}, false
+	}
+	return globalDiscountRecurringNextWindow(runtime, now)
+}
+
+func globalDiscountRecurringNextWindow(runtime GlobalDiscountRuntime, now time.Time) (time.Time, time.Time, bool) {
+	startMin, ok := parseGlobalDiscountClockMinutes(runtime.RecurringStartAt)
+	if !ok {
+		return time.Time{}, time.Time{}, false
+	}
+	endMin, ok := parseGlobalDiscountClockMinutes(runtime.RecurringEndAt)
+	if !ok || startMin == endMin {
+		return time.Time{}, time.Time{}, false
+	}
+
+	local := now.In(timezone.Location())
+	startOfDay := timezone.StartOfDay(local)
+	for dayOffset := 0; dayOffset <= 370; dayOffset++ {
+		day := startOfDay.AddDate(0, 0, dayOffset)
+		if !globalDiscountScheduleIncludesDay(runtime, day) {
+			continue
+		}
+		start := timezone.StartOfDay(day).Add(time.Duration(startMin) * time.Minute)
+		end := timezone.StartOfDay(day).Add(time.Duration(endMin) * time.Minute)
+		if startMin > endMin {
+			end = end.AddDate(0, 0, 1)
+		}
+		if start.After(local) {
+			return start, end, true
+		}
+	}
+	return time.Time{}, time.Time{}, false
+}
+
+func globalDiscountScheduleIncludesDay(runtime GlobalDiscountRuntime, day time.Time) bool {
+	switch runtime.ScheduleType {
+	case "daily":
+		return true
+	case "weekly":
+		return containsInt(runtime.Weekdays, globalDiscountWeekday(day))
+	case "monthly":
+		return containsInt(runtime.MonthDays, day.In(timezone.Location()).Day())
+	default:
+		return false
+	}
 }
 
 func globalDiscountRuleDuration(runtime GlobalDiscountRuntime) time.Duration {
@@ -1302,7 +1377,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		imagePlaygroundResponsesGroupID = v
 	}
 	var globalDiscount *GlobalDiscountRuntime
-	if runtime := s.GetGlobalDiscountRuntime(ctx); runtime.Active || strings.TrimSpace(runtime.Label) != "" {
+	if runtime := s.GetGlobalDiscountRuntime(ctx); runtime.Enabled && runtime.DiscountRate > 0 && runtime.DiscountRate < 1 {
 		globalDiscount = &runtime
 	}
 
