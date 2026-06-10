@@ -193,6 +193,30 @@ input[type="number"] {
   display: none;
 }
 
+[data-template-category-strip] {
+  overflow: hidden;
+}
+
+[data-template-category-strip]::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  bottom: 0.375rem;
+  right: 0;
+  top: 0;
+  width: 2.5rem;
+  background: linear-gradient(to right, transparent, rgb(248 250 252 / 0.96));
+}
+
+[data-template-categories] {
+  min-width: 0;
+  touch-action: pan-x;
+}
+
+:root.dark [data-template-category-strip]::after {
+  background: linear-gradient(to right, transparent, rgb(3 7 18 / 0.96));
+}
+
 .markdown-renderer {
   color: inherit;
   line-height: inherit;
@@ -603,6 +627,9 @@ input[type="number"] {
 
 .product-embed-shell [data-template-categories] {
   gap: 0.375rem;
+}
+
+.product-embed-shell [data-template-category-strip] {
   margin-bottom: 0.75rem;
 }
 

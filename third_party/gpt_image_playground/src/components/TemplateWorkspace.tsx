@@ -10,7 +10,7 @@ import {
   type TemplateFetchState,
 } from '../lib/promptTemplates'
 import { useStore } from '../store'
-import { CopyIcon, ExternalLinkIcon, FavoriteIcon, PhotoIcon, RefreshIcon } from './icons'
+import { CloseIcon, CopyIcon, ExternalLinkIcon, FavoriteIcon, PhotoIcon, RefreshIcon, SearchIcon } from './icons'
 import { isProductEmbedMode } from '../lib/productEmbed'
 import TemplateImagePreview from './TemplateImagePreview'
 
@@ -53,6 +53,26 @@ function getMediaTextPreview(prompt: string) {
 
 function getImageUrls(item: PromptTemplateItem) {
   return item.imageUrls?.length ? item.imageUrls : item.imageUrl ? [item.imageUrl] : []
+}
+
+function normalizeSearchText(value: string) {
+  return value.normalize('NFKC').toLowerCase().trim()
+}
+
+function templateMatchesSearch(item: PromptTemplateItem, query: string) {
+  if (!query) return true
+  const haystack = normalizeSearchText([
+    item.title,
+    item.description,
+    item.promptText,
+    item.category,
+    item.sourceName,
+    item.author,
+    item.createdAt,
+    item.stats,
+    getKindLabel(item.kind),
+  ].filter(Boolean).join(' '))
+  return haystack.includes(query)
 }
 
 function hashTemplateText(value: string) {
@@ -260,6 +280,7 @@ export default function TemplateWorkspace() {
   const [kindFilter, setKindFilter] = useState<KindFilter>('all')
   const [favoriteFilter, setFavoriteFilter] = useState<FavoriteFilter>('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [templateSearchQuery, setTemplateSearchQuery] = useState('')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => readTemplateFavoriteIds())
   const [preview, setPreview] = useState<{ item: PromptTemplateItem; index: number } | null>(null)
@@ -302,6 +323,12 @@ export default function TemplateWorkspace() {
     return true
   }), [favoriteFilter, favoriteIds, fetchState.items, kindFilter, sourceFilter])
 
+  const normalizedTemplateSearchQuery = useMemo(() => normalizeSearchText(templateSearchQuery), [templateSearchQuery])
+
+  const searchedItems = useMemo(() => sourceFilteredItems.filter((item) => (
+    templateMatchesSearch(item, normalizedTemplateSearchQuery)
+  )), [normalizedTemplateSearchQuery, sourceFilteredItems])
+
   const favoriteCount = useMemo(
     () => fetchState.items.filter((item) => favoriteIds.has(getTemplateFavoriteId(item))).length,
     [favoriteIds, fetchState.items],
@@ -309,11 +336,11 @@ export default function TemplateWorkspace() {
 
   const categories = useMemo(() => {
     const counts = new Map<string, number>()
-    for (const item of sourceFilteredItems) {
+    for (const item of searchedItems) {
       counts.set(item.category, (counts.get(item.category) ?? 0) + 1)
     }
     return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-CN'))
-  }, [sourceFilteredItems])
+  }, [searchedItems])
 
   useEffect(() => {
     if (categoryFilter !== 'all' && !categories.some(([category]) => category === categoryFilter)) {
@@ -323,14 +350,14 @@ export default function TemplateWorkspace() {
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
-  }, [categoryFilter, favoriteFilter, kindFilter, sourceFilter])
+  }, [categoryFilter, favoriteFilter, kindFilter, sourceFilter, normalizedTemplateSearchQuery])
 
   const filteredItems = useMemo(() => {
-    return sourceFilteredItems.filter((item) => {
+    return searchedItems.filter((item) => {
       if (categoryFilter !== 'all' && item.category !== categoryFilter) return false
       return true
     })
-  }, [categoryFilter, sourceFilteredItems])
+  }, [categoryFilter, searchedItems])
 
   const visibleItems = filteredItems.slice(0, visibleCount)
   const failedSources = Object.entries(fetchState.sourceStates).filter(([, state]) => state.status === 'error')
@@ -422,6 +449,28 @@ export default function TemplateWorkspace() {
           </div>
 
           <div data-template-filters className="mb-4 grid gap-3 rounded-xl border border-gray-200/70 bg-white/70 p-3 shadow-sm dark:border-white/[0.08] dark:bg-gray-900/60">
+            <div className="relative">
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+              <input
+                type="text"
+                value={templateSearchQuery}
+                onChange={(event) => setTemplateSearchQuery(event.target.value)}
+                placeholder="搜索标题、分类或提示词..."
+                className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-10 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-blue-500/60"
+                aria-label="搜索模板"
+              />
+              {templateSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setTemplateSearchQuery('')}
+                  className="absolute inset-y-0 right-2 my-auto flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:text-gray-500 dark:hover:bg-white/[0.06] dark:hover:text-gray-200"
+                  aria-label="清空模板搜索"
+                  title="清空搜索"
+                >
+                  <CloseIcon className="h-4 w-4" />
+                </button>
+              )}
+            </div>
             <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex gap-1 overflow-x-auto rounded-lg bg-gray-100 p-1 dark:bg-white/[0.04]">
                 {SOURCE_OPTIONS.map((option) => (
@@ -489,35 +538,41 @@ export default function TemplateWorkspace() {
             </div>
           )}
 
-          <div data-template-categories className="mb-5 flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
-            <button
-              type="button"
-              onClick={() => setCategoryFilter('all')}
-              className={`shrink-0 rounded-full border px-3 py-1.5 text-sm transition ${
-                categoryFilter === 'all'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'
-                  : 'border-gray-200 bg-white text-gray-500 hover:text-gray-900 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-gray-400 dark:hover:text-gray-100'
-              }`}
+          <div data-template-category-strip className="relative mb-5">
+            <div
+              data-template-categories
+              className="custom-scrollbar flex gap-2 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 pr-8"
+              aria-label="模板分类"
             >
-              全部 {sourceFilteredItems.length}
-            </button>
-            {categories.map(([category, count]) => (
               <button
-                key={category}
                 type="button"
-                onClick={() => {
-                  setCategoryFilter(category)
-                  trackImagePlaygroundEvent('template_filter', { filterType: 'category', value: category })
-                }}
+                onClick={() => setCategoryFilter('all')}
                 className={`shrink-0 rounded-full border px-3 py-1.5 text-sm transition ${
-                  categoryFilter === category
+                  categoryFilter === 'all'
                     ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'
                     : 'border-gray-200 bg-white text-gray-500 hover:text-gray-900 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-gray-400 dark:hover:text-gray-100'
                 }`}
               >
-                {category} {count}
+                全部 {searchedItems.length}
               </button>
-            ))}
+              {categories.map(([category, count]) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => {
+                    setCategoryFilter(category)
+                    trackImagePlaygroundEvent('template_filter', { filterType: 'category', value: category })
+                  }}
+                  className={`shrink-0 rounded-full border px-3 py-1.5 text-sm transition ${
+                    categoryFilter === category
+                      ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'
+                      : 'border-gray-200 bg-white text-gray-500 hover:text-gray-900 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-gray-400 dark:hover:text-gray-100'
+                  }`}
+                >
+                  {category} {count}
+                </button>
+              ))}
+            </div>
           </div>
 
           {loading && (

@@ -4,9 +4,9 @@ import componentSource from './TemplateWorkspace.tsx?raw'
 const source = String(componentSource)
 
 describe('TemplateWorkspace source contract', () => {
-  it('does not render text input controls on the template page', () => {
-    expect(source).not.toContain('type="search"')
-    expect(source).not.toContain('<input')
+  it('keeps the template page input surface scoped to search', () => {
+    expect(source).toContain('type="text"')
+    expect(source).toContain('aria-label="搜索模板"')
     expect(source).not.toContain('<textarea')
     expect(source).not.toContain('contentEditable')
   })
