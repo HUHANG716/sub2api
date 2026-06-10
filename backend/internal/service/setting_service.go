@@ -625,6 +625,19 @@ func globalDiscountRuntime(settings GlobalDiscountSettings, now time.Time) Globa
 	return runtime
 }
 
+func globalDiscountRuntimeVisible(runtime GlobalDiscountRuntime, now time.Time) bool {
+	if !runtime.Enabled || runtime.DiscountRate <= 0 || runtime.DiscountRate >= 1 {
+		return false
+	}
+	if runtime.Active {
+		return true
+	}
+	if runtime.StartsAt == nil || runtime.EndsAt == nil {
+		return false
+	}
+	return runtime.StartsAt.Before(*runtime.EndsAt) && now.Before(*runtime.StartsAt)
+}
+
 func globalDiscountNextWindow(runtime GlobalDiscountRuntime, now time.Time) (time.Time, time.Time, bool) {
 	if !runtime.Enabled || runtime.DiscountRate <= 0 || runtime.DiscountRate >= 1 {
 		return time.Time{}, time.Time{}, false
@@ -1377,7 +1390,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		imagePlaygroundResponsesGroupID = v
 	}
 	var globalDiscount *GlobalDiscountRuntime
-	if runtime := s.GetGlobalDiscountRuntime(ctx); runtime.Enabled && runtime.DiscountRate > 0 && runtime.DiscountRate < 1 {
+	if runtime := s.GetGlobalDiscountRuntime(ctx); globalDiscountRuntimeVisible(runtime, time.Now()) {
 		globalDiscount = &runtime
 	}
 

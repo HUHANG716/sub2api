@@ -90,6 +90,9 @@ const adminSettingsStore = useAdminSettingsStore()
 const nowMs = ref(Date.now())
 let discountClockTimer: ReturnType<typeof setInterval> | null = null
 let discountBoundaryTimer: ReturnType<typeof setTimeout> | null = null
+let discountBoundaryRefreshMounted = true
+const discountBoundaryRetryDelayMs = 5_000
+const maxDiscountBoundaryRetries = 3
 
 const user = computed(() => authStore.user)
 const showPaymentShortcut = computed(() =>
@@ -156,6 +159,41 @@ function clearDiscountBoundaryTimer() {
   }
 }
 
+function shouldRetryDiscountBoundaryRefresh(previousDiscount: GlobalDiscountRuntime, timestamp: number): boolean {
+  const discount = appStore.cachedPublicSettings?.global_discount
+  if (!discount) {
+    const previousStart = previousDiscount.starts_at ? new Date(previousDiscount.starts_at).getTime() : Number.NaN
+    const previousEnd = previousDiscount.ends_at ? new Date(previousDiscount.ends_at).getTime() : Number.NaN
+    return Boolean(
+      !previousDiscount.active
+      && Number.isFinite(previousStart)
+      && timestamp >= previousStart
+      && (!Number.isFinite(previousEnd) || timestamp < previousEnd)
+    )
+  }
+
+  const start = discount.starts_at ? new Date(discount.starts_at).getTime() : Number.NaN
+  const end = discount.ends_at ? new Date(discount.ends_at).getTime() : Number.NaN
+  const hasStarted = Number.isFinite(start) && timestamp >= start
+  const hasEnded = Number.isFinite(end) && timestamp >= end
+  if (!discount.active && hasStarted && (!Number.isFinite(end) || timestamp < end)) return true
+  if (discount.active && hasEnded) return true
+  return false
+}
+
+async function refreshDiscountSettingsWithRetry(discount: GlobalDiscountRuntime, attempt = 0) {
+  if (!discountBoundaryRefreshMounted) return
+  nowMs.value = Date.now()
+  const settings = await appStore.fetchPublicSettings(true)
+  if (!discountBoundaryRefreshMounted) return
+  if (settings && !shouldRetryDiscountBoundaryRefresh(discount, nowMs.value)) return
+  if (attempt >= maxDiscountBoundaryRetries) return
+
+  discountBoundaryTimer = setTimeout(() => {
+    void refreshDiscountSettingsWithRetry(discount, attempt + 1)
+  }, discountBoundaryRetryDelayMs)
+}
+
 function scheduleDiscountBoundaryRefresh(discount?: GlobalDiscountRuntime | null) {
   clearDiscountBoundaryTimer()
   if (!discount) return
@@ -171,12 +209,12 @@ function scheduleDiscountBoundaryRefresh(discount?: GlobalDiscountRuntime | null
   if (!Number.isFinite(boundary)) return
   const delay = Math.max(0, boundary - now + 1)
   discountBoundaryTimer = setTimeout(() => {
-    nowMs.value = Date.now()
-    void appStore.fetchPublicSettings(true)
+    void refreshDiscountSettingsWithRetry(discount)
   }, delay)
 }
 
 onMounted(() => {
+  discountBoundaryRefreshMounted = true
   discountClockTimer = setInterval(() => {
     nowMs.value = Date.now()
   }, 60_000)
@@ -191,6 +229,7 @@ watch(
 )
 
 onUnmounted(() => {
+  discountBoundaryRefreshMounted = false
   if (discountClockTimer) {
     clearInterval(discountClockTimer)
     discountClockTimer = null

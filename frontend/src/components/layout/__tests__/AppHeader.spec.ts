@@ -232,6 +232,56 @@ describe('AppHeader discount campaign', () => {
     expect(fetchPublicSettingsSpy).toHaveBeenCalledWith(true)
   })
 
+  it('retries the boundary refresh when the future discount start request misses', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-02T10:59:30+08:00'))
+    setActivePinia(createPinia())
+    const appStore = useAppStore()
+    const authStore = useAuthStore()
+    authStore.user = { id: 1, username: 'tester', email: 'tester@example.com', role: 'user' } as any
+    appStore.cachedPublicSettings = {
+      global_discount: {
+        enabled: true,
+        active: false,
+        discount_rate: 0.8,
+        schedule_type: 'once',
+        starts_at: '2026-06-02T11:00:00+08:00',
+        ends_at: '2026-06-02T12:00:00+08:00',
+        label: ''
+      }
+    } as any
+    const activeSettings = {
+      global_discount: {
+        enabled: true,
+        active: true,
+        discount_rate: 0.8,
+        schedule_type: 'once',
+        starts_at: '2026-06-02T11:00:00+08:00',
+        ends_at: '2026-06-02T12:00:00+08:00',
+        label: ''
+      }
+    } as any
+    const fetchPublicSettingsSpy = vi
+      .spyOn(appStore, 'fetchPublicSettings')
+      .mockResolvedValueOnce(null)
+      .mockImplementationOnce(async () => {
+        appStore.cachedPublicSettings = activeSettings
+        return activeSettings
+      })
+
+    const wrapper = mountHeader()
+
+    await vi.advanceTimersByTimeAsync(30_001)
+    await flushPromises()
+    expect(fetchPublicSettingsSpy).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(5_000)
+    await flushPromises()
+
+    expect(fetchPublicSettingsSpy).toHaveBeenCalledTimes(2)
+    expect(wrapper.get('.header-discount-campaign').text()).toContain('usage.discountActive')
+  })
+
   it('hides the campaign copy when no activity name is available', () => {
     setActivePinia(createPinia())
     const appStore = useAppStore()

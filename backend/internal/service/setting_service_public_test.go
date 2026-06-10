@@ -148,6 +148,20 @@ func TestSettingService_GetPublicSettings_ExposesFutureGlobalDiscountWindow(t *t
 	require.InDelta(t, 0.8, settings.GlobalDiscount.DiscountRate, 0.000001)
 }
 
+func TestSettingService_GetPublicSettings_HidesExpiredGlobalDiscountWindow(t *testing.T) {
+	start := time.Now().Add(-2 * time.Hour).UTC().Truncate(time.Second)
+	end := start.Add(time.Hour)
+	svc := NewSettingService(&settingPublicRepoStub{
+		values: map[string]string{
+			SettingKeyGlobalDiscountSettings: fmt.Sprintf(`{"enabled":true,"rules":[{"id":"promo","enabled":true,"discount_rate":0.8,"schedule_type":"once","starts_at":%q,"ends_at":%q}]}`, start.Format(time.RFC3339), end.Format(time.RFC3339)),
+		},
+	}, &config.Config{})
+
+	settings, err := svc.GetPublicSettings(context.Background())
+	require.NoError(t, err)
+	require.Nil(t, settings.GlobalDiscount)
+}
+
 func TestSettingService_GetPublicSettings_ExposesAllowUserViewErrorRequests(t *testing.T) {
 	repo := &settingPublicRepoStub{
 		values: map[string]string{
