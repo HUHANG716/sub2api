@@ -230,6 +230,8 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		RiskControlEnabled:                     settings.RiskControlEnabled,
 		ImagePlaygroundGroupID:                 settings.ImagePlaygroundGroupID,
 		ImagePlaygroundResponsesGroupID:        settings.ImagePlaygroundResponsesGroupID,
+		CyberSessionBlockEnabled:               settings.CyberSessionBlockEnabled,
+		CyberSessionBlockTTLSeconds:            settings.CyberSessionBlockTTLSeconds,
 		AffiliateRebateRate:                    settings.AffiliateRebateRate,
 		AffiliateRebateFreezeHours:             settings.AffiliateRebateFreezeHours,
 		AffiliateRebateDurationDays:            settings.AffiliateRebateDurationDays,
@@ -254,6 +256,9 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		EnableFingerprintUnification:           settings.EnableFingerprintUnification,
 		EnableMetadataPassthrough:              settings.EnableMetadataPassthrough,
 		EnableCCHSigning:                       settings.EnableCCHSigning,
+		EnableClaudeOAuthSystemPromptInjection: settings.EnableClaudeOAuthSystemPromptInjection,
+		ClaudeOAuthSystemPrompt:                settings.ClaudeOAuthSystemPrompt,
+		ClaudeOAuthSystemPromptBlocks:          settings.ClaudeOAuthSystemPromptBlocks,
 		EnableAnthropicCacheTTL1hInjection:     settings.EnableAnthropicCacheTTL1hInjection,
 		RewriteMessageCacheControl:             settings.RewriteMessageCacheControl,
 		AntigravityUserAgentVersion:            settings.AntigravityUserAgentVersion,
@@ -585,14 +590,17 @@ type UpdateSettingsRequest struct {
 	BackendModeEnabled bool `json:"backend_mode_enabled"`
 
 	// Gateway forwarding behavior
-	EnableFingerprintUnification       *bool   `json:"enable_fingerprint_unification"`
-	EnableMetadataPassthrough          *bool   `json:"enable_metadata_passthrough"`
-	EnableCCHSigning                   *bool   `json:"enable_cch_signing"`
-	EnableAnthropicCacheTTL1hInjection *bool   `json:"enable_anthropic_cache_ttl_1h_injection"`
-	RewriteMessageCacheControl         *bool   `json:"rewrite_message_cache_control"`
-	AntigravityUserAgentVersion        *string `json:"antigravity_user_agent_version"`
-	OpenAICodexUserAgent               *string `json:"openai_codex_user_agent"`
-	OpenAIAllowClaudeCodeCodexPlugin   *bool   `json:"openai_allow_claude_code_codex_plugin"`
+	EnableFingerprintUnification           *bool   `json:"enable_fingerprint_unification"`
+	EnableMetadataPassthrough              *bool   `json:"enable_metadata_passthrough"`
+	EnableCCHSigning                       *bool   `json:"enable_cch_signing"`
+	EnableClaudeOAuthSystemPromptInjection *bool   `json:"enable_claude_oauth_system_prompt_injection"`
+	ClaudeOAuthSystemPrompt                *string `json:"claude_oauth_system_prompt"`
+	ClaudeOAuthSystemPromptBlocks          *string `json:"claude_oauth_system_prompt_blocks"`
+	EnableAnthropicCacheTTL1hInjection     *bool   `json:"enable_anthropic_cache_ttl_1h_injection"`
+	RewriteMessageCacheControl             *bool   `json:"rewrite_message_cache_control"`
+	AntigravityUserAgentVersion            *string `json:"antigravity_user_agent_version"`
+	OpenAICodexUserAgent                   *string `json:"openai_codex_user_agent"`
+	OpenAIAllowClaudeCodeCodexPlugin       *bool   `json:"openai_allow_claude_code_codex_plugin"`
 
 	// Payment visible method routing
 	PaymentVisibleMethodAlipaySource  *string `json:"payment_visible_method_alipay_source"`
@@ -658,6 +666,10 @@ type UpdateSettingsRequest struct {
 	// 生图工作台管理员配置分组；nil 表示本次请求不修改，0 表示清空配置。
 	ImagePlaygroundGroupID          *int64 `json:"image_playground_group_id"`
 	ImagePlaygroundResponsesGroupID *int64 `json:"image_playground_responses_group_id"`
+
+	// cyber 会话屏蔽开关 + TTL
+	CyberSessionBlockEnabled    *bool `json:"cyber_session_block_enabled"`
+	CyberSessionBlockTTLSeconds *int  `json:"cyber_session_block_ttl_seconds"`
 
 	// OpenAI fast/flex policy (optional, only updated when provided)
 	OpenAIFastPolicySettings *dto.OpenAIFastPolicySettings `json:"openai_fast_policy_settings,omitempty"`
@@ -1475,6 +1487,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}
 	}
 
+	// cyber 会话屏蔽 TTL 校验：提供时必须 > 0
+	if req.CyberSessionBlockTTLSeconds != nil && *req.CyberSessionBlockTTLSeconds <= 0 {
+		response.BadRequest(c, "cyber_session_block_ttl_seconds must be > 0")
+		return
+	}
+
 	settings := &service.SystemSettings{
 		// 系统全局 platform quota 默认值（整体替换语义）
 		DefaultPlatformQuotas: req.DefaultPlatformQuotas,
@@ -1656,6 +1674,24 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.EnableCCHSigning
 		}(),
+		EnableClaudeOAuthSystemPromptInjection: func() bool {
+			if req.EnableClaudeOAuthSystemPromptInjection != nil {
+				return *req.EnableClaudeOAuthSystemPromptInjection
+			}
+			return previousSettings.EnableClaudeOAuthSystemPromptInjection
+		}(),
+		ClaudeOAuthSystemPrompt: func() string {
+			if req.ClaudeOAuthSystemPrompt != nil {
+				return *req.ClaudeOAuthSystemPrompt
+			}
+			return previousSettings.ClaudeOAuthSystemPrompt
+		}(),
+		ClaudeOAuthSystemPromptBlocks: func() string {
+			if req.ClaudeOAuthSystemPromptBlocks != nil {
+				return *req.ClaudeOAuthSystemPromptBlocks
+			}
+			return previousSettings.ClaudeOAuthSystemPromptBlocks
+		}(),
 		EnableAnthropicCacheTTL1hInjection: func() bool {
 			if req.EnableAnthropicCacheTTL1hInjection != nil {
 				return *req.EnableAnthropicCacheTTL1hInjection
@@ -1805,6 +1841,18 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 				return 0
 			}
 			return previousSettings.ImagePlaygroundResponsesGroupID
+		}(),
+		CyberSessionBlockEnabled: func() bool {
+			if req.CyberSessionBlockEnabled != nil {
+				return *req.CyberSessionBlockEnabled
+			}
+			return previousSettings.CyberSessionBlockEnabled
+		}(),
+		CyberSessionBlockTTLSeconds: func() int {
+			if req.CyberSessionBlockTTLSeconds != nil {
+				return *req.CyberSessionBlockTTLSeconds
+			}
+			return previousSettings.CyberSessionBlockTTLSeconds
 		}(),
 	}
 
@@ -2083,6 +2131,9 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		EnableFingerprintUnification:           updatedSettings.EnableFingerprintUnification,
 		EnableMetadataPassthrough:              updatedSettings.EnableMetadataPassthrough,
 		EnableCCHSigning:                       updatedSettings.EnableCCHSigning,
+		EnableClaudeOAuthSystemPromptInjection: updatedSettings.EnableClaudeOAuthSystemPromptInjection,
+		ClaudeOAuthSystemPrompt:                updatedSettings.ClaudeOAuthSystemPrompt,
+		ClaudeOAuthSystemPromptBlocks:          updatedSettings.ClaudeOAuthSystemPromptBlocks,
 		EnableAnthropicCacheTTL1hInjection:     updatedSettings.EnableAnthropicCacheTTL1hInjection,
 		RewriteMessageCacheControl:             updatedSettings.RewriteMessageCacheControl,
 		AntigravityUserAgentVersion:            updatedSettings.AntigravityUserAgentVersion,
@@ -2131,12 +2182,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 
 		GlobalDiscountSettings: updatedSettings.GlobalDiscountSettings,
 
-		RiskControlEnabled: updatedSettings.RiskControlEnabled,
-
+		RiskControlEnabled:              updatedSettings.RiskControlEnabled,
 		ImagePlaygroundGroupID:          updatedSettings.ImagePlaygroundGroupID,
 		ImagePlaygroundResponsesGroupID: updatedSettings.ImagePlaygroundResponsesGroupID,
-
-		AllowUserViewErrorRequests: updatedSettings.AllowUserViewErrorRequests,
+		CyberSessionBlockEnabled:        updatedSettings.CyberSessionBlockEnabled,
+		CyberSessionBlockTTLSeconds:     updatedSettings.CyberSessionBlockTTLSeconds,
+		AllowUserViewErrorRequests:      updatedSettings.AllowUserViewErrorRequests,
 	}
 	if fastPolicy, err := h.settingService.GetOpenAIFastPolicySettings(c.Request.Context()); err != nil {
 		slog.Error("openai_fast_policy_settings_get_failed", "error", err)
@@ -2554,6 +2605,15 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.EnableCCHSigning != after.EnableCCHSigning {
 		changed = append(changed, "enable_cch_signing")
 	}
+	if before.EnableClaudeOAuthSystemPromptInjection != after.EnableClaudeOAuthSystemPromptInjection {
+		changed = append(changed, "enable_claude_oauth_system_prompt_injection")
+	}
+	if before.ClaudeOAuthSystemPrompt != after.ClaudeOAuthSystemPrompt {
+		changed = append(changed, "claude_oauth_system_prompt")
+	}
+	if before.ClaudeOAuthSystemPromptBlocks != after.ClaudeOAuthSystemPromptBlocks {
+		changed = append(changed, "claude_oauth_system_prompt_blocks")
+	}
 	if before.EnableAnthropicCacheTTL1hInjection != after.EnableAnthropicCacheTTL1hInjection {
 		changed = append(changed, "enable_anthropic_cache_ttl_1h_injection")
 	}
@@ -2617,6 +2677,12 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.RiskControlEnabled != after.RiskControlEnabled {
 		changed = append(changed, "risk_control_enabled")
+	}
+	if before.CyberSessionBlockEnabled != after.CyberSessionBlockEnabled {
+		changed = append(changed, "cyber_session_block_enabled")
+	}
+	if before.CyberSessionBlockTTLSeconds != after.CyberSessionBlockTTLSeconds {
+		changed = append(changed, "cyber_session_block_ttl_seconds")
 	}
 	// Default platform quotas（JSON map，整体比较）
 	if !equalPlatformQuotaSettings(before.DefaultPlatformQuotas, after.DefaultPlatformQuotas) {
