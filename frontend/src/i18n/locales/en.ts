@@ -7537,6 +7537,8 @@ export default {
       funnelLaunch: 'Payment Launches',
       funnelResult: 'Result Statuses',
       funnelByMethod: 'By Payment Method',
+      newCustomers: 'New Paying Customers',
+      newCustomerCount: '{count} users',
       recentFunnelEvents: 'Recent Events',
       noFunnelData: 'No payment analytics data yet',
       funnelTableMissing: 'Payment analytics table is not initialized yet. Data will appear after migrations run.',

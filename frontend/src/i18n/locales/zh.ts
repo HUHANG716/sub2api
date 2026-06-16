@@ -7717,6 +7717,8 @@ export default {
       funnelLaunch: '拉起支付',
       funnelResult: '返回结果',
       funnelByMethod: '按支付方式',
+      newCustomers: '支付新客户',
+      newCustomerCount: '{count} 人',
       recentFunnelEvents: '最近事件',
       noFunnelData: '暂无支付埋点数据',
       funnelTableMissing: '支付埋点表暂未初始化，迁移完成后会自动显示数据',

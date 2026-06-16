@@ -393,6 +393,8 @@ describe('HomeView', () => {
     expect(source).toContain('--hero-tag-x')
     expect(source).toContain('--hero-tag-y')
     expect(source).toContain('--hero-tag-field-x')
+    expect(source).toContain('--hero-tag-scroll-x')
+    expect(source).toContain('--hero-tag-scroll-y')
     expect(source).not.toContain('--hero-tag-tilt-x')
     expect(source).not.toContain('--hero-tag-face-x')
     expect(source).toContain('--hero-tag-angle')
@@ -402,8 +404,9 @@ describe('HomeView', () => {
     await wrapper.get('.hero-section').trigger('mouseleave')
     await nextTick()
 
-    expect(wrapper.get('.hero-stage').attributes('style')).toContain('--hero-pointer-x: 0.000')
-    expect(wrapper.get('.hero-stage').attributes('style')).toContain('--hero-pointer-y: 0.000')
+    expect(wrapper.get('.hero-stage').attributes('style')).not.toContain('--hero-pointer-x: 0.000')
+    expect(wrapper.get('.hero-stage').attributes('style')).not.toContain('--hero-pointer-y: 0.000')
+    expect(source).not.toContain('@mouseleave=')
   })
 
   it('keeps hero sticker collision boxes stable with depth-based parallax lanes', () => {
@@ -535,6 +538,7 @@ describe('HomeView', () => {
     ).find((block) => block.includes('aspect-ratio: auto')) ?? ''
 
     expect(heroSectionBlock).toContain('background: var(--landing-bg)')
+    expect(heroSectionBlock).toContain('overflow: hidden')
     expect(floatingTagsBlock).toContain('perspective:')
     expect(floatingTagsBlock).toContain('perspective-origin:')
     expect(floatingTagsBlock).toContain('transform-style: preserve-3d')
@@ -542,7 +546,7 @@ describe('HomeView', () => {
     expect(floatingTagBlock).toContain('width: var(--hero-tag-width)')
     expect(floatingTagBlock).toContain('height: var(--hero-tag-height)')
     expect(floatingTagBlock).toContain('aspect-ratio: 1')
-    expect(floatingDepthBlock).toContain('border: clamp(0.32rem, 0.8vw, 0.56rem) solid var(--landing-sticker-border)')
+    expect(floatingDepthBlock).toContain('border: clamp(0.18rem, 0.42vw, 0.34rem) solid var(--landing-sticker-border)')
     expect(floatingDepthBlock).toContain('box-shadow: none')
     expect(floatingDepthBlock).toContain('filter: none')
     expect(floatingDepthBlock).toContain('opacity: 0')
@@ -565,8 +569,8 @@ describe('HomeView', () => {
     expect(floatingTagBlock).not.toContain('var(--hero-tag-magnet-x)')
     expect(floatingTagBlock).toContain('--hero-tag-angle')
     expect(floatingTagBlock).toContain('rotate(var(--hero-tag-angle))')
-    expect(floatingIconImageBlock).toContain('height: 98%')
-    expect(floatingIconImageBlock).toContain('width: 98%')
+    expect(floatingIconImageBlock).toContain('height: 112%')
+    expect(floatingIconImageBlock).toContain('width: 112%')
     expect(floatingRoundBlock).toContain('border-radius: 999px')
     expect(floatingLabelBaseBlock).toContain('border-radius: 999px')
     expect(floatingLabelBaseBlock).toContain('width: var(--hero-tag-size)')
@@ -601,7 +605,7 @@ describe('HomeView', () => {
     expect(source).not.toContain('border-radius: 0.55rem')
   })
 
-  it('keeps hero tool tags driven by mouse movement without idle float', () => {
+  it('keeps hero tool tags driven closely by mouse movement without idle float or edge reset', () => {
     const source = readFileSync(homeViewSourcePath, 'utf8')
     const floatingTagBlock = source.match(/\.floating-tool-tag\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const floatingIconImageBlock = source.match(/\.floating-tool-icon img\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
@@ -612,12 +616,40 @@ describe('HomeView', () => {
     expect(floatingIconImageBlock).not.toContain('animation: hero-tag-float')
     expect(source).toContain('.floating-tool-tag')
     expect(source).toContain("'--hero-tag-field-x': `${(field?.fieldX ?? 0).toFixed(1)}px`")
-    expect(source).toContain('const stiffness = 0.22')
-    expect(source).toContain('heroPointerPhysics.active += (heroPointerTarget.active - heroPointerPhysics.active) * 0.16')
+    expect(source).not.toContain('@mouseleave="resetHeroPointer"')
+    expect(source).not.toContain('function resetHeroPointer')
+    expect(source).not.toContain('function deactivateHeroPointerField')
+    expect(source).toContain('const stiffness = 0.42')
+    expect(source).toContain('heroPointerPhysics.active += (heroPointerTarget.active - heroPointerPhysics.active) * 0.34')
     expect(source).toContain('const travel = viewport.width <= 960 ? 34 : 46')
-    expect(floatingTagBlock).toContain('transition: transform 120ms ease-out')
+    expect(source).toContain("'--hero-scroll-progress': heroScrollProgress.value.toFixed(3)")
+    expect(floatingTagBlock).toContain('transition: none')
     expect(source).not.toContain('@keyframes terminal-type')
     expect(source).not.toContain('animation: terminal-type')
+  })
+
+  it('animates hero tool tags directly outward and out of view while scrolling', () => {
+    const source = readFileSync(homeViewSourcePath, 'utf8')
+    const layoutSource = readFileSync(path.resolve(process.cwd(), 'src/views/homeHeroLayout.ts'), 'utf8')
+    const floatingTagBlock = source.match(/\.floating-tool-tag\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const reducedMotionFloatingTagBlock = source.match(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.floating-tool-tag\s*\{[\s\S]*?\n {2}\}/
+    )?.[0] ?? ''
+
+    expect(source).toContain('function syncHeroScrollProgress()')
+    expect(source).toContain('const scatterProgress = Math.max(0, Math.min(1, progress / 1.28))')
+    expect(source).toContain('const scatter = smoothProgress(scatterProgress)')
+    expect(source).not.toContain('const gather = smoothProgress')
+    expect(source).toContain("'--hero-tag-scroll-opacity': scroll.opacity.toFixed(3)")
+    expect(source).toContain("'--hero-tag-scroll-scale': scroll.scale.toFixed(3)")
+    expect(floatingTagBlock).toContain('var(--hero-tag-scroll-x)')
+    expect(floatingTagBlock).toContain('var(--hero-tag-scroll-y)')
+    expect(floatingTagBlock).toContain('opacity: var(--hero-tag-scroll-opacity)')
+    expect(floatingTagBlock).toContain('scale(var(--hero-tag-scroll-scale))')
+    expect(reducedMotionFloatingTagBlock).not.toContain('var(--hero-tag-scroll-x)')
+    expect(layoutSource).not.toContain('gatherX: number')
+    expect(layoutSource).toContain('scatterX: number')
+    expect(layoutSource).toContain('function createScrollExitVector')
   })
 
   it('keeps the hero copy lean without a stacked points list', () => {
@@ -884,7 +916,7 @@ describe('HomeView', () => {
     expect(landingShellBlock).toContain('--landing-control-shadow: 0 1px 0 rgba(255, 255, 255, 0.055) inset')
     expect(landingShellBlock).toContain('--landing-sticker-bg: color-mix(in srgb, var(--landing-accent-soft) 18%, var(--landing-text-strong))')
     expect(landingShellBlock).toContain('--landing-sticker-border: color-mix(in srgb, var(--landing-text-strong) 84%, var(--landing-accent-soft))')
-    expect(floatingDepthBlock).toContain('border: clamp(0.32rem, 0.8vw, 0.56rem) solid var(--landing-sticker-border)')
+    expect(floatingDepthBlock).toContain('border: clamp(0.18rem, 0.42vw, 0.34rem) solid var(--landing-sticker-border)')
     expect(floatingDepthBlock).toContain('background: var(--landing-sticker-bg)')
     expect(floatingDepthBlock).toContain('box-shadow: none')
     expect(floatingDepthBlock).toContain('filter: none')

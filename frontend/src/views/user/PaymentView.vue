@@ -90,19 +90,21 @@
                 <p v-if="amountError" class="mt-3 rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-700 dark:text-amber-200">{{ amountError }}</p>
 
                 <div v-if="hasRechargeBonusCampaign" class="payment-bonus-banner">
-                  <div class="payment-bonus-icon">
-                    <Icon name="gift" size="md" />
+                  <div class="payment-bonus-leading">
+                    <div class="payment-bonus-icon">
+                      <Icon name="wallet" size="sm" />
+                    </div>
+                    <div class="payment-bonus-copy">
+                      <p class="payment-bonus-title">
+                        {{ activeRechargeBonusText }}
+                      </p>
+                      <p class="payment-bonus-subtitle">
+                        {{ rechargeBonusSubtitle }}
+                      </p>
+                    </div>
                   </div>
                   <div class="payment-rate-pill">
                     {{ rechargeRateText }}
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="payment-bonus-title">
-                      {{ activeRechargeBonusText }}
-                    </p>
-                    <p class="payment-bonus-subtitle">
-                      {{ rechargeBonusSubtitle }}
-                    </p>
                   </div>
                 </div>
 
@@ -1661,29 +1663,38 @@ onMounted(async () => {
 }
 
 .payment-bonus-banner {
-  @apply mt-4 flex flex-col gap-3 rounded-lg border p-4 xl:flex-row xl:items-center;
-  background: color-mix(in srgb, #16a34a 8%, var(--theme-surface));
-  border-color: color-mix(in srgb, #16a34a 30%, var(--theme-border));
+  @apply mt-4 flex flex-col gap-3 rounded-lg border px-3.5 py-3.5 xl:flex-row xl:items-center xl:justify-between;
+  background: var(--theme-surface-muted);
+  border-color: var(--theme-border);
+}
+
+.payment-bonus-leading {
+  @apply flex min-w-0 items-start gap-3;
 }
 
 .payment-bonus-icon {
-  @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-emerald-700 dark:text-emerald-200;
-  background: color-mix(in srgb, #16a34a 16%, var(--theme-surface));
-  border: 1px solid color-mix(in srgb, #16a34a 28%, var(--theme-border));
+  @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-primary-600 dark:text-primary-300;
+  background: var(--theme-primary-soft);
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 22%, var(--theme-border));
+}
+
+.payment-bonus-copy {
+  @apply min-w-0 flex-1;
 }
 
 .payment-rate-pill {
-  @apply rounded-md border px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-200 xl:order-last;
-  background: color-mix(in srgb, #16a34a 10%, var(--theme-surface));
-  border-color: color-mix(in srgb, #16a34a 26%, var(--theme-border));
+  @apply w-fit shrink-0 rounded-md border px-2.5 py-1 text-xs font-semibold xl:order-last;
+  background: var(--theme-surface);
+  border-color: var(--theme-border);
+  color: var(--theme-text-muted);
 }
 
 .payment-bonus-title {
-  @apply text-sm font-semibold text-gray-950 dark:text-white;
+  @apply text-sm font-semibold leading-5 text-gray-950 dark:text-white;
 }
 
 .payment-bonus-subtitle {
-  @apply mt-1 text-xs leading-5 text-gray-600 dark:text-gray-300;
+  @apply mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400;
 }
 
 .payment-wallet-label {

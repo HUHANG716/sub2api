@@ -65,6 +65,8 @@ export interface PaymentAnalyticsMethod {
 
 export interface PaymentAnalyticsRecentEvent {
   name: string
+  user_id?: number
+  user_email?: string
   tab?: string
   order_type?: string
   payment_type?: string
@@ -77,6 +79,16 @@ export interface PaymentAnalyticsRecentEvent {
   order_id?: number
   error_kind?: string
   created_at?: string
+}
+
+export interface PaymentAnalyticsNewCustomer {
+  user_id: number
+  user_email: string
+  order_id: number
+  order_type?: string
+  payment_type?: string
+  pay_amount?: number
+  first_paid_at?: string
 }
 
 export interface PaymentAnalyticsOperatorSummary {
@@ -109,6 +121,7 @@ export interface PaymentAnalyticsResponse {
   steps: PaymentAnalyticsStep[]
   methods: PaymentAnalyticsMethod[]
   recent_events: PaymentAnalyticsRecentEvent[]
+  new_customers: PaymentAnalyticsNewCustomer[]
   operators: PaymentAnalyticsOperatorSummary[]
   audit_events: PaymentAnalyticsAuditEvent[]
   window_days: number

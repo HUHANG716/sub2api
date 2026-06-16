@@ -58,6 +58,40 @@
         </div>
 
         <div class="rounded-lg border border-gray-200 p-4 dark:border-dark-600">
+          <div class="mb-3 flex items-center justify-between gap-2">
+            <h4 class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">{{ t('payment.admin.newCustomers') }}</h4>
+            <span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+              {{ t('payment.admin.newCustomerCount', { count: newCustomers.length }) }}
+            </span>
+          </div>
+          <div v-if="!newCustomers.length" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">{{ t('payment.admin.noData') }}</div>
+          <div v-else class="overflow-x-auto">
+            <table class="min-w-full text-left text-sm">
+              <thead class="text-xs uppercase text-gray-500 dark:text-gray-400">
+                <tr>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.colUser') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.order') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.paymentMethod') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.amount') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.time') }}</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 dark:divide-dark-700">
+                <tr v-for="customer in newCustomers" :key="`${customer.user_id}-${customer.order_id}`">
+                  <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ formatEventUser(customer.user_email, customer.user_id) }}</td>
+                  <td class="px-3 py-2 text-gray-600 dark:text-gray-300">#{{ customer.order_id }}</td>
+                  <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ customer.payment_type ? formatPaymentMethod(customer.payment_type) : '-' }}</td>
+                  <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ formatAmount(customer.pay_amount) }}</td>
+                  <td class="whitespace-nowrap px-3 py-2 text-gray-500 dark:text-gray-400">{{ formatEventTime(customer.first_paid_at) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5">
+        <div class="rounded-lg border border-gray-200 p-4 dark:border-dark-600">
           <h4 class="mb-3 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">{{ t('payment.admin.recentFunnelEvents') }}</h4>
           <div v-if="!recentEvents.length" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">{{ t('payment.admin.noData') }}</div>
           <div v-else class="overflow-x-auto">
@@ -65,6 +99,7 @@
               <thead class="text-xs uppercase text-gray-500 dark:text-gray-400">
                 <tr>
                   <th class="px-3 py-2 font-medium">{{ t('payment.admin.event') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('payment.admin.colUser') }}</th>
                   <th class="px-3 py-2 font-medium">{{ t('payment.admin.paymentMethod') }}</th>
                   <th class="px-3 py-2 font-medium">{{ t('payment.admin.amount') }}</th>
                   <th class="px-3 py-2 font-medium">{{ t('payment.admin.time') }}</th>
@@ -78,6 +113,7 @@
                       {{ event.status || event.error_kind || event.launch_kind || event.source }}
                     </div>
                   </td>
+                  <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ formatEventUser(event.user_email, event.user_id) }}</td>
                   <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ event.payment_type ? formatPaymentMethod(event.payment_type) : '-' }}</td>
                   <td class="px-3 py-2 text-gray-600 dark:text-gray-300">{{ formatAmount(event.pay_amount ?? event.amount) }}</td>
                   <td class="whitespace-nowrap px-3 py-2 text-gray-500 dark:text-gray-400">{{ formatEventTime(event.created_at) }}</td>
@@ -196,11 +232,13 @@ const funnelSteps = computed(() =>
 
 const maxStepCount = computed(() => Math.max(1, ...funnelSteps.value.map((step) => step.count)))
 const recentEvents = computed(() => props.analytics?.recent_events || [])
+const newCustomers = computed(() => props.analytics?.new_customers || [])
 const operatorRows = computed(() => props.analytics?.operators || [])
 const auditEvents = computed(() => props.analytics?.audit_events || [])
 const hasData = computed(() =>
   funnelSteps.value.some((step) => step.count > 0) ||
   recentEvents.value.length > 0 ||
+  newCustomers.value.length > 0 ||
   operatorRows.value.length > 0 ||
   auditEvents.value.length > 0
 )
@@ -251,6 +289,11 @@ function formatOperator(operator: string, actorType?: string, actorId?: number):
 
 function formatSubjectUser(userId: number | undefined): string {
   return userId ? `#${userId}` : '-'
+}
+
+function formatEventUser(email: string | undefined, userId: number | undefined): string {
+  if (email) return email
+  return formatSubjectUser(userId)
 }
 
 function formatAmount(value: number | undefined): string {

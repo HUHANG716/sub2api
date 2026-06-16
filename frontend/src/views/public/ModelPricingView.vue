@@ -76,6 +76,9 @@
               :data-test="`group-filter-${group.id}`"
               @click="activeGroup = group.id"
             >
+              <span class="filter-icon" aria-hidden="true">
+                <Icon :name="group.id === 'all' ? 'grid' : 'cube'" size="xs" />
+              </span>
               <span>{{ group.label }}</span>
               <strong>{{ group.count }}</strong>
             </button>
@@ -94,7 +97,10 @@
               :data-test="`provider-tab-${provider.id}`"
               @click="activeProvider = provider.id"
             >
-              <span class="provider-dot" :class="`provider-dot-${provider.id}`" />
+              <span class="filter-icon provider-filter-icon" aria-hidden="true">
+                <Icon v-if="provider.id === 'all'" name="globe" size="xs" />
+                <ModelIcon v-else :model="providerIconModel(provider.id)" size="14px" />
+              </span>
               <span>{{ provider.label }}</span>
               <strong>{{ provider.count }}</strong>
             </button>
@@ -203,12 +209,17 @@
             class="model-card"
           >
             <header class="model-card-head">
-              <span class="model-avatar" :class="`model-avatar-${item.provider}`">
-                {{ providerInitial(item.provider) }}
+              <span class="model-icon-badge" aria-hidden="true">
+                <ModelIcon :model="item.model" size="22px" />
               </span>
               <div class="model-title">
                 <h3 :title="item.model">{{ item.model }}</h3>
-                <p>{{ groupLabel(item) }} · {{ providerLabel(item.provider) }}</p>
+                <p>
+                  <span class="inline-provider">
+                    <ModelIcon :model="providerIconModel(item.provider)" size="13px" />
+                    {{ providerLabel(item.provider) }}
+                  </span>
+                </p>
               </div>
               <button
                 type="button"
@@ -244,6 +255,18 @@
             </div>
 
             <footer class="model-card-foot">
+              <div class="model-groups" :aria-label="`${item.model} 可用分组`">
+                <span
+                  v-for="group in itemGroups(item)"
+                  :key="group.id"
+                  class="model-group-chip"
+                  :title="`${group.name} x${formatMultiplier(group.rate_multiplier)}`"
+                >
+                  <Icon name="cube" size="xs" />
+                  <span>{{ group.name }}</span>
+                  <strong>x{{ formatMultiplier(group.rate_multiplier) }}</strong>
+                </span>
+              </div>
               <div class="model-tags">
                 <span class="model-tag">{{ pricingTypeLabel(item) }}</span>
                 <span v-if="item.image_output_price !== null" class="model-tag">
@@ -252,7 +275,6 @@
                 <span v-if="item.per_request_price !== null && item.per_request_price !== undefined" class="model-tag">
                   单次 {{ formatCurrency(item.per_request_price) }}
                 </span>
-                <span class="model-tag accent">{{ groupRateLabel(item) }}</span>
                 <span v-if="item.supports_prompt_caching" class="model-tag accent">Prompt Cache</span>
                 <span v-if="item.supports_service_tier" class="model-tag accent">Service Tier</span>
                 <span v-if="!hasCapability(item)" class="model-tag muted">基础模型</span>
@@ -281,14 +303,31 @@
             <tbody>
               <tr v-for="item in filteredItems" :key="itemKey(item)">
                 <td>
-                  <span class="pricing-provider">{{ groupLabel(item) }}</span>
+                  <div class="pricing-group-list">
+                    <span
+                      v-for="group in itemGroups(item)"
+                      :key="group.id"
+                      class="pricing-group-chip"
+                      :title="`${group.name} x${formatMultiplier(group.rate_multiplier)}`"
+                    >
+                      <Icon name="cube" size="xs" />
+                      <span>{{ group.name }}</span>
+                      <strong>x{{ formatMultiplier(group.rate_multiplier) }}</strong>
+                    </span>
+                  </div>
                 </td>
                 <td>
-                  <span class="pricing-provider" :class="`provider-${item.provider}`">
+                  <span class="pricing-provider">
+                    <ModelIcon :model="providerIconModel(item.provider)" size="14px" />
                     {{ providerLabel(item.provider) }}
                   </span>
                 </td>
-                <td class="pricing-model">{{ item.model }}</td>
+                <td class="pricing-model">
+                  <div class="pricing-model-cell">
+                    <ModelIcon :model="item.model" size="16px" />
+                    <span class="pricing-model-name" :title="item.model">{{ item.model }}</span>
+                  </div>
+                </td>
                 <td>
                   <code>{{ item.mode || '-' }}</code>
                 </td>
@@ -317,6 +356,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import Icon from '@/components/icons/Icon.vue'
+import ModelIcon from '@/components/common/ModelIcon.vue'
 import {
   getPublicModelPricing,
   type PublicModelPricingCatalog,
@@ -357,6 +397,14 @@ const providerLabels: Record<string, string> = {
   gemini: 'Gemini',
   antigravity: 'Antigravity',
   xai: 'xAI',
+}
+
+const providerIconModels: Record<string, string> = {
+  openai: 'gpt',
+  anthropic: 'claude',
+  gemini: 'gemini',
+  antigravity: 'gemini',
+  xai: 'grok',
 }
 
 const allItems = computed(() => catalog.value?.items ?? [])
@@ -431,25 +479,37 @@ const capabilityFilters = computed<CountedFilter<CapabilityFilter>[]>(() => [
 
 const filteredItems = computed(() => {
   const query = search.value.trim().toLowerCase()
-  return allItems.value.filter((item) => {
-    if (activeGroup.value !== 'all' && !(item.group_ids ?? []).includes(activeGroup.value)) {
-      return false
-    }
-    if (activeProvider.value !== 'all' && item.provider !== activeProvider.value) {
-      return false
-    }
-    if (!matchesPricingFilter(item, activePricingFilter.value)) {
-      return false
-    }
-    if (!matchesCapabilityFilter(item, activeCapabilityFilter.value)) {
-      return false
-    }
-    if (!query) {
-      return true
-    }
-    return [item.provider, providerLabel(item.provider), item.model, item.mode, groupLabel(item), pricingTypeLabel(item)]
-      .some((value) => value.toLowerCase().includes(query))
-  })
+  return allItems.value
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => {
+      if (activeGroup.value !== 'all' && !(item.group_ids ?? []).includes(activeGroup.value)) {
+        return false
+      }
+      if (activeProvider.value !== 'all' && item.provider !== activeProvider.value) {
+        return false
+      }
+      if (!matchesPricingFilter(item, activePricingFilter.value)) {
+        return false
+      }
+      if (!matchesCapabilityFilter(item, activeCapabilityFilter.value)) {
+        return false
+      }
+      if (!query) {
+        return true
+      }
+      return [
+        item.provider,
+        providerLabel(item.provider),
+        item.model,
+        item.mode,
+        groupLabel(item),
+        itemGroups(item).map(group => group.name).join(' '),
+        pricingTypeLabel(item),
+      ]
+        .some((value) => value.toLowerCase().includes(query))
+    })
+    .sort(compareModelPricingItems)
+    .map(({ item }) => item)
 })
 
 const formattedLastUpdated = computed(() => {
@@ -487,8 +547,11 @@ function providerLabel(provider: PublicModelPricingItem['provider']): string {
   return providerLabels[provider] || provider
 }
 
-function providerInitial(provider: PublicModelPricingItem['provider']): string {
-  return providerLabel(provider).slice(0, 1)
+function providerIconModel(provider: ProviderTab): string {
+  if (provider === 'all') {
+    return ''
+  }
+  return providerIconModels[provider] || provider
 }
 
 function hasTokenPricing(item: PublicModelPricingItem): boolean {
@@ -540,6 +603,43 @@ function matchesCapabilityFilter(item: PublicModelPricingItem, filter: Capabilit
   return !hasCapability(item)
 }
 
+function compareModelPricingItems(
+  a: { item: PublicModelPricingItem, index: number },
+  b: { item: PublicModelPricingItem, index: number },
+): number {
+  const aDate = modelSnapshotDateValue(a.item.model)
+  const bDate = modelSnapshotDateValue(b.item.model)
+
+  if (aDate !== null || bDate !== null) {
+    if (aDate !== bDate) {
+      return (bDate ?? Number.NEGATIVE_INFINITY) - (aDate ?? Number.NEGATIVE_INFINITY)
+    }
+  }
+
+  return a.index - b.index
+}
+
+function modelSnapshotDateValue(model: string): number | null {
+  const matches = [...model.matchAll(/(?:^|[-_])((20\d{2})[-_]?([01]\d)[-_]?([0-3]\d))(?:$|[-_])/g)]
+  const lastMatch = matches.at(-1)
+  if (!lastMatch) {
+    return null
+  }
+
+  const year = Number(lastMatch[2])
+  const month = Number(lastMatch[3])
+  const day = Number(lastMatch[4])
+  const date = new Date(Date.UTC(year, month - 1, day))
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null
+  }
+  return date.getTime()
+}
+
 function pricingTypeLabel(item: PublicModelPricingItem): string {
   if (item.billing_mode === 'per_request' || item.per_request_price !== null && item.per_request_price !== undefined) {
     return '按请求'
@@ -583,21 +683,27 @@ function itemKey(item: PublicModelPricingItem): string {
   return `${item.group_ids?.join(',') || 'default'}:${item.provider}:${item.model}`
 }
 
-function firstGroup(item: PublicModelPricingItem): PublicModelPricingGroup | null {
-  const groupID = item.group_ids?.[0]
-  if (groupID === undefined) {
-    return null
+function itemGroups(item: PublicModelPricingItem): PublicModelPricingGroup[] {
+  const groups = (item.group_ids ?? [])
+    .map(groupID => groupByID.value[groupID])
+    .filter((group): group is PublicModelPricingGroup => Boolean(group))
+
+  if (groups.length > 0) {
+    return groups
   }
-  return groupByID.value[groupID] ?? null
+
+  return [{
+    id: 0,
+    name: '默认分组',
+    platform: item.provider,
+    rate_multiplier: 1,
+    subscription_type: 'standard',
+    is_exclusive: false,
+  }]
 }
 
 function groupLabel(item: PublicModelPricingItem): string {
-  return firstGroup(item)?.name || '默认分组'
-}
-
-function groupRateLabel(item: PublicModelPricingItem): string {
-  const group = firstGroup(item)
-  return group ? `x${formatMultiplier(group.rate_multiplier)}` : 'x1'
+  return itemGroups(item).map(group => group.name).join(' ')
 }
 
 function formatMultiplier(value: number): string {
@@ -912,7 +1018,7 @@ onMounted(() => {
   font-weight: 820;
 }
 
-.filter-chip span:not(.provider-dot) {
+.filter-chip span:not(.filter-icon) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -933,27 +1039,21 @@ onMounted(() => {
   color: var(--theme-primary);
 }
 
-.provider-dot {
-  height: 0.5rem;
-  width: 0.5rem;
+.filter-icon {
+  display: inline-flex;
+  height: 1.25rem;
+  width: 1.25rem;
   flex: 0 0 auto;
-  border-radius: 50%;
-  background: var(--theme-text-muted);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--theme-border) 72%, transparent);
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--theme-bg) 42%, var(--theme-surface-muted));
+  color: var(--theme-text);
 }
 
-.provider-dot-openai,
-.model-avatar-openai {
-  background: #16a34a;
-}
-
-.provider-dot-anthropic,
-.model-avatar-anthropic {
-  background: var(--theme-primary);
-}
-
-.provider-dot-gemini,
-.model-avatar-gemini {
-  background: #2563eb;
+.provider-filter-icon {
+  background: #fff;
 }
 
 .pricing-results {
@@ -1043,16 +1143,16 @@ onMounted(() => {
   gap: 0.75rem;
 }
 
-.model-avatar {
+.model-icon-badge {
   display: inline-flex;
   height: 2.25rem;
   width: 2.25rem;
   align-items: center;
   justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--theme-border) 72%, transparent);
   border-radius: 0.55rem;
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 950;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 72%, transparent);
 }
 
 .model-title {
@@ -1078,6 +1178,13 @@ onMounted(() => {
   font-weight: 750;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.inline-provider {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 .icon-button {
@@ -1135,6 +1242,13 @@ onMounted(() => {
   align-self: end;
 }
 
+.model-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.55rem;
+}
+
 .model-tags,
 .pricing-capabilities {
   display: flex;
@@ -1144,10 +1258,13 @@ onMounted(() => {
 
 .model-tag,
 .pricing-provider,
+.model-group-chip,
+.pricing-group-chip,
 .pricing-capabilities span {
   display: inline-flex;
   min-height: 1.55rem;
   align-items: center;
+  gap: 0.28rem;
   border-radius: 999px;
   padding: 0 0.55rem;
   font-size: 0.72rem;
@@ -1158,6 +1275,28 @@ onMounted(() => {
   border: 1px solid var(--theme-border);
   background: var(--theme-surface-muted);
   color: var(--theme-text-muted);
+}
+
+.model-group-chip,
+.pricing-group-chip {
+  max-width: 100%;
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 26%, var(--theme-border));
+  background: color-mix(in srgb, var(--theme-primary) 7%, var(--theme-surface));
+  color: var(--theme-text);
+}
+
+.model-group-chip span,
+.pricing-group-chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-group-chip strong,
+.pricing-group-chip strong {
+  color: var(--theme-primary);
+  font-size: 0.68rem;
 }
 
 .model-tag.accent,
@@ -1190,7 +1329,6 @@ onMounted(() => {
   padding: 0.72rem 0.75rem;
   text-align: left;
   vertical-align: middle;
-  white-space: nowrap;
 }
 
 .pricing-table th {
@@ -1205,6 +1343,7 @@ onMounted(() => {
 .pricing-table td {
   color: var(--theme-text);
   font-size: 0.86rem;
+  white-space: nowrap;
 }
 
 .pricing-table tbody tr:last-child td {
@@ -1217,10 +1356,29 @@ onMounted(() => {
 
 .pricing-model {
   max-width: 22rem;
+}
+
+.pricing-model-cell {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pricing-model-name {
+  min-width: 0;
   overflow: hidden;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 800;
   text-overflow: ellipsis;
+}
+
+.pricing-group-list {
+  display: flex;
+  max-width: 19rem;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  white-space: normal;
 }
 
 .pricing-table code {
@@ -1234,21 +1392,10 @@ onMounted(() => {
 }
 
 .pricing-provider {
+  gap: 0.35rem;
   border: 1px solid var(--theme-border);
   background: var(--theme-surface-muted);
   color: var(--theme-text);
-}
-
-.provider-openai {
-  color: #16a34a;
-}
-
-.provider-anthropic {
-  color: var(--theme-primary);
-}
-
-.provider-gemini {
-  color: #2563eb;
 }
 
 .pricing-state {

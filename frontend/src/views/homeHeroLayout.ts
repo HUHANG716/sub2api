@@ -44,6 +44,8 @@ export type HeroTagLayout = {
   depth: number
   driftX: number
   driftY: number
+  scatterX: number
+  scatterY: number
   delay: number
 }
 
@@ -127,17 +129,51 @@ export function computeHeroTagLayout(input: ComputeHeroTagLayoutInput): HeroTagL
 
   resolveLayoutGeometry(nodes, safeRects, bounds, config, profile)
 
-  return nodes.map((node) => ({
-    key: node.key,
-    x: roundPixel(clamp(node.x ?? node.targetX, bounds.minX + node.visualWidth / 2, bounds.maxX - node.visualWidth / 2)),
-    y: roundPixel(clamp(node.y ?? node.targetY, bounds.minY + node.visualHeight / 2, bounds.maxY - node.visualHeight / 2)),
-    width: roundPixel(node.width),
-    height: roundPixel(node.height),
-    depth: node.depth,
-    driftX: node.driftX,
-    driftY: node.driftY,
-    delay: node.delay
-  }))
+  return nodes.map((node, index) => {
+    const x = roundPixel(clamp(node.x ?? node.targetX, bounds.minX + node.visualWidth / 2, bounds.maxX - node.visualWidth / 2))
+    const y = roundPixel(clamp(node.y ?? node.targetY, bounds.minY + node.visualHeight / 2, bounds.maxY - node.visualHeight / 2))
+    const scrollVector = createScrollExitVector(x, y, input.stageRect, index)
+
+    return {
+      key: node.key,
+      x,
+      y,
+      width: roundPixel(node.width),
+      height: roundPixel(node.height),
+      depth: node.depth,
+      driftX: node.driftX,
+      driftY: node.driftY,
+      scatterX: scrollVector.scatterX,
+      scatterY: scrollVector.scatterY,
+      delay: node.delay
+    }
+  })
+}
+
+function createScrollExitVector(x: number, y: number, stageRect: HeroRect, index: number) {
+  const centerX = stageRect.width / 2
+  const centerY = stageRect.height / 2
+  let dx = x - centerX
+  let dy = y - centerY
+  const distance = Math.hypot(dx, dy)
+
+  if (distance < 1) {
+    const angle = (index / 7) * Math.PI * 2
+    dx = Math.cos(angle)
+    dy = Math.sin(angle)
+  } else {
+    dx /= distance
+    dy /= distance
+  }
+
+  const exitDistance = Math.hypot(stageRect.width, stageRect.height) * 0.72
+  const exitX = x + dx * exitDistance
+  const exitY = y + dy * exitDistance
+
+  return {
+    scatterX: roundPixel(exitX - x),
+    scatterY: roundPixel(exitY - y)
+  }
 }
 
 function createLayoutConfig(

@@ -20,6 +20,14 @@ func newAdminPaymentAnalyticsTestRouter(h *PaymentHandler) *gin.Engine {
 	return router
 }
 
+func stringPtr(value string) *string {
+	return &value
+}
+
+func floatPtr(value float64) *float64 {
+	return &value
+}
+
 func TestAdminPaymentAnalyticsReturnsMissingWhenTableDoesNotExist(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
@@ -52,14 +60,14 @@ func TestAdminPaymentAnalyticsRecentEventsFallbackWhenSourceColumnMissing(t *tes
 	c.Request = httptest.NewRequest(http.MethodGet, "/admin/payment/analytics", nil)
 	createdAt := time.Now()
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, tab, order_type, payment_type, launch_kind, source, status,")).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT pe.event_name, pe.user_id, u.email, pe.tab, pe.order_type, pe.payment_type,")).
 		WillReturnError(&pq.Error{Code: "42703"})
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, tab, order_type, payment_type, launch_kind, status,")).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT pe.event_name, pe.user_id, u.email, pe.tab, pe.order_type, pe.payment_type,")).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"event_name", "tab", "order_type", "payment_type", "launch_kind", "status",
+			"event_name", "user_id", "email", "tab", "order_type", "payment_type", "launch_kind", "status",
 			"amount", "pay_amount", "plan_id", "order_id", "error_kind", "created_at",
 		}).AddRow(
-			"payment_order_submit", "balance", "balance", "alipay", "web", "SUBMITTED",
+			"payment_order_submit", int64(99), "actor@example.com", "balance", "balance", "alipay", "web", "SUBMITTED",
 			12.5, 12.5, int64(0), int64(123), "", createdAt,
 		))
 
@@ -68,6 +76,10 @@ func TestAdminPaymentAnalyticsRecentEventsFallbackWhenSourceColumnMissing(t *tes
 	require.NoError(t, err)
 	require.Len(t, events, 1)
 	require.Equal(t, "payment_order_submit", events[0].Name)
+	require.NotNil(t, events[0].UserID)
+	require.Equal(t, int64(99), *events[0].UserID)
+	require.NotNil(t, events[0].UserEmail)
+	require.Equal(t, "actor@example.com", *events[0].UserEmail)
 	require.Nil(t, events[0].Source)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
@@ -128,13 +140,13 @@ func TestAdminPaymentAnalyticsRecentEventsMinimalFallbackWhenLegacyColumnsMissin
 	c.Request = httptest.NewRequest(http.MethodGet, "/admin/payment/analytics", nil)
 	createdAt := time.Now()
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, tab, order_type, payment_type, launch_kind, source, status,")).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT pe.event_name, pe.user_id, u.email, pe.tab, pe.order_type, pe.payment_type,")).
 		WillReturnError(&pq.Error{Code: "42703"})
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, tab, order_type, payment_type, launch_kind, status,")).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT pe.event_name, pe.user_id, u.email, pe.tab, pe.order_type, pe.payment_type,")).
 		WillReturnError(&pq.Error{Code: "42703"})
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, created_at")).
-		WillReturnRows(sqlmock.NewRows([]string{"event_name", "created_at"}).
-			AddRow("payment_page_view", createdAt))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT pe.event_name, pe.user_id, u.email, pe.created_at")).
+		WillReturnRows(sqlmock.NewRows([]string{"event_name", "user_id", "email", "created_at"}).
+			AddRow("payment_page_view", int64(99), "actor@example.com", createdAt))
 
 	events, err := h.queryPaymentAnalyticsRecentEvents(c, time.Now().Add(-24*time.Hour))
 
@@ -142,6 +154,8 @@ func TestAdminPaymentAnalyticsRecentEventsMinimalFallbackWhenLegacyColumnsMissin
 	require.Len(t, events, 1)
 	require.Equal(t, "payment_page_view", events[0].Name)
 	require.Equal(t, createdAt, *events[0].CreatedAt)
+	require.NotNil(t, events[0].UserID)
+	require.Equal(t, int64(99), *events[0].UserID)
 	require.Nil(t, events[0].PaymentType)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
@@ -162,13 +176,15 @@ func TestAdminPaymentAnalyticsReturnsAvailableDataWhenEventMetadataColumnsMissin
 			AddRow("payment_page_view", int64(1), int64(1)))
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT COALESCE(payment_type, ''), event_name, COUNT(*) AS count")).
 		WillReturnError(&pq.Error{Code: "42703"})
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, tab, order_type, payment_type, launch_kind, source, status,")).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT pe.event_name, pe.user_id, u.email, pe.tab, pe.order_type, pe.payment_type,")).
 		WillReturnError(&pq.Error{Code: "42703"})
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, tab, order_type, payment_type, launch_kind, status,")).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT pe.event_name, pe.user_id, u.email, pe.tab, pe.order_type, pe.payment_type,")).
 		WillReturnError(&pq.Error{Code: "42703"})
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, created_at")).
-		WillReturnRows(sqlmock.NewRows([]string{"event_name", "created_at"}).
-			AddRow("payment_page_view", createdAt))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT pe.event_name, pe.user_id, u.email, pe.created_at")).
+		WillReturnRows(sqlmock.NewRows([]string{"event_name", "user_id", "email", "created_at"}).
+			AddRow("payment_page_view", int64(1), "user@example.com", createdAt))
+	mock.ExpectQuery(regexp.QuoteMeta("WITH successful_orders AS")).
+		WillReturnError(&pq.Error{Code: "42P01"})
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT operator, action, COUNT(*) AS count, MAX(created_at) AS last_action_at")).
 		WillReturnError(&pq.Error{Code: "42P01"})
 
@@ -195,10 +211,14 @@ func TestAdminPaymentAnalyticsSkipsMissingAuditTable(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"event_name", "count", "unique_users"}))
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT COALESCE(payment_type, ''), event_name, COUNT(*) AS count")).
 		WillReturnRows(sqlmock.NewRows([]string{"payment_type", "event_name", "count"}))
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT event_name, tab, order_type, payment_type, launch_kind, source, status,")).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT pe.event_name, pe.user_id, u.email, pe.tab, pe.order_type, pe.payment_type,")).
 		WillReturnRows(sqlmock.NewRows([]string{
-			"event_name", "tab", "order_type", "payment_type", "launch_kind", "source", "status",
+			"event_name", "user_id", "email", "tab", "order_type", "payment_type", "launch_kind", "source", "status",
 			"amount", "pay_amount", "plan_id", "order_id", "error_kind", "created_at",
+		}))
+	mock.ExpectQuery(regexp.QuoteMeta("WITH successful_orders AS")).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"user_id", "user_email", "id", "order_type", "payment_type", "pay_amount", "first_paid_at",
 		}))
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT operator, action, COUNT(*) AS count, MAX(created_at) AS last_action_at")).
 		WillReturnError(&pq.Error{Code: "42P01"})
@@ -210,6 +230,39 @@ func TestAdminPaymentAnalyticsSkipsMissingAuditTable(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Contains(t, rec.Body.String(), `"operators":null`)
 	require.Contains(t, rec.Body.String(), `"audit_events":null`)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAdminPaymentAnalyticsNewCustomersReturnsFirstSuccessfulOrdersInWindow(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	h := NewPaymentHandler(nil, nil, db)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/payment/analytics", nil)
+	firstPaidAt := time.Now()
+
+	mock.ExpectQuery(regexp.QuoteMeta("WITH successful_orders AS")).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"user_id", "user_email", "id", "order_type", "payment_type", "pay_amount", "first_paid_at",
+		}).AddRow(
+			int64(99), "actor@example.com", int64(123), "balance", "alipay", 20.0, firstPaidAt,
+		))
+
+	customers, err := h.queryPaymentAnalyticsNewCustomers(c, time.Now().Add(-24*time.Hour))
+
+	require.NoError(t, err)
+	require.Equal(t, []PaymentAnalyticsNewCustomer{{
+		UserID:      99,
+		UserEmail:   "actor@example.com",
+		OrderID:     123,
+		OrderType:   stringPtr("balance"),
+		PaymentType: stringPtr("alipay"),
+		PayAmount:   floatPtr(20),
+		FirstPaidAt: &firstPaidAt,
+	}}, customers)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 

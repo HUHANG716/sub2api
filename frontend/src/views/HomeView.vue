@@ -60,7 +60,6 @@
         class="hero-section px-5 sm:px-6 lg:px-8"
         data-header-surface="var(--landing-bg)"
         @mousemove="handleHeroPointerMove"
-        @mouseleave="resetHeroPointer"
       >
         <div ref="heroStageRef" class="landing-container hero-stage" :style="heroStageStyle">
           <div class="hero-floating-tags" aria-hidden="true">
@@ -346,6 +345,7 @@ const dashboardPath = computed(() => (isAdmin.value ? '/admin/dashboard' : '/das
 const currentYear = computed(() => new Date().getFullYear())
 const isHeaderCompact = ref(false)
 const headerSurface = ref('var(--landing-bg)')
+const heroScrollProgress = ref(0)
 const landingHeaderRef = ref<HTMLElement | null>(null)
 const heroPointer = ref({ x: 0, y: 0 })
 const heroSectionRef = ref<HTMLElement | null>(null)
@@ -537,7 +537,8 @@ const footerGroups = computed<FooterGroup[]>(() => [
 const heroStageStyle = computed(() => ({
   '--hero-pointer-x': heroPointer.value.x.toFixed(3),
   '--hero-pointer-y': heroPointer.value.y.toFixed(3),
-  '--hero-pointer-active': heroPointerPhysics.active.toFixed(3)
+  '--hero-pointer-active': heroPointerPhysics.active.toFixed(3),
+  '--hero-scroll-progress': heroScrollProgress.value.toFixed(3)
 }))
 const landingHeaderStyle = computed(() => ({
   '--landing-header-surface': headerSurface.value
@@ -550,6 +551,7 @@ function heroTagStyle(tool: HeroFloatingTool): CSSProperties {
   const layout = heroLayoutByKey.value.get(tool.name)
   if (!layout) return {}
   const field = heroFieldByKey.value.get(tool.name)
+  const scroll = computeHeroTagScrollMotion(layout)
 
   return {
     '--hero-tag-x': `${layout.x.toFixed(1)}px`,
@@ -562,9 +564,35 @@ function heroTagStyle(tool: HeroFloatingTool): CSSProperties {
     '--hero-tag-drift-y': `${layout.driftY.toFixed(1)}px`,
     '--hero-tag-field-x': `${(field?.fieldX ?? 0).toFixed(1)}px`,
     '--hero-tag-field-y': `${(field?.fieldY ?? 0).toFixed(1)}px`,
+    '--hero-tag-scroll-x': `${scroll.x.toFixed(1)}px`,
+    '--hero-tag-scroll-y': `${scroll.y.toFixed(1)}px`,
+    '--hero-tag-scroll-opacity': scroll.opacity.toFixed(3),
+    '--hero-tag-scroll-scale': scroll.scale.toFixed(3),
     '--hero-tag-angle': `${tool.angle}deg`,
     '--hero-tag-delay': `${layout.delay}ms`
   } as CSSProperties
+}
+
+function computeHeroTagScrollMotion(layout: HeroTagLayout) {
+  const progress = heroScrollProgress.value
+  const scatterProgress = Math.max(0, Math.min(1, progress / 1.28))
+  const scatter = smoothProgress(scatterProgress)
+  const scatterX = layout.scatterX ?? 0
+  const scatterY = layout.scatterY ?? 0
+  const x = scatterX * scatter
+  const y = scatterY * scatter
+  const fade = smoothProgress(Math.max(0, Math.min(1, (progress - 0.28) / 0.34)))
+
+  return {
+    x,
+    y,
+    opacity: 1 - fade,
+    scale: 1 - scatter * 0.28
+  }
+}
+
+function smoothProgress(value: number): number {
+  return value * value * (3 - 2 * value)
 }
 
 function avatarStyle(backgroundPosition: string) {
@@ -585,7 +613,21 @@ function markHeroFloatingToolReady(name: string) {
 
 function syncHeaderScrollState() {
   isHeaderCompact.value = window.scrollY > 18
+  syncHeroScrollProgress()
   syncHeaderSurface()
+}
+
+function syncHeroScrollProgress() {
+  const section = heroSectionRef.value
+  if (!section) {
+    heroScrollProgress.value = 0
+    return
+  }
+
+  const rect = section.getBoundingClientRect()
+  const travel = Math.max(1, rect.height * 0.76)
+  const progress = Math.max(0, Math.min(1, -rect.top / travel))
+  heroScrollProgress.value = canUseHeroMotion() ? progress : 0
 }
 
 function syncHeaderSurface() {
@@ -606,10 +648,14 @@ function syncHeaderSurface() {
 function handleHeroPointerMove(event: MouseEvent) {
   const stage = heroStageRef.value
   const rect = stage?.getBoundingClientRect() ?? (event.currentTarget as HTMLElement).getBoundingClientRect()
-  const stageX = Math.max(0, Math.min(rect.width, event.clientX - rect.left))
-  const stageY = Math.max(0, Math.min(rect.height, event.clientY - rect.top))
-  const x = (stageX / rect.width - 0.5) * 2
-  const y = (stageY / rect.height - 0.5) * 2
+  const fallbackWidth = window.innerWidth || 1
+  const fallbackHeight = window.innerHeight || 1
+  const width = rect.width > 0 ? rect.width : fallbackWidth
+  const height = rect.height > 0 ? rect.height : fallbackHeight
+  const stageX = Math.max(0, Math.min(width, event.clientX - rect.left))
+  const stageY = Math.max(0, Math.min(height, event.clientY - rect.top))
+  const x = (stageX / width - 0.5) * 2
+  const y = (stageY / height - 0.5) * 2
 
   heroPointer.value = {
     x: Math.max(-1, Math.min(1, x)),
@@ -620,16 +666,6 @@ function handleHeroPointerMove(event: MouseEvent) {
   heroPointerTarget.stageX = stageX
   heroPointerTarget.stageY = stageY
   heroPointerTarget.active = canUseHeroField() ? 1 : 0
-  scheduleHeroFieldFrame()
-}
-
-function resetHeroPointer() {
-  heroPointer.value = { x: 0, y: 0 }
-  heroPointerTarget.x = 0
-  heroPointerTarget.y = 0
-  heroPointerTarget.stageX = 0
-  heroPointerTarget.stageY = 0
-  heroPointerTarget.active = 0
   scheduleHeroFieldFrame()
 }
 
@@ -693,13 +729,13 @@ function scheduleHeroFieldFrame() {
 
 function tickHeroField() {
   heroFieldFrame = 0
-  const stiffness = 0.22
+  const stiffness = 0.42
 
   heroPointerPhysics.x += (heroPointerTarget.x - heroPointerPhysics.x) * stiffness
   heroPointerPhysics.y += (heroPointerTarget.y - heroPointerPhysics.y) * stiffness
   heroPointerPhysics.stageX += (heroPointerTarget.stageX - heroPointerPhysics.stageX) * stiffness
   heroPointerPhysics.stageY += (heroPointerTarget.stageY - heroPointerPhysics.stageY) * stiffness
-  heroPointerPhysics.active += (heroPointerTarget.active - heroPointerPhysics.active) * 0.16
+  heroPointerPhysics.active += (heroPointerTarget.active - heroPointerPhysics.active) * 0.34
 
   heroPointer.value = {
     x: heroPointerPhysics.x * heroPointerPhysics.active,
@@ -725,6 +761,11 @@ function canUseHeroField() {
   const finePointer = !window.matchMedia || window.matchMedia('(hover: hover) and (pointer: fine)').matches
   const reducedMotion = Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
   return finePointer && !reducedMotion
+}
+
+function canUseHeroMotion() {
+  if (typeof window === 'undefined') return false
+  return !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 }
 
 function computeHeroTagFields(pointer: HeroPointerState): HeroTagField[] {
@@ -1246,7 +1287,7 @@ onUnmounted(() => {
   min-height: 100svh;
   display: grid;
   place-items: center;
-  overflow-x: clip;
+  overflow: hidden;
   background: var(--landing-bg);
   padding-top: clamp(6.25rem, 8vw, 7.5rem);
   padding-bottom: clamp(2rem, 4vw, 3.25rem);
@@ -1308,6 +1349,10 @@ onUnmounted(() => {
   --hero-tag-drift-y: 12px;
   --hero-tag-field-x: 0px;
   --hero-tag-field-y: 0px;
+  --hero-tag-scroll-x: 0px;
+  --hero-tag-scroll-y: 0px;
+  --hero-tag-scroll-opacity: 1;
+  --hero-tag-scroll-scale: 1;
   --hero-tag-angle: 0deg;
   display: inline-flex;
   box-sizing: border-box;
@@ -1324,11 +1369,12 @@ onUnmounted(() => {
   isolation: isolate;
   transform-style: preserve-3d;
   transform: translate3d(
-      calc(var(--hero-tag-x) - 50% + var(--hero-tag-field-x)),
-      calc(var(--hero-tag-y) - 50% + var(--hero-tag-field-y)),
+      calc(var(--hero-tag-x) - 50% + var(--hero-tag-field-x) + var(--hero-tag-scroll-x)),
+      calc(var(--hero-tag-y) - 50% + var(--hero-tag-field-y) + var(--hero-tag-scroll-y)),
       0
-    ) rotate(var(--hero-tag-angle));
-  transition: transform 120ms ease-out;
+    ) rotate(var(--hero-tag-angle)) scale(var(--hero-tag-scroll-scale));
+  opacity: var(--hero-tag-scroll-opacity);
+  transition: none;
   will-change: transform, translate;
 }
 
@@ -1341,7 +1387,7 @@ onUnmounted(() => {
   justify-content: center;
   flex-direction: column;
   gap: 0.38rem;
-  border: clamp(0.32rem, 0.8vw, 0.56rem) solid var(--landing-sticker-border);
+  border: clamp(0.18rem, 0.42vw, 0.34rem) solid var(--landing-sticker-border);
   border-radius: inherit;
   background: var(--landing-sticker-bg);
   color: var(--landing-bg);
@@ -1432,8 +1478,8 @@ onUnmounted(() => {
 }
 
 .floating-tool-icon img {
-  height: 98%;
-  width: 98%;
+  height: 112%;
+  width: 112%;
   object-fit: contain;
 }
 
@@ -2063,6 +2109,12 @@ onUnmounted(() => {
 
   .floating-tool-tag {
     transition: none;
+    opacity: 1;
+    transform: translate3d(
+        calc(var(--hero-tag-x) - 50% + var(--hero-tag-field-x)),
+        calc(var(--hero-tag-y) - 50% + var(--hero-tag-field-y)),
+        0
+      ) rotate(var(--hero-tag-angle));
   }
 
   .landing-header,

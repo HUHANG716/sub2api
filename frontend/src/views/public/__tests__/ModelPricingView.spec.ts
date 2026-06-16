@@ -226,6 +226,73 @@ describe('ModelPricingView', () => {
     expect(wrapper.text()).not.toContain('gemini-3-pro')
   })
 
+  it('sorts dated model snapshots from newest to oldest', async () => {
+    getPublicModelPricingMock.mockResolvedValue({
+      ...catalog,
+      items: [
+        {
+          ...catalog.items[0],
+          model: 'claude-4-sonnet-20250514',
+        },
+        {
+          ...catalog.items[1],
+          model: 'gpt-4o-2024-08-06',
+        },
+        {
+          ...catalog.items[2],
+          model: 'gpt-5.5',
+        },
+        {
+          ...catalog.items[0],
+          model: 'claude-3-7-sonnet-20250219',
+        },
+      ],
+    })
+
+    const wrapper = mount(ModelPricingView, {
+      global: {
+        stubs: {
+          Icon: IconStub,
+          RouterLink: { template: '<a><slot /></a>' },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    const names = wrapper.findAll('.model-title h3').map(node => node.text())
+    expect(names).toEqual([
+      'claude-4-sonnet-20250514',
+      'claude-3-7-sonnet-20250219',
+      'gpt-4o-2024-08-06',
+      'gpt-5.5',
+    ])
+  })
+
+  it('shows provider icons and real catalog groups instead of generic dots', async () => {
+    const wrapper = mount(ModelPricingView, {
+      global: {
+        stubs: {
+          Icon: IconStub,
+          RouterLink: { template: '<a><slot /></a>' },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('.provider-dot').exists()).toBe(false)
+    expect(wrapper.find('[data-test="provider-tab-openai"] .provider-filter-icon .model-icon').exists()).toBe(true)
+    expect(wrapper.find('[data-test="provider-tab-anthropic"] .provider-filter-icon .model-icon').exists()).toBe(true)
+    expect(wrapper.findAll('.model-group-chip').some(chip => chip.text().includes('Plus 福利') && chip.text().includes('x0.5'))).toBe(true)
+    expect(wrapper.findAll('.model-group-chip').some(chip => chip.text().includes('Claude Kiro') && chip.text().includes('x2.6'))).toBe(true)
+
+    await wrapper.get('[data-test="view-table"]').trigger('click')
+
+    expect(wrapper.findAll('.pricing-group-chip').some(chip => chip.text().includes('Gemini 全家桶') && chip.text().includes('x1'))).toBe(true)
+    expect(wrapper.find('.pricing-provider .model-icon').exists()).toBe(true)
+  })
+
   it('shows an error state and retries loading', async () => {
     getPublicModelPricingMock
       .mockRejectedValueOnce(new Error('network down'))

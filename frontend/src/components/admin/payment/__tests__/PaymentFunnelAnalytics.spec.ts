@@ -9,6 +9,8 @@ const messages: Record<string, string> = {
   'payment.admin.conversionEmpty': '暂无转化',
   'payment.admin.noData': '暂无数据',
   'payment.admin.noFunnelData': '暂无支付埋点数据',
+  'payment.admin.newCustomerCount': '{count} 人',
+  'payment.admin.newCustomers': '支付新客户',
   'payment.admin.operatorAdmin': '管理员 #{id}',
   'payment.admin.operatorSummary': '操作者汇总',
   'payment.admin.recentAuditEvents': '最近审计动作',
@@ -52,6 +54,7 @@ describe('PaymentFunnelAnalytics', () => {
       steps: [],
       methods: [],
       recent_events: [],
+      new_customers: [],
       operators: [{
         operator: 'admin:123',
         actor_type: 'admin',
@@ -82,5 +85,37 @@ describe('PaymentFunnelAnalytics', () => {
     expect(wrapper.text()).toContain('最近审计动作')
     expect(wrapper.text()).toContain('管理员 #123')
     expect(wrapper.text()).toContain('user@example.com')
+  })
+
+  it('renders new paying customers and recent event actors', () => {
+    const wrapper = mountAnalytics({
+      steps: [],
+      methods: [],
+      recent_events: [{
+        name: 'payment_amount_select',
+        user_id: 99,
+        user_email: 'actor@example.com',
+        payment_type: 'alipay',
+        amount: 20,
+        created_at: '2026-06-01T11:00:00Z',
+      }],
+      new_customers: [{
+        user_id: 99,
+        user_email: 'actor@example.com',
+        order_id: 123,
+        payment_type: 'alipay',
+        pay_amount: 20,
+        first_paid_at: '2026-06-01T11:05:00Z',
+      }],
+      operators: [],
+      audit_events: [],
+      window_days: 30,
+      events_missing: false,
+    })
+
+    expect(wrapper.text()).toContain('支付新客户')
+    expect(wrapper.text()).toContain('1 人')
+    expect(wrapper.text()).toContain('actor@example.com')
+    expect(wrapper.text()).toContain('#123')
   })
 })

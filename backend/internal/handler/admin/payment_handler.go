@@ -73,6 +73,8 @@ type PaymentAnalyticsMethod struct {
 
 type PaymentAnalyticsRecentEvent struct {
 	Name        string     `json:"name"`
+	UserID      *int64     `json:"user_id,omitempty"`
+	UserEmail   *string    `json:"user_email,omitempty"`
 	Tab         *string    `json:"tab,omitempty"`
 	OrderType   *string    `json:"order_type,omitempty"`
 	PaymentType *string    `json:"payment_type,omitempty"`
@@ -85,6 +87,16 @@ type PaymentAnalyticsRecentEvent struct {
 	OrderID     *int64     `json:"order_id,omitempty"`
 	ErrorKind   *string    `json:"error_kind,omitempty"`
 	CreatedAt   *time.Time `json:"created_at,omitempty"`
+}
+
+type PaymentAnalyticsNewCustomer struct {
+	UserID      int64      `json:"user_id"`
+	UserEmail   string     `json:"user_email"`
+	OrderID     int64      `json:"order_id"`
+	OrderType   *string    `json:"order_type,omitempty"`
+	PaymentType *string    `json:"payment_type,omitempty"`
+	PayAmount   *float64   `json:"pay_amount,omitempty"`
+	FirstPaidAt *time.Time `json:"first_paid_at,omitempty"`
 }
 
 type PaymentAnalyticsOperatorSummary struct {
@@ -117,6 +129,7 @@ type PaymentAnalyticsResponse struct {
 	Steps         []PaymentAnalyticsStep            `json:"steps"`
 	Methods       []PaymentAnalyticsMethod          `json:"methods"`
 	RecentEvents  []PaymentAnalyticsRecentEvent     `json:"recent_events"`
+	NewCustomers  []PaymentAnalyticsNewCustomer     `json:"new_customers"`
 	Operators     []PaymentAnalyticsOperatorSummary `json:"operators"`
 	AuditEvents   []PaymentAnalyticsAuditEvent      `json:"audit_events"`
 	WindowDays    int                               `json:"window_days"`
@@ -168,6 +181,18 @@ func (h *PaymentHandler) GetAnalytics(c *gin.Context) {
 	result.Steps = steps
 	result.Methods = methods
 	result.RecentEvents = recentEvents
+
+	newCustomers, err := h.queryPaymentAnalyticsNewCustomers(c, since)
+	if err != nil {
+		if isMissingPaymentAnalyticsRelation(err) {
+			result.NewCustomers = []PaymentAnalyticsNewCustomer{}
+		} else {
+			response.ErrorFrom(c, err)
+			return
+		}
+	} else {
+		result.NewCustomers = newCustomers
+	}
 
 	operators, err := h.queryPaymentAnalyticsOperators(c, since)
 	if err != nil {
@@ -330,11 +355,13 @@ func (h *PaymentHandler) queryPaymentAnalyticsMethods(c *gin.Context, since time
 
 func (h *PaymentHandler) queryPaymentAnalyticsRecentEvents(c *gin.Context, since time.Time) ([]PaymentAnalyticsRecentEvent, error) {
 	rows, err := h.sqlDB.QueryContext(c.Request.Context(), `
-		SELECT event_name, tab, order_type, payment_type, launch_kind, source, status,
-		       amount, pay_amount, plan_id, order_id, error_kind, created_at
-		FROM payment_events
-		WHERE created_at >= $1
-		ORDER BY created_at DESC
+		SELECT pe.event_name, pe.user_id, u.email, pe.tab, pe.order_type, pe.payment_type,
+		       pe.launch_kind, pe.source, pe.status, pe.amount, pe.pay_amount, pe.plan_id,
+		       pe.order_id, pe.error_kind, pe.created_at
+		FROM payment_events pe
+		LEFT JOIN users u ON u.id = pe.user_id
+		WHERE pe.created_at >= $1
+		ORDER BY pe.created_at DESC
 		LIMIT 20
 	`, since)
 	if err != nil {
@@ -350,6 +377,8 @@ func (h *PaymentHandler) queryPaymentAnalyticsRecentEvents(c *gin.Context, since
 		var event PaymentAnalyticsRecentEvent
 		if err := rows.Scan(
 			&event.Name,
+			&event.UserID,
+			&event.UserEmail,
 			&event.Tab,
 			&event.OrderType,
 			&event.PaymentType,
@@ -372,11 +401,13 @@ func (h *PaymentHandler) queryPaymentAnalyticsRecentEvents(c *gin.Context, since
 
 func (h *PaymentHandler) queryPaymentAnalyticsRecentEventsLegacy(c *gin.Context, since time.Time) ([]PaymentAnalyticsRecentEvent, error) {
 	rows, err := h.sqlDB.QueryContext(c.Request.Context(), `
-		SELECT event_name, tab, order_type, payment_type, launch_kind, status,
-		       amount, pay_amount, plan_id, order_id, error_kind, created_at
-		FROM payment_events
-		WHERE created_at >= $1
-		ORDER BY created_at DESC
+		SELECT pe.event_name, pe.user_id, u.email, pe.tab, pe.order_type, pe.payment_type,
+		       pe.launch_kind, pe.status, pe.amount, pe.pay_amount, pe.plan_id,
+		       pe.order_id, pe.error_kind, pe.created_at
+		FROM payment_events pe
+		LEFT JOIN users u ON u.id = pe.user_id
+		WHERE pe.created_at >= $1
+		ORDER BY pe.created_at DESC
 		LIMIT 20
 	`, since)
 	if err != nil {
@@ -392,6 +423,8 @@ func (h *PaymentHandler) queryPaymentAnalyticsRecentEventsLegacy(c *gin.Context,
 		var event PaymentAnalyticsRecentEvent
 		if err := rows.Scan(
 			&event.Name,
+			&event.UserID,
+			&event.UserEmail,
 			&event.Tab,
 			&event.OrderType,
 			&event.PaymentType,
@@ -413,10 +446,11 @@ func (h *PaymentHandler) queryPaymentAnalyticsRecentEventsLegacy(c *gin.Context,
 
 func (h *PaymentHandler) queryPaymentAnalyticsRecentEventsMinimal(c *gin.Context, since time.Time) ([]PaymentAnalyticsRecentEvent, error) {
 	rows, err := h.sqlDB.QueryContext(c.Request.Context(), `
-		SELECT event_name, created_at
-		FROM payment_events
-		WHERE created_at >= $1
-		ORDER BY created_at DESC
+		SELECT pe.event_name, pe.user_id, u.email, pe.created_at
+		FROM payment_events pe
+		LEFT JOIN users u ON u.id = pe.user_id
+		WHERE pe.created_at >= $1
+		ORDER BY pe.created_at DESC
 		LIMIT 20
 	`, since)
 	if err != nil {
@@ -427,12 +461,58 @@ func (h *PaymentHandler) queryPaymentAnalyticsRecentEventsMinimal(c *gin.Context
 	events := make([]PaymentAnalyticsRecentEvent, 0)
 	for rows.Next() {
 		var event PaymentAnalyticsRecentEvent
-		if err := rows.Scan(&event.Name, &event.CreatedAt); err != nil {
+		if err := rows.Scan(&event.Name, &event.UserID, &event.UserEmail, &event.CreatedAt); err != nil {
 			return nil, err
 		}
 		events = append(events, event)
 	}
 	return events, rows.Err()
+}
+
+func (h *PaymentHandler) queryPaymentAnalyticsNewCustomers(c *gin.Context, since time.Time) ([]PaymentAnalyticsNewCustomer, error) {
+	rows, err := h.sqlDB.QueryContext(c.Request.Context(), `
+		WITH successful_orders AS (
+			SELECT po.id, po.user_id, COALESCE(NULLIF(po.user_email, ''), u.email, '') AS user_email,
+			       po.order_type, po.payment_type, po.pay_amount,
+			       COALESCE(po.paid_at, po.completed_at, po.created_at) AS first_paid_at
+			FROM payment_orders po
+			LEFT JOIN users u ON u.id = po.user_id
+			WHERE po.status IN ('COMPLETED', 'PAID', 'RECHARGING')
+		),
+		first_orders AS (
+			SELECT DISTINCT ON (user_id)
+			       id, user_id, user_email, order_type, payment_type, pay_amount, first_paid_at
+			FROM successful_orders
+			ORDER BY user_id, first_paid_at ASC, id ASC
+		)
+		SELECT user_id, user_email, id, order_type, payment_type, pay_amount, first_paid_at
+		FROM first_orders
+		WHERE first_paid_at >= $1
+		ORDER BY first_paid_at DESC
+		LIMIT 50
+	`, since)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	customers := make([]PaymentAnalyticsNewCustomer, 0)
+	for rows.Next() {
+		var customer PaymentAnalyticsNewCustomer
+		if err := rows.Scan(
+			&customer.UserID,
+			&customer.UserEmail,
+			&customer.OrderID,
+			&customer.OrderType,
+			&customer.PaymentType,
+			&customer.PayAmount,
+			&customer.FirstPaidAt,
+		); err != nil {
+			return nil, err
+		}
+		customers = append(customers, customer)
+	}
+	return customers, rows.Err()
 }
 
 func (h *PaymentHandler) queryPaymentAnalyticsOperators(c *gin.Context, since time.Time) ([]PaymentAnalyticsOperatorSummary, error) {
