@@ -1,0 +1,8 @@
+{
+  "migration": "151_channel_monitor_jitter.sql",
+  "phase": "review",
+  "reason": "Adds jitter_seconds to channel_monitors so scheduled monitor probes can spread their next run time instead of firing in synchronized fixed intervals.",
+  "risk": "The migration adds a NOT NULL column with DEFAULT 0 to channel_monitors, which can briefly take a table lock while PostgreSQL updates metadata and validates the default.",
+  "mitigation": "The change is additive and idempotent, keeps historical behavior with default jitter_seconds=0, and should run during the normal dev deploy window with existing health checks in place.",
+  "approved_by": "hang"
+}
