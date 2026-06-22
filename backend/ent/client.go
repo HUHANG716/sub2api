@@ -22,6 +22,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
+	"github.com/Wei-Shaw/sub2api/ent/benefitcampaign"
+	"github.com/Wei-Shaw/sub2api/ent/benefitclaim"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitor"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitordailyrollup"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
@@ -73,6 +75,10 @@ type Client struct {
 	AuthIdentity *AuthIdentityClient
 	// AuthIdentityChannel is the client for interacting with the AuthIdentityChannel builders.
 	AuthIdentityChannel *AuthIdentityChannelClient
+	// BenefitCampaign is the client for interacting with the BenefitCampaign builders.
+	BenefitCampaign *BenefitCampaignClient
+	// BenefitClaim is the client for interacting with the BenefitClaim builders.
+	BenefitClaim *BenefitClaimClient
 	// ChannelMonitor is the client for interacting with the ChannelMonitor builders.
 	ChannelMonitor *ChannelMonitorClient
 	// ChannelMonitorDailyRollup is the client for interacting with the ChannelMonitorDailyRollup builders.
@@ -147,6 +153,8 @@ func (c *Client) init() {
 	c.AnnouncementRead = NewAnnouncementReadClient(c.config)
 	c.AuthIdentity = NewAuthIdentityClient(c.config)
 	c.AuthIdentityChannel = NewAuthIdentityChannelClient(c.config)
+	c.BenefitCampaign = NewBenefitCampaignClient(c.config)
+	c.BenefitClaim = NewBenefitClaimClient(c.config)
 	c.ChannelMonitor = NewChannelMonitorClient(c.config)
 	c.ChannelMonitorDailyRollup = NewChannelMonitorDailyRollupClient(c.config)
 	c.ChannelMonitorHistory = NewChannelMonitorHistoryClient(c.config)
@@ -274,6 +282,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		AnnouncementRead:              NewAnnouncementReadClient(cfg),
 		AuthIdentity:                  NewAuthIdentityClient(cfg),
 		AuthIdentityChannel:           NewAuthIdentityChannelClient(cfg),
+		BenefitCampaign:               NewBenefitCampaignClient(cfg),
+		BenefitClaim:                  NewBenefitClaimClient(cfg),
 		ChannelMonitor:                NewChannelMonitorClient(cfg),
 		ChannelMonitorDailyRollup:     NewChannelMonitorDailyRollupClient(cfg),
 		ChannelMonitorHistory:         NewChannelMonitorHistoryClient(cfg),
@@ -328,6 +338,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		AnnouncementRead:              NewAnnouncementReadClient(cfg),
 		AuthIdentity:                  NewAuthIdentityClient(cfg),
 		AuthIdentityChannel:           NewAuthIdentityChannelClient(cfg),
+		BenefitCampaign:               NewBenefitCampaignClient(cfg),
+		BenefitClaim:                  NewBenefitClaimClient(cfg),
 		ChannelMonitor:                NewChannelMonitorClient(cfg),
 		ChannelMonitorDailyRollup:     NewChannelMonitorDailyRollupClient(cfg),
 		ChannelMonitorHistory:         NewChannelMonitorHistoryClient(cfg),
@@ -386,8 +398,8 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.APIKey, c.Account, c.AccountGroup, c.Announcement, c.AnnouncementRead,
-		c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
-		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
+		c.AuthIdentity, c.AuthIdentityChannel, c.BenefitCampaign, c.BenefitClaim,
+		c.ChannelMonitor, c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
 		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule, c.Group,
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
@@ -405,8 +417,8 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.APIKey, c.Account, c.AccountGroup, c.Announcement, c.AnnouncementRead,
-		c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
-		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
+		c.AuthIdentity, c.AuthIdentityChannel, c.BenefitCampaign, c.BenefitClaim,
+		c.ChannelMonitor, c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
 		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule, c.Group,
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
@@ -436,6 +448,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.AuthIdentity.mutate(ctx, m)
 	case *AuthIdentityChannelMutation:
 		return c.AuthIdentityChannel.mutate(ctx, m)
+	case *BenefitCampaignMutation:
+		return c.BenefitCampaign.mutate(ctx, m)
+	case *BenefitClaimMutation:
+		return c.BenefitClaim.mutate(ctx, m)
 	case *ChannelMonitorMutation:
 		return c.ChannelMonitor.mutate(ctx, m)
 	case *ChannelMonitorDailyRollupMutation:
@@ -1636,6 +1652,322 @@ func (c *AuthIdentityChannelClient) mutate(ctx context.Context, m *AuthIdentityC
 		return (&AuthIdentityChannelDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown AuthIdentityChannel mutation op: %q", m.Op())
+	}
+}
+
+// BenefitCampaignClient is a client for the BenefitCampaign schema.
+type BenefitCampaignClient struct {
+	config
+}
+
+// NewBenefitCampaignClient returns a client for the BenefitCampaign from the given config.
+func NewBenefitCampaignClient(c config) *BenefitCampaignClient {
+	return &BenefitCampaignClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `benefitcampaign.Hooks(f(g(h())))`.
+func (c *BenefitCampaignClient) Use(hooks ...Hook) {
+	c.hooks.BenefitCampaign = append(c.hooks.BenefitCampaign, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `benefitcampaign.Intercept(f(g(h())))`.
+func (c *BenefitCampaignClient) Intercept(interceptors ...Interceptor) {
+	c.inters.BenefitCampaign = append(c.inters.BenefitCampaign, interceptors...)
+}
+
+// Create returns a builder for creating a BenefitCampaign entity.
+func (c *BenefitCampaignClient) Create() *BenefitCampaignCreate {
+	mutation := newBenefitCampaignMutation(c.config, OpCreate)
+	return &BenefitCampaignCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of BenefitCampaign entities.
+func (c *BenefitCampaignClient) CreateBulk(builders ...*BenefitCampaignCreate) *BenefitCampaignCreateBulk {
+	return &BenefitCampaignCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *BenefitCampaignClient) MapCreateBulk(slice any, setFunc func(*BenefitCampaignCreate, int)) *BenefitCampaignCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &BenefitCampaignCreateBulk{err: fmt.Errorf("calling to BenefitCampaignClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*BenefitCampaignCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &BenefitCampaignCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for BenefitCampaign.
+func (c *BenefitCampaignClient) Update() *BenefitCampaignUpdate {
+	mutation := newBenefitCampaignMutation(c.config, OpUpdate)
+	return &BenefitCampaignUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BenefitCampaignClient) UpdateOne(_m *BenefitCampaign) *BenefitCampaignUpdateOne {
+	mutation := newBenefitCampaignMutation(c.config, OpUpdateOne, withBenefitCampaign(_m))
+	return &BenefitCampaignUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BenefitCampaignClient) UpdateOneID(id int64) *BenefitCampaignUpdateOne {
+	mutation := newBenefitCampaignMutation(c.config, OpUpdateOne, withBenefitCampaignID(id))
+	return &BenefitCampaignUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for BenefitCampaign.
+func (c *BenefitCampaignClient) Delete() *BenefitCampaignDelete {
+	mutation := newBenefitCampaignMutation(c.config, OpDelete)
+	return &BenefitCampaignDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BenefitCampaignClient) DeleteOne(_m *BenefitCampaign) *BenefitCampaignDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BenefitCampaignClient) DeleteOneID(id int64) *BenefitCampaignDeleteOne {
+	builder := c.Delete().Where(benefitcampaign.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BenefitCampaignDeleteOne{builder}
+}
+
+// Query returns a query builder for BenefitCampaign.
+func (c *BenefitCampaignClient) Query() *BenefitCampaignQuery {
+	return &BenefitCampaignQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBenefitCampaign},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a BenefitCampaign entity by its id.
+func (c *BenefitCampaignClient) Get(ctx context.Context, id int64) (*BenefitCampaign, error) {
+	return c.Query().Where(benefitcampaign.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BenefitCampaignClient) GetX(ctx context.Context, id int64) *BenefitCampaign {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryClaims queries the claims edge of a BenefitCampaign.
+func (c *BenefitCampaignClient) QueryClaims(_m *BenefitCampaign) *BenefitClaimQuery {
+	query := (&BenefitClaimClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(benefitcampaign.Table, benefitcampaign.FieldID, id),
+			sqlgraph.To(benefitclaim.Table, benefitclaim.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, benefitcampaign.ClaimsTable, benefitcampaign.ClaimsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *BenefitCampaignClient) Hooks() []Hook {
+	hooks := c.hooks.BenefitCampaign
+	return append(hooks[:len(hooks):len(hooks)], benefitcampaign.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *BenefitCampaignClient) Interceptors() []Interceptor {
+	inters := c.inters.BenefitCampaign
+	return append(inters[:len(inters):len(inters)], benefitcampaign.Interceptors[:]...)
+}
+
+func (c *BenefitCampaignClient) mutate(ctx context.Context, m *BenefitCampaignMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BenefitCampaignCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BenefitCampaignUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BenefitCampaignUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BenefitCampaignDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown BenefitCampaign mutation op: %q", m.Op())
+	}
+}
+
+// BenefitClaimClient is a client for the BenefitClaim schema.
+type BenefitClaimClient struct {
+	config
+}
+
+// NewBenefitClaimClient returns a client for the BenefitClaim from the given config.
+func NewBenefitClaimClient(c config) *BenefitClaimClient {
+	return &BenefitClaimClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `benefitclaim.Hooks(f(g(h())))`.
+func (c *BenefitClaimClient) Use(hooks ...Hook) {
+	c.hooks.BenefitClaim = append(c.hooks.BenefitClaim, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `benefitclaim.Intercept(f(g(h())))`.
+func (c *BenefitClaimClient) Intercept(interceptors ...Interceptor) {
+	c.inters.BenefitClaim = append(c.inters.BenefitClaim, interceptors...)
+}
+
+// Create returns a builder for creating a BenefitClaim entity.
+func (c *BenefitClaimClient) Create() *BenefitClaimCreate {
+	mutation := newBenefitClaimMutation(c.config, OpCreate)
+	return &BenefitClaimCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of BenefitClaim entities.
+func (c *BenefitClaimClient) CreateBulk(builders ...*BenefitClaimCreate) *BenefitClaimCreateBulk {
+	return &BenefitClaimCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *BenefitClaimClient) MapCreateBulk(slice any, setFunc func(*BenefitClaimCreate, int)) *BenefitClaimCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &BenefitClaimCreateBulk{err: fmt.Errorf("calling to BenefitClaimClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*BenefitClaimCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &BenefitClaimCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for BenefitClaim.
+func (c *BenefitClaimClient) Update() *BenefitClaimUpdate {
+	mutation := newBenefitClaimMutation(c.config, OpUpdate)
+	return &BenefitClaimUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BenefitClaimClient) UpdateOne(_m *BenefitClaim) *BenefitClaimUpdateOne {
+	mutation := newBenefitClaimMutation(c.config, OpUpdateOne, withBenefitClaim(_m))
+	return &BenefitClaimUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BenefitClaimClient) UpdateOneID(id int64) *BenefitClaimUpdateOne {
+	mutation := newBenefitClaimMutation(c.config, OpUpdateOne, withBenefitClaimID(id))
+	return &BenefitClaimUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for BenefitClaim.
+func (c *BenefitClaimClient) Delete() *BenefitClaimDelete {
+	mutation := newBenefitClaimMutation(c.config, OpDelete)
+	return &BenefitClaimDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BenefitClaimClient) DeleteOne(_m *BenefitClaim) *BenefitClaimDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BenefitClaimClient) DeleteOneID(id int64) *BenefitClaimDeleteOne {
+	builder := c.Delete().Where(benefitclaim.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BenefitClaimDeleteOne{builder}
+}
+
+// Query returns a query builder for BenefitClaim.
+func (c *BenefitClaimClient) Query() *BenefitClaimQuery {
+	return &BenefitClaimQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBenefitClaim},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a BenefitClaim entity by its id.
+func (c *BenefitClaimClient) Get(ctx context.Context, id int64) (*BenefitClaim, error) {
+	return c.Query().Where(benefitclaim.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BenefitClaimClient) GetX(ctx context.Context, id int64) *BenefitClaim {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCampaign queries the campaign edge of a BenefitClaim.
+func (c *BenefitClaimClient) QueryCampaign(_m *BenefitClaim) *BenefitCampaignQuery {
+	query := (&BenefitCampaignClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(benefitclaim.Table, benefitclaim.FieldID, id),
+			sqlgraph.To(benefitcampaign.Table, benefitcampaign.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, benefitclaim.CampaignTable, benefitclaim.CampaignColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a BenefitClaim.
+func (c *BenefitClaimClient) QueryUser(_m *BenefitClaim) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(benefitclaim.Table, benefitclaim.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, benefitclaim.UserTable, benefitclaim.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *BenefitClaimClient) Hooks() []Hook {
+	return c.hooks.BenefitClaim
+}
+
+// Interceptors returns the client interceptors.
+func (c *BenefitClaimClient) Interceptors() []Interceptor {
+	return c.inters.BenefitClaim
+}
+
+func (c *BenefitClaimClient) mutate(ctx context.Context, m *BenefitClaimMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BenefitClaimCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BenefitClaimUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BenefitClaimUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BenefitClaimDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown BenefitClaim mutation op: %q", m.Op())
 	}
 }
 
@@ -5333,6 +5665,22 @@ func (c *UserClient) QueryPaymentOrders(_m *User) *PaymentOrderQuery {
 	return query
 }
 
+// QueryBenefitClaims queries the benefit_claims edge of a User.
+func (c *UserClient) QueryBenefitClaims(_m *User) *BenefitClaimQuery {
+	query := (&BenefitClaimClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(benefitclaim.Table, benefitclaim.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.BenefitClaimsTable, user.BenefitClaimsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryAuthIdentities queries the auth_identities edge of a User.
 func (c *UserClient) QueryAuthIdentities(_m *User) *AuthIdentityQuery {
 	query := (&AuthIdentityClient{config: c.config}).Query()
@@ -6210,25 +6558,25 @@ func (c *UserSubscriptionClient) mutate(ctx context.Context, m *UserSubscription
 type (
 	hooks struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
-		AuthIdentityChannel, ChannelMonitor, ChannelMonitorDailyRollup,
-		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
-		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
-		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
-		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
-		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
-		UserSubscription []ent.Hook
+		AuthIdentityChannel, BenefitCampaign, BenefitClaim, ChannelMonitor,
+		ChannelMonitorDailyRollup, ChannelMonitorHistory,
+		ChannelMonitorRequestTemplate, ErrorPassthroughRule, Group, IdempotencyRecord,
+		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
+		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
+		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
+		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
+		UserAttributeValue, UserPlatformQuota, UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
-		AuthIdentityChannel, ChannelMonitor, ChannelMonitorDailyRollup,
-		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
-		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
-		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
-		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
-		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
-		UserSubscription []ent.Interceptor
+		AuthIdentityChannel, BenefitCampaign, BenefitClaim, ChannelMonitor,
+		ChannelMonitorDailyRollup, ChannelMonitorHistory,
+		ChannelMonitorRequestTemplate, ErrorPassthroughRule, Group, IdempotencyRecord,
+		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
+		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
+		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
+		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
+		UserAttributeValue, UserPlatformQuota, UserSubscription []ent.Interceptor
 	}
 )
 

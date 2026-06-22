@@ -19,6 +19,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
+	"github.com/Wei-Shaw/sub2api/ent/benefitcampaign"
+	"github.com/Wei-Shaw/sub2api/ent/benefitclaim"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitor"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitordailyrollup"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
@@ -114,6 +116,8 @@ func checkColumn(t, c string) error {
 			announcementread.Table:              announcementread.ValidColumn,
 			authidentity.Table:                  authidentity.ValidColumn,
 			authidentitychannel.Table:           authidentitychannel.ValidColumn,
+			benefitcampaign.Table:               benefitcampaign.ValidColumn,
+			benefitclaim.Table:                  benefitclaim.ValidColumn,
 			channelmonitor.Table:                channelmonitor.ValidColumn,
 			channelmonitordailyrollup.Table:     channelmonitordailyrollup.ValidColumn,
 			channelmonitorhistory.Table:         channelmonitorhistory.ValidColumn,

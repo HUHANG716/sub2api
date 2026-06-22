@@ -122,6 +122,24 @@ describe('AppSidebar image playground entry', () => {
   })
 })
 
+describe('AppSidebar benefit campaigns entry', () => {
+  it('uses a distinct campaign icon and renders a new-campaign dot', () => {
+    expect(componentSource).toContain("const BenefitCampaignIcon = createSidebarIcon('gift')")
+    expect(componentSource).toContain('const flagBenefitsCenter = makeSidebarFlag(FeatureFlags.benefitsCenter)')
+    expect(componentSource).toContain("const mockBenefitCampaignDot = computed(() => import.meta.env.DEV && route.query.mockBenefitDot === '1')")
+    expect(componentSource).toContain("const showBenefitCampaignDot = computed(() => mockBenefitCampaignDot.value || hasNewBenefitCampaigns.value)")
+    expect(componentSource).toContain("{ path: '/benefits', label: t('nav.benefits'), icon: BenefitCampaignIcon, hideInSimpleMode: true, badge: showBenefitCampaignDot.value, featureFlag: flagBenefitsCenter }")
+    expect(componentSource).not.toContain('<component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />')
+    expect(componentSource).toContain('sidebar-link-dot')
+    const dotBlock = componentSource.match(/\.sidebar-icon-wrap :deep\(\.sidebar-link-dot\)\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    expect(dotBlock).toContain('display: block')
+    expect(dotBlock).toContain('height: 0.5625rem')
+    expect(dotBlock).toContain('width: 0.5625rem')
+    expect(dotBlock).toContain('border: 0;')
+    expect(dotBlock).toContain('box-shadow: none;')
+  })
+})
+
 describe('AppSidebar account dropdown', () => {
   it('keeps theme switching in the header instead of the account dropdown', () => {
     const accountDropdownBlock = componentSource.match(/<div v-if="user && accountDropdownOpen"[\s\S]*?<\/transition>/)?.[0] ?? ''

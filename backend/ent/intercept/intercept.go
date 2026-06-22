@@ -15,6 +15,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
+	"github.com/Wei-Shaw/sub2api/ent/benefitcampaign"
+	"github.com/Wei-Shaw/sub2api/ent/benefitclaim"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitor"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitordailyrollup"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
@@ -289,6 +291,60 @@ func (f TraverseAuthIdentityChannel) Traverse(ctx context.Context, q ent.Query) 
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.AuthIdentityChannelQuery", q)
+}
+
+// The BenefitCampaignFunc type is an adapter to allow the use of ordinary function as a Querier.
+type BenefitCampaignFunc func(context.Context, *ent.BenefitCampaignQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f BenefitCampaignFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.BenefitCampaignQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.BenefitCampaignQuery", q)
+}
+
+// The TraverseBenefitCampaign type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseBenefitCampaign func(context.Context, *ent.BenefitCampaignQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseBenefitCampaign) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseBenefitCampaign) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BenefitCampaignQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.BenefitCampaignQuery", q)
+}
+
+// The BenefitClaimFunc type is an adapter to allow the use of ordinary function as a Querier.
+type BenefitClaimFunc func(context.Context, *ent.BenefitClaimQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f BenefitClaimFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.BenefitClaimQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.BenefitClaimQuery", q)
+}
+
+// The TraverseBenefitClaim type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseBenefitClaim func(context.Context, *ent.BenefitClaimQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseBenefitClaim) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseBenefitClaim) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BenefitClaimQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.BenefitClaimQuery", q)
 }
 
 // The ChannelMonitorFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -1064,6 +1120,10 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.AuthIdentityQuery, predicate.AuthIdentity, authidentity.OrderOption]{typ: ent.TypeAuthIdentity, tq: q}, nil
 	case *ent.AuthIdentityChannelQuery:
 		return &query[*ent.AuthIdentityChannelQuery, predicate.AuthIdentityChannel, authidentitychannel.OrderOption]{typ: ent.TypeAuthIdentityChannel, tq: q}, nil
+	case *ent.BenefitCampaignQuery:
+		return &query[*ent.BenefitCampaignQuery, predicate.BenefitCampaign, benefitcampaign.OrderOption]{typ: ent.TypeBenefitCampaign, tq: q}, nil
+	case *ent.BenefitClaimQuery:
+		return &query[*ent.BenefitClaimQuery, predicate.BenefitClaim, benefitclaim.OrderOption]{typ: ent.TypeBenefitClaim, tq: q}, nil
 	case *ent.ChannelMonitorQuery:
 		return &query[*ent.ChannelMonitorQuery, predicate.ChannelMonitor, channelmonitor.OrderOption]{typ: ent.TypeChannelMonitor, tq: q}, nil
 	case *ent.ChannelMonitorDailyRollupQuery:

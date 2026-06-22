@@ -718,9 +718,11 @@ export default {
     github: 'GitHub',
     mySubscriptions: '我的订阅',
     buySubscription: '充值/订阅',
+    benefits: '福利活动',
     docs: '文档',
     myOrders: '我的订单',
     orderManagement: '订单管理',
+    benefitCampaigns: '福利活动',
     paymentDashboard: '支付概览',
     paymentConfig: '支付配置',
     paymentPlans: '订阅套餐',
@@ -1588,6 +1590,44 @@ export default {
     failedToRedeem: '兑换失败，请检查兑换码后重试。',
     subscriptionRefreshFailed: '兑换成功，但订阅状态刷新失败。',
     pleaseEnterCode: '请输入兑换码'
+  },
+
+  // Benefits
+  benefits: {
+    title: '福利活动',
+    description: '查看满足充值条件后可领取的账户余额奖励',
+    center: '领取中心',
+    emptyTitle: '暂无可展示活动',
+    emptyDescription: '有新的充值奖励活动时会显示在这里。',
+    failedToLoad: '加载福利活动失败',
+    claimButton: '领取奖励',
+    claimSuccess: '奖励领取成功',
+    claimFailed: '领取奖励失败',
+    defaultDescription: '满足活动充值门槛后可领取余额奖励。',
+    threshold: '充值门槛',
+    recharged: '已计入充值',
+    grant: '奖励金额',
+    period: '活动时间',
+    rechargeScope: '统计范围',
+    claimedAt: '领取时间',
+    states: {
+      not_started: '未开始',
+      ended: '已结束',
+      claimed: '已领取',
+      not_eligible: '未达标',
+      claimable: '可领取'
+    },
+    scopes: {
+      lifetime: '累计充值',
+      campaign_window: '活动期充值'
+    },
+    messages: {
+      notStarted: '活动尚未开始，请在开始后再来查看。',
+      ended: '活动已结束，无法继续领取。',
+      claimed: '你已领取过该活动奖励。',
+      notEligible: '还差 {amount} 达到领取门槛。',
+      claimable: '已满足领取条件，可立即领取。'
+    }
   },
 
   // Profile
@@ -5141,6 +5181,86 @@ export default {
       failedToLoadUsages: '加载使用记录失败'
     },
 
+    // Benefit Campaigns
+    benefits: {
+      title: '福利活动管理',
+      description: '配置充值门槛奖励活动并查看领取记录',
+      createCampaign: '创建活动',
+      editCampaign: '编辑活动',
+      deleteCampaign: '删除活动',
+      searchCampaigns: '搜索活动...',
+      enabled: '启用',
+      disabled: '禁用',
+      visible: '可见',
+      hidden: '隐藏',
+      thresholdShort: '门槛',
+      grantShort: '奖励',
+      viewClaims: '查看领取记录',
+      claimRecords: '领取记录',
+      claimRecordsFor: '{name} 的领取记录',
+      noClaims: '暂无领取记录',
+      deleteConfirm: '确定要删除该福利活动吗？此操作无法撤销。',
+      campaignCreated: '福利活动创建成功',
+      campaignUpdated: '福利活动更新成功',
+      campaignDeleted: '福利活动删除成功',
+      failedToLoad: '加载福利活动失败',
+      failedToSave: '保存福利活动失败',
+      failedToDelete: '删除福利活动失败',
+      failedToLoadClaims: '加载领取记录失败',
+      invalidTimeRange: '请输入有效的活动开始和结束时间',
+      columns: {
+        name: '活动',
+        status: '状态',
+        amounts: '金额',
+        timeRange: '有效期',
+        scope: '统计范围',
+        claims: '领取数',
+        actions: '操作'
+      },
+      filters: {
+        allEnabled: '全部状态',
+        allVisible: '全部可见性'
+      },
+      scopes: {
+        lifetime: '累计充值',
+        campaign_window: '活动期充值'
+      },
+      form: {
+        name: '内部名称',
+        sortOrder: '排序',
+        startsAt: '开始时间',
+        endsAt: '结束时间',
+        thresholdAmount: '充值门槛 ($)',
+        grantAmount: '奖励金额 ($)',
+        rechargeScope: '充值统计范围',
+        enabled: '启用活动',
+        visible: '用户端可见',
+        copyTitle: '用户端标题',
+        copyButton: '按钮文案',
+        copyDescription: '用户端说明',
+        copySuccess: '领取成功文案',
+        copyNotEligible: '未达标文案',
+        copyNotStarted: '未开始文案',
+        copyEnded: '已结束文案',
+        copyClaimed: '已领取文案',
+        copyFailed: '领取失败文案'
+      },
+      defaults: {
+        button: '领取奖励',
+        success: '奖励已发放到账户余额。',
+        notEligible: '充值金额尚未达到活动门槛。',
+        notStarted: '活动尚未开始。',
+        ended: '活动已结束。',
+        claimed: '你已领取过该活动奖励。',
+        failed: '领取失败，请稍后重试。'
+      },
+      claims: {
+        eligible: '计入充值',
+        before: '领取前',
+        after: '领取后'
+      }
+    },
+
     // Usage Records
     usage: {
       title: '使用记录',
@@ -6031,6 +6151,12 @@ export default {
           configureLink: '前往 渠道管理 > 渠道定价 配置模型价格',
           enabled: '启用可用渠道',
           enabledHint: '关闭后用户端侧边栏入口隐藏，接口返回空数组。',
+        },
+        benefitsCenter: {
+          title: '福利中心',
+          description: '控制用户侧福利中心入口是否展示。关闭后不影响后台福利活动配置和已有领取记录。',
+          enabled: '展示福利中心入口',
+          enabledHint: '关闭后用户端侧边栏隐藏福利中心入口，活动仍可在后台维护。',
         },
         imagePlayground: {
           title: '生图工作台',

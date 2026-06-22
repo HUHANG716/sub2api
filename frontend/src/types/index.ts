@@ -233,6 +233,7 @@ export interface PublicSettings {
   channel_monitor_enabled: boolean
   channel_monitor_default_interval_seconds: number
   available_channels_enabled: boolean
+  benefits_center_enabled: boolean
   service_quota_enabled: boolean
   affiliate_enabled: boolean
   image_playground_group_id?: number | null
@@ -1857,6 +1858,96 @@ export interface UpdatePromoCodeRequest {
   status?: 'active' | 'disabled'
   expires_at?: number | null
   notes?: string
+}
+
+// ==================== Benefit Campaign Types ====================
+
+export type BenefitRechargeScope = 'lifetime' | 'campaign_window'
+export type BenefitClaimStatus = 'claimed'
+export type BenefitCampaignState = 'not_started' | 'ended' | 'claimed' | 'not_eligible' | 'claimable'
+
+export interface BenefitCampaignCopy {
+  title: string
+  description: string
+  button: string
+  success: string
+  not_eligible: string
+  not_started: string
+  ended: string
+  claimed: string
+  failed: string
+}
+
+export interface BenefitCampaign {
+  id: number
+  name: string
+  enabled: boolean
+  visible: boolean
+  starts_at: string
+  ends_at: string
+  threshold_amount: number
+  grant_amount: number
+  recharge_scope: BenefitRechargeScope
+  copy: BenefitCampaignCopy
+  sort_order: number
+  claim_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface BenefitClaim {
+  id: number
+  campaign_id: number
+  user_id: number
+  status: BenefitClaimStatus
+  eligible_recharge_amount: number
+  granted_amount: number
+  balance_before: number
+  balance_after: number
+  claimed_at: string
+  source_redeem_code?: string | null
+  created_at: string
+  updated_at: string
+  user?: User
+}
+
+export interface BenefitCampaignView {
+  campaign: BenefitCampaign
+  state: BenefitCampaignState
+  eligible_recharge_amount: number
+  claim?: BenefitClaim
+}
+
+export interface BenefitClaimResult {
+  campaign: BenefitCampaign
+  claim: BenefitClaim
+  balance: number
+}
+
+export interface CreateBenefitCampaignRequest {
+  name: string
+  enabled: boolean
+  visible: boolean
+  starts_at: number
+  ends_at: number
+  threshold_amount: number
+  grant_amount: number
+  recharge_scope: BenefitRechargeScope
+  copy: BenefitCampaignCopy
+  sort_order: number
+}
+
+export interface UpdateBenefitCampaignRequest {
+  name?: string
+  enabled?: boolean
+  visible?: boolean
+  starts_at?: number
+  ends_at?: number
+  threshold_amount?: number
+  grant_amount?: number
+  recharge_scope?: BenefitRechargeScope
+  copy?: BenefitCampaignCopy
+  sort_order?: number
 }
 
 // ==================== TOTP (2FA) Types ====================

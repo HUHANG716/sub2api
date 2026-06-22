@@ -12,6 +12,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
+	"github.com/Wei-Shaw/sub2api/ent/benefitcampaign"
+	"github.com/Wei-Shaw/sub2api/ent/benefitclaim"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitor"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitordailyrollup"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
@@ -432,6 +434,86 @@ func init() {
 	authidentitychannelDescMetadata := authidentitychannelFields[6].Descriptor()
 	// authidentitychannel.DefaultMetadata holds the default value on creation for the metadata field.
 	authidentitychannel.DefaultMetadata = authidentitychannelDescMetadata.Default.(func() map[string]interface{})
+	benefitcampaignMixin := schema.BenefitCampaign{}.Mixin()
+	benefitcampaignMixinHooks1 := benefitcampaignMixin[1].Hooks()
+	benefitcampaign.Hooks[0] = benefitcampaignMixinHooks1[0]
+	benefitcampaignMixinInters1 := benefitcampaignMixin[1].Interceptors()
+	benefitcampaign.Interceptors[0] = benefitcampaignMixinInters1[0]
+	benefitcampaignMixinFields0 := benefitcampaignMixin[0].Fields()
+	_ = benefitcampaignMixinFields0
+	benefitcampaignFields := schema.BenefitCampaign{}.Fields()
+	_ = benefitcampaignFields
+	// benefitcampaignDescCreatedAt is the schema descriptor for created_at field.
+	benefitcampaignDescCreatedAt := benefitcampaignMixinFields0[0].Descriptor()
+	// benefitcampaign.DefaultCreatedAt holds the default value on creation for the created_at field.
+	benefitcampaign.DefaultCreatedAt = benefitcampaignDescCreatedAt.Default.(func() time.Time)
+	// benefitcampaignDescUpdatedAt is the schema descriptor for updated_at field.
+	benefitcampaignDescUpdatedAt := benefitcampaignMixinFields0[1].Descriptor()
+	// benefitcampaign.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	benefitcampaign.DefaultUpdatedAt = benefitcampaignDescUpdatedAt.Default.(func() time.Time)
+	// benefitcampaign.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	benefitcampaign.UpdateDefaultUpdatedAt = benefitcampaignDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// benefitcampaignDescName is the schema descriptor for name field.
+	benefitcampaignDescName := benefitcampaignFields[0].Descriptor()
+	// benefitcampaign.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	benefitcampaign.NameValidator = func() func(string) error {
+		validators := benefitcampaignDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// benefitcampaignDescEnabled is the schema descriptor for enabled field.
+	benefitcampaignDescEnabled := benefitcampaignFields[1].Descriptor()
+	// benefitcampaign.DefaultEnabled holds the default value on creation for the enabled field.
+	benefitcampaign.DefaultEnabled = benefitcampaignDescEnabled.Default.(bool)
+	// benefitcampaignDescVisible is the schema descriptor for visible field.
+	benefitcampaignDescVisible := benefitcampaignFields[2].Descriptor()
+	// benefitcampaign.DefaultVisible holds the default value on creation for the visible field.
+	benefitcampaign.DefaultVisible = benefitcampaignDescVisible.Default.(bool)
+	// benefitcampaignDescRechargeScope is the schema descriptor for recharge_scope field.
+	benefitcampaignDescRechargeScope := benefitcampaignFields[7].Descriptor()
+	// benefitcampaign.DefaultRechargeScope holds the default value on creation for the recharge_scope field.
+	benefitcampaign.DefaultRechargeScope = benefitcampaignDescRechargeScope.Default.(string)
+	// benefitcampaign.RechargeScopeValidator is a validator for the "recharge_scope" field. It is called by the builders before save.
+	benefitcampaign.RechargeScopeValidator = benefitcampaignDescRechargeScope.Validators[0].(func(string) error)
+	// benefitcampaignDescSortOrder is the schema descriptor for sort_order field.
+	benefitcampaignDescSortOrder := benefitcampaignFields[9].Descriptor()
+	// benefitcampaign.DefaultSortOrder holds the default value on creation for the sort_order field.
+	benefitcampaign.DefaultSortOrder = benefitcampaignDescSortOrder.Default.(int)
+	benefitclaimMixin := schema.BenefitClaim{}.Mixin()
+	benefitclaimMixinFields0 := benefitclaimMixin[0].Fields()
+	_ = benefitclaimMixinFields0
+	benefitclaimFields := schema.BenefitClaim{}.Fields()
+	_ = benefitclaimFields
+	// benefitclaimDescCreatedAt is the schema descriptor for created_at field.
+	benefitclaimDescCreatedAt := benefitclaimMixinFields0[0].Descriptor()
+	// benefitclaim.DefaultCreatedAt holds the default value on creation for the created_at field.
+	benefitclaim.DefaultCreatedAt = benefitclaimDescCreatedAt.Default.(func() time.Time)
+	// benefitclaimDescUpdatedAt is the schema descriptor for updated_at field.
+	benefitclaimDescUpdatedAt := benefitclaimMixinFields0[1].Descriptor()
+	// benefitclaim.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	benefitclaim.DefaultUpdatedAt = benefitclaimDescUpdatedAt.Default.(func() time.Time)
+	// benefitclaim.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	benefitclaim.UpdateDefaultUpdatedAt = benefitclaimDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// benefitclaimDescStatus is the schema descriptor for status field.
+	benefitclaimDescStatus := benefitclaimFields[2].Descriptor()
+	// benefitclaim.DefaultStatus holds the default value on creation for the status field.
+	benefitclaim.DefaultStatus = benefitclaimDescStatus.Default.(string)
+	// benefitclaim.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	benefitclaim.StatusValidator = benefitclaimDescStatus.Validators[0].(func(string) error)
+	// benefitclaimDescSourceRedeemCode is the schema descriptor for source_redeem_code field.
+	benefitclaimDescSourceRedeemCode := benefitclaimFields[8].Descriptor()
+	// benefitclaim.SourceRedeemCodeValidator is a validator for the "source_redeem_code" field. It is called by the builders before save.
+	benefitclaim.SourceRedeemCodeValidator = benefitclaimDescSourceRedeemCode.Validators[0].(func(string) error)
 	channelmonitorMixin := schema.ChannelMonitor{}.Mixin()
 	channelmonitorMixinFields0 := channelmonitorMixin[0].Fields()
 	_ = channelmonitorMixinFields0

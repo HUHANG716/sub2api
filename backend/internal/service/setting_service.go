@@ -1394,6 +1394,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyChannelMonitorEnabled,
 		SettingKeyChannelMonitorDefaultIntervalSeconds,
 		SettingKeyAvailableChannelsEnabled,
+		SettingKeyBenefitsCenterEnabled,
 		SettingKeyAffiliateEnabled,
 		SettingKeyRiskControlEnabled,
 		SettingKeyImagePlaygroundGroupID,
@@ -1519,6 +1520,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		ChannelMonitorDefaultIntervalSeconds: parseChannelMonitorInterval(settings[SettingKeyChannelMonitorDefaultIntervalSeconds]),
 
 		AvailableChannelsEnabled: settings[SettingKeyAvailableChannelsEnabled] == "true",
+
+		BenefitsCenterEnabled: !isFalseSettingValue(settings[SettingKeyBenefitsCenterEnabled]),
 
 		AffiliateEnabled: settings[SettingKeyAffiliateEnabled] == "true",
 
@@ -1905,6 +1908,7 @@ type PublicSettingsInjectionPayload struct {
 	ChannelMonitorEnabled                bool                   `json:"channel_monitor_enabled"`
 	ChannelMonitorDefaultIntervalSeconds int                    `json:"channel_monitor_default_interval_seconds"`
 	AvailableChannelsEnabled             bool                   `json:"available_channels_enabled"`
+	BenefitsCenterEnabled                bool                   `json:"benefits_center_enabled"`
 	AffiliateEnabled                     bool                   `json:"affiliate_enabled"`
 	RiskControlEnabled                   bool                   `json:"risk_control_enabled"`
 	ImagePlaygroundGroupID               int64                  `json:"image_playground_group_id"`
@@ -1971,6 +1975,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ChannelMonitorEnabled:                settings.ChannelMonitorEnabled,
 		ChannelMonitorDefaultIntervalSeconds: settings.ChannelMonitorDefaultIntervalSeconds,
 		AvailableChannelsEnabled:             settings.AvailableChannelsEnabled,
+		BenefitsCenterEnabled:                settings.BenefitsCenterEnabled,
 		AffiliateEnabled:                     settings.AffiliateEnabled,
 		RiskControlEnabled:                   settings.RiskControlEnabled,
 		ImagePlaygroundGroupID:               settings.ImagePlaygroundGroupID,
@@ -2612,6 +2617,9 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 
 	// Available channels feature switch
 	updates[SettingKeyAvailableChannelsEnabled] = strconv.FormatBool(settings.AvailableChannelsEnabled)
+
+	// Benefits center feature switch
+	updates[SettingKeyBenefitsCenterEnabled] = strconv.FormatBool(settings.BenefitsCenterEnabled)
 
 	// Affiliate (邀请返利) feature switch
 	updates[SettingKeyAffiliateEnabled] = strconv.FormatBool(settings.AffiliateEnabled)
@@ -3608,6 +3616,9 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		// Available channels feature (default disabled; opt-in)
 		SettingKeyAvailableChannelsEnabled: "false",
 
+		// Benefits center feature (default enabled; opt-out)
+		SettingKeyBenefitsCenterEnabled: "true",
+
 		SettingKeyGlobalDiscountSettings: `{"enabled":false,"discount_rate":1,"schedule_type":"once","starts_at":"","ends_at":"","recurring_start_at":"00:00","recurring_end_at":"23:59"}`,
 
 		// Affiliate (邀请返利) feature (default disabled; opt-in)
@@ -4127,6 +4138,9 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 
 	// Available channels feature (default: disabled; strict true)
 	result.AvailableChannelsEnabled = settings[SettingKeyAvailableChannelsEnabled] == "true"
+
+	// Benefits center feature (default: enabled; explicit false hides it)
+	result.BenefitsCenterEnabled = !isFalseSettingValue(settings[SettingKeyBenefitsCenterEnabled])
 
 	// Affiliate (邀请返利) feature (default: disabled; strict true)
 	result.AffiliateEnabled = settings[SettingKeyAffiliateEnabled] == "true"

@@ -14,6 +14,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/announcementread"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
+	"github.com/Wei-Shaw/sub2api/ent/benefitclaim"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/pendingauthsession"
@@ -488,6 +489,21 @@ func (_c *UserCreate) AddPaymentOrders(v ...*PaymentOrder) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddPaymentOrderIDs(ids...)
+}
+
+// AddBenefitClaimIDs adds the "benefit_claims" edge to the BenefitClaim entity by IDs.
+func (_c *UserCreate) AddBenefitClaimIDs(ids ...int64) *UserCreate {
+	_c.mutation.AddBenefitClaimIDs(ids...)
+	return _c
+}
+
+// AddBenefitClaims adds the "benefit_claims" edges to the BenefitClaim entity.
+func (_c *UserCreate) AddBenefitClaims(v ...*BenefitClaim) *UserCreate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddBenefitClaimIDs(ids...)
 }
 
 // AddAuthIdentityIDs adds the "auth_identities" edge to the AuthIdentity entity by IDs.
@@ -1000,6 +1016,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(paymentorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.BenefitClaimsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.BenefitClaimsTable,
+			Columns: []string{user.BenefitClaimsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(benefitclaim.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {
