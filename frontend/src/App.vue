@@ -4,8 +4,9 @@ import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import Toast from '@/components/common/Toast.vue'
 import NavigationProgress from '@/components/common/NavigationProgress.vue'
 import { applyRouteSeo } from '@/router/seo'
+import AdminComplianceDialog from '@/components/admin/AdminComplianceDialog.vue'
 import AnnouncementPopup from '@/components/common/AnnouncementPopup.vue'
-import { useAppStore, useAuthStore, useSubscriptionStore, useAnnouncementStore } from '@/stores'
+import { useAppStore, useAuthStore, useSubscriptionStore, useAnnouncementStore, useAdminComplianceStore, useAdminSettingsStore } from '@/stores'
 import ImagePlaygroundView from '@/views/user/ImagePlaygroundView.vue'
 import { clearStoredImagePlaygroundKey } from '@/views/user/imagePlayground'
 import { getSetupStatus } from '@/api/setup'
@@ -16,6 +17,8 @@ const appStore = useAppStore()
 const authStore = useAuthStore()
 const subscriptionStore = useSubscriptionStore()
 const announcementStore = useAnnouncementStore()
+const adminComplianceStore = useAdminComplianceStore()
+const adminSettingsStore = useAdminSettingsStore()
 const imagePlaygroundMounted = ref(false)
 const imagePlaygroundSessionId = ref(0)
 const isImagePlaygroundRoute = computed(() => route.name === 'ImagePlayground' || route.path === '/image-playground')
@@ -36,6 +39,24 @@ watch(
   },
   { immediate: true }
 )
+
+function applyCurrentRouteSeo() {
+  const customMenuItems = [
+    ...(appStore.cachedPublicSettings?.custom_menu_items ?? []),
+    ...(authStore.isAdmin ? adminSettingsStore.customMenuItems : []),
+  ]
+  const id = typeof route.params.id === 'string' ? route.params.id : ''
+  const menuItem = route.name === 'CustomPage' && id
+    ? customMenuItems.find((item) => item.id === id)
+    : undefined
+
+  if (menuItem?.label) {
+    applyRouteSeo({ title: menuItem.label, canonicalPath: route.path }, appStore.siteName)
+    return
+  }
+
+  applyRouteSeo(route.meta, appStore.siteName)
+}
 
 /**
  * Update favicon dynamically
@@ -64,6 +85,25 @@ watch(
   { immediate: true }
 )
 
+watch(
+  [
+    () => route.fullPath,
+    () => route.meta.seoTitle,
+    () => route.meta.seoDescription,
+    () => route.meta.seoKeywords,
+    () => route.meta.canonicalPath,
+    () => route.meta.structuredData,
+    () => route.meta.title,
+    () => route.meta.titleKey,
+    () => appStore.siteName,
+    () => appStore.cachedPublicSettings?.custom_menu_items,
+    () => authStore.isAdmin,
+    () => adminSettingsStore.customMenuItems,
+  ],
+  applyCurrentRouteSeo,
+  { deep: true }
+)
+
 // Watch for authentication state and manage subscription data + announcements
 function onVisibilityChange() {
   if (document.visibilityState === 'visible' && authStore.isAuthenticated) {
@@ -71,10 +111,21 @@ function onVisibilityChange() {
   }
 }
 
+function onAdminComplianceRequired(event: Event) {
+  const detail = (event as CustomEvent<Record<string, string>>).detail || {}
+  adminComplianceStore.requireAcknowledgement(detail)
+}
+
 watch(
   () => authStore.isAuthenticated,
   (isAuthenticated, oldValue) => {
     if (isAuthenticated) {
+      if (authStore.isAdmin) {
+        adminComplianceStore.fetchStatus().catch((error) => {
+          console.error('Failed to fetch admin compliance status:', error)
+        })
+      }
+
       // User logged in: preload subscriptions and start polling
       subscriptionStore.fetchActiveSubscriptions().catch((error) => {
         console.error('Failed to preload subscriptions:', error)
@@ -96,6 +147,7 @@ watch(
       // User logged out: clear data and stop polling
       subscriptionStore.clear()
       announcementStore.reset()
+      adminComplianceStore.reset()
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   },
@@ -124,9 +176,12 @@ router.afterEach(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', onVisibilityChange)
+  window.removeEventListener('admin-compliance-required', onAdminComplianceRequired)
 })
 
 onMounted(async () => {
+  window.addEventListener('admin-compliance-required', onAdminComplianceRequired)
+
   // Check if setup is needed
   try {
     const status = await getSetupStatus()
@@ -141,8 +196,8 @@ onMounted(async () => {
   // Load public settings into appStore (will be cached for other components)
   await appStore.fetchPublicSettings()
 
-  // Re-resolve SEO tags now that siteName is available
-  applyRouteSeo(route.meta, appStore.siteName)
+  // Re-resolve SEO tags now that site settings are available
+  applyCurrentRouteSeo()
 })
 </script>
 
@@ -156,4 +211,5 @@ onMounted(async () => {
   />
   <Toast />
   <AnnouncementPopup />
+  <AdminComplianceDialog />
 </template>
