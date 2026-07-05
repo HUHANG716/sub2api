@@ -165,11 +165,11 @@ const localeCode = computed(() => {
 })
 
 const isSuccess = computed(() => {
-  return isSuccessStatus(order.value?.status)
+  return isSuccessStatus(order.value?.status ?? returnInfo.value?.tradeStatus)
 })
 
 const isPending = computed(() => {
-  return isPendingStatus(order.value?.status)
+  return isPendingStatus(order.value?.status ?? returnInfo.value?.tradeStatus)
 })
 
 const statusTitle = computed(() => {
@@ -196,7 +196,7 @@ function normalizeAnalyticsNumber(value: number | null | undefined): number | un
 }
 
 function recordPaymentResultAnalytics(event: PaymentAnalyticsEvent) {
-  void paymentAPI.recordEvents({ events: [event] }).catch((error) => {
+  void Promise.resolve(paymentAPI.recordEvents({ events: [event] })).catch((error) => {
     console.warn('Failed to record payment result analytics:', error)
   })
 }
@@ -319,6 +319,23 @@ async function resolveOrderFromOutTradeNo(outTradeNo: string): Promise<PaymentOr
   }
 }
 
+async function resolvePublicReturnInfoFromOutTradeNo(outTradeNo: string): Promise<ReturnInfo | null> {
+  try {
+    const result = await paymentAPI.verifyOrderPublic(outTradeNo)
+    if (isPaymentOrder(result.data)) {
+      return null
+    }
+    return {
+      outTradeNo: result.data.out_trade_no || outTradeNo,
+      money: '',
+      type: '',
+      tradeStatus: result.data.status || '',
+    }
+  } catch (_err: unknown) {
+    return null
+  }
+}
+
 function clearStatusRefreshTimer(): void {
   if (statusRefreshTimer !== null) {
     clearTimeout(statusRefreshTimer)
@@ -419,7 +436,7 @@ onMounted(async () => {
   }
 
   if (!order.value && !orderId && outTradeNo && hasLegacyFallbackContext) {
-    returnInfo.value = {
+    returnInfo.value = await resolvePublicReturnInfoFromOutTradeNo(outTradeNo) ?? {
       outTradeNo,
       money: String(route.query.money || ''),
       type: String(route.query.type || ''),

@@ -583,7 +583,7 @@ function recordPaymentAnalytics(event: PaymentAnalyticsEvent) {
     orderId: event.orderId && event.orderId > 0 ? event.orderId : undefined,
   }
 
-  void paymentAPI.recordEvents({ events: [normalized] }).catch((error) => {
+  void Promise.resolve(paymentAPI.recordEvents({ events: [normalized] })).catch((error) => {
     console.warn('Failed to record payment analytics:', error)
   })
 }
