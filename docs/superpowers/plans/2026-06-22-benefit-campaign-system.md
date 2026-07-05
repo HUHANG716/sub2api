@@ -24,7 +24,7 @@ Backend service/repository:
 - Create `backend/internal/service/benefit.go`: domain structs, constants, copy defaults, request/response types, and error values.
 - Create `backend/internal/service/benefit_repository.go`: repository interface consumed by `BenefitService`.
 - Create `backend/internal/service/benefit_service.go`: validation, admin CRUD, user campaign state evaluation, and atomic claim fulfillment.
-- Create `backend/internal/service/benefit_service_test.go`: unit tests for validation, state evaluation, lifetime/window eligibility, duplicate claims, and grant expiry storage.
+- Create `backend/internal/service/benefit_service_test.go`: unit tests for validation, state evaluation, lifetime/window eligibility, duplicate claims, and balance-only grants.
 - Create `backend/internal/repository/benefit_repo.go`: Ent-backed repository implementation, benefit entity mapping, and balance-only user credit for benefit grants.
 - Modify `backend/internal/repository/wire.go`: add `NewBenefitRepository`.
 - Modify `backend/internal/service/wire.go`: add `ProvideBenefitService`, which injects `*ent.Client` for claim transactions.
@@ -86,7 +86,6 @@ func TestBenefitCampaignMigrationDefinesCampaignsAndClaims(t *testing.T) {
 	require.Contains(t, sql, "CREATE TABLE IF NOT EXISTS benefit_campaigns")
 	require.Contains(t, sql, "CREATE TABLE IF NOT EXISTS benefit_claims")
 	require.Contains(t, sql, "recharge_scope")
-	require.Contains(t, sql, "grant_validity_days")
 	require.Contains(t, sql, "UNIQUE (campaign_id, user_id)")
 	require.Contains(t, sql, "CREATE INDEX IF NOT EXISTS idx_benefit_campaigns_visible_sort")
 	require.Contains(t, sql, "CREATE INDEX IF NOT EXISTS idx_benefit_claims_claimed_at")
@@ -160,9 +159,6 @@ func (BenefitCampaign) Fields() []ent.Field {
 		field.String("recharge_scope").
 			MaxLen(32).
 			Default("lifetime"),
-		field.Int("grant_validity_days").
-			Optional().
-			Nillable(),
 		field.JSON("copy", map[string]string{}).
 			Optional().
 			SchemaType(map[string]string{dialect.Postgres: "jsonb"}),
@@ -240,10 +236,6 @@ func (BenefitClaim) Fields() []ent.Field {
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,8)"}),
 		field.Time("claimed_at").
 			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
-		field.Time("grant_expires_at").
-			Optional().
-			Nillable().
-			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
 		field.String("source_redeem_code").
 			Optional().
 			Nillable().
@@ -302,7 +294,6 @@ CREATE TABLE IF NOT EXISTS benefit_campaigns (
     threshold_amount DECIMAL(20,8) NOT NULL,
     grant_amount DECIMAL(20,8) NOT NULL,
     recharge_scope VARCHAR(32) NOT NULL DEFAULT 'lifetime',
-    grant_validity_days INTEGER NULL,
     copy JSONB NOT NULL DEFAULT '{}'::jsonb,
     sort_order INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -310,8 +301,7 @@ CREATE TABLE IF NOT EXISTS benefit_campaigns (
     deleted_at TIMESTAMPTZ NULL,
     CONSTRAINT chk_benefit_campaigns_window CHECK (ends_at > starts_at),
     CONSTRAINT chk_benefit_campaigns_amounts CHECK (threshold_amount > 0 AND grant_amount > 0),
-    CONSTRAINT chk_benefit_campaigns_recharge_scope CHECK (recharge_scope IN ('lifetime', 'campaign_window')),
-    CONSTRAINT chk_benefit_campaigns_grant_validity CHECK (grant_validity_days IS NULL OR grant_validity_days > 0)
+    CONSTRAINT chk_benefit_campaigns_recharge_scope CHECK (recharge_scope IN ('lifetime', 'campaign_window'))
 );
 
 CREATE TABLE IF NOT EXISTS benefit_claims (
@@ -324,7 +314,6 @@ CREATE TABLE IF NOT EXISTS benefit_claims (
     balance_before DECIMAL(20,8) NOT NULL,
     balance_after DECIMAL(20,8) NOT NULL,
     claimed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    grant_expires_at TIMESTAMPTZ NULL,
     source_redeem_code VARCHAR(64) NULL,
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -589,7 +578,6 @@ type BenefitCampaign struct {
 	ThresholdAmount   float64
 	GrantAmount       float64
 	RechargeScope     string
-	GrantValidityDays *int
 	Copy              BenefitCampaignCopy
 	SortOrder         int
 	ClaimCount        int
@@ -608,7 +596,6 @@ type BenefitClaim struct {
 	BalanceBefore          float64
 	BalanceAfter           float64
 	ClaimedAt              time.Time
-	GrantExpiresAt         *time.Time
 	SourceRedeemCode       *string
 	Metadata               map[string]any
 	CreatedAt              time.Time
@@ -632,7 +619,6 @@ type CreateBenefitCampaignInput struct {
 	ThresholdAmount   float64
 	GrantAmount       float64
 	RechargeScope     string
-	GrantValidityDays *int
 	Copy              BenefitCampaignCopy
 	SortOrder         int
 }
@@ -646,7 +632,6 @@ type UpdateBenefitCampaignInput struct {
 	ThresholdAmount   *float64
 	GrantAmount       *float64
 	RechargeScope     *string
-	GrantValidityDays **int
 	Copy              *BenefitCampaignCopy
 	SortOrder         *int
 }
@@ -764,7 +749,7 @@ Implement `ListVisibleCampaigns`; query `VisibleEQ(true)`, `EnabledEQ(true)`, or
 
 Implement `CountClaimsByCampaignIDs`; query `BenefitClaim` grouped by `campaign_id` using Ent query `GroupBy(...).Aggregate(ent.Count())`.
 
-Implement `CreateClaim`; set every claim field and optional `GrantExpiresAt` / `SourceRedeemCode`.
+Implement `CreateClaim`; set every claim field and optional `SourceRedeemCode`.
 
 Implement `GetClaimByCampaignAndUser`; return `(nil, nil)` on Ent not-found.
 
@@ -860,13 +845,12 @@ func TestBenefitServiceListUserCampaignsStates(t *testing.T) {
 	require.Equal(t, []string{BenefitStateNotStarted, BenefitStateEnded, BenefitStateClaimable, BenefitStateNotEligible, BenefitStateClaimed}, collectBenefitStates(views))
 }
 
-func TestBenefitServiceClaimCreditsBalanceOnceAndStoresExpiry(t *testing.T) {
+func TestBenefitServiceClaimCreditsBalanceOnce(t *testing.T) {
 	now := time.Date(2026, 6, 22, 12, 0, 0, 0, time.UTC)
-	validity := 7
 	user := &User{ID: 7, Balance: 3, TotalRecharged: 120}
 	repo := newMemoryBenefitRepo()
 	repo.user = user
-	repo.campaigns[1] = BenefitCampaign{ID: 1, Name: "claimable", Enabled: true, Visible: true, StartsAt: now.Add(-time.Hour), EndsAt: now.Add(time.Hour), ThresholdAmount: 100, GrantAmount: 10, RechargeScope: BenefitRechargeScopeLifetime, GrantValidityDays: &validity, Copy: DefaultBenefitCampaignCopy()}
+	repo.campaigns[1] = BenefitCampaign{ID: 1, Name: "claimable", Enabled: true, Visible: true, StartsAt: now.Add(-time.Hour), EndsAt: now.Add(time.Hour), ThresholdAmount: 100, GrantAmount: 10, RechargeScope: BenefitRechargeScopeLifetime, Copy: DefaultBenefitCampaignCopy()}
 	userRepo := &memoryBenefitUserRepo{user: user}
 	auth := &memoryBenefitAuthInvalidator{}
 	cache := &memoryBenefitBillingCache{}
@@ -882,8 +866,6 @@ func TestBenefitServiceClaimCreditsBalanceOnceAndStoresExpiry(t *testing.T) {
 	require.Equal(t, 120.0, user.TotalRecharged)
 	require.Equal(t, 1, auth.calls)
 	require.Equal(t, 1, cache.calls)
-	require.NotNil(t, result.Claim.GrantExpiresAt)
-	require.Equal(t, now.AddDate(0, 0, 7), *result.Claim.GrantExpiresAt)
 
 	_, err = svc.Claim(context.Background(), 1, user.ID)
 	require.ErrorIs(t, err, ErrBenefitAlreadyClaimed)
@@ -1115,7 +1097,6 @@ func validateBenefitCampaign(c *BenefitCampaign) error {
 	if !c.EndsAt.After(c.StartsAt) { return ErrBenefitCampaignInvalid }
 	if c.ThresholdAmount <= 0 || c.GrantAmount <= 0 { return ErrBenefitCampaignInvalid }
 	if c.RechargeScope != BenefitRechargeScopeLifetime && c.RechargeScope != BenefitRechargeScopeCampaignWindow { return ErrBenefitCampaignInvalid }
-	if c.GrantValidityDays != nil && *c.GrantValidityDays <= 0 { return ErrBenefitCampaignInvalid }
 	c.Copy = normalizeBenefitCopy(c.Copy)
 	return nil
 }
@@ -1155,7 +1136,6 @@ func (s *BenefitService) Claim(ctx context.Context, campaignID, userID int64) (*
 		latest, err := s.userRepo.GetByID(txCtx, userID)
 		if err != nil { return nil, err }
 		balanceBefore := latest.Balance
-		grantExpiresAt := s.grantExpiresAt(campaign, s.now())
 		claim := &BenefitClaim{
 			CampaignID: campaign.ID, UserID: userID,
 			Status: BenefitClaimStatusClaimed,
@@ -1164,7 +1144,6 @@ func (s *BenefitService) Claim(ctx context.Context, campaignID, userID int64) (*
 			BalanceBefore: balanceBefore,
 			BalanceAfter: balanceBefore + campaign.GrantAmount,
 			ClaimedAt: s.now(),
-			GrantExpiresAt: grantExpiresAt,
 			Metadata: map[string]any{"recharge_scope": campaign.RechargeScope},
 		}
 		if err := s.repo.CreateClaim(txCtx, claim); err != nil {
@@ -1333,7 +1312,6 @@ type BenefitCampaign struct {
 	ThresholdAmount   float64             `json:"threshold_amount"`
 	GrantAmount       float64             `json:"grant_amount"`
 	RechargeScope     string              `json:"recharge_scope"`
-	GrantValidityDays *int                `json:"grant_validity_days,omitempty"`
 	Copy              BenefitCampaignCopy `json:"copy"`
 	SortOrder         int                 `json:"sort_order"`
 	ClaimCount        int                 `json:"claim_count"`
@@ -1351,7 +1329,6 @@ type BenefitClaim struct {
 	BalanceBefore          float64    `json:"balance_before"`
 	BalanceAfter           float64    `json:"balance_after"`
 	ClaimedAt              time.Time  `json:"claimed_at"`
-	GrantExpiresAt         *time.Time `json:"grant_expires_at,omitempty"`
 	SourceRedeemCode       *string    `json:"source_redeem_code,omitempty"`
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
@@ -1367,12 +1344,12 @@ type BenefitCampaignView struct {
 
 func BenefitCampaignFromService(in *service.BenefitCampaign) *BenefitCampaign {
 	if in == nil { return nil }
-	return &BenefitCampaign{ID: in.ID, Name: in.Name, Enabled: in.Enabled, Visible: in.Visible, StartsAt: in.StartsAt, EndsAt: in.EndsAt, ThresholdAmount: in.ThresholdAmount, GrantAmount: in.GrantAmount, RechargeScope: in.RechargeScope, GrantValidityDays: in.GrantValidityDays, Copy: in.Copy, SortOrder: in.SortOrder, ClaimCount: in.ClaimCount, CreatedAt: in.CreatedAt, UpdatedAt: in.UpdatedAt}
+	return &BenefitCampaign{ID: in.ID, Name: in.Name, Enabled: in.Enabled, Visible: in.Visible, StartsAt: in.StartsAt, EndsAt: in.EndsAt, ThresholdAmount: in.ThresholdAmount, GrantAmount: in.GrantAmount, RechargeScope: in.RechargeScope, Copy: in.Copy, SortOrder: in.SortOrder, ClaimCount: in.ClaimCount, CreatedAt: in.CreatedAt, UpdatedAt: in.UpdatedAt}
 }
 
 func BenefitClaimFromService(in *service.BenefitClaim) *BenefitClaim {
 	if in == nil { return nil }
-	out := &BenefitClaim{ID: in.ID, CampaignID: in.CampaignID, UserID: in.UserID, Status: in.Status, EligibleRechargeAmount: in.EligibleRechargeAmount, GrantedAmount: in.GrantedAmount, BalanceBefore: in.BalanceBefore, BalanceAfter: in.BalanceAfter, ClaimedAt: in.ClaimedAt, GrantExpiresAt: in.GrantExpiresAt, SourceRedeemCode: in.SourceRedeemCode, CreatedAt: in.CreatedAt, UpdatedAt: in.UpdatedAt}
+	out := &BenefitClaim{ID: in.ID, CampaignID: in.CampaignID, UserID: in.UserID, Status: in.Status, EligibleRechargeAmount: in.EligibleRechargeAmount, GrantedAmount: in.GrantedAmount, BalanceBefore: in.BalanceBefore, BalanceAfter: in.BalanceAfter, ClaimedAt: in.ClaimedAt, SourceRedeemCode: in.SourceRedeemCode, CreatedAt: in.CreatedAt, UpdatedAt: in.UpdatedAt}
 	if in.User != nil { out.User = UserFromService(in.User) }
 	return out
 }
@@ -1430,7 +1407,6 @@ type BenefitCampaignRequest struct {
 	ThresholdAmount   float64                  `json:"threshold_amount"`
 	GrantAmount       float64                  `json:"grant_amount"`
 	RechargeScope     string                   `json:"recharge_scope"`
-	GrantValidityDays *int                     `json:"grant_validity_days"`
 	Copy              service.BenefitCampaignCopy `json:"copy"`
 	SortOrder         int                      `json:"sort_order"`
 }
@@ -1809,7 +1785,6 @@ export interface BenefitCampaign {
   threshold_amount: number
   grant_amount: number
   recharge_scope: BenefitRechargeScope
-  grant_validity_days?: number | null
   copy: BenefitCampaignCopy
   sort_order: number
   claim_count: number
@@ -1827,7 +1802,6 @@ export interface BenefitClaim {
   balance_before: number
   balance_after: number
   claimed_at: string
-  grant_expires_at?: string | null
   source_redeem_code?: string | null
   created_at: string
   updated_at: string
@@ -1856,7 +1830,6 @@ export interface BenefitCampaignRequest {
   threshold_amount: number
   grant_amount: number
   recharge_scope: BenefitRechargeScope
-  grant_validity_days?: number | null
   copy: BenefitCampaignCopy
   sort_order?: number
 }
@@ -2030,7 +2003,6 @@ describe('BenefitsView', () => {
           threshold_amount: 100,
           grant_amount: 10,
           recharge_scope: 'lifetime',
-          grant_validity_days: null,
           copy: {
             title: 'Recharge reward',
             description: 'Claim after recharge',
@@ -2112,7 +2084,7 @@ Create `frontend/src/views/user/BenefitsView.vue`:
                 <span class="badge badge-info">{{ t('benefits.threshold', { amount: formatAmount(item.campaign.threshold_amount) }) }}</span>
                 <span class="badge badge-success">+${{ formatAmount(item.campaign.grant_amount) }}</span>
                 <span class="badge">{{ scopeLabel(item.campaign.recharge_scope) }}</span>
-                <span class="badge">{{ formatDateTime(item.campaign.starts_at) }} - {{ formatDateTime(item.campaign.ends_at) }}</span>
+                <span class="badge">{{ t('benefits.claimWindow', { start: formatDateTime(item.campaign.starts_at), end: formatDateTime(item.campaign.ends_at) }) }}</span>
               </div>
               <p class="mt-3 text-sm text-gray-600 dark:text-gray-300">
                 {{ stateCopy(item) }}
@@ -2268,7 +2240,6 @@ describe('BenefitCampaignsView', () => {
         threshold_amount: 100,
         grant_amount: 10,
         recharge_scope: 'lifetime',
-        grant_validity_days: null,
         copy: { title: 'Reward', description: '', button: 'Claim', success: '', not_eligible: '', not_started: '', ended: '', claimed: '', failed: '' },
         sort_order: 0,
         claim_count: 2,
@@ -2341,7 +2312,7 @@ Create `frontend/src/views/admin/BenefitCampaignsView.vue` with this component s
           <template #cell-visible="{ row }">
             <span class="badge" :class="row.visible ? 'badge-info' : 'badge-secondary'">{{ row.visible ? t('admin.benefits.visible') : t('admin.benefits.hidden') }}</span>
           </template>
-          <template #cell-window="{ row }">{{ formatDateTime(row.starts_at) }} - {{ formatDateTime(row.ends_at) }}</template>
+          <template #cell-claim_window="{ row }">{{ formatDateTime(row.starts_at) }} - {{ formatDateTime(row.ends_at) }}</template>
           <template #cell-amounts="{ row }">{{ formatAmount(row.threshold_amount) }} / +{{ formatAmount(row.grant_amount) }}</template>
           <template #cell-actions="{ row }">
             <div class="flex items-center gap-2">
@@ -2367,7 +2338,6 @@ Create `frontend/src/views/admin/BenefitCampaignsView.vue` with this component s
         <input v-model.number="form.threshold_amount" class="input" type="number" min="0.00000001" step="0.01" required />
         <input v-model.number="form.grant_amount" class="input" type="number" min="0.00000001" step="0.01" required />
         <Select v-model="form.recharge_scope" :options="scopeOptions" />
-        <input v-model.number="form.grant_validity_days" class="input" type="number" min="1" />
         <input v-model.number="form.sort_order" class="input" type="number" step="1" />
       </div>
       <label class="flex items-center gap-2"><input v-model="form.enabled" type="checkbox" />{{ t('admin.benefits.enabled') }}</label>
@@ -2447,7 +2417,6 @@ const form = reactive({
   threshold_amount: 100,
   grant_amount: 10,
   recharge_scope: 'lifetime' as BenefitRechargeScope,
-  grant_validity_days: null as number | null,
   sort_order: 0,
   copy: defaultCopy(),
 })
@@ -2460,7 +2429,7 @@ const columns = computed(() => [
   { key: 'name', label: t('admin.benefits.name'), sortable: true },
   { key: 'enabled', label: t('admin.benefits.enabled'), sortable: true },
   { key: 'visible', label: t('admin.benefits.visible'), sortable: true },
-  { key: 'window', label: t('admin.benefits.window'), sortable: false },
+  { key: 'claim_window', label: t('admin.benefits.claimWindow'), sortable: false },
   { key: 'amounts', label: t('admin.benefits.amounts'), sortable: false },
   { key: 'recharge_scope', label: t('admin.benefits.rechargeScope'), sortable: true },
   { key: 'claim_count', label: t('admin.benefits.claimCount'), sortable: false },
@@ -2498,7 +2467,6 @@ function buildRequest(): CreateBenefitCampaignRequest {
     threshold_amount: Number(form.threshold_amount),
     grant_amount: Number(form.grant_amount),
     recharge_scope: form.recharge_scope,
-    grant_validity_days: form.grant_validity_days || null,
     sort_order: Number(form.sort_order || 0),
     copy: { ...form.copy },
   }
@@ -2650,6 +2618,7 @@ benefits: {
   progress: '当前累计 ${current} / 目标 ${target}',
   scopeLifetime: '历史累计',
   scopeCampaignWindow: '活动期间累计',
+  claimWindow: '领取期限：{start} - {end}',
 }
 admin: {
   benefits: {
@@ -2663,7 +2632,7 @@ admin: {
     thresholdAmount: '充值门槛',
     grantAmount: '赠送额度',
     rechargeScope: '累计范围',
-    grantValidityDays: '福利有效天数',
+    claimWindow: '领取期限',
     sortOrder: '排序',
   }
 }
@@ -2791,7 +2760,7 @@ Spec coverage:
 - Lifetime vs campaign-window recharge scope: Tasks 2, 3, 5.
 - One claim per user per campaign: Tasks 1, 3, 5.
 - Direct normal balance credit: Tasks 3 and 5.
-- Grant validity stored but not enforced: Tasks 1, 3, 5, 7.
+- Benefit grants are credited as normal balance without any balance expiry: Tasks 2, 3, 5, 7.
 - Full configurable copy: Tasks 1, 3, 4, 8, 9.
 - Admin CRUD and claim records: Tasks 4, 8.
 - User list and claim: Tasks 4, 7.
