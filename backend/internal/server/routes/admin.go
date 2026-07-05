@@ -50,9 +50,6 @@ func RegisterAdminRoutes(
 		// 优惠码管理
 		registerPromoCodeRoutes(admin, h)
 
-		// 福利活动管理
-		registerBenefitRoutes(admin, h)
-
 		// 系统设置
 		registerSettingsRoutes(admin, h)
 
@@ -100,21 +97,6 @@ func RegisterAdminRoutes(
 
 		// 邀请返利（专属用户管理）
 		registerAffiliateRoutes(admin, h)
-	}
-}
-
-func registerBenefitRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
-	benefits := admin.Group("/benefits")
-	{
-		campaigns := benefits.Group("/campaigns")
-		{
-			campaigns.GET("", h.Admin.Benefit.List)
-			campaigns.POST("", h.Admin.Benefit.Create)
-			campaigns.GET("/:id", h.Admin.Benefit.GetByID)
-			campaigns.PUT("/:id", h.Admin.Benefit.Update)
-			campaigns.DELETE("/:id", h.Admin.Benefit.Delete)
-			campaigns.GET("/:id/claims", h.Admin.Benefit.ListClaims)
-		}
 	}
 }
 

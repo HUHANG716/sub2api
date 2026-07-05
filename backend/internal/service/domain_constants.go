@@ -134,7 +134,6 @@ const (
 	SettingKeyAffiliateRebateFreezeHours       = "affiliate_rebate_freeze_hours"       // 返利冻结期（小时，0=不冻结）
 	SettingKeyAffiliateRebateDurationDays      = "affiliate_rebate_duration_days"      // 返利有效期（天，0=永久）
 	SettingKeyAffiliateRebatePerInviteeCap     = "affiliate_rebate_per_invitee_cap"    // 单人返利上限（0=无上限）
-	SettingKeyBenefitsCenterEnabled            = "benefits_center_enabled"             // 是否展示用户侧福利中心入口
 	SettingKeyRiskControlEnabled               = "risk_control_enabled"                // 是否启用风控中心入口与审计链路
 	SettingKeyImagePlaygroundGroupID           = "image_playground_group_id"           // 生图工作台 Images API 使用的 OpenAI 生图分组 ID
 	SettingKeyImagePlaygroundResponsesGroupID  = "image_playground_responses_group_id" // 生图工作台 Responses API 使用的 OpenAI 分组 ID

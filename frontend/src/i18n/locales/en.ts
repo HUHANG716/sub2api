@@ -700,11 +700,9 @@ export default {
     github: 'GitHub',
     mySubscriptions: 'My Subscriptions',
     buySubscription: 'Recharge / Subscription',
-    benefits: 'Benefits',
     docs: 'Docs',
     myOrders: 'My Orders',
     orderManagement: 'Orders',
-    benefitCampaigns: 'Benefit Campaigns',
     paymentDashboard: 'Payment Dashboard',
     paymentConfig: 'Payment Config',
     paymentPlans: 'Plans',
@@ -1568,44 +1566,6 @@ export default {
     failedToRedeem: 'Failed to redeem code. Please check the code and try again.',
     subscriptionRefreshFailed: 'Redeemed successfully, but failed to refresh subscription status.',
     pleaseEnterCode: 'Please enter a redeem code'
-  },
-
-  // Benefits
-  benefits: {
-    title: 'Benefits',
-    description: 'View balance rewards you can claim after meeting recharge requirements',
-    center: 'Claim Center',
-    emptyTitle: 'No campaigns available',
-    emptyDescription: 'New recharge reward campaigns will appear here.',
-    failedToLoad: 'Failed to load benefit campaigns',
-    claimButton: 'Claim Reward',
-    claimSuccess: 'Reward claimed successfully',
-    claimFailed: 'Failed to claim reward',
-    defaultDescription: 'Meet the recharge threshold to claim a balance reward.',
-    threshold: 'Threshold',
-    recharged: 'Eligible Recharge',
-    grant: 'Reward',
-    period: 'Campaign Period',
-    rechargeScope: 'Recharge Scope',
-    claimedAt: 'Claimed At',
-    states: {
-      not_started: 'Not Started',
-      ended: 'Ended',
-      claimed: 'Claimed',
-      not_eligible: 'Not Eligible',
-      claimable: 'Claimable'
-    },
-    scopes: {
-      lifetime: 'Lifetime recharge',
-      campaign_window: 'Campaign-window recharge'
-    },
-    messages: {
-      notStarted: 'This campaign has not started yet.',
-      ended: 'This campaign has ended.',
-      claimed: 'You have already claimed this reward.',
-      notEligible: '{amount} more recharge is required to claim.',
-      claimable: 'You meet the requirement and can claim now.'
-    }
   },
 
   // Profile
@@ -5010,86 +4970,6 @@ export default {
       failedToLoadUsages: 'Failed to load usage records'
     },
 
-    // Benefit Campaigns
-    benefits: {
-      title: 'Benefit Campaign Management',
-      description: 'Configure recharge-threshold reward campaigns and inspect claims',
-      createCampaign: 'Create Campaign',
-      editCampaign: 'Edit Campaign',
-      deleteCampaign: 'Delete Campaign',
-      searchCampaigns: 'Search campaigns...',
-      enabled: 'Enabled',
-      disabled: 'Disabled',
-      visible: 'Visible',
-      hidden: 'Hidden',
-      thresholdShort: 'Threshold',
-      grantShort: 'Reward',
-      viewClaims: 'View claims',
-      claimRecords: 'Claim Records',
-      claimRecordsFor: 'Claims for {name}',
-      noClaims: 'No claim records yet',
-      deleteConfirm: 'Are you sure you want to delete this benefit campaign? This action cannot be undone.',
-      campaignCreated: 'Benefit campaign created successfully',
-      campaignUpdated: 'Benefit campaign updated successfully',
-      campaignDeleted: 'Benefit campaign deleted successfully',
-      failedToLoad: 'Failed to load benefit campaigns',
-      failedToSave: 'Failed to save benefit campaign',
-      failedToDelete: 'Failed to delete benefit campaign',
-      failedToLoadClaims: 'Failed to load claim records',
-      invalidTimeRange: 'Please enter a valid campaign start and end time',
-      columns: {
-        name: 'Campaign',
-        status: 'Status',
-        amounts: 'Amounts',
-        timeRange: 'Schedule',
-        scope: 'Scope',
-        claims: 'Claims',
-        actions: 'Actions'
-      },
-      filters: {
-        allEnabled: 'All Status',
-        allVisible: 'All Visibility'
-      },
-      scopes: {
-        lifetime: 'Lifetime recharge',
-        campaign_window: 'Campaign-window recharge'
-      },
-      form: {
-        name: 'Internal Name',
-        sortOrder: 'Sort Order',
-        startsAt: 'Starts At',
-        endsAt: 'Ends At',
-        thresholdAmount: 'Recharge Threshold ($)',
-        grantAmount: 'Reward Amount ($)',
-        rechargeScope: 'Recharge Scope',
-        enabled: 'Enable campaign',
-        visible: 'Visible to users',
-        copyTitle: 'User-facing Title',
-        copyButton: 'Button Text',
-        copyDescription: 'User-facing Description',
-        copySuccess: 'Success Text',
-        copyNotEligible: 'Not Eligible Text',
-        copyNotStarted: 'Not Started Text',
-        copyEnded: 'Ended Text',
-        copyClaimed: 'Claimed Text',
-        copyFailed: 'Failed Text'
-      },
-      defaults: {
-        button: 'Claim Reward',
-        success: 'Reward has been added to your balance.',
-        notEligible: 'Recharge amount has not reached the campaign threshold.',
-        notStarted: 'This campaign has not started yet.',
-        ended: 'This campaign has ended.',
-        claimed: 'You have already claimed this reward.',
-        failed: 'Claim failed. Please try again later.'
-      },
-      claims: {
-        eligible: 'Eligible',
-        before: 'Before',
-        after: 'After'
-      }
-    },
-
     // Usage Records
     usage: {
       title: 'Usage Records',
@@ -5973,12 +5853,6 @@ export default {
           configureLink: 'Configure model pricing in Channel Management > Channel Pricing',
           enabled: 'Enable Available Channels',
           enabledHint: 'When off, the sidebar entry is hidden and the endpoint returns an empty list.',
-        },
-        benefitsCenter: {
-          title: 'Benefits Center',
-          description: 'Control whether the user-facing Benefits Center entry is shown. Turning it off does not affect admin campaign management or existing claim records.',
-          enabled: 'Show Benefits Center entry',
-          enabledHint: 'When off, the user sidebar entry is hidden while campaigns remain manageable by admins.',
         },
         imagePlayground: {
           title: 'Image Playground',

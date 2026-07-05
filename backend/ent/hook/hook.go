@@ -93,30 +93,6 @@ func (f AuthIdentityChannelFunc) Mutate(ctx context.Context, m ent.Mutation) (en
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AuthIdentityChannelMutation", m)
 }
 
-// The BenefitCampaignFunc type is an adapter to allow the use of ordinary
-// function as BenefitCampaign mutator.
-type BenefitCampaignFunc func(context.Context, *ent.BenefitCampaignMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f BenefitCampaignFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.BenefitCampaignMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BenefitCampaignMutation", m)
-}
-
-// The BenefitClaimFunc type is an adapter to allow the use of ordinary
-// function as BenefitClaim mutator.
-type BenefitClaimFunc func(context.Context, *ent.BenefitClaimMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f BenefitClaimFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.BenefitClaimMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BenefitClaimMutation", m)
-}
-
 // The ChannelMonitorFunc type is an adapter to allow the use of ordinary
 // function as ChannelMonitor mutator.
 type ChannelMonitorFunc func(context.Context, *ent.ChannelMonitorMutation) (ent.Value, error)

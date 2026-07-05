@@ -21,10 +21,6 @@ func ProvidePublicAvailableChannelProvider(channels *service.ChannelService) pub
 	return channels
 }
 
-func ProvideBenefitUserService(benefitService *service.BenefitService) benefitUserService {
-	return benefitService
-}
-
 // ProvideAdminHandlers creates the AdminHandlers struct
 func ProvideAdminHandlers(
 	dashboardHandler *admin.DashboardHandler,
@@ -41,7 +37,6 @@ func ProvideAdminHandlers(
 	proxyHandler *admin.ProxyHandler,
 	redeemHandler *admin.RedeemHandler,
 	promoHandler *admin.PromoHandler,
-	benefitHandler *admin.BenefitHandler,
 	settingHandler *admin.SettingHandler,
 	opsHandler *admin.OpsHandler,
 	systemHandler *admin.SystemHandler,
@@ -74,7 +69,6 @@ func ProvideAdminHandlers(
 		Proxy:                  proxyHandler,
 		Redeem:                 redeemHandler,
 		Promo:                  promoHandler,
-		Benefit:                benefitHandler,
 		Setting:                settingHandler,
 		Ops:                    opsHandler,
 		System:                 systemHandler,
@@ -120,7 +114,6 @@ func ProvideHandlers(
 	apiKeyHandler *APIKeyHandler,
 	usageHandler *UsageHandler,
 	redeemHandler *RedeemHandler,
-	benefitHandler *BenefitHandler,
 	subscriptionHandler *SubscriptionHandler,
 	announcementHandler *AnnouncementHandler,
 	channelMonitorUserHandler *ChannelMonitorUserHandler,
@@ -142,7 +135,6 @@ func ProvideHandlers(
 		APIKey:             apiKeyHandler,
 		Usage:              usageHandler,
 		Redeem:             redeemHandler,
-		Benefit:            benefitHandler,
 		Subscription:       subscriptionHandler,
 		Announcement:       announcementHandler,
 		ChannelMonitor:     channelMonitorUserHandler,
@@ -166,7 +158,6 @@ var ProviderSet = wire.NewSet(
 	NewAPIKeyHandler,
 	ProvideUsageHandler,
 	NewRedeemHandler,
-	NewBenefitHandler,
 	NewSubscriptionHandler,
 	NewAnnouncementHandler,
 	NewChannelMonitorUserHandler,
@@ -181,7 +172,6 @@ var ProviderSet = wire.NewSet(
 	ProvideSQLDBSlice,
 	ProvidePublicModelPricingCatalogProvider,
 	ProvidePublicAvailableChannelProvider,
-	ProvideBenefitUserService,
 
 	// Admin handlers
 	admin.NewDashboardHandler,
@@ -198,7 +188,6 @@ var ProviderSet = wire.NewSet(
 	admin.NewProxyHandler,
 	admin.NewRedeemHandler,
 	admin.NewPromoHandler,
-	admin.NewBenefitHandler,
 	ProvideAdminSettingHandler,
 	admin.NewOpsHandler,
 	ProvideSystemHandler,

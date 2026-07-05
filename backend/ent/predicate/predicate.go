@@ -27,12 +27,6 @@ type AuthIdentity func(*sql.Selector)
 // AuthIdentityChannel is the predicate function for authidentitychannel builders.
 type AuthIdentityChannel func(*sql.Selector)
 
-// BenefitCampaign is the predicate function for benefitcampaign builders.
-type BenefitCampaign func(*sql.Selector)
-
-// BenefitClaim is the predicate function for benefitclaim builders.
-type BenefitClaim func(*sql.Selector)
-
 // ChannelMonitor is the predicate function for channelmonitor builders.
 type ChannelMonitor func(*sql.Selector)
 

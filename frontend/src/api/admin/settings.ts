@@ -645,9 +645,6 @@ export interface SystemSettings {
   // Available Channels feature switch
   available_channels_enabled: boolean;
 
-  // Benefits Center feature switch
-  benefits_center_enabled: boolean;
-
   // Image playground admin-configured groups
   image_playground_group_id: number | null;
   image_playground_responses_group_id: number | null;
@@ -894,9 +891,6 @@ export interface UpdateSettingsRequest {
 
   // Available Channels feature switch
   available_channels_enabled?: boolean;
-
-  // Benefits Center feature switch
-  benefits_center_enabled?: boolean;
 
   // Image playground admin-configured groups
   image_playground_group_id?: number | null;

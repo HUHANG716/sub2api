@@ -53,7 +53,7 @@
                 :title="sidebarCollapsed ? item.label : undefined"
                 @click="handleGroupClick(item)"
               >
-                <component :is="renderNavIcon(item)" />
+                <component :is="item.icon" class="h-5 w-5 flex-shrink-0" />
                 <span
                   class="sidebar-label sidebar-label-flex"
                   :class="{ 'sidebar-label-collapsed': sidebarCollapsed }"
@@ -76,7 +76,7 @@
                   :class="{ 'sidebar-link-active': route.path === child.path }"
                   @click="handleMenuItemClick(child.path)"
                 >
-                  <component :is="renderNavIcon(child, 'h-4 w-4')" />
+                  <component :is="child.icon" class="h-4 w-4 flex-shrink-0" />
                   <span>{{ child.label }}</span>
                 </router-link>
               </div>
@@ -92,7 +92,7 @@
                 @click="handleMenuItemClick(item.path)"
               >
                 <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
-                <component v-else :is="renderNavIcon(item)" />
+                <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
                 <span class="sidebar-label" :class="{ 'sidebar-label-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">{{ item.label }}</span>
               </a>
             </template>
@@ -114,7 +114,7 @@
               @click="handleMenuItemClick(item.path)"
             >
               <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
-              <component v-else :is="renderNavIcon(item)" />
+              <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
               <span class="sidebar-label" :class="{ 'sidebar-label-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">{{ item.label }}</span>
             </router-link>
           </template>
@@ -140,7 +140,7 @@
               @click="handleMenuItemClick(item.path)"
             >
               <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
-              <component v-else :is="renderNavIcon(item)" />
+              <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
               <span class="sidebar-label" :class="{ 'sidebar-label-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">{{ item.label }}</span>
             </a>
             <router-link
@@ -153,7 +153,7 @@
               @click="handleMenuItemClick(item.path)"
             >
               <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
-              <component v-else :is="renderNavIcon(item)" />
+              <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
               <span class="sidebar-label" :class="{ 'sidebar-label-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">{{ item.label }}</span>
             </router-link>
           </template>
@@ -175,7 +175,7 @@
               @click="handleMenuItemClick(item.path)"
             >
               <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
-              <component v-else :is="renderNavIcon(item)" />
+              <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
               <span class="sidebar-label" :class="{ 'sidebar-label-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">{{ item.label }}</span>
             </a>
             <router-link
@@ -188,7 +188,7 @@
               @click="handleMenuItemClick(item.path)"
             >
               <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
-              <component v-else :is="renderNavIcon(item)" />
+              <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
               <span class="sidebar-label" :class="{ 'sidebar-label-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">{{ item.label }}</span>
             </router-link>
           </template>
@@ -346,15 +346,9 @@ import { computed, h, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAdminSettingsStore, useAppStore, useAuthStore, useOnboardingStore } from '@/stores'
-import { benefitsAPI } from '@/api'
 import VersionBadge from '@/components/common/VersionBadge.vue'
 import DefaultHashAvatar from '@/components/common/DefaultHashAvatar.vue'
 import Icon from '@/components/icons/Icon.vue'
-import {
-  getBenefitCampaignsSeenAt,
-  hasUnseenBenefitCampaigns,
-  markBenefitCampaignsSeen
-} from '@/utils/benefitCampaignNotice'
 import { sanitizeSvg } from '@/utils/sanitize'
 import { FeatureFlags, makeImagePlaygroundSidebarFlag, makeSidebarFlag } from '@/utils/featureFlags'
 import { defaultAvatarSeed } from '@/utils/defaultAvatar'
@@ -363,7 +357,6 @@ interface NavItem {
   path: string
   label: string
   icon: unknown
-  badge?: boolean
   iconSvg?: string
   hideInSimpleMode?: boolean
   external?: boolean
@@ -422,9 +415,6 @@ const displayName = computed(() => {
 const showOnboardingButton = computed(() => {
   return !authStore.isSimpleMode && user.value?.role === 'admin'
 })
-const hasNewBenefitCampaigns = ref(false)
-const mockBenefitCampaignDot = computed(() => import.meta.env.DEV && route.query.mockBenefitDot === '1')
-const showBenefitCampaignDot = computed(() => mockBenefitCampaignDot.value || hasNewBenefitCampaigns.value)
 
 // Track which parent nav groups are expanded
 const expandedGroups = ref<Set<string>>(new Set())
@@ -442,7 +432,6 @@ type SidebarIconName =
   | 'terminal'
   | 'trendingUp'
   | 'badge'
-  | 'gift'
   | 'userCircle'
   | 'userPlus'
   | 'database'
@@ -470,15 +459,6 @@ function createSidebarIcon(name: SidebarIconName, strokeWidth = 1.75) {
   }
 }
 
-function renderNavIcon(item: NavItem, iconClass = 'h-5 w-5') {
-  return {
-    render: () => h('span', { class: 'sidebar-icon-wrap' }, [
-      item.icon ? h(item.icon as object, { class: `${iconClass} flex-shrink-0` }) : h('span', { class: `${iconClass} flex-shrink-0` }),
-      item.badge ? h('span', { class: 'sidebar-link-dot', 'aria-hidden': 'true' }) : null
-    ])
-  }
-}
-
 const DashboardIcon = createSidebarIcon('home')
 const KeyIcon = createSidebarIcon('key')
 const ChartIcon = createSidebarIcon('trendingUp')
@@ -488,7 +468,6 @@ const UsersIcon = createSidebarIcon('userPlus')
 const FolderIcon = createSidebarIcon('database')
 const ChannelIcon = createSidebarIcon('cube')
 const ImagePlaygroundIcon = createSidebarIcon('sparkles')
-const BenefitCampaignIcon = createSidebarIcon('gift')
 const CreditCardIcon = createSidebarIcon('wallet')
 const RechargeSubscriptionIcon = createSidebarIcon('dollar')
 const GlobeIcon = createSidebarIcon('cloud')
@@ -514,7 +493,6 @@ const flagPayment = makeSidebarFlag(FeatureFlags.payment)
 const flagAvailableChannels = makeSidebarFlag(FeatureFlags.availableChannels)
 const flagAffiliate = makeSidebarFlag(FeatureFlags.affiliate)
 const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
-const flagBenefitsCenter = makeSidebarFlag(FeatureFlags.benefitsCenter)
 const flagImagePlayground = makeImagePlaygroundSidebarFlag()
 const flagOpsMonitoring = () => adminSettingsStore.opsMonitoringEnabled
 const flagAdminPayment = () => adminSettingsStore.paymentEnabled
@@ -539,7 +517,6 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
     { path: '/purchase', label: t('nav.buySubscription'), icon: RechargeSubscriptionIcon, hideInSimpleMode: true, featureFlag: flagPayment },
     { path: '/orders', label: t('nav.myOrders'), icon: OrderListIcon, hideInSimpleMode: true, featureFlag: flagPayment },
     { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
-    { path: '/benefits', label: t('nav.benefits'), icon: BenefitCampaignIcon, hideInSimpleMode: true, badge: showBenefitCampaignDot.value, featureFlag: flagBenefitsCenter },
     { path: '/affiliate', label: t('nav.affiliate'), icon: UsersIcon, hideInSimpleMode: true, featureFlag: flagAffiliate },
     { path: '/profile', label: t('nav.profile'), icon: UserIcon },
     ...customMenuItemsForUser.value.map((item): NavItem => ({
@@ -606,7 +583,6 @@ const adminNavItems = computed((): NavItem[] => {
     { path: '/admin/risk-control', label: t('nav.riskControl'), icon: ShieldIcon, hideInSimpleMode: true, featureFlag: flagRiskControl },
     { path: '/admin/redeem', label: t('nav.redeemCodes'), icon: TicketIcon, hideInSimpleMode: true },
     { path: '/admin/promo-codes', label: t('nav.promoCodes'), icon: GiftIcon, hideInSimpleMode: true },
-    { path: '/admin/benefits', label: t('nav.benefitCampaigns'), icon: BenefitCampaignIcon, hideInSimpleMode: true },
     {
       path: '/admin/affiliates',
       label: t('nav.affiliateManagement'),
@@ -695,10 +671,6 @@ function closeMobile() {
 }
 
 function handleMenuItemClick(itemPath: string) {
-  if (itemPath === '/benefits') {
-    hasNewBenefitCampaigns.value = false
-    markBenefitCampaignsSeen()
-  }
   if (mobileOpen.value) {
     setTimeout(() => {
       appStore.setMobileOpen(false)
@@ -715,19 +687,6 @@ function handleMenuItemClick(itemPath: string) {
   const selector = pathToSelector[itemPath]
   if (selector && onboardingStore.isCurrentStep(selector)) {
     onboardingStore.nextStep(500)
-  }
-}
-
-async function refreshBenefitCampaignNotice() {
-  if (authStore.isSimpleMode || appStore.backendModeEnabled || !user.value || flagBenefitsCenter() === false) {
-    hasNewBenefitCampaigns.value = false
-    return
-  }
-  try {
-    const campaigns = await benefitsAPI.listCampaigns()
-    hasNewBenefitCampaigns.value = hasUnseenBenefitCampaigns(campaigns, getBenefitCampaignsSeenAt())
-  } catch {
-    hasNewBenefitCampaigns.value = false
   }
 }
 
@@ -785,37 +744,11 @@ watch(
   { immediate: true }
 )
 
-watch(
-  () => route.path,
-  (path) => {
-    if (path === '/benefits') {
-      hasNewBenefitCampaigns.value = false
-      markBenefitCampaignsSeen()
-    }
-  },
-  { immediate: true }
-)
-
-watch(
-  () => user.value?.id,
-  () => {
-    refreshBenefitCampaignNotice()
-  }
-)
-
-watch(
-  () => appStore.cachedPublicSettings?.benefits_center_enabled,
-  () => {
-    refreshBenefitCampaignNotice()
-  }
-)
-
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   if (isAdmin.value) {
     adminSettingsStore.fetch()
   }
-  refreshBenefitCampaignNotice()
 })
 
 onBeforeUnmount(() => {
@@ -925,27 +858,6 @@ onBeforeUnmount(() => {
   gap: 0;
   padding-left: 0.875rem;
   padding-right: 0.875rem;
-}
-
-.sidebar-icon-wrap {
-  position: relative;
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-}
-
-.sidebar-icon-wrap :deep(.sidebar-link-dot) {
-  position: absolute;
-  display: block;
-  right: -0.15625rem;
-  top: -0.15625rem;
-  height: 0.5625rem;
-  width: 0.5625rem;
-  border: 0;
-  border-radius: 9999px;
-  background: rgb(220 38 38);
-  box-shadow: none;
 }
 
 .sidebar-account-section {

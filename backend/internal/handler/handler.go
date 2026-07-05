@@ -20,7 +20,6 @@ type AdminHandlers struct {
 	Proxy                  *admin.ProxyHandler
 	Redeem                 *admin.RedeemHandler
 	Promo                  *admin.PromoHandler
-	Benefit                *admin.BenefitHandler
 	Setting                *admin.SettingHandler
 	Ops                    *admin.OpsHandler
 	System                 *admin.SystemHandler
@@ -46,7 +45,6 @@ type Handlers struct {
 	APIKey             *APIKeyHandler
 	Usage              *UsageHandler
 	Redeem             *RedeemHandler
-	Benefit            *BenefitHandler
 	Subscription       *SubscriptionHandler
 	Announcement       *AnnouncementHandler
 	ChannelMonitor     *ChannelMonitorUserHandler

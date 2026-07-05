@@ -422,114 +422,6 @@ var (
 			},
 		},
 	}
-	// BenefitCampaignsColumns holds the columns for the "benefit_campaigns" table.
-	BenefitCampaignsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt64, Increment: true},
-		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
-		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
-		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
-		{Name: "name", Type: field.TypeString, Size: 120},
-		{Name: "enabled", Type: field.TypeBool, Default: true},
-		{Name: "visible", Type: field.TypeBool, Default: true},
-		{Name: "starts_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
-		{Name: "ends_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
-		{Name: "threshold_amount", Type: field.TypeFloat64, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
-		{Name: "grant_amount", Type: field.TypeFloat64, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
-		{Name: "recharge_scope", Type: field.TypeString, Size: 32, Default: "lifetime"},
-		{Name: "copy", Type: field.TypeJSON, Nullable: true, SchemaType: map[string]string{"postgres": "jsonb"}},
-		{Name: "sort_order", Type: field.TypeInt, Default: 0},
-	}
-	// BenefitCampaignsTable holds the schema information for the "benefit_campaigns" table.
-	BenefitCampaignsTable = &schema.Table{
-		Name:       "benefit_campaigns",
-		Columns:    BenefitCampaignsColumns,
-		PrimaryKey: []*schema.Column{BenefitCampaignsColumns[0]},
-		Indexes: []*schema.Index{
-			{
-				Name:    "benefitcampaign_enabled",
-				Unique:  false,
-				Columns: []*schema.Column{BenefitCampaignsColumns[5]},
-			},
-			{
-				Name:    "benefitcampaign_visible",
-				Unique:  false,
-				Columns: []*schema.Column{BenefitCampaignsColumns[6]},
-			},
-			{
-				Name:    "benefitcampaign_starts_at_ends_at",
-				Unique:  false,
-				Columns: []*schema.Column{BenefitCampaignsColumns[7], BenefitCampaignsColumns[8]},
-			},
-			{
-				Name:    "benefitcampaign_visible_sort_order",
-				Unique:  false,
-				Columns: []*schema.Column{BenefitCampaignsColumns[6], BenefitCampaignsColumns[13]},
-			},
-			{
-				Name:    "benefitcampaign_deleted_at",
-				Unique:  false,
-				Columns: []*schema.Column{BenefitCampaignsColumns[3]},
-			},
-		},
-	}
-	// BenefitClaimsColumns holds the columns for the "benefit_claims" table.
-	BenefitClaimsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt64, Increment: true},
-		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
-		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
-		{Name: "status", Type: field.TypeString, Size: 20, Default: "claimed"},
-		{Name: "eligible_recharge_amount", Type: field.TypeFloat64, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
-		{Name: "granted_amount", Type: field.TypeFloat64, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
-		{Name: "balance_before", Type: field.TypeFloat64, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
-		{Name: "balance_after", Type: field.TypeFloat64, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
-		{Name: "claimed_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
-		{Name: "source_redeem_code", Type: field.TypeString, Nullable: true, Size: 64},
-		{Name: "metadata", Type: field.TypeJSON, Nullable: true, SchemaType: map[string]string{"postgres": "jsonb"}},
-		{Name: "campaign_id", Type: field.TypeInt64},
-		{Name: "user_id", Type: field.TypeInt64},
-	}
-	// BenefitClaimsTable holds the schema information for the "benefit_claims" table.
-	BenefitClaimsTable = &schema.Table{
-		Name:       "benefit_claims",
-		Columns:    BenefitClaimsColumns,
-		PrimaryKey: []*schema.Column{BenefitClaimsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "benefit_claims_benefit_campaigns_claims",
-				Columns:    []*schema.Column{BenefitClaimsColumns[11]},
-				RefColumns: []*schema.Column{BenefitCampaignsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "benefit_claims_users_benefit_claims",
-				Columns:    []*schema.Column{BenefitClaimsColumns[12]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "benefitclaim_campaign_id",
-				Unique:  false,
-				Columns: []*schema.Column{BenefitClaimsColumns[11]},
-			},
-			{
-				Name:    "benefitclaim_user_id",
-				Unique:  false,
-				Columns: []*schema.Column{BenefitClaimsColumns[12]},
-			},
-			{
-				Name:    "benefitclaim_campaign_id_user_id",
-				Unique:  true,
-				Columns: []*schema.Column{BenefitClaimsColumns[11], BenefitClaimsColumns[12]},
-			},
-			{
-				Name:    "benefitclaim_claimed_at",
-				Unique:  false,
-				Columns: []*schema.Column{BenefitClaimsColumns[8]},
-			},
-		},
-	}
 	// ChannelMonitorsColumns holds the columns for the "channel_monitors" table.
 	ChannelMonitorsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1892,8 +1784,6 @@ var (
 		AnnouncementReadsTable,
 		AuthIdentitiesTable,
 		AuthIdentityChannelsTable,
-		BenefitCampaignsTable,
-		BenefitClaimsTable,
 		ChannelMonitorsTable,
 		ChannelMonitorDailyRollupsTable,
 		ChannelMonitorHistoriesTable,
@@ -1955,14 +1845,6 @@ func init() {
 	AuthIdentityChannelsTable.ForeignKeys[0].RefTable = AuthIdentitiesTable
 	AuthIdentityChannelsTable.Annotation = &entsql.Annotation{
 		Table: "auth_identity_channels",
-	}
-	BenefitCampaignsTable.Annotation = &entsql.Annotation{
-		Table: "benefit_campaigns",
-	}
-	BenefitClaimsTable.ForeignKeys[0].RefTable = BenefitCampaignsTable
-	BenefitClaimsTable.ForeignKeys[1].RefTable = UsersTable
-	BenefitClaimsTable.Annotation = &entsql.Annotation{
-		Table: "benefit_claims",
 	}
 	ChannelMonitorsTable.ForeignKeys[0].RefTable = ChannelMonitorRequestTemplatesTable
 	ChannelMonitorsTable.Annotation = &entsql.Annotation{

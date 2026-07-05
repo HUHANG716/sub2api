@@ -304,8 +304,6 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 
 		AvailableChannelsEnabled: settings.AvailableChannelsEnabled,
 
-		BenefitsCenterEnabled: settings.BenefitsCenterEnabled,
-
 		AffiliateEnabled: settings.AffiliateEnabled,
 
 		GlobalDiscountSettings: settings.GlobalDiscountSettings,
@@ -655,9 +653,6 @@ type UpdateSettingsRequest struct {
 
 	// Available Channels feature switch (user-facing)
 	AvailableChannelsEnabled *bool `json:"available_channels_enabled"`
-
-	// Benefits Center feature switch (user-facing)
-	BenefitsCenterEnabled *bool `json:"benefits_center_enabled"`
 
 	// 全局折扣配置
 	GlobalDiscountSettings *service.GlobalDiscountSettings `json:"global_discount_settings"`
@@ -1811,12 +1806,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.AvailableChannelsEnabled
 		}(),
-		BenefitsCenterEnabled: func() bool {
-			if req.BenefitsCenterEnabled != nil {
-				return *req.BenefitsCenterEnabled
-			}
-			return previousSettings.BenefitsCenterEnabled
-		}(),
 		GlobalDiscountSettings: func() service.GlobalDiscountSettings {
 			if req.GlobalDiscountSettings != nil {
 				return *req.GlobalDiscountSettings
@@ -2188,8 +2177,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ChannelMonitorDefaultIntervalSeconds: updatedSettings.ChannelMonitorDefaultIntervalSeconds,
 
 		AvailableChannelsEnabled: updatedSettings.AvailableChannelsEnabled,
-
-		BenefitsCenterEnabled: updatedSettings.BenefitsCenterEnabled,
 
 		AffiliateEnabled: updatedSettings.AffiliateEnabled,
 
@@ -2684,9 +2671,6 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.AvailableChannelsEnabled != after.AvailableChannelsEnabled {
 		changed = append(changed, "available_channels_enabled")
-	}
-	if before.BenefitsCenterEnabled != after.BenefitsCenterEnabled {
-		changed = append(changed, "benefits_center_enabled")
 	}
 	if before.AffiliateEnabled != after.AffiliateEnabled {
 		changed = append(changed, "affiliate_enabled")

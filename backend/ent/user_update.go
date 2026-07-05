@@ -14,7 +14,6 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/announcementread"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
-	"github.com/Wei-Shaw/sub2api/ent/benefitclaim"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/pendingauthsession"
@@ -562,21 +561,6 @@ func (_u *UserUpdate) AddPaymentOrders(v ...*PaymentOrder) *UserUpdate {
 	return _u.AddPaymentOrderIDs(ids...)
 }
 
-// AddBenefitClaimIDs adds the "benefit_claims" edge to the BenefitClaim entity by IDs.
-func (_u *UserUpdate) AddBenefitClaimIDs(ids ...int64) *UserUpdate {
-	_u.mutation.AddBenefitClaimIDs(ids...)
-	return _u
-}
-
-// AddBenefitClaims adds the "benefit_claims" edges to the BenefitClaim entity.
-func (_u *UserUpdate) AddBenefitClaims(v ...*BenefitClaim) *UserUpdate {
-	ids := make([]int64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddBenefitClaimIDs(ids...)
-}
-
 // AddAuthIdentityIDs adds the "auth_identities" edge to the AuthIdentity entity by IDs.
 func (_u *UserUpdate) AddAuthIdentityIDs(ids ...int64) *UserUpdate {
 	_u.mutation.AddAuthIdentityIDs(ids...)
@@ -835,27 +819,6 @@ func (_u *UserUpdate) RemovePaymentOrders(v ...*PaymentOrder) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemovePaymentOrderIDs(ids...)
-}
-
-// ClearBenefitClaims clears all "benefit_claims" edges to the BenefitClaim entity.
-func (_u *UserUpdate) ClearBenefitClaims() *UserUpdate {
-	_u.mutation.ClearBenefitClaims()
-	return _u
-}
-
-// RemoveBenefitClaimIDs removes the "benefit_claims" edge to BenefitClaim entities by IDs.
-func (_u *UserUpdate) RemoveBenefitClaimIDs(ids ...int64) *UserUpdate {
-	_u.mutation.RemoveBenefitClaimIDs(ids...)
-	return _u
-}
-
-// RemoveBenefitClaims removes "benefit_claims" edges to BenefitClaim entities.
-func (_u *UserUpdate) RemoveBenefitClaims(v ...*BenefitClaim) *UserUpdate {
-	ids := make([]int64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveBenefitClaimIDs(ids...)
 }
 
 // ClearAuthIdentities clears all "auth_identities" edges to the AuthIdentity entity.
@@ -1571,51 +1534,6 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if _u.mutation.BenefitClaimsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.BenefitClaimsTable,
-			Columns: []string{user.BenefitClaimsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(benefitclaim.FieldID, field.TypeInt64),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedBenefitClaimsIDs(); len(nodes) > 0 && !_u.mutation.BenefitClaimsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.BenefitClaimsTable,
-			Columns: []string{user.BenefitClaimsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(benefitclaim.FieldID, field.TypeInt64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.BenefitClaimsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.BenefitClaimsTable,
-			Columns: []string{user.BenefitClaimsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(benefitclaim.FieldID, field.TypeInt64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.AuthIdentitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -2292,21 +2210,6 @@ func (_u *UserUpdateOne) AddPaymentOrders(v ...*PaymentOrder) *UserUpdateOne {
 	return _u.AddPaymentOrderIDs(ids...)
 }
 
-// AddBenefitClaimIDs adds the "benefit_claims" edge to the BenefitClaim entity by IDs.
-func (_u *UserUpdateOne) AddBenefitClaimIDs(ids ...int64) *UserUpdateOne {
-	_u.mutation.AddBenefitClaimIDs(ids...)
-	return _u
-}
-
-// AddBenefitClaims adds the "benefit_claims" edges to the BenefitClaim entity.
-func (_u *UserUpdateOne) AddBenefitClaims(v ...*BenefitClaim) *UserUpdateOne {
-	ids := make([]int64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddBenefitClaimIDs(ids...)
-}
-
 // AddAuthIdentityIDs adds the "auth_identities" edge to the AuthIdentity entity by IDs.
 func (_u *UserUpdateOne) AddAuthIdentityIDs(ids ...int64) *UserUpdateOne {
 	_u.mutation.AddAuthIdentityIDs(ids...)
@@ -2565,27 +2468,6 @@ func (_u *UserUpdateOne) RemovePaymentOrders(v ...*PaymentOrder) *UserUpdateOne 
 		ids[i] = v[i].ID
 	}
 	return _u.RemovePaymentOrderIDs(ids...)
-}
-
-// ClearBenefitClaims clears all "benefit_claims" edges to the BenefitClaim entity.
-func (_u *UserUpdateOne) ClearBenefitClaims() *UserUpdateOne {
-	_u.mutation.ClearBenefitClaims()
-	return _u
-}
-
-// RemoveBenefitClaimIDs removes the "benefit_claims" edge to BenefitClaim entities by IDs.
-func (_u *UserUpdateOne) RemoveBenefitClaimIDs(ids ...int64) *UserUpdateOne {
-	_u.mutation.RemoveBenefitClaimIDs(ids...)
-	return _u
-}
-
-// RemoveBenefitClaims removes "benefit_claims" edges to BenefitClaim entities.
-func (_u *UserUpdateOne) RemoveBenefitClaims(v ...*BenefitClaim) *UserUpdateOne {
-	ids := make([]int64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveBenefitClaimIDs(ids...)
 }
 
 // ClearAuthIdentities clears all "auth_identities" edges to the AuthIdentity entity.
@@ -3324,51 +3206,6 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(paymentorder.FieldID, field.TypeInt64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.BenefitClaimsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.BenefitClaimsTable,
-			Columns: []string{user.BenefitClaimsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(benefitclaim.FieldID, field.TypeInt64),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedBenefitClaimsIDs(); len(nodes) > 0 && !_u.mutation.BenefitClaimsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.BenefitClaimsTable,
-			Columns: []string{user.BenefitClaimsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(benefitclaim.FieldID, field.TypeInt64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.BenefitClaimsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.BenefitClaimsTable,
-			Columns: []string{user.BenefitClaimsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(benefitclaim.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

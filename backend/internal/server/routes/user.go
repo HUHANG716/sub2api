@@ -109,13 +109,6 @@ func RegisterUserRoutes(
 			redeem.GET("/history", h.Redeem.GetHistory)
 		}
 
-		// 福利活动
-		benefits := authenticated.Group("/benefits")
-		{
-			benefits.GET("/campaigns", h.Benefit.List)
-			benefits.POST("/campaigns/:id/claim", h.Benefit.Claim)
-		}
-
 		// 用户订阅
 		subscriptions := authenticated.Group("/subscriptions")
 		{

@@ -119,11 +119,6 @@ export const FeatureFlags = {
     mode: 'opt-in',
     label: 'Affiliate',
   }),
-  benefitsCenter: defineFlag({
-    key: 'benefits_center_enabled',
-    mode: 'opt-out',
-    label: 'Benefits Center',
-  }),
 } as const
 
 export type RegisteredFeatureFlag = keyof typeof FeatureFlags

@@ -302,18 +302,6 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/benefits',
-    name: 'Benefits',
-    component: () => import('@/views/user/BenefitsView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      title: 'Benefits',
-      titleKey: 'benefits.title',
-      descriptionKey: 'benefits.description'
-    }
-  },
-  {
     path: '/affiliate',
     name: 'Affiliate',
     component: () => import('@/views/user/AffiliateView.vue'),
@@ -632,18 +620,6 @@ const routes: RouteRecordRaw[] = [
       title: 'Promo Code Management',
       titleKey: 'admin.promo.title',
       descriptionKey: 'admin.promo.description'
-    }
-  },
-  {
-    path: '/admin/benefits',
-    name: 'AdminBenefits',
-    component: () => import('@/views/admin/BenefitCampaignsView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: true,
-      title: 'Benefit Campaign Management',
-      titleKey: 'admin.benefits.title',
-      descriptionKey: 'admin.benefits.description'
     }
   },
   {
