@@ -26,13 +26,6 @@ vi.mock('@/stores/adminSettings', () => ({
   }),
 }))
 
-vi.mock('@/stores/adminCompliance', () => ({
-  useAdminComplianceStore: () => ({
-    ensureLoaded: vi.fn(),
-    requiresAcceptance: false,
-  }),
-}))
-
 vi.mock('@/composables/useNavigationLoading', () => ({
   useNavigationLoadingState: () => ({
     startNavigation: vi.fn(),
