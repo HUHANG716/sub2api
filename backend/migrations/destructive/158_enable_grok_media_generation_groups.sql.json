@@ -1,0 +1,8 @@
+{
+  "migration": "158_enable_grok_media_generation_groups.sql",
+  "phase": "review",
+  "reason": "Backfills existing Grok groups onto the image generation capability gate after Grok media routes were added.",
+  "risk": "The migration performs a bulk UPDATE on groups for Grok rows, which can briefly lock matching rows and changes capability state for existing Grok groups.",
+  "mitigation": "The UPDATE is narrowly scoped to platform='grok' rows where image generation is still disabled, is idempotent, and aligns existing Grok groups with the newly supported media routes.",
+  "approved_by": "hang"
+}
