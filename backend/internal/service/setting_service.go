@@ -152,6 +152,15 @@ const openAICodexUserAgentCacheTTL = 60 * time.Second
 const openAICodexUserAgentErrorTTL = 5 * time.Second
 const openAICodexUserAgentDBTimeout = 5 * time.Second
 
+type cachedGlobalDiscountRuntime struct {
+	settings  GlobalDiscountSettings
+	expiresAt int64 // unix nano
+}
+
+const globalDiscountCacheTTL = 30 * time.Second
+const globalDiscountErrorTTL = 5 * time.Second
+const globalDiscountDBTimeout = 5 * time.Second
+
 const codexRestrictionPolicyCacheTTL = 60 * time.Second
 const codexRestrictionPolicyDBTimeout = 5 * time.Second
 
@@ -202,6 +211,8 @@ type SettingService struct {
 	antigravityUAVersionSF      singleflight.Group
 	openAICodexUACache          atomic.Value // *cachedOpenAICodexUserAgent
 	openAICodexUASF             singleflight.Group
+	globalDiscountCache         atomic.Value // *cachedGlobalDiscountRuntime
+	globalDiscountSF            singleflight.Group
 	codexRestrictionPolicyCache atomic.Value // *cachedCodexRestrictionPolicy
 	codexRestrictionPolicySF    singleflight.Group
 

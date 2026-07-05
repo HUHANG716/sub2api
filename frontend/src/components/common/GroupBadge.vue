@@ -49,6 +49,7 @@ interface Props {
   subscriptionType?: SubscriptionType
   rateMultiplier?: number
   userRateMultiplier?: number | null // 用户专属倍率
+  globalDiscountRate?: number | null
   peakRateEnabled?: boolean
   peakStart?: string
   peakEnd?: string
@@ -68,6 +69,7 @@ const props = withDefaults(defineProps<Props>(), {
   showRate: true,
   daysRemaining: null,
   userRateMultiplier: null,
+  globalDiscountRate: null,
   peakRateEnabled: false,
   alwaysShowRate: false
 })
@@ -85,6 +87,67 @@ const hasCustomRate = computed(() => {
     props.rateMultiplier !== undefined &&
     props.userRateMultiplier !== props.rateMultiplier
   )
+})
+
+const activeRate = computed(() => hasCustomRate.value
+  ? props.userRateMultiplier as number
+  : props.rateMultiplier
+)
+
+const hasGlobalDiscount = computed(() => {
+  const discountRate = props.globalDiscountRate
+  return typeof discountRate === 'number' &&
+    Number.isFinite(discountRate) &&
+    discountRate > 0 &&
+    discountRate < 1
+})
+
+function formatRate(value: number): string {
+  return value.toFixed(3)
+}
+
+function formatDiscount(value: number): string {
+  return String(Number((value * 10).toPrecision(10)))
+}
+
+function formatPercentOff(value: number): string {
+  return String(Number(((1 - value) * 100).toPrecision(10)))
+}
+
+const globalDiscountLabel = computed(() => {
+  if (!hasGlobalDiscount.value) return ''
+  const locale = String(i18n.locale?.value ?? 'zh')
+  if (locale.startsWith('en')) {
+    return t('keys.globalDiscountPercentOffLabel', {
+      percent: formatPercentOff(props.globalDiscountRate as number)
+    })
+  }
+  return t('keys.globalDiscountRateLabel', {
+    discount: formatDiscount(props.globalDiscountRate as number)
+  })
+})
+
+const activeRateLabel = computed(() => {
+  const rate = activeRate.value
+  if (rate === undefined) return ''
+  if (!hasGlobalDiscount.value) return `${formatRate(rate)}x`
+  return t('keys.effectiveRateWithDiscount', {
+    base: formatRate(rate),
+    effective: formatRate(rate * (props.globalDiscountRate as number)),
+    discountLabel: globalDiscountLabel.value
+  })
+})
+
+const discountedRateLabel = computed(() => {
+  const rate = activeRate.value
+  if (rate === undefined || !hasGlobalDiscount.value) return ''
+  return `${formatRate(rate)}x -> ${formatRate(rate * (props.globalDiscountRate as number))}x`
+})
+
+const showDiscountRateLayout = computed(() => {
+  return hasGlobalDiscount.value &&
+    activeRate.value !== undefined &&
+    (!isSubscription.value || props.alwaysShowRate)
 })
 
 const appStore = useAppStore()

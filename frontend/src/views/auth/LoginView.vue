@@ -404,6 +404,18 @@ function rejectLoginAgreement(): void {
   appStore.showWarning(t('legal.loginAgreementPrompt.loginRejectedWarning'))
 }
 
+function guardOAuthAgreement(event: Event): void {
+  if (!agreementGateActive.value) {
+    return
+  }
+  event.preventDefault()
+  event.stopPropagation()
+  appStore.showWarning(t('legal.loginAgreementPrompt.loginRequiredWarning'))
+  if (loginAgreementMode.value !== 'checkbox') {
+    showAgreementModal.value = true
+  }
+}
+
 // ==================== Turnstile Handlers ====================
 
 function onTurnstileVerify(token: string): void {

@@ -151,6 +151,10 @@ const rateDisplay = computed(() => {
   return `×${Number(rate.toPrecision(10))}`
 })
 
+function formatPrice(value: number): string {
+  return formatPaymentAmount(value, normalizePaymentCurrency(props.currency), locale.value)
+}
+
 const appStore = useAppStore()
 
 const hasPeakRate = computed(() => groupHasPeakRate(props.plan))

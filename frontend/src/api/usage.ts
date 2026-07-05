@@ -12,6 +12,7 @@ import type {
   TrendDataPoint,
   ModelStat,
   GroupStat,
+  GlobalDiscountRuntime,
   UsageRequestType,
   UserErrorRequest,
   UserErrorRequestDetail,
@@ -102,6 +103,56 @@ export interface ApiKeyDailyUsageResponse {
   days: number
   start_date: string
   end_date: string
+}
+
+export interface ImageEstimateRequest {
+  group_id: number
+  model: string
+  size: string
+  count: number
+}
+
+export interface ImageEstimateResponse {
+  model: string
+  image_size: string
+  image_count: number
+  unit_cost: number
+  total_cost: number
+  actual_cost: number
+  rate_multiplier: number
+  billing_mode: string
+  pricing_source: string
+}
+
+export type ImagePlaygroundEventName =
+  | 'image_generate_submit'
+  | 'image_generate_success'
+  | 'image_generate_error'
+
+export interface ImagePlaygroundEvent {
+  name: ImagePlaygroundEventName
+  sourceMode?: string
+  provider?: string
+  apiMode?: string
+  model?: string
+  size?: string
+  quality?: string
+  outputFormat?: string
+  n?: number
+  inputImageCount?: number
+  hasMask?: boolean
+  durationMs?: number
+  outputImageCount?: number
+  errorKind?: string
+  recoverable?: boolean
+}
+
+export interface ImagePlaygroundEventsRequest {
+  events: ImagePlaygroundEvent[]
+}
+
+export interface ImagePlaygroundEventsResponse {
+  inserted: number
 }
 
 export interface UsageDashboardSnapshotV2Params extends TrendParams {

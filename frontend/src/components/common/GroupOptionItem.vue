@@ -6,13 +6,14 @@
       :title="description || undefined"
     >
       <!-- Row 1: platform badge (name bold) -->
-      <GroupBadge
-        :name="name"
-        :platform="platform"
-        :subscription-type="subscriptionType"
-        :show-rate="false"
-        class="groupOptionItemBadge"
-      />
+        <GroupBadge
+          :name="name"
+          :platform="platform"
+          :subscription-type="subscriptionType"
+          :global-discount-rate="globalDiscountRate"
+          :show-rate="false"
+          class="groupOptionItemBadge"
+        />
       <!-- Row 2: description with top spacing -->
       <span
         v-if="description"
@@ -29,10 +30,10 @@
         <span v-if="rateMultiplier !== undefined" :class="['inline-flex items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold', ratePillClass]">
           <template v-if="hasCustomRate">
             <span class="mr-1 line-through opacity-50">{{ rateMultiplier }}x</span>
-            <span class="font-bold">{{ userRateMultiplier }}x</span>
+            <span class="font-bold">{{ activeRateLabel }}</span>
           </template>
           <template v-else>
-            {{ rateMultiplier }}x {{ t('admin.groups.rateLabel') }}
+            {{ activeRateLabel }} {{ t('admin.groups.rateLabel') }}
           </template>
         </span>
         <span
@@ -66,14 +67,13 @@ import type { SubscriptionType, GroupPlatform } from '@/types'
 import { useAppStore } from '@/stores/app'
 import { formatPeakRateWindow, serverTimezoneLabel } from '@/utils/peak-rate'
 
-const { t } = useI18n()
-
 interface Props {
   name: string
   platform: GroupPlatform
   subscriptionType?: SubscriptionType
   rateMultiplier?: number
   userRateMultiplier?: number | null
+  globalDiscountRate?: number | null
   peakRateEnabled?: boolean
   peakStart?: string
   peakEnd?: string
@@ -88,6 +88,7 @@ const props = withDefaults(defineProps<Props>(), {
   selected: false,
   showCheckmark: true,
   userRateMultiplier: null,
+  globalDiscountRate: null,
   peakRateEnabled: false
 })
 
@@ -102,6 +103,55 @@ const hasCustomRate = computed(() => {
     props.rateMultiplier !== undefined &&
     props.userRateMultiplier !== props.rateMultiplier
   )
+})
+
+const activeRate = computed(() => hasCustomRate.value
+  ? props.userRateMultiplier as number
+  : props.rateMultiplier
+)
+
+const hasGlobalDiscount = computed(() => {
+  const discountRate = props.globalDiscountRate
+  return typeof discountRate === 'number' &&
+    Number.isFinite(discountRate) &&
+    discountRate > 0 &&
+    discountRate < 1
+})
+
+function formatRate(value: number): string {
+  return value.toFixed(3)
+}
+
+function formatDiscount(value: number): string {
+  return String(Number((value * 10).toPrecision(10)))
+}
+
+function formatPercentOff(value: number): string {
+  return String(Number(((1 - value) * 100).toPrecision(10)))
+}
+
+const globalDiscountLabel = computed(() => {
+  if (!hasGlobalDiscount.value) return ''
+  const locale = String(i18n.locale?.value ?? 'zh')
+  if (locale.startsWith('en')) {
+    return t('keys.globalDiscountPercentOffLabel', {
+      percent: formatPercentOff(props.globalDiscountRate as number)
+    })
+  }
+  return t('keys.globalDiscountRateLabel', {
+    discount: formatDiscount(props.globalDiscountRate as number)
+  })
+})
+
+const activeRateLabel = computed(() => {
+  const rate = activeRate.value
+  if (rate === undefined) return ''
+  if (!hasGlobalDiscount.value) return `${formatRate(rate)}x`
+  return t('keys.effectiveRateWithDiscount', {
+    base: formatRate(rate),
+    effective: formatRate(rate * (props.globalDiscountRate as number)),
+    discountLabel: globalDiscountLabel.value
+  })
 })
 
 const appStore = useAppStore()

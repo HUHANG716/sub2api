@@ -1264,12 +1264,6 @@ const toggleUsageSort = (key: string, metric: UsageMetric) => {
 const toggleUsageSortMenu = (key: string) => {
   openUsageSortMenu.value = openUsageSortMenu.value === key ? null : key
 }
-const clearUsageSort = () => {
-  if (!usageSort.value) return
-  usageSort.value = null
-  persistUsageSort()
-  openUsageSortMenu.value = null
-}
 
 const getUsageValue = (userId: number, key: string, metric: UsageMetric): number => {
   const stats = usageStats.value[userId]
