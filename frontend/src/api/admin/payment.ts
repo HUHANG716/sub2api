@@ -51,81 +51,12 @@ export interface UpdatePaymentConfigRequest {
   help_text?: string
 }
 
-export interface PaymentAnalyticsStep {
-  name: string
-  count: number
-  unique_users: number
-}
-
-export interface PaymentAnalyticsMethod {
-  payment_type: string
-  event_name: string
-  count: number
-}
-
-export interface PaymentAnalyticsRecentEvent {
-  name: string
-  user_id?: number
-  user_email?: string
-  tab?: string
-  order_type?: string
-  payment_type?: string
-  launch_kind?: string
-  source?: string
-  status?: string
-  amount?: number
-  pay_amount?: number
-  plan_id?: number
-  order_id?: number
-  error_kind?: string
-  created_at?: string
-}
-
-export interface PaymentAnalyticsNewCustomer {
-  user_id: number
-  user_email: string
-  order_id: number
-  order_type?: string
-  payment_type?: string
-  pay_amount?: number
-  first_paid_at?: string
-}
-
-export interface PaymentAnalyticsOperatorSummary {
-  operator: string
-  actor_type: string
-  actor_id?: number
-  action: string
-  count: number
-  last_action_at?: string
-}
-
-export interface PaymentAnalyticsAuditEvent {
-  id: number
-  order_id: string
-  action: string
-  operator: string
-  actor_type: string
-  actor_id?: number
-  subject_user_id?: number
-  user_email?: string
-  order_type?: string
-  payment_type?: string
-  pay_amount?: number
-  status?: string
-  detail?: string
-  created_at?: string
-}
-
-export interface PaymentAnalyticsResponse {
-  steps: PaymentAnalyticsStep[]
-  methods: PaymentAnalyticsMethod[]
-  recent_events: PaymentAnalyticsRecentEvent[]
-  new_customers: PaymentAnalyticsNewCustomer[]
-  operators: PaymentAnalyticsOperatorSummary[]
-  audit_events: PaymentAnalyticsAuditEvent[]
-  window_days: number
-  events_missing: boolean
+export interface RefundResult {
+  success: boolean
+  warning?: string
+  require_force?: boolean
+  balance_deducted?: number
+  subscription_days_deducted?: number
 }
 
 export const adminPaymentAPI = {
@@ -191,7 +122,12 @@ export const adminPaymentAPI = {
 
   /** Process a refund */
   refundOrder(id: number, data: { amount: number; reason: string; deduct_balance?: boolean; force?: boolean }) {
-    return apiClient.post(`/admin/payment/orders/${id}/refund`, data)
+    return apiClient.post<RefundResult>(`/admin/payment/orders/${id}/refund`, data)
+  },
+
+  /** Query and finalize a pending refund */
+  queryRefund(id: number) {
+    return apiClient.post<RefundResult>(`/admin/payment/orders/${id}/refund/query`)
   },
 
   // ==================== Channels ====================

@@ -16,43 +16,12 @@ import type {
 } from '@/types/payment'
 import type { BasePaginationResponse } from '@/types'
 
-export type PaymentAnalyticsEventName =
-  | 'payment_page_view'
-  | 'payment_tab_change'
-  | 'payment_amount_select'
-  | 'payment_method_select'
-  | 'payment_plan_select'
-  | 'payment_order_submit'
-  | 'payment_order_create_success'
-  | 'payment_order_create_error'
-  | 'payment_launch'
-  | 'payment_success'
-  | 'payment_settled'
-  | 'payment_result_view'
-  | 'payment_result_status'
-
-export interface PaymentAnalyticsEvent {
-  name: PaymentAnalyticsEventName
-  tab?: string
-  orderType?: string
-  paymentType?: string
-  launchKind?: string
-  source?: string
-  status?: string
-  amount?: number
-  payAmount?: number
-  feeRate?: number
-  planId?: number
-  orderId?: number
-  errorKind?: string
-}
-
-export interface PaymentAnalyticsEventsRequest {
-  events: PaymentAnalyticsEvent[]
-}
-
-export interface PaymentAnalyticsEventsResponse {
-  inserted: number
+export interface PublicOrderVerifyResult {
+  out_trade_no: string
+  status: string
+  paid: boolean
+  created_at: string
+  expires_at: string
 }
 
 export const paymentAPI = {
@@ -113,12 +82,12 @@ export const paymentAPI = {
 
   /** Legacy-compatible public order lookup by out_trade_no */
   verifyOrderPublic(outTradeNo: string) {
-    return apiClient.post<PaymentOrder>('/payment/public/orders/verify', { out_trade_no: outTradeNo })
+    return apiClient.post<PublicOrderVerifyResult>('/payment/public/orders/verify', { out_trade_no: outTradeNo })
   },
 
   /** Resolve an order from a signed resume token without auth */
   resolveOrderPublicByResumeToken(resumeToken: string) {
-    return apiClient.post<PaymentOrder>('/payment/public/orders/resolve', { resume_token: resumeToken })
+    return apiClient.post<PublicOrderVerifyResult>('/payment/public/orders/resolve', { resume_token: resumeToken })
   },
 
   /** Request a refund for a completed order */
