@@ -221,9 +221,9 @@
                     </p>
                     <div class="mt-5 flex items-end gap-3">
                       <span v-if="selectedPlan.original_price" class="pb-1 text-sm text-gray-400 line-through dark:text-gray-500">
-                        {{ formatSelectedPaymentAmount(selectedPlan.original_price) }}
+                        {{ formatSelectedPaymentAmount(subOriginalPaymentAmount) }}
                       </span>
-                      <span :class="['text-4xl font-semibold', planTextClass]">{{ formatSelectedPaymentAmount(selectedPlan.price) }}</span>
+                      <span :class="['text-4xl font-semibold', planTextClass]">{{ formatSelectedPaymentAmount(subPaymentAmount) }}</span>
                     </div>
                   </div>
 
@@ -271,7 +271,7 @@
                   <div class="payment-summary-list">
                     <div>
                       <span>{{ t('payment.amountLabel') }}</span>
-                      <strong>{{ formatSelectedPaymentAmount(selectedPlan.price) }}</strong>
+                      <strong>{{ formatSelectedPaymentAmount(subPaymentAmount) }}</strong>
                     </div>
                     <div v-if="feeRate > 0 && selectedPlan.price > 0">
                       <span>{{ t('payment.fee') }} ({{ feeRate }}%)</span>
@@ -552,7 +552,7 @@ function getAnalyticsAmount(orderType: OrderType = currentOrderType()): number |
 }
 
 function getAnalyticsPayAmount(orderType: OrderType = currentOrderType()): number | undefined {
-  if (orderType === 'subscription') return normalizeAnalyticsNumber(feeRate.value > 0 ? subTotalAmount.value : selectedPlan.value?.price)
+  if (orderType === 'subscription') return normalizeAnalyticsNumber(feeRate.value > 0 ? subTotalAmount.value : subPaymentAmount.value)
   return normalizeAnalyticsNumber(totalAmount.value)
 }
 
@@ -967,6 +967,11 @@ const canSubmit = computed(() =>
 
 const subPaymentAmount = computed(() => {
   const price = selectedPlan.value?.price ?? 0
+  return subscriptionPaymentAmountForCurrency(price, selectedCurrency.value)
+})
+
+const subOriginalPaymentAmount = computed(() => {
+  const price = selectedPlan.value?.original_price ?? 0
   return subscriptionPaymentAmountForCurrency(price, selectedCurrency.value)
 })
 
@@ -1538,8 +1543,8 @@ onMounted(async () => {
       if (restored) {
         paymentState.value = restored
         paymentPhase.value = 'paying'
-        const restoredMethod = normalizeVisibleMethod(restored.paymentType)
-        if (restoredMethod) {
+        const restoredMethod = normalizeVisibleMethod(restored.paymentType) || restored.paymentType.trim()
+        if (restoredMethod && visibleMethods.value[restoredMethod]) {
           selectedMethod.value = restoredMethod
         }
       } else {
