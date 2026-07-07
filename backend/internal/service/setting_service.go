@@ -357,6 +357,17 @@ const (
 
 func normalizeGlobalDiscountSettings(in GlobalDiscountSettings) (GlobalDiscountSettings, error) {
 	out := DefaultGlobalDiscountSettings()
+	if len(in.Rules) == 0 &&
+		!in.Enabled &&
+		in.DiscountRate == 0 &&
+		strings.TrimSpace(in.ScheduleType) == "" &&
+		strings.TrimSpace(in.StartsAt) == "" &&
+		strings.TrimSpace(in.EndsAt) == "" &&
+		strings.TrimSpace(in.RecurringStartAt) == "" &&
+		strings.TrimSpace(in.RecurringEndAt) == "" &&
+		strings.TrimSpace(in.Label) == "" {
+		return out, nil
+	}
 	out.Enabled = in.Enabled
 	out.Rules = normalizeGlobalDiscountInputRules(in)
 	if len(out.Rules) > 0 {

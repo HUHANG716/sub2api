@@ -335,6 +335,8 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 
 		AffiliateEnabled: settings.AffiliateEnabled,
 
+		GlobalDiscountSettings: settings.GlobalDiscountSettings,
+
 		AllowUserViewErrorRequests: settings.AllowUserViewErrorRequests,
 	}
 
@@ -2315,6 +2317,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ImagePlaygroundResponsesGroupID: updatedSettings.ImagePlaygroundResponsesGroupID,
 		CyberSessionBlockEnabled:        updatedSettings.CyberSessionBlockEnabled,
 		CyberSessionBlockTTLSeconds:     updatedSettings.CyberSessionBlockTTLSeconds,
+		GlobalDiscountSettings:          updatedSettings.GlobalDiscountSettings,
 		AllowUserViewErrorRequests:      updatedSettings.AllowUserViewErrorRequests,
 	}
 	if fastPolicy, err := h.settingService.GetOpenAIFastPolicySettings(c.Request.Context()); err != nil {
