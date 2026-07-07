@@ -1,0 +1,8 @@
+{
+  "migration": "159_batch_image_foundation.sql",
+  "phase": "review",
+  "reason": "Creates the batch image job, item, and event tables and their lookup indexes.",
+  "risk": "Non-concurrent index creation can briefly block writes on the new batch image tables during deployment.",
+  "mitigation": "The indexes are created on newly introduced tables with no existing production rows, so build time and lock impact are expected to be minimal.",
+  "approved_by": "hang"
+}

@@ -1,0 +1,8 @@
+{
+  "migration": "168_restore_empty_batch_image_task_names.sql",
+  "phase": "review",
+  "reason": "Restores timestamp task names for batch image jobs where an empty name should be persisted as the default.",
+  "risk": "Bulk updating batch_image_jobs can take row locks on rows with empty task names.",
+  "mitigation": "The update is limited to empty task names and the table is expected to be small during rollout.",
+  "approved_by": "hang"
+}

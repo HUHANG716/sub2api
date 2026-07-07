@@ -1,0 +1,8 @@
+{
+  "migration": "160_add_user_frozen_balance.sql",
+  "phase": "review",
+  "reason": "Adds frozen_balance to users so batch image holds can reserve balance before final settlement.",
+  "risk": "Adding a NOT NULL column with a default can rewrite or lock the users table on older PostgreSQL versions.",
+  "mitigation": "The default is constant and compatible with existing rows; deploy during the normal low-traffic window and monitor migration duration.",
+  "approved_by": "hang"
+}
