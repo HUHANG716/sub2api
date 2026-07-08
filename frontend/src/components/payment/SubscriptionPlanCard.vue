@@ -40,11 +40,7 @@
           <span class="text-gray-400 dark:text-dark-500">{{ t('payment.planCard.rate') }}</span>
           <span class="font-medium text-gray-700 dark:text-gray-300">{{ rateDisplay }}</span>
         </div>
-        <div v-if="hasPeakRate" class="col-span-2 flex items-center justify-between gap-2">
-          <span class="text-gray-400 dark:text-dark-500">{{ t('payment.planCard.peakRate') }}</span>
-          <span class="text-right font-medium text-amber-700 dark:text-amber-300">{{ peakRateDisplay }}</span>
-        </div>
-        <div v-if="plan.daily_limit_usd != null" class="flex items-center justify-between">
+        <div v-if="plan.daily_limit_usd != null" class="flex items-center justify-between gap-2">
           <span class="text-gray-400 dark:text-dark-500">{{ t('payment.planCard.dailyLimit') }}</span>
           <span class="font-medium text-gray-700 dark:text-gray-300">${{ plan.daily_limit_usd }}</span>
         </div>
@@ -100,8 +96,6 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { SubscriptionPlan } from '@/types/payment'
 import type { UserSubscription } from '@/types'
-import { useAppStore } from '@/stores/app'
-import { hasPeakRate as groupHasPeakRate, formatPeakRateWindow, serverTimezoneLabel } from '@/utils/peak-rate'
 import {
   platformAccentBarClass,
   platformBadgeLightClass,
@@ -154,14 +148,6 @@ const rateDisplay = computed(() => {
 function formatPrice(value: number): string {
   return formatPaymentAmount(value, normalizePaymentCurrency(props.currency), locale.value)
 }
-
-const appStore = useAppStore()
-
-const hasPeakRate = computed(() => groupHasPeakRate(props.plan))
-
-const peakRateDisplay = computed(() => {
-  return formatPeakRateWindow(props.plan, serverTimezoneLabel(appStore.cachedPublicSettings?.server_utc_offset))
-})
 
 const MODEL_SCOPE_LABELS: Record<string, string> = {
   claude: 'Claude',

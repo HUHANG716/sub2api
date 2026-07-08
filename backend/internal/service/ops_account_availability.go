@@ -20,7 +20,7 @@ func (s *OpsService) GetAccountAvailabilityStats(ctx context.Context, platformFi
 		return nil, nil, nil, nil, err
 	}
 
-	accounts, err := s.listAllAccountsForOps(ctx, platformFilter, groupIDFilter)
+	accounts, err := s.listAllAccountsForOps(ctx, platformFilter)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}

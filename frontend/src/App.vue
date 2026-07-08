@@ -5,7 +5,7 @@ import Toast from '@/components/common/Toast.vue'
 import NavigationProgress from '@/components/common/NavigationProgress.vue'
 import { applyRouteSeo } from '@/router/seo'
 import AnnouncementPopup from '@/components/common/AnnouncementPopup.vue'
-import { useAppStore, useAuthStore, useSubscriptionStore, useAnnouncementStore, useAdminSettingsStore } from '@/stores'
+import { useAppStore, useAuthStore, useSubscriptionStore, useAnnouncementStore } from '@/stores'
 import ImagePlaygroundView from '@/views/user/ImagePlaygroundView.vue'
 import { clearStoredImagePlaygroundKey } from '@/views/user/imagePlayground'
 import { getSetupStatus } from '@/api/setup'
@@ -16,7 +16,6 @@ const appStore = useAppStore()
 const authStore = useAuthStore()
 const subscriptionStore = useSubscriptionStore()
 const announcementStore = useAnnouncementStore()
-const adminSettingsStore = useAdminSettingsStore()
 const imagePlaygroundMounted = ref(false)
 const imagePlaygroundSessionId = ref(0)
 const isImagePlaygroundRoute = computed(() => route.name === 'ImagePlayground' || route.path === '/image-playground')
@@ -37,24 +36,6 @@ watch(
   },
   { immediate: true }
 )
-
-function applyCurrentRouteSeo() {
-  const customMenuItems = [
-    ...(appStore.cachedPublicSettings?.custom_menu_items ?? []),
-    ...(authStore.isAdmin ? adminSettingsStore.customMenuItems : []),
-  ]
-  const id = typeof route.params.id === 'string' ? route.params.id : ''
-  const menuItem = route.name === 'CustomPage' && id
-    ? customMenuItems.find((item) => item.id === id)
-    : undefined
-
-  if (menuItem?.label) {
-    applyRouteSeo({ title: menuItem.label, canonicalPath: route.path }, appStore.siteName)
-    return
-  }
-
-  applyRouteSeo(route.meta, appStore.siteName)
-}
 
 /**
  * Update favicon dynamically
@@ -81,25 +62,6 @@ watch(
     }
   },
   { immediate: true }
-)
-
-watch(
-  [
-    () => route.fullPath,
-    () => route.meta.seoTitle,
-    () => route.meta.seoDescription,
-    () => route.meta.seoKeywords,
-    () => route.meta.canonicalPath,
-    () => route.meta.structuredData,
-    () => route.meta.title,
-    () => route.meta.titleKey,
-    () => appStore.siteName,
-    () => appStore.cachedPublicSettings?.custom_menu_items,
-    () => authStore.isAdmin,
-    () => adminSettingsStore.customMenuItems,
-  ],
-  applyCurrentRouteSeo,
-  { deep: true }
 )
 
 // Watch for authentication state and manage subscription data + announcements
@@ -179,8 +141,8 @@ onMounted(async () => {
   // Load public settings into appStore (will be cached for other components)
   await appStore.fetchPublicSettings()
 
-  // Re-resolve SEO tags now that site settings are available
-  applyCurrentRouteSeo()
+  // Re-resolve SEO tags now that siteName is available
+  applyRouteSeo(route.meta, appStore.siteName)
 })
 </script>
 

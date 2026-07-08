@@ -278,19 +278,6 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/batch-image',
-    name: 'BatchImageGuide',
-    alias: '/docs/batch-image',
-    component: () => import('@/views/user/BatchImageGuideView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      title: 'Batch Image Guide',
-      titleKey: 'batchImageGuide.title',
-      descriptionKey: 'batchImageGuide.description'
-    }
-  },
-  {
     path: '/usage',
     name: 'Usage',
     component: () => import('@/views/user/UsageView.vue'),
@@ -828,7 +815,7 @@ router.beforeEach(async (to, _from, next) => {
     authInitialized = true
   }
 
-  // Set route SEO tags
+  // Set page title
   const appStore = useAppStore()
   // For custom pages, use menu item label as document title
   if (to.name === 'CustomPage') {

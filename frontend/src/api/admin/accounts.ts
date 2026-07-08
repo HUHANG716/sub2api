@@ -18,7 +18,6 @@ import type {
   AdminDataImportResult,
   CodexSessionImportRequest,
   CodexSessionImportResult,
-  OpenAICodexPATCreateRequest,
   CheckMixedChannelRequest,
   CheckMixedChannelResponse
 } from '@/types'
@@ -41,7 +40,6 @@ export async function list(
     search?: string
     privacy_mode?: string
     lite?: string
-    include_scheduler_score?: string
     sort_by?: string
     sort_order?: 'asc' | 'desc'
   },
@@ -77,7 +75,6 @@ export async function listWithEtag(
     search?: string
     privacy_mode?: string
     lite?: string
-    include_scheduler_score?: string
     sort_by?: string
     sort_order?: 'asc' | 'desc'
   },
@@ -611,14 +608,7 @@ export async function importData(payload: {
 }
 
 export async function importCodexSession(payload: CodexSessionImportRequest): Promise<CodexSessionImportResult> {
-  const { data } = await apiClient.post<CodexSessionImportResult>('/admin/accounts/import/codex-session', payload, {
-    timeout: 120000 // 120s timeout for large session imports
-  })
-  return data
-}
-
-export async function createOpenAICodexPAT(payload: OpenAICodexPATCreateRequest): Promise<Account> {
-  const { data } = await apiClient.post<Account>('/admin/openai/create-from-codex-pat', payload)
+  const { data } = await apiClient.post<CodexSessionImportResult>('/admin/accounts/import/codex-session', payload)
   return data
 }
 
@@ -738,13 +728,8 @@ export interface OpenAIAdditionalRateLimit {
   rate_limit?: OpenAIRateLimit | null
 }
 
-export interface OpenAIRateLimitResetCreditDetail {
-  expires_at?: string
-}
-
 export interface OpenAIRateLimitResetCredits {
   available_count: number
-  credits?: OpenAIRateLimitResetCreditDetail[]
 }
 
 export interface OpenAIQuotaUsage {
@@ -790,18 +775,6 @@ export async function resetOpenAIQuota(id: number): Promise<OpenAIQuotaResetResu
   return data
 }
 
-export interface SparkShadowCreatePayload {
-  name?: string
-  priority?: number
-  concurrency?: number
-  group_ids?: number[]
-}
-
-export async function createSparkShadow(parentId: number, payload: SparkShadowCreatePayload): Promise<Account> {
-  const { data } = await apiClient.post<Account>(`/admin/accounts/${parentId}/shadow`, payload)
-  return data
-}
-
 export const accountsAPI = {
   list,
   listWithEtag,
@@ -839,15 +812,13 @@ export const accountsAPI = {
   exportData,
   importData,
   importCodexSession,
-  createOpenAICodexPAT,
   getAntigravityDefaultModelMapping,
   batchClearError,
   batchRefresh,
   setPrivacy,
   revertProxyFallback,
   queryOpenAIQuota,
-  resetOpenAIQuota,
-  createSparkShadow
+  resetOpenAIQuota
 }
 
 export default accountsAPI

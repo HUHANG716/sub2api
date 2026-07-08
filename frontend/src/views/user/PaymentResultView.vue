@@ -107,7 +107,7 @@ import {
   readPaymentRecoverySnapshot,
 } from '@/components/payment/paymentFlow'
 import { usePaymentStore } from '@/stores/payment'
-import { paymentAPI, type PaymentAnalyticsEvent, type PublicOrderVerifyResult } from '@/api/payment'
+import { paymentAPI, type PaymentAnalyticsEvent } from '@/api/payment'
 import type { PaymentOrder } from '@/types/payment'
 import { formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
 import { normalizePaymentMethodForDisplay, paymentMethodI18nKey } from './paymentUx'
@@ -165,11 +165,11 @@ const localeCode = computed(() => {
 })
 
 const isSuccess = computed(() => {
-  return isSuccessStatus(order.value?.status ?? returnInfo.value?.tradeStatus)
+  return isSuccessStatus(order.value?.status)
 })
 
 const isPending = computed(() => {
-  return isPendingStatus(order.value?.status ?? returnInfo.value?.tradeStatus)
+  return isPendingStatus(order.value?.status)
 })
 
 const statusTitle = computed(() => {
@@ -196,18 +196,9 @@ function normalizeAnalyticsNumber(value: number | null | undefined): number | un
 }
 
 function recordPaymentResultAnalytics(event: PaymentAnalyticsEvent) {
-  void Promise.resolve(paymentAPI.recordEvents({ events: [event] })).catch((error) => {
+  void paymentAPI.recordEvents({ events: [event] }).catch((error) => {
     console.warn('Failed to record payment result analytics:', error)
   })
-}
-
-function isPaymentOrder(value: PaymentOrder | PublicOrderVerifyResult): value is PaymentOrder {
-  return 'id' in value &&
-    typeof value.id === 'number' &&
-    'amount' in value &&
-    typeof value.amount === 'number' &&
-    'pay_amount' in value &&
-    typeof value.pay_amount === 'number'
 }
 
 function recordPaymentResultStatus(nextOrder: PaymentOrder | null) {
@@ -299,7 +290,7 @@ function restoreRecoverySnapshot(context: {
 async function resolveOrderFromResumeToken(resumeToken: string): Promise<PaymentOrder | null> {
   try {
     const result = await paymentAPI.resolveOrderPublicByResumeToken(resumeToken)
-    return isPaymentOrder(result.data) ? result.data : null
+    return result.data
   } catch (_err: unknown) {
     return null
   }
@@ -312,27 +303,10 @@ async function resolveOrderFromOutTradeNo(outTradeNo: string): Promise<PaymentOr
   } catch (_err: unknown) {
     try {
       const result = await paymentAPI.verifyOrderPublic(outTradeNo)
-      return isPaymentOrder(result.data) ? result.data : null
+      return result.data
     } catch (_innerErr: unknown) {
       return null
     }
-  }
-}
-
-async function resolvePublicReturnInfoFromOutTradeNo(outTradeNo: string): Promise<ReturnInfo | null> {
-  try {
-    const result = await paymentAPI.verifyOrderPublic(outTradeNo)
-    if (isPaymentOrder(result.data)) {
-      return null
-    }
-    return {
-      outTradeNo: result.data.out_trade_no || outTradeNo,
-      money: '',
-      type: '',
-      tradeStatus: result.data.status || '',
-    }
-  } catch (_err: unknown) {
-    return null
   }
 }
 
@@ -436,7 +410,7 @@ onMounted(async () => {
   }
 
   if (!order.value && !orderId && outTradeNo && hasLegacyFallbackContext) {
-    returnInfo.value = await resolvePublicReturnInfoFromOutTradeNo(outTradeNo) ?? {
+    returnInfo.value = {
       outTradeNo,
       money: String(route.query.money || ''),
       type: String(route.query.type || ''),

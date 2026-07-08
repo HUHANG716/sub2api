@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import type { DashboardStats } from '@/types'
 import DashboardView from '../DashboardView.vue'
-import zhMessages from '@/i18n/locales/zh'
 
 const { getSnapshotV2, getUserUsageTrend, getUserSpendingRanking } = vi.hoisted(() => ({
   getSnapshotV2: vi.fn(),
@@ -26,13 +25,6 @@ vi.mock('@/stores/app', () => ({
   })
 }))
 
-vi.mock('@/composables/useBatchImageAccess', () => ({
-  useBatchImageAccess: () => ({
-    canUseBatchImage: { value: false },
-    refreshBatchImageAccess: vi.fn()
-  })
-}))
-
 vi.mock('vue-router', () => ({
   useRouter: () => ({
     push: vi.fn()
@@ -44,21 +36,10 @@ vi.mock('vue-i18n', async () => {
   return {
     ...actual,
     useI18n: () => ({
-      t: (key: string) => resolveMessage(key)
+      t: (key: string) => key
     })
   }
 })
-
-function resolveMessage(key: string): string {
-  let value: unknown = zhMessages
-  for (const part of key.split('.')) {
-    if (!value || typeof value !== 'object' || !(part in value)) {
-      return key
-    }
-    value = (value as Record<string, unknown>)[part]
-  }
-  return typeof value === 'string' ? value : key
-}
 
 const formatLocalDate = (date: Date): string => {
   const year = date.getFullYear()
@@ -207,8 +188,7 @@ describe('admin DashboardView', () => {
 
     await flushPromises()
 
-    expect(wrapper.text()).toContain(resolveMessage('admin.dashboard.currentConcurrency'))
-    expect(wrapper.text()).not.toContain('admin.dashboard.currentConcurrency')
+    expect(wrapper.text()).toContain('admin.dashboard.currentConcurrency')
     expect(wrapper.text()).toContain('7')
   })
 
@@ -223,10 +203,7 @@ describe('admin DashboardView', () => {
 
     await flushPromises()
 
-    expect(wrapper.text()).toContain(resolveMessage('admin.dashboard.totalUserBalance'))
-    expect(wrapper.text()).toContain(resolveMessage('admin.dashboard.balanceOnly'))
-    expect(wrapper.text()).not.toContain('admin.dashboard.totalUserBalance')
-    expect(wrapper.text()).not.toContain('admin.dashboard.balanceOnly')
+    expect(wrapper.text()).toContain('admin.dashboard.totalUserBalance')
     expect(wrapper.text()).toContain('$123.45')
   })
 
@@ -344,7 +321,7 @@ describe('admin DashboardView', () => {
     await wrapper.get('[data-test="date-range-picker"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.text()).toContain(`${resolveMessage('admin.dashboard.currentConcurrency')}21`)
+    expect(wrapper.text()).toContain('admin.dashboard.currentConcurrency21')
 
     stalePoll.resolve({
       stats: createDashboardStats({ current_total_concurrency: 12 }),
@@ -353,7 +330,7 @@ describe('admin DashboardView', () => {
     })
     await flushPromises()
 
-    expect(wrapper.text()).toContain(`${resolveMessage('admin.dashboard.currentConcurrency')}21`)
-    expect(wrapper.text()).not.toContain(`${resolveMessage('admin.dashboard.currentConcurrency')}12`)
+    expect(wrapper.text()).toContain('admin.dashboard.currentConcurrency21')
+    expect(wrapper.text()).not.toContain('admin.dashboard.currentConcurrency12')
   })
 })

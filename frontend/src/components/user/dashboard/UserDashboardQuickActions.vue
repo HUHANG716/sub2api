@@ -3,7 +3,7 @@
     <div class="dashboard-panel-header px-4 py-3">
       <h2 class="dashboard-panel-title text-sm font-semibold">{{ t('dashboard.quickActions') }}</h2>
     </div>
-    <div class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3">
       <button @click="router.push('/keys')" class="dashboard-action-row group flex w-full items-center gap-3 rounded-lg p-3 text-left transition-all duration-200">
         <div class="dashboard-action-icon dashboard-action-icon-primary flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg transition-transform group-hover:scale-105">
           <Icon name="key" size="md" />
@@ -34,21 +34,6 @@
         />
       </button>
 
-      <button v-if="canUseBatchImage" @click="router.push('/batch-image')" class="dashboard-action-row group flex w-full items-center gap-3 rounded-lg p-3 text-left transition-all duration-200">
-        <div class="dashboard-action-icon flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-600 transition-transform group-hover:scale-105 dark:bg-sky-900/30 dark:text-sky-400">
-          <Icon name="sparkles" size="md" />
-        </div>
-        <div class="min-w-0 flex-1">
-          <p class="dashboard-panel-title text-sm font-medium">{{ t('dashboard.batchImageAgent') }}</p>
-          <p class="dashboard-panel-muted truncate text-xs">{{ t('dashboard.batchImageAgentDesc') }}</p>
-        </div>
-        <Icon
-          name="chevronRight"
-          size="sm"
-          class="dashboard-action-chevron flex-shrink-0 transition-colors"
-        />
-      </button>
-
       <button @click="router.push('/redeem')" class="dashboard-action-row group flex w-full items-center gap-3 rounded-lg p-3 text-left transition-all duration-200">
         <div class="dashboard-action-icon dashboard-action-icon-amber flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg transition-transform group-hover:scale-105">
           <Icon name="gift" size="md" />
@@ -68,18 +53,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
-import { useBatchImageAccess } from '@/composables/useBatchImageAccess'
 const router = useRouter()
 const { t } = useI18n()
-const { canUseBatchImage, refreshBatchImageAccess } = useBatchImageAccess()
-
-onMounted(() => {
-  void refreshBatchImageAccess()
-})
 </script>
 
 <style scoped>

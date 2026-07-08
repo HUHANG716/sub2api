@@ -1,8 +1,0 @@
-{
-  "migration": "167_clear_auto_batch_image_task_names.sql",
-  "phase": "review",
-  "reason": "Clears auto-generated batch image task names so empty user input can display as empty.",
-  "risk": "Bulk updating batch_image_jobs can take row locks on rows whose task name matches the auto-generated timestamp.",
-  "mitigation": "The predicate is deterministic and scoped to auto-generated names; the table is expected to be small during rollout.",
-  "approved_by": "hang"
-}

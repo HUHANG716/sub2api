@@ -1,8 +1,0 @@
-{
-  "migration": "162_add_group_batch_image_generation_gate.sql",
-  "phase": "review",
-  "reason": "Adds a group-level gate for enabling batch image generation.",
-  "risk": "Adding a NOT NULL boolean column with a default can lock or rewrite the groups table on older PostgreSQL versions.",
-  "mitigation": "The default is false and preserves existing access behavior; deploy during the normal low-traffic window and monitor migration duration.",
-  "approved_by": "hang"
-}

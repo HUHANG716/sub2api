@@ -1,8 +1,0 @@
-{
-  "migration": "163_batch_image_default_discount_and_hold_ratio.sql",
-  "phase": "review",
-  "reason": "Adjusts batch image default discount and hold multipliers and backfills prior default values.",
-  "risk": "Bulk updates on groups can take row locks while existing default values are rewritten.",
-  "mitigation": "The update predicates only target prior default values and the groups table is expected to be small; run during the normal deployment window.",
-  "approved_by": "hang"
-}

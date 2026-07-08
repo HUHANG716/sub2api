@@ -1,8 +1,0 @@
-{
-  "migration": "161_batch_image_pricing_snapshot.sql",
-  "phase": "review",
-  "reason": "Adds group pricing controls and per-job pricing snapshot columns for batch image billing.",
-  "risk": "Adding NOT NULL columns with defaults to groups and batch_image_jobs can lock or rewrite affected tables on older PostgreSQL versions.",
-  "mitigation": "The batch image job table is newly introduced and the group table change uses constant defaults; run in the normal deployment window and monitor lock duration.",
-  "approved_by": "hang"
-}

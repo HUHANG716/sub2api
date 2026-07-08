@@ -25,7 +25,6 @@ type UserSubscription struct {
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt *time.Time
 
 	User           *User
 	Group          *Group

@@ -567,7 +567,7 @@ function rejectLoginAgreement(): void {
   localStorage.removeItem(LOGIN_AGREEMENT_STORAGE_KEY)
   agreementAccepted.value = false
   showAgreementModal.value = false
-  appStore.showWarning(t('legal.loginAgreementPrompt.registerRejectedWarning'))
+  appStore.showWarning('未同意最新条款前，无法注册或使用快捷登录。')
 }
 
 // ==================== Promo Code Validation ====================
@@ -757,7 +757,7 @@ function validateForm(): boolean {
   let isValid = true
 
   if (agreementGateActive.value) {
-    appStore.showWarning(t('legal.loginAgreementPrompt.registerRequiredWarning'))
+    appStore.showWarning('请先阅读并同意最新条款后再注册。')
     if (loginAgreementMode.value !== 'checkbox') {
       showAgreementModal.value = true
     }

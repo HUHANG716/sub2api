@@ -200,7 +200,6 @@ type OpsInsertSystemLogInput struct {
 	RequestID       string
 	ClientRequestID string
 	UserID          *int64
-	APIKeyID        *int64
 	AccountID       *int64
 	Platform        string
 	Model           string
@@ -217,7 +216,6 @@ type OpsSystemLogFilter struct {
 	RequestID       string
 	ClientRequestID string
 	UserID          *int64
-	APIKeyID        *int64
 	AccountID       *int64
 	Platform        string
 	Model           string
@@ -237,7 +235,6 @@ type OpsSystemLogCleanupFilter struct {
 	RequestID       string
 	ClientRequestID string
 	UserID          *int64
-	APIKeyID        *int64
 	AccountID       *int64
 	Platform        string
 	Model           string

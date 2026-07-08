@@ -25,8 +25,6 @@ export interface AdminPaymentConfig {
   balance_disabled: boolean
   balance_recharge_multiplier: number
   balance_recharge_bonus_tiers: Array<{ min_amount: number; bonus_amount: number }>
-  subscription_usd_to_cny_rate: number
-  recharge_fee_rate: number
   load_balance_strategy: string
   product_name_prefix: string
   product_name_suffix: string
@@ -46,21 +44,11 @@ export interface UpdatePaymentConfigRequest {
   balance_disabled?: boolean
   balance_recharge_multiplier?: number
   balance_recharge_bonus_tiers?: Array<{ min_amount: number; bonus_amount: number }>
-  subscription_usd_to_cny_rate?: number
-  recharge_fee_rate?: number
   load_balance_strategy?: string
   product_name_prefix?: string
   product_name_suffix?: string
   help_image_url?: string
   help_text?: string
-}
-
-export interface RefundResult {
-  success: boolean
-  warning?: string
-  require_force?: boolean
-  balance_deducted?: number
-  subscription_days_deducted?: number
 }
 
 export interface PaymentAnalyticsStep {
@@ -203,12 +191,7 @@ export const adminPaymentAPI = {
 
   /** Process a refund */
   refundOrder(id: number, data: { amount: number; reason: string; deduct_balance?: boolean; force?: boolean }) {
-    return apiClient.post<RefundResult>(`/admin/payment/orders/${id}/refund`, data)
-  },
-
-  /** Query and finalize a pending refund */
-  queryRefund(id: number) {
-    return apiClient.post<RefundResult>(`/admin/payment/orders/${id}/refund/query`)
+    return apiClient.post(`/admin/payment/orders/${id}/refund`, data)
   },
 
   // ==================== Channels ====================

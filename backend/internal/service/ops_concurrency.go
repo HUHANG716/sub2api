@@ -13,29 +13,18 @@ const (
 	opsConcurrencyBatchChunkSize = 200
 )
 
-type opsAccountStatsRepository interface {
-	ListOpsAccountsForStats(ctx context.Context, platformFilter string, groupIDFilter *int64) ([]Account, error)
-}
-
-func (s *OpsService) listAllAccountsForOps(ctx context.Context, platformFilter string, groupIDFilter *int64) ([]Account, error) {
+func (s *OpsService) listAllAccountsForOps(ctx context.Context, platformFilter string) ([]Account, error) {
 	if s == nil || s.accountRepo == nil {
 		return []Account{}, nil
-	}
-	if repo, ok := s.accountRepo.(opsAccountStatsRepository); ok {
-		return repo.ListOpsAccountsForStats(ctx, platformFilter, groupIDFilter)
 	}
 
 	out := make([]Account, 0, 128)
 	page := 1
-	groupID := int64(0)
-	if groupIDFilter != nil {
-		groupID = *groupIDFilter
-	}
 	for {
 		accounts, pageInfo, err := s.accountRepo.ListWithFilters(ctx, pagination.PaginationParams{
 			Page:     page,
 			PageSize: opsAccountsPageSize,
-		}, platformFilter, "", "", "", groupID, "")
+		}, platformFilter, "", "", "", 0, "")
 		if err != nil {
 			return nil, err
 		}
@@ -123,7 +112,7 @@ func (s *OpsService) GetConcurrencyStats(
 		return nil, nil, nil, nil, err
 	}
 
-	accounts, err := s.listAllAccountsForOps(ctx, platformFilter, groupIDFilter)
+	accounts, err := s.listAllAccountsForOps(ctx, platformFilter)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}

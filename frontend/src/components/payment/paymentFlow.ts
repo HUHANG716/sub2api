@@ -99,7 +99,7 @@ export function getVisibleMethods(methods: Record<string, MethodLimit>): Record<
   const visible: Record<string, MethodLimit> = {}
 
   Object.entries(methods).forEach(([type, limit]) => {
-    const normalized = normalizeVisibleMethod(type) || type.trim()
+    const normalized = normalizeVisibleMethod(type)
     if (!normalized) return
 
     const isCanonical = type === normalized

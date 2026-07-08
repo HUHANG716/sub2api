@@ -1,8 +1,0 @@
-{
-  "migration": "158_add_group_peak_rate_multiplier.sql",
-  "phase": "review",
-  "reason": "Adds peak-rate configuration fields to groups so group-level routing can apply a separate multiplier during configured peak windows.",
-  "risk": "The migration adds several NOT NULL columns with defaults to groups, which can briefly take table locks while PostgreSQL updates metadata for existing rows.",
-  "mitigation": "The change is additive and idempotent, defaults peak-rate behavior to disabled with a neutral multiplier, and preserves current group behavior until admins configure a peak window.",
-  "approved_by": "hang"
-}

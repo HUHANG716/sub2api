@@ -1,8 +1,0 @@
-{
-  "migration": "165_hide_pre_upstream_batch_image_failures.sql",
-  "phase": "review",
-  "reason": "Hides known failed pre-upstream batch image jobs from the user list while preserving audit data.",
-  "risk": "Bulk updating batch_image_jobs can take row locks on matching failed jobs.",
-  "mitigation": "The predicate is narrowly scoped to failed jobs with known pre-upstream error codes; run during normal deployment and monitor affected row count.",
-  "approved_by": "hang"
-}
