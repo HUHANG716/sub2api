@@ -132,7 +132,8 @@ func (r *usageLogRepository) fillDashboardEntityStats(ctx context.Context, stats
 	userStatsQuery := `
 		SELECT
 			COUNT(*) as total_users,
-			COUNT(CASE WHEN created_at >= $1 THEN 1 END) as today_new_users
+			COUNT(CASE WHEN created_at >= $1 THEN 1 END) as today_new_users,
+			COALESCE(SUM(CASE WHEN role <> $2 THEN balance ELSE 0 END), 0) as total_user_balance
 		FROM users
 		WHERE deleted_at IS NULL
 	`
@@ -140,9 +141,31 @@ func (r *usageLogRepository) fillDashboardEntityStats(ctx context.Context, stats
 		ctx,
 		r.sql,
 		userStatsQuery,
-		[]any{todayUTC},
+		[]any{todayUTC, service.RoleAdmin},
 		&stats.TotalUsers,
 		&stats.TodayNewUsers,
+		&stats.TotalUserBalance,
+	); err != nil {
+		return err
+	}
+
+	balanceAdjustmentStatsQuery := `
+		SELECT
+			COALESCE(SUM(CASE WHEN value > 0 THEN value ELSE 0 END), 0) as today_balance_added,
+			COALESCE(SUM(CASE WHEN value < 0 THEN -value ELSE 0 END), 0) as today_balance_deducted
+		FROM redeem_codes
+		WHERE type = $1
+			AND status = $2
+			AND used_at >= $3
+			AND used_at < $4
+	`
+	if err := scanSingleRow(
+		ctx,
+		r.sql,
+		balanceAdjustmentStatsQuery,
+		[]any{service.AdjustmentTypeAdminBalance, service.StatusUsed, todayUTC, todayUTC.Add(24 * time.Hour)},
+		&stats.TodayBalanceAdded,
+		&stats.TodayBalanceDeducted,
 	); err != nil {
 		return err
 	}
