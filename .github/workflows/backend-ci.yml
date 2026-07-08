@@ -241,6 +241,12 @@ jobs:
           echo "name=ghcr.io/${owner}/sub2api" >> "$GITHUB_OUTPUT"
           echo "tag=${GITHUB_REF_NAME}-${short_sha}" >> "$GITHUB_OUTPUT"
 
+      - name: Read VERSION
+        id: version
+        run: |
+          version="$(tr -d '\r\n' < backend/cmd/server/VERSION)"
+          echo "value=${version}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
@@ -251,5 +257,6 @@ jobs:
           cache-from: type=gha,scope=sub2api-${{ github.ref_name }}
           cache-to: type=gha,scope=sub2api-${{ github.ref_name }},mode=max
           build-args: |
+            VERSION=${{ steps.version.outputs.value }}
             COMMIT=${{ github.sha }}
             DATE=${{ github.event.head_commit.timestamp }}
