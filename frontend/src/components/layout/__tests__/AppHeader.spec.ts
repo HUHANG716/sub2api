@@ -24,6 +24,9 @@ const i18n = createI18n({
 })
 
 vi.mock('vue-router', () => ({
+  useRouter: () => ({
+    push: vi.fn()
+  }),
   useRoute: () => ({
     meta: {
       titleKey: 'nav.dashboard'
@@ -58,6 +61,26 @@ describe('AppHeader discount campaign', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.restoreAllMocks()
+  })
+
+  it('does not render the account avatar or balance controls in the header', () => {
+    setActivePinia(createPinia())
+    const authStore = useAuthStore()
+    authStore.user = {
+      id: 1,
+      username: 'tester',
+      email: 'tester@example.com',
+      role: 'user',
+      balance: 123.45,
+      frozen_balance: 5,
+      avatar_url: 'https://example.com/avatar.png'
+    } as any
+
+    const wrapper = mountHeader()
+
+    expect(wrapper.find('[aria-label="User Menu"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('$123.45')
+    expect(wrapper.find('img[src="https://example.com/avatar.png"]').exists()).toBe(false)
   })
 
   it('shows active global discount copy in the header center', () => {
