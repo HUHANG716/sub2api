@@ -401,7 +401,7 @@ function rejectLoginAgreement(): void {
   localStorage.removeItem(LOGIN_AGREEMENT_STORAGE_KEY)
   agreementAccepted.value = false
   showAgreementModal.value = false
-  appStore.showWarning('请先阅读并同意最新条款后再继续。')
+  appStore.showWarning(t('legal.loginAgreementPrompt.loginRejectedWarning'))
 }
 
 function guardOAuthAgreement(event: Event): void {
@@ -410,7 +410,7 @@ function guardOAuthAgreement(event: Event): void {
   }
   event.preventDefault()
   event.stopPropagation()
-  appStore.showWarning('请先阅读并同意最新条款后再使用快捷登录。')
+  appStore.showWarning(t('legal.loginAgreementPrompt.loginRequiredWarning'))
   if (loginAgreementMode.value !== 'checkbox') {
     showAgreementModal.value = true
   }
@@ -444,7 +444,7 @@ function validateForm(): boolean {
   let isValid = true
 
   if (agreementGateActive.value) {
-    appStore.showWarning('请先阅读并同意最新条款后再登录。')
+    appStore.showWarning(t('legal.loginAgreementPrompt.loginRequiredWarning'))
     if (loginAgreementMode.value !== 'checkbox') {
       showAgreementModal.value = true
     }

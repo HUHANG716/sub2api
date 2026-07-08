@@ -1,0 +1,9 @@
+{
+  "migration": "157_user_platform_quotas_add_grok.sql",
+  "phase": "cleanup",
+  "safe_after_commit": "10a31bf419f1b323ecfbfff5044335cd157a32f2",
+  "reason": "Extends user_platform_quotas.platform so Grok default platform quotas can be persisted during signup and OAuth pending completion.",
+  "risk": "The migration drops and recreates a CHECK constraint on user_platform_quotas, which can briefly lock the table while PostgreSQL validates the replacement constraint.",
+  "mitigation": "The new constraint is a superset of the old allowed values, so existing rows remain valid and the active 10a31bf419f1 release remains compatible because it never writes Grok platform quota rows. Run during the normal dev deploy window with existing health checks in place.",
+  "approved_by": "hang"
+}

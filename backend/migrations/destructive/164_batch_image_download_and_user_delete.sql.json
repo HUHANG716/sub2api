@@ -1,0 +1,8 @@
+{
+  "migration": "164_batch_image_download_and_user_delete.sql",
+  "phase": "review",
+  "reason": "Adds download and user-delete timestamps plus lookup indexes for batch image jobs.",
+  "risk": "Non-concurrent index creation can briefly block writes on batch_image_jobs.",
+  "mitigation": "The table is newly introduced with limited data during rollout; monitor migration duration during deployment.",
+  "approved_by": "hang"
+}

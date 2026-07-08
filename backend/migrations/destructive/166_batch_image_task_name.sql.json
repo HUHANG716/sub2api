@@ -1,0 +1,8 @@
+{
+  "migration": "166_batch_image_task_name.sql",
+  "phase": "review",
+  "reason": "Adds a user-visible batch image task name, backfills existing jobs, and indexes task name.",
+  "risk": "Adding a NOT NULL column, bulk backfilling rows, and creating a non-concurrent index can lock batch_image_jobs.",
+  "mitigation": "The table is newly introduced and expected to be small during rollout; run in the normal deployment window and monitor migration duration.",
+  "approved_by": "hang"
+}

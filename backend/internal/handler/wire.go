@@ -34,6 +34,7 @@ func ProvideAdminHandlers(
 	openaiOAuthHandler *admin.OpenAIOAuthHandler,
 	geminiOAuthHandler *admin.GeminiOAuthHandler,
 	antigravityOAuthHandler *admin.AntigravityOAuthHandler,
+	grokOAuthHandler *admin.GrokOAuthHandler,
 	proxyHandler *admin.ProxyHandler,
 	redeemHandler *admin.RedeemHandler,
 	promoHandler *admin.PromoHandler,
@@ -66,6 +67,7 @@ func ProvideAdminHandlers(
 		OpenAIOAuth:            openaiOAuthHandler,
 		GeminiOAuth:            geminiOAuthHandler,
 		AntigravityOAuth:       antigravityOAuthHandler,
+		GrokOAuth:              grokOAuthHandler,
 		Proxy:                  proxyHandler,
 		Redeem:                 redeemHandler,
 		Promo:                  promoHandler,
@@ -126,6 +128,7 @@ func ProvideHandlers(
 	paymentWebhookHandler *PaymentWebhookHandler,
 	availableChannelHandler *AvailableChannelHandler,
 	publicModelPricingHandler *PublicModelPricingHandler,
+	batchImageHandler *BatchImageHandler,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 ) *Handlers {
@@ -147,6 +150,7 @@ func ProvideHandlers(
 		PaymentWebhook:     paymentWebhookHandler,
 		AvailableChannel:   availableChannelHandler,
 		PublicModelPricing: publicModelPricingHandler,
+		BatchImage:         batchImageHandler,
 	}
 }
 
@@ -172,6 +176,7 @@ var ProviderSet = wire.NewSet(
 	ProvideSQLDBSlice,
 	ProvidePublicModelPricingCatalogProvider,
 	ProvidePublicAvailableChannelProvider,
+	NewBatchImageHandler,
 
 	// Admin handlers
 	admin.NewDashboardHandler,
@@ -185,6 +190,7 @@ var ProviderSet = wire.NewSet(
 	admin.NewOpenAIOAuthHandler,
 	admin.NewGeminiOAuthHandler,
 	admin.NewAntigravityOAuthHandler,
+	admin.NewGrokOAuthHandler,
 	admin.NewProxyHandler,
 	admin.NewRedeemHandler,
 	admin.NewPromoHandler,

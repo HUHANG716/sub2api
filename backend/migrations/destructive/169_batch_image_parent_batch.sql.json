@@ -1,0 +1,8 @@
+{
+  "migration": "169_batch_image_parent_batch.sql",
+  "phase": "review",
+  "reason": "Adds parent batch linkage and a lookup index for retry or child batch image jobs.",
+  "risk": "Creating a non-concurrent partial index can briefly block writes on batch_image_jobs.",
+  "mitigation": "The table is newly introduced with limited rollout data; run during the normal deployment window and monitor migration duration.",
+  "approved_by": "hang"
+}

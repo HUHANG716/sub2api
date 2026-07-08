@@ -1,0 +1,8 @@
+{
+  "migration": "156_content_moderation_matched_keyword.sql",
+  "phase": "review",
+  "reason": "Adds matched_keyword to content moderation logs so keyword blocks can record the exact matched keyword for admin review and audit context.",
+  "risk": "The migration adds a NOT NULL column with DEFAULT '' to content_moderation_logs, which can briefly take a table lock while PostgreSQL updates metadata for existing rows.",
+  "mitigation": "The change is additive and idempotent, defaults existing log rows to an empty keyword, and keeps existing reads compatible. Run during the normal dev deploy window and keep the existing deploy health checks in place.",
+  "approved_by": "hang"
+}

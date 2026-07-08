@@ -1,5 +1,5 @@
 <template>
-  <header class="app-main-header sticky top-0 z-30">
+  <header class="glass sticky top-0 z-30 border-b border-gray-200/50 dark:border-dark-700/50">
     <div class="relative flex h-16 items-center justify-between px-4 md:px-6">
       <!-- Left: Mobile Menu Toggle + Page Title -->
       <div class="flex items-center gap-4">
@@ -29,7 +29,7 @@
         <span>{{ discountCampaignText }}</span>
       </div>
 
-      <!-- Right: Quick actions + Announcements + Language + Theme + Subscriptions -->
+      <!-- Right: Quick actions + Announcements + Docs + Language + Theme + Subscriptions -->
       <div class="flex items-center gap-2 sm:gap-3">
         <nav class="flex items-center gap-4" aria-label="Header quick links">
           <router-link
@@ -41,19 +41,22 @@
             <Icon name="dollar" size="sm" />
             <span class="hidden sm:inline">{{ t('nav.buySubscription') }}</span>
           </router-link>
-
-          <router-link
-            to="/docs"
-            class="header-link"
-            :title="t('nav.docs')"
-          >
-            <Icon name="book" size="sm" />
-            <span class="hidden sm:inline">{{ t('nav.docs') }}</span>
-          </router-link>
         </nav>
 
         <!-- Announcement Bell -->
         <AnnouncementBell v-if="user" />
+
+        <!-- Docs Link -->
+        <a
+          v-if="docUrl"
+          :href="docUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white"
+        >
+          <Icon name="book" size="sm" />
+          <span class="hidden sm:inline">{{ t('nav.docs') }}</span>
+        </a>
 
         <!-- Language Switcher -->
         <LocaleSwitcher icon-only />
@@ -69,17 +72,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAppStore, useAuthStore } from '@/stores'
 import { useAdminSettingsStore } from '@/stores/adminSettings'
-import type { GlobalDiscountRuntime } from '@/types'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMini.vue'
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
 import ThemeSwitch from '@/components/common/ThemeSwitch.vue'
 import Icon from '@/components/icons/Icon.vue'
+import type { GlobalDiscountRuntime } from '@/types'
 import { FeatureFlags, isFeatureFlagEnabled } from '@/utils/featureFlags'
 
 const route = useRoute()
@@ -98,6 +101,7 @@ const user = computed(() => authStore.user)
 const showPaymentShortcut = computed(() =>
   Boolean(user.value) && !authStore.isSimpleMode && isFeatureFlagEnabled(FeatureFlags.payment)
 )
+const docUrl = computed(() => appStore.docUrl)
 
 const pageTitle = computed(() => {
   // For custom pages, use the menu item's label instead of generic "自定义页面"
@@ -213,6 +217,7 @@ function scheduleDiscountBoundaryRefresh(discount?: GlobalDiscountRuntime | null
   }, delay)
 }
 
+
 onMounted(() => {
   discountBoundaryRefreshMounted = true
   discountClockTimer = setInterval(() => {
@@ -228,7 +233,7 @@ watch(
   { immediate: true }
 )
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
   discountBoundaryRefreshMounted = false
   if (discountClockTimer) {
     clearInterval(discountClockTimer)
@@ -239,29 +244,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.dropdown-enter-active,
-.dropdown-leave-active {
-  transition: all 0.2s ease;
-}
-
-.dropdown-enter-from,
-.dropdown-leave-to {
-  opacity: 0;
-  transform: scale(0.95) translateY(-4px);
-}
-
-.header-link {
-  display: inline-flex;
-  min-height: 2rem;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.125rem;
-  color: var(--theme-text-muted);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
 .header-recharge-link {
   position: relative;
   display: inline-flex;
@@ -316,13 +298,6 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: pre;
-}
-
-@media (min-width: 640px) {
-  .header-link {
-    padding-left: 0.125rem;
-    padding-right: 0.125rem;
-  }
 }
 
 @media (min-width: 1024px) {
