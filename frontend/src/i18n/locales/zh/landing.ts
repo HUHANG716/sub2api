@@ -111,6 +111,93 @@ export default {
     },
     footer: {
       allRightsReserved: '保留所有权利。'
+    },
+    modern: {
+      navTagline: 'AI 开发者工作台',
+      nav: {
+        features: '能力',
+        testimonials: '用户评价',
+        faq: '常见问题',
+        contact: '联系我们'
+      },
+      hero: {
+        line1: '一个入口',
+        line2: '接入主流 AI 模型',
+        subtitle: 'OpenAI 兼容接口，统一接入 Claude、GPT、Gemini 等模型。',
+        description: '一个 API Key 连接 Claude Code、Codex、Gemini CLI 等开发工具，密钥、用量和账单都在同一处管理。'
+      },
+      stats: {
+        developers: '开发者用户',
+        uptime: '服务稳定性',
+        taskValue: '500 万+',
+        tasks: '任务处理次数',
+        support: '专属技术支持'
+      },
+      supportShowcase: {
+        titlePrefix: '智能时代的',
+        titleCore: 'Harness Engineering',
+        titleAccent: '聚焦创意的实现',
+        platformIntro: '一键轻松在以下平台体验：'
+      },
+      testimonials: {
+        title: '用户怎么说',
+        description: '来自开发者、架构师和研发负责人的真实使用反馈。',
+        listLabel: '用户评价列表'
+      },
+      reviews: {
+        one: { quote: '接入之后，团队里的 AI 编程流程终于统一了。', name: '周予', role: '研发团队负责人 @ SaaS 公司' },
+        two: { quote: '我最喜欢的是稳定性和可观测性。', name: 'Mia Chen', role: '全栈工程师 @ 出海团队' },
+        three: { quote: '对独立开发者很友好。', name: '林川', role: '独立开发者' },
+        four: { quote: '团队成员的使用情况变得可见。', name: 'Eva Liu', role: 'AI 产品经理 @ 科技公司' },
+        five: { quote: '客服和技术支持响应很快。', name: '何工', role: '前端架构师 @ 本地生活平台' },
+        six: { quote: '团队协作成本下降很多。', name: 'Kevin Zhao', role: '后端工程师 @ 电商平台' },
+        seven: { quote: '高峰期也能保持稳定。', name: '吴可', role: '研发总监 @ 金融科技公司' },
+        eight: { quote: '新同事上手速度快了很多。', name: 'Sarah Lin', role: '移动端负责人 @ 创业公司' }
+      },
+      faq: {
+        title: '有疑问？我们来解答',
+        description: '围绕接入、稳定性、团队管理和上手体验整理了最常见的问题。',
+        items: {
+          fit: {
+            question: '{siteName} 适合什么团队？',
+            answer: '适合已经在日常研发中使用 AI 编程工具的团队。'
+          },
+          individual: {
+            question: '为什么不直接让每个人各自配置工具？',
+            answer: '统一入口能降低长期成本。'
+          },
+          stability: {
+            question: '服务稳定性如何保障？',
+            answer: '平台围绕通道状态和请求路由做持续监控。'
+          },
+          start: {
+            question: '如何开始使用？',
+            answer: '登录后进入工作台，按文档完成基础配置即可开始接入。'
+          }
+        }
+      },
+      footer: {
+        tagline: '面向开发者的 AI 编程工作台',
+        description: '为个人开发者和团队提供统一的 AI 开发入口。',
+        operator: '为 AI 开发工作流而运营',
+        loginWorkspace: '登录工作台',
+        groups: {
+          product: '产品',
+          support: '支持',
+          scenes: '场景',
+          legal: '法律'
+        },
+        scenes: {
+          coding: 'AI 编程协作',
+          usage: '团队用量管理',
+          tools: '开发工具接入'
+        },
+        legal: {
+          privacy: '隐私政策',
+          terms: '服务条款',
+          refund: '退款政策'
+        }
+      }
     }
   },
 

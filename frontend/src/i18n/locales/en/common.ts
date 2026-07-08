@@ -12,8 +12,11 @@ export default {
     delete: 'Delete',
     edit: 'Edit',
     create: 'Create',
+    creating: 'Creating...',
     update: 'Update',
     confirm: 'Confirm',
+    apply: 'Apply',
+    clear: 'Clear',
     reset: 'Reset',
     search: 'Search',
     filter: 'Filter',
@@ -27,6 +30,7 @@ export default {
     submit: 'Submit',
     back: 'Back',
     next: 'Next',
+    previous: 'Previous',
     yes: 'Yes',
     no: 'No',
     all: 'All',
@@ -67,6 +71,9 @@ export default {
     noGroupsAvailable: 'No groups available',
     unknownError: 'Unknown error occurred',
     saving: 'Saving...',
+    sending: 'Sending...',
+    required: 'Required',
+    tryAgain: 'Try again',
     selectedCount: '({count} selected)',
     refresh: 'Refresh',
     autoRefresh: {
@@ -175,6 +182,10 @@ export default {
     riskControl: 'Risk Control',
   },
 
+  locale: {
+    switchTo: 'Switch to {locale}'
+  },
+
   // Auth
   auth: {
     welcomeBack: 'Welcome Back',
@@ -196,6 +207,9 @@ export default {
     passwordPlaceholder: 'Enter your password',
     createPasswordPlaceholder: 'Create a strong password',
     passwordHint: 'At least 6 characters',
+    passwordSecurityHint: 'Use at least 6 characters and avoid common passwords.',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
     emailRequired: 'Email is required',
     invalidEmail: 'Please enter a valid email address',
     passwordRequired: 'Password is required',

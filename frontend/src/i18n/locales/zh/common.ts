@@ -12,8 +12,11 @@ export default {
     delete: '删除',
     edit: '编辑',
     create: '创建',
+    creating: '创建中...',
     update: '更新',
     confirm: '确认',
+    apply: '应用',
+    clear: '清空',
     reset: '重置',
     search: '搜索',
     filter: '筛选',
@@ -27,6 +30,7 @@ export default {
     submit: '提交',
     back: '返回',
     next: '下一步',
+    previous: '上一步',
     yes: '是',
     no: '否',
     all: '全部',
@@ -67,6 +71,9 @@ export default {
     noGroupsAvailable: '无可用分组',
     unknownError: '发生未知错误',
     saving: '保存中...',
+    sending: '发送中...',
+    required: '必填',
+    tryAgain: '重试',
     selectedCount: '（已选 {count} 个）',
     refresh: '刷新',
     autoRefresh: {
@@ -175,6 +182,10 @@ export default {
     riskControl: '风控中心',
   },
 
+  locale: {
+    switchTo: '切换到 {locale}'
+  },
+
   // Auth
   auth: {
     welcomeBack: '欢迎回来',
@@ -196,6 +207,9 @@ export default {
     passwordPlaceholder: '请输入密码',
     createPasswordPlaceholder: '创建一个安全的密码',
     passwordHint: '至少 6 个字符',
+    passwordSecurityHint: '请使用至少 6 个字符，并避免使用常见密码。',
+    showPassword: '显示密码',
+    hidePassword: '隐藏密码',
     emailRequired: '请输入邮箱',
     invalidEmail: '请输入有效的邮箱地址',
     passwordRequired: '请输入密码',

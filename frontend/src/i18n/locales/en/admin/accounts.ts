@@ -78,6 +78,8 @@ export default {
       crsBack: 'Back',
       editAccount: 'Edit Account',
       deleteAccount: 'Delete Account',
+      fromModel: 'From Model',
+      toModel: 'To Model',
       searchAccounts: 'Search accounts...',
       notes: 'Notes',
       notesPlaceholder: 'Enter notes',
@@ -90,6 +92,9 @@ export default {
       oauthType: 'OAuth',
       setupToken: 'Setup Token',
       apiKey: 'API Key',
+      messages: {
+        accountCreated: 'Account created successfully'
+      },
       // Schedulable toggle
       schedulable: 'Schedulable',
       schedulableHint: 'Enable to include this account in API request scheduling',
@@ -788,6 +793,8 @@ export default {
         // OpenAI specific
         openai: {
           title: 'OpenAI Account Authorization',
+          accessTokenAuth: 'Access token auth',
+          mobileRefreshTokenAuth: 'Mobile refresh token auth',
           followSteps: 'Follow these steps to complete OpenAI account authorization:',
           step1GenerateUrl: 'Click the button below to generate the authorization URL',
           generateAuthUrl: 'Generate Auth URL',

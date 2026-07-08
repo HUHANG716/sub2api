@@ -78,6 +78,8 @@ export default {
       editAccount: '编辑账号',
       deleteAccount: '删除账号',
       deleteConfirmMessage: "确定要删除账号 '{name}' 吗？",
+      fromModel: '源模型',
+      toModel: '目标模型',
       refreshCookie: '刷新 Cookie',
       testAccount: '测试账号',
       searchAccounts: '搜索账号...',
@@ -210,6 +212,9 @@ export default {
       noAccountsYet: '暂无账号',
       createFirstAccount: '添加 AI 平台账号以开始使用 API 网关。',
       tokenRefreshed: 'Token 刷新成功',
+      messages: {
+        accountCreated: '账号创建成功'
+      },
       accountDeleted: '账号删除成功',
       rateLimitCleared: '速率限制已清除',
       setupToken: 'Setup Token',
@@ -877,6 +882,8 @@ export default {
         // OpenAI specific
         openai: {
           title: 'OpenAI 账户授权',
+          accessTokenAuth: 'Access Token 授权',
+          mobileRefreshTokenAuth: '移动端 Refresh Token 授权',
           followSteps: '请按照以下步骤完成 OpenAI 账户的授权：',
           step1GenerateUrl: '点击下方按钮生成授权链接',
           generateAuthUrl: '生成授权链接',
