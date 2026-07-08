@@ -644,7 +644,3 @@ func ApplyGlobalDiscountToCost(cost *CostBreakdown, discount GlobalDiscountRunti
 	cost.ActualCost = originalActualCost * discount.DiscountRate
 	cost.DiscountAmount = originalActualCost - cost.ActualCost
 }
-
-func applyGlobalDiscountToCost(cost *CostBreakdown, discount GlobalDiscountRuntime) {
-	ApplyGlobalDiscountToCost(cost, discount)
-}
