@@ -188,6 +188,10 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 
 		SettingKeyGlobalDiscountSettings: `{"enabled":false,"discount_rate":1,"schedule_type":"once","starts_at":"","ends_at":"","recurring_start_at":"00:00","recurring_end_at":"23:59"}`,
 
+		// 生图工作台默认未配置管理员分组
+		SettingKeyImagePlaygroundGroupID:          "0",
+		SettingKeyImagePlaygroundResponsesGroupID: "0",
+
 		// cyber 会话屏蔽（默认关闭，TTL 默认 3600s）
 		SettingKeyCyberSessionBlockEnabled:    "false",
 		SettingKeyCyberSessionBlockTTLSeconds: "3600",
@@ -722,6 +726,17 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 
 	// 风控中心功能（默认关闭，严格 true 才启用）
 	result.RiskControlEnabled = settings[SettingKeyRiskControlEnabled] == "true"
+
+	if raw := strings.TrimSpace(settings[SettingKeyImagePlaygroundGroupID]); raw != "" {
+		if v, err := strconv.ParseInt(raw, 10, 64); err == nil && v > 0 {
+			result.ImagePlaygroundGroupID = v
+		}
+	}
+	if raw := strings.TrimSpace(settings[SettingKeyImagePlaygroundResponsesGroupID]); raw != "" {
+		if v, err := strconv.ParseInt(raw, 10, 64); err == nil && v > 0 {
+			result.ImagePlaygroundResponsesGroupID = v
+		}
+	}
 
 	// cyber 会话屏蔽（默认关闭，TTL 默认 3600s）
 	result.CyberSessionBlockEnabled = settings[SettingKeyCyberSessionBlockEnabled] == "true"

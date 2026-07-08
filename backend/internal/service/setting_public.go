@@ -223,6 +223,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyAvailableChannelsEnabled,
 		SettingKeyAffiliateEnabled,
 		SettingKeyRiskControlEnabled,
+		SettingKeyImagePlaygroundGroupID,
+		SettingKeyImagePlaygroundResponsesGroupID,
 		SettingKeyAllowUserViewErrorRequests,
 	}
 
@@ -279,6 +281,14 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 	var balanceLowNotifyThreshold float64
 	if v, err := strconv.ParseFloat(settings[SettingKeyBalanceLowNotifyThreshold], 64); err == nil && v >= 0 {
 		balanceLowNotifyThreshold = v
+	}
+	var imagePlaygroundGroupID int64
+	if v, err := strconv.ParseInt(strings.TrimSpace(settings[SettingKeyImagePlaygroundGroupID]), 10, 64); err == nil && v > 0 {
+		imagePlaygroundGroupID = v
+	}
+	var imagePlaygroundResponsesGroupID int64
+	if v, err := strconv.ParseInt(strings.TrimSpace(settings[SettingKeyImagePlaygroundResponsesGroupID]), 10, 64); err == nil && v > 0 {
+		imagePlaygroundResponsesGroupID = v
 	}
 	var globalDiscount *GlobalDiscountRuntime
 	if runtime := s.GetGlobalDiscountRuntime(ctx); globalDiscountRuntimeVisible(runtime, time.Now()) {
@@ -341,8 +351,10 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 
 		RiskControlEnabled: settings[SettingKeyRiskControlEnabled] == "true",
 
-		GlobalDiscount:             globalDiscount,
-		AllowUserViewErrorRequests: settings[SettingKeyAllowUserViewErrorRequests] == "true",
+		ImagePlaygroundGroupID:          imagePlaygroundGroupID,
+		ImagePlaygroundResponsesGroupID: imagePlaygroundResponsesGroupID,
+		GlobalDiscount:                  globalDiscount,
+		AllowUserViewErrorRequests:      settings[SettingKeyAllowUserViewErrorRequests] == "true",
 	}, nil
 }
 
@@ -497,12 +509,15 @@ type PublicSettingsInjectionPayload struct {
 	// Feature flags — MUST match the opt-in/opt-out registry in
 	// frontend/src/utils/featureFlags.ts. Missing a field here is the bug
 	// that hid the "可用渠道" menu on page refresh.
-	ChannelMonitorEnabled                bool `json:"channel_monitor_enabled"`
-	ChannelMonitorDefaultIntervalSeconds int  `json:"channel_monitor_default_interval_seconds"`
-	AvailableChannelsEnabled             bool `json:"available_channels_enabled"`
-	AffiliateEnabled                     bool `json:"affiliate_enabled"`
-	RiskControlEnabled                   bool `json:"risk_control_enabled"`
-	AllowUserViewErrorRequests           bool `json:"allow_user_view_error_requests"`
+	ChannelMonitorEnabled                bool                   `json:"channel_monitor_enabled"`
+	ChannelMonitorDefaultIntervalSeconds int                    `json:"channel_monitor_default_interval_seconds"`
+	AvailableChannelsEnabled             bool                   `json:"available_channels_enabled"`
+	AffiliateEnabled                     bool                   `json:"affiliate_enabled"`
+	RiskControlEnabled                   bool                   `json:"risk_control_enabled"`
+	ImagePlaygroundGroupID               int64                  `json:"image_playground_group_id"`
+	ImagePlaygroundResponsesGroupID      int64                  `json:"image_playground_responses_group_id"`
+	GlobalDiscount                       *GlobalDiscountRuntime `json:"global_discount,omitempty"`
+	AllowUserViewErrorRequests           bool                   `json:"allow_user_view_error_requests"`
 }
 
 // GetPublicSettingsForInjection returns public settings in a format suitable for HTML injection.
@@ -567,6 +582,9 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		AvailableChannelsEnabled:             settings.AvailableChannelsEnabled,
 		AffiliateEnabled:                     settings.AffiliateEnabled,
 		RiskControlEnabled:                   settings.RiskControlEnabled,
+		ImagePlaygroundGroupID:               settings.ImagePlaygroundGroupID,
+		ImagePlaygroundResponsesGroupID:      settings.ImagePlaygroundResponsesGroupID,
+		GlobalDiscount:                       settings.GlobalDiscount,
 		AllowUserViewErrorRequests:           settings.AllowUserViewErrorRequests,
 	}, nil
 }
