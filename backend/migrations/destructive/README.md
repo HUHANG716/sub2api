@@ -48,3 +48,6 @@ Rules:
   descendant of `safe_after_commit`.
 - High-risk compatible migrations can use `phase: "review"` or
   `phase: "expand"` with a concrete mitigation.
+- When restoring historical migration files onto a long-lived branch, keep the
+  risky SQL isolated from follow-up code or metadata commits so CI can evaluate
+  the migration plans separately from application changes.
