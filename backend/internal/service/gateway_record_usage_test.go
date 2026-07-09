@@ -286,6 +286,46 @@ func TestGatewayServiceRecordUsage_PeakRateAffectsTokenModeImageOutputTokens(t *
 	require.InDelta(t, expectedActual, userRepo.lastAmount, 1e-12)
 }
 
+func TestGatewayServiceRecordUsage_AppliesGlobalDiscountToBilling(t *testing.T) {
+	usage := ClaudeUsage{InputTokens: 1200, OutputTokens: 300}
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	billingRepo := &openAIRecordUsageBillingRepoStub{result: &UsageBillingApplyResult{Applied: true}}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	subRepo := &openAIRecordUsageSubRepoStub{}
+	quotaSvc := &openAIRecordUsageAPIKeyQuotaStub{}
+	svc := newGatewayRecordUsageServiceWithBillingRepoForTest(usageRepo, billingRepo, userRepo, subRepo)
+	svc.settingService = newRecordUsageGlobalDiscountSettingService()
+
+	err := svc.RecordUsage(context.Background(), &RecordUsageInput{
+		Result: &ForwardResult{
+			RequestID: "gateway_global_discount",
+			Usage:     usage,
+			Model:     "claude-sonnet-4",
+			Duration:  time.Second,
+		},
+		APIKey:        &APIKey{ID: 803, Quota: 100},
+		User:          &User{ID: 603},
+		Account:       &Account{ID: 703, Type: AccountTypeAPIKey},
+		APIKeyService: quotaSvc,
+	})
+
+	require.NoError(t, err)
+	expected, err := svc.billingService.CalculateCost("claude-sonnet-4", UsageTokens{
+		InputTokens:  usage.InputTokens,
+		OutputTokens: usage.OutputTokens,
+	}, 1.1)
+	require.NoError(t, err)
+	expectedDiscounted := expected.ActualCost * 0.5
+	require.NotNil(t, billingRepo.lastCmd)
+	require.InDelta(t, expectedDiscounted, billingRepo.lastCmd.BalanceCost, 1e-12)
+	require.InDelta(t, expectedDiscounted, billingRepo.lastCmd.APIKeyQuotaCost, 1e-12)
+	require.NotNil(t, usageRepo.lastLog)
+	require.InDelta(t, expected.TotalCost, usageRepo.lastLog.TotalCost, 1e-12)
+	require.InDelta(t, expectedDiscounted, usageRepo.lastLog.ActualCost, 1e-12)
+	require.InDelta(t, expected.ActualCost-expectedDiscounted, usageRepo.lastLog.DiscountAmount, 1e-12)
+	require.InDelta(t, 0.5, usageRepo.lastLog.DiscountRate, 1e-12)
+}
+
 func TestGatewayServiceRecordUsage_UsageLogWriteErrorDoesNotSkipBilling(t *testing.T) {
 	usageRepo := &openAIRecordUsageLogRepoStub{inserted: false, err: MarkUsageLogCreateNotPersisted(context.Canceled)}
 	userRepo := &openAIRecordUsageUserRepoStub{}

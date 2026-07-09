@@ -52,6 +52,27 @@ func (s *openAIRecordUsageBillingRepoStub) Apply(ctx context.Context, cmd *Usage
 	return &UsageBillingApplyResult{Applied: true}, nil
 }
 
+type recordUsageSettingRepoStub struct {
+	SettingRepository
+
+	values map[string]string
+}
+
+func (s *recordUsageSettingRepoStub) GetValue(ctx context.Context, key string) (string, error) {
+	if v, ok := s.values[key]; ok {
+		return v, nil
+	}
+	return "", ErrSettingNotFound
+}
+
+func newRecordUsageGlobalDiscountSettingService() *SettingService {
+	return NewSettingService(&recordUsageSettingRepoStub{
+		values: map[string]string{
+			SettingKeyGlobalDiscountSettings: `{"enabled":true,"rules":[{"id":"half-off","enabled":true,"discount_rate":0.5,"schedule_type":"once","starts_at":"2000-01-01T00:00:00Z","ends_at":"2999-01-01T00:00:00Z"}]}`,
+		},
+	}, &config.Config{})
+}
+
 func TestOpenAIGatewayServiceRecordUsage_RejectsNilInput(t *testing.T) {
 	svc := &OpenAIGatewayService{}
 	require.Error(t, svc.RecordUsage(context.Background(), nil))
@@ -406,6 +427,43 @@ func TestOpenAIGatewayServiceRecordUsage_UsesUserSpecificGroupRate(t *testing.T)
 	require.InDelta(t, expected.ActualCost, usageRepo.lastLog.ActualCost, 1e-12)
 	require.InDelta(t, expected.ActualCost, userRepo.lastAmount, 1e-12)
 	require.Equal(t, 1, userRepo.deductCalls)
+}
+
+func TestOpenAIGatewayServiceRecordUsage_AppliesGlobalDiscountToBilling(t *testing.T) {
+	groupID := int64(15)
+	usage := OpenAIUsage{InputTokens: 1200, OutputTokens: 300}
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	billingRepo := &openAIRecordUsageBillingRepoStub{result: &UsageBillingApplyResult{Applied: true}}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	subRepo := &openAIRecordUsageSubRepoStub{}
+	quotaSvc := &openAIRecordUsageAPIKeyQuotaStub{}
+	svc := newOpenAIRecordUsageServiceWithBillingRepoForTest(usageRepo, billingRepo, userRepo, subRepo, nil)
+	svc.settingService = newRecordUsageGlobalDiscountSettingService()
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID: "resp_global_discount",
+			Usage:     usage,
+			Model:     "gpt-5.1",
+			Duration:  time.Second,
+		},
+		APIKey:        &APIKey{ID: 1010, Quota: 100, GroupID: &groupID, Group: &Group{ID: groupID, RateMultiplier: 1}},
+		User:          &User{ID: 2010},
+		Account:       &Account{ID: 3010, Type: AccountTypeAPIKey},
+		APIKeyService: quotaSvc,
+	})
+
+	require.NoError(t, err)
+	expected := expectedOpenAICost(t, svc, "gpt-5.1", usage, 1)
+	expectedDiscounted := expected.ActualCost * 0.5
+	require.NotNil(t, billingRepo.lastCmd)
+	require.InDelta(t, expectedDiscounted, billingRepo.lastCmd.BalanceCost, 1e-12)
+	require.InDelta(t, expectedDiscounted, billingRepo.lastCmd.APIKeyQuotaCost, 1e-12)
+	require.NotNil(t, usageRepo.lastLog)
+	require.InDelta(t, expected.ActualCost, usageRepo.lastLog.TotalCost, 1e-12)
+	require.InDelta(t, expectedDiscounted, usageRepo.lastLog.ActualCost, 1e-12)
+	require.InDelta(t, expected.ActualCost-expectedDiscounted, usageRepo.lastLog.DiscountAmount, 1e-12)
+	require.InDelta(t, 0.5, usageRepo.lastLog.DiscountRate, 1e-12)
 }
 
 func TestOpenAIGatewayServiceRecordUsage_PeakRateAffectsTokenModeImageOutputTokens(t *testing.T) {
