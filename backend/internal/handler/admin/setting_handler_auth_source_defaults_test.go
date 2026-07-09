@@ -164,7 +164,7 @@ func TestSettingHandler_GetSettings_IncludesPaymentBalanceBonusTiers(t *testing.
 	repo := &settingHandlerRepoStub{
 		values: map[string]string{
 			service.SettingKeyRegistrationEnabled: "true",
-			service.SettingBalanceBonusTiers:     `[{"min_amount":300,"bonus_amount":45},{"min_amount":100,"bonus_amount":10}]`,
+			service.SettingBalanceBonusTiers:      `[{"min_amount":300,"bonus_amount":45},{"min_amount":100,"bonus_amount":10}]`,
 		},
 	}
 	svc := service.NewSettingService(repo, &config.Config{Default: config.DefaultConfig{UserConcurrency: 5}})
@@ -512,7 +512,7 @@ func TestSettingHandler_UpdateSettings_PersistsPaymentBalanceBonusTiers(t *testi
 	repo := &settingHandlerRepoStub{
 		values: map[string]string{
 			service.SettingKeyRegistrationEnabled: "false",
-			service.SettingKeyPromoCodeEnabled:   "true",
+			service.SettingKeyPromoCodeEnabled:    "true",
 		},
 	}
 	svc := service.NewSettingService(repo, &config.Config{Default: config.DefaultConfig{UserConcurrency: 5}})
