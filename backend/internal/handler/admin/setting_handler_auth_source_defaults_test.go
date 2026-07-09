@@ -191,6 +191,67 @@ func TestSettingHandler_GetSettings_IncludesPaymentBalanceBonusTiers(t *testing.
 	require.Equal(t, float64(10), first["bonus_amount"])
 }
 
+func TestSettingHandler_UpdateSettings_PersistsGlobalDiscountSettings(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	repo := &settingHandlerRepoStub{
+		values: map[string]string{
+			service.SettingKeyPromoCodeEnabled: "true",
+		},
+	}
+	svc := service.NewSettingService(repo, &config.Config{Default: config.DefaultConfig{UserConcurrency: 5}})
+	handler := NewSettingHandler(svc, nil, nil, nil, nil, nil, nil)
+
+	body := map[string]any{
+		"promo_code_enabled": true,
+		"global_discount_settings": map[string]any{
+			"enabled": true,
+			"rules": []map[string]any{
+				{
+					"id":            "summer",
+					"enabled":       true,
+					"discount_rate": 0.8,
+					"schedule_type": "once",
+					"starts_at":     "2026-07-09T00:00:00Z",
+					"ends_at":       "2026-07-10T00:00:00Z",
+					"label":         "summer promo",
+				},
+			},
+		},
+	}
+	rawBody, err := json.Marshal(body)
+	require.NoError(t, err)
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPut, "/api/v1/admin/settings", bytes.NewReader(rawBody))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.UpdateSettings(c)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	var stored service.GlobalDiscountSettings
+	require.NoError(t, json.Unmarshal([]byte(repo.values[service.SettingKeyGlobalDiscountSettings]), &stored))
+	require.True(t, stored.Enabled)
+	require.Len(t, stored.Rules, 1)
+	require.Equal(t, "summer", stored.Rules[0].ID)
+	require.Equal(t, 0.8, stored.Rules[0].DiscountRate)
+
+	var resp response.Response
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	data, ok := resp.Data.(map[string]any)
+	require.True(t, ok)
+	discount, ok := data["global_discount_settings"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, true, discount["enabled"])
+	rules, ok := discount["rules"].([]any)
+	require.True(t, ok)
+	require.Len(t, rules, 1)
+	rule, ok := rules[0].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "summer", rule["id"])
+	require.Equal(t, 0.8, rule["discount_rate"])
+}
+
 func TestSettingHandler_UpdateSettings_PreservesOmittedAuthSourceDefaults(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	repo := &settingHandlerRepoStub{
