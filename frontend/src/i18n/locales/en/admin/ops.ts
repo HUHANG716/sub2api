@@ -23,6 +23,7 @@ export default {
       lastRun: 'last_run:',
       lastSuccess: 'last_success:',
       lastError: 'last_error:',
+      result: 'Result',
       noData: 'No data.',
       loadingText: 'loading',
       ready: 'ready',
@@ -144,7 +145,11 @@ export default {
         '24h': 'Last 24 hours',
         '7d': 'Last 7 days',
         '30d': 'Last 30 days',
-        custom: 'Custom'
+        custom: 'Custom Range'
+      },
+      customTimeRange: {
+        startTime: 'Start Time',
+        endTime: 'End Time'
       },
       openaiTokenStats: {
         title: 'OpenAI Token Request Stats',
@@ -169,11 +174,6 @@ export default {
       fullscreen: {
         enter: 'Enter Fullscreen'
       },
-      customTimeRange: {
-        startTime: 'Start Time',
-        endTime: 'End Time'
-      },
-      result: 'Result',
       diagnosis: {
         title: 'Smart Diagnosis',
         footer: 'Automated diagnostic suggestions based on current metrics',
@@ -567,16 +567,6 @@ export default {
         alertTitle: 'Alert Evaluator',
         groupAvailabilityTitle: 'Group Availability Monitor',
         evalIntervalSeconds: 'Evaluation Interval (seconds)',
-        metricThresholds: 'Metric Thresholds',
-        metricThresholdsHint: 'Alerts are triggered when these thresholds are crossed.',
-        slaMinPercent: 'Minimum SLA Percent',
-        slaMinPercentHint: 'Trigger an alert when availability drops below this percentage.',
-        ttftP99MaxMs: 'Max TTFT P99 (ms)',
-        ttftP99MaxMsHint: 'Trigger an alert when first-token P99 latency exceeds this value.',
-        requestErrorRateMaxPercent: 'Max Request Error Rate',
-        requestErrorRateMaxPercentHint: 'Trigger an alert when request error rate exceeds this percentage.',
-        upstreamErrorRateMaxPercent: 'Max Upstream Error Rate',
-        upstreamErrorRateMaxPercentHint: 'Trigger an alert when upstream error rate exceeds this percentage.',
         silencing: {
           title: 'Alert Silencing (Maintenance Mode)',
           enabled: 'Enable silencing',

@@ -84,6 +84,7 @@ import ThemeSwitch from '@/components/common/ThemeSwitch.vue'
 import Icon from '@/components/icons/Icon.vue'
 import type { GlobalDiscountRuntime } from '@/types'
 import { FeatureFlags, isFeatureFlagEnabled } from '@/utils/featureFlags'
+import { sanitizeUrl } from '@/utils/url'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -101,7 +102,7 @@ const user = computed(() => authStore.user)
 const showPaymentShortcut = computed(() =>
   Boolean(user.value) && !authStore.isSimpleMode && isFeatureFlagEnabled(FeatureFlags.payment)
 )
-const docUrl = computed(() => appStore.docUrl)
+const docUrl = computed(() => sanitizeUrl(appStore.docUrl))
 
 const pageTitle = computed(() => {
   // For custom pages, use the menu item's label instead of generic "自定义页面"

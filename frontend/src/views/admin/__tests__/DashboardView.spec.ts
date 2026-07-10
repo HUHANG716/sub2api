@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
+
 import type { DashboardStats } from '@/types'
 import DashboardView from '../DashboardView.vue'
 import zhMessages from '@/i18n/locales/zh'
@@ -140,6 +142,8 @@ const mountDashboardView = () => mount(DashboardView, {
 describe('admin DashboardView', () => {
   beforeEach(() => {
     vi.useRealTimers()
+    setActivePinia(createPinia())
+
     getSnapshotV2.mockReset()
     getUserUsageTrend.mockReset()
     getUserSpendingRanking.mockReset()

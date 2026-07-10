@@ -7,6 +7,7 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	htmlpkg "html"
 	"io"
 	"io/fs"
 	"net/http"
@@ -329,7 +330,7 @@ func injectSiteTitle(html, settingsJSON []byte) []byte {
 		return html
 	}
 
-	newTitle := []byte("<title>" + defaultSEOTitle + " - " + cfg.SiteName + "</title>")
+	newTitle := []byte("<title>" + defaultSEOTitle + " - " + htmlpkg.EscapeString(cfg.SiteName) + "</title>")
 	var buf bytes.Buffer
 	buf.Write(html[:titleStart])
 	buf.Write(newTitle)

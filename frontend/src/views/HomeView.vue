@@ -304,6 +304,7 @@ import {
   type HeroTagLayout,
   type HeroViewport
 } from './homeHeroLayout'
+import { sanitizeUrl } from '@/utils/url'
 
 const { t } = useI18n()
 
@@ -330,8 +331,9 @@ const authStore = useAuthStore()
 const appStore = useAppStore()
 
 const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'Hahacode')
-const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
+const siteLogo = computed(() => sanitizeUrl(appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '', { allowRelative: true, allowDataUrl: true }))
 const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || t('home.modern.hero.subtitle'))
+const docUrl = computed(() => sanitizeUrl(appStore.cachedPublicSettings?.doc_url || appStore.docUrl || ''))
 const homeContent = computed(() => appStore.cachedPublicSettings?.home_content || '')
 
 const isHomeContentUrl = computed(() => {
@@ -505,7 +507,9 @@ const footerGroups = computed<FooterGroup[]>(() => [
     items: [
       { label: t('home.modern.nav.features'), href: '#features' },
       { label: t('home.modern.nav.testimonials'), href: '#testimonials' },
-      { label: t('home.docs'), to: '/docs' }
+      docUrl.value
+        ? { label: t('home.docs'), href: docUrl.value }
+        : { label: t('home.docs'), to: '/docs' }
     ]
   },
   {
