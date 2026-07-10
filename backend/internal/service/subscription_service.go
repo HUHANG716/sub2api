@@ -1084,6 +1084,7 @@ func (s *SubscriptionService) GetSubscriptionProgress(ctx context.Context, subsc
 
 // calculateProgress 根据已加载的订阅和分组数据计算使用进度（纯内存计算，无 DB 查询）
 func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Group) *SubscriptionProgress {
+	now := time.Now()
 	progress := &SubscriptionProgress{
 		ID:            sub.ID,
 		GroupName:     group.Name,
@@ -1094,18 +1095,20 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	// 日进度
 	if group.HasDailyLimit() && sub.DailyWindowStart != nil {
 		limit := *group.DailyLimitUSD
-		resetsAt := sub.DailyWindowStart.Add(24 * time.Hour)
-		if dailyResetTime := sub.DailyResetTime(); dailyResetTime != nil {
-			resetsAt = *dailyResetTime
+		windowStart, stale := sub.displayWindowStartAt(sub.DailyWindowStart, 24*time.Hour, now)
+		usedUSD := sub.DailyUsageUSD
+		if stale {
+			usedUSD = 0
 		}
+		resetsAt := capResetAt(windowStart.Add(24*time.Hour), sub.ExpiresAt)
 		progress.Daily = &UsageWindowProgress{
 			LimitUSD:        limit,
-			UsedUSD:         sub.DailyUsageUSD,
-			RemainingUSD:    limit - sub.DailyUsageUSD,
-			Percentage:      (sub.DailyUsageUSD / limit) * 100,
-			WindowStart:     *sub.DailyWindowStart,
+			UsedUSD:         usedUSD,
+			RemainingUSD:    limit - usedUSD,
+			Percentage:      (usedUSD / limit) * 100,
+			WindowStart:     *windowStart,
 			ResetsAt:        resetsAt,
-			ResetsInSeconds: int64(time.Until(resetsAt).Seconds()),
+			ResetsInSeconds: int64(resetsAt.Sub(now).Seconds()),
 		}
 		if progress.Daily.RemainingUSD < 0 {
 			progress.Daily.RemainingUSD = 0
@@ -1121,15 +1124,20 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	// 周进度
 	if group.HasWeeklyLimit() && sub.WeeklyWindowStart != nil {
 		limit := *group.WeeklyLimitUSD
-		resetsAt := sub.WeeklyWindowStart.Add(7 * 24 * time.Hour)
+		windowStart, stale := sub.displayWindowStartAt(sub.WeeklyWindowStart, 7*24*time.Hour, now)
+		usedUSD := sub.WeeklyUsageUSD
+		if stale {
+			usedUSD = 0
+		}
+		resetsAt := capResetAt(windowStart.Add(7*24*time.Hour), sub.ExpiresAt)
 		progress.Weekly = &UsageWindowProgress{
 			LimitUSD:        limit,
-			UsedUSD:         sub.WeeklyUsageUSD,
-			RemainingUSD:    limit - sub.WeeklyUsageUSD,
-			Percentage:      (sub.WeeklyUsageUSD / limit) * 100,
-			WindowStart:     *sub.WeeklyWindowStart,
+			UsedUSD:         usedUSD,
+			RemainingUSD:    limit - usedUSD,
+			Percentage:      (usedUSD / limit) * 100,
+			WindowStart:     *windowStart,
 			ResetsAt:        resetsAt,
-			ResetsInSeconds: int64(time.Until(resetsAt).Seconds()),
+			ResetsInSeconds: int64(resetsAt.Sub(now).Seconds()),
 		}
 		if progress.Weekly.RemainingUSD < 0 {
 			progress.Weekly.RemainingUSD = 0
@@ -1145,15 +1153,20 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	// 月进度
 	if group.HasMonthlyLimit() && sub.MonthlyWindowStart != nil {
 		limit := *group.MonthlyLimitUSD
-		resetsAt := sub.MonthlyWindowStart.Add(30 * 24 * time.Hour)
+		windowStart, stale := sub.displayWindowStartAt(sub.MonthlyWindowStart, 30*24*time.Hour, now)
+		usedUSD := sub.MonthlyUsageUSD
+		if stale {
+			usedUSD = 0
+		}
+		resetsAt := capResetAt(windowStart.Add(30*24*time.Hour), sub.ExpiresAt)
 		progress.Monthly = &UsageWindowProgress{
 			LimitUSD:        limit,
-			UsedUSD:         sub.MonthlyUsageUSD,
-			RemainingUSD:    limit - sub.MonthlyUsageUSD,
-			Percentage:      (sub.MonthlyUsageUSD / limit) * 100,
-			WindowStart:     *sub.MonthlyWindowStart,
+			UsedUSD:         usedUSD,
+			RemainingUSD:    limit - usedUSD,
+			Percentage:      (usedUSD / limit) * 100,
+			WindowStart:     *windowStart,
 			ResetsAt:        resetsAt,
-			ResetsInSeconds: int64(time.Until(resetsAt).Seconds()),
+			ResetsInSeconds: int64(resetsAt.Sub(now).Seconds()),
 		}
 		if progress.Monthly.RemainingUSD < 0 {
 			progress.Monthly.RemainingUSD = 0
@@ -1167,6 +1180,13 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	}
 
 	return progress
+}
+
+func capResetAt(resetAt, expiresAt time.Time) time.Time {
+	if !expiresAt.IsZero() && expiresAt.Before(resetAt) {
+		return expiresAt
+	}
+	return resetAt
 }
 
 // GetUserSubscriptionsWithProgress 获取用户所有订阅及进度

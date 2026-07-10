@@ -593,7 +593,7 @@ func TestRetryFulfillmentRejectsFreshRechargingLease(t *testing.T) {
 	order := createPaymentFulfillmentSubscriptionOrder(t, ctx, client, OrderStatusRecharging, time.Now())
 
 	svc := &PaymentService{entClient: client}
-	err := svc.RetryFulfillment(ctx, order.ID)
+	err := svc.RetryFulfillment(ctx, order.ID, 0)
 	require.Error(t, err)
 	require.Equal(t, "CONFLICT", infraerrors.Reason(err))
 

@@ -1,0 +1,8 @@
+{
+  "migration": "170_add_grok_video_pricing_controls.sql",
+  "phase": "review",
+  "reason": "Adds optional Grok video pricing controls to groups so image and video generation can be priced independently.",
+  "risk": "ALTER TABLE on groups can briefly lock writes while the new nullable pricing columns and defaulted boolean/numeric controls are added.",
+  "mitigation": "The new controls are backward-compatible: independent video pricing is disabled by default, multipliers default to 1.0, and the per-resolution prices remain nullable until configured.",
+  "approved_by": "hang"
+}

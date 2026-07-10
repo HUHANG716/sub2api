@@ -757,6 +757,7 @@ func UserSubscriptionFromServiceAdmin(sub *service.UserSubscription) *AdminUserS
 }
 
 func userSubscriptionFromServiceBase(sub *service.UserSubscription) UserSubscription {
+	now := time.Now()
 	return UserSubscription{
 		ID:                 sub.ID,
 		UserID:             sub.UserID,
@@ -764,9 +765,9 @@ func userSubscriptionFromServiceBase(sub *service.UserSubscription) UserSubscrip
 		StartsAt:           sub.StartsAt,
 		ExpiresAt:          sub.ExpiresAt,
 		Status:             sub.Status,
-		DailyWindowStart:   sub.DailyWindowStart,
-		WeeklyWindowStart:  sub.WeeklyWindowStart,
-		MonthlyWindowStart: sub.MonthlyWindowStart,
+		DailyWindowStart:   sub.DisplayDailyWindowStartAt(now),
+		WeeklyWindowStart:  sub.DisplayWeeklyWindowStartAt(now),
+		MonthlyWindowStart: sub.DisplayMonthlyWindowStartAt(now),
 		DailyUsageUSD:      sub.DailyUsageUSD,
 		WeeklyUsageUSD:     sub.WeeklyUsageUSD,
 		MonthlyUsageUSD:    sub.MonthlyUsageUSD,

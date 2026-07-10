@@ -60,6 +60,9 @@ func (s *UserSubscription) NeedsDailyReset() bool {
 }
 
 func (s *UserSubscription) NeedsDailyResetAt(now time.Time) bool {
+	if s.HasOneTimeDailyQuota() {
+		return false
+	}
 	return s.needsDailyResetAt(now, s.DailyWindowStart)
 }
 
@@ -104,6 +107,10 @@ func (s *UserSubscription) DailyResetTime() *time.Time {
 	if s.DailyWindowStart == nil {
 		return nil
 	}
+	if s.HasOneTimeDailyQuota() {
+		t := s.ExpiresAt
+		return &t
+	}
 	t := s.DailyWindowStart.Add(24 * time.Hour)
 	return &t
 }
@@ -122,6 +129,70 @@ func (s *UserSubscription) MonthlyResetTime() *time.Time {
 	}
 	t := s.MonthlyWindowStart.Add(30 * 24 * time.Hour)
 	return &t
+}
+
+func (s *UserSubscription) HasOneTimeDailyQuota() bool {
+	if s.StartsAt.IsZero() || s.ExpiresAt.IsZero() || !s.ExpiresAt.After(s.StartsAt) {
+		return false
+	}
+	return !s.ExpiresAt.After(s.StartsAt.Add(24 * time.Hour))
+}
+
+func (s *UserSubscription) DisplayDailyWindowStartAt(now time.Time) *time.Time {
+	windowStart, _ := s.displayWindowStartAt(s.DailyWindowStart, 24*time.Hour, now)
+	return windowStart
+}
+
+func (s *UserSubscription) DisplayWeeklyWindowStartAt(now time.Time) *time.Time {
+	windowStart, _ := s.displayWindowStartAt(s.WeeklyWindowStart, 7*24*time.Hour, now)
+	return windowStart
+}
+
+func (s *UserSubscription) DisplayMonthlyWindowStartAt(now time.Time) *time.Time {
+	windowStart, _ := s.displayWindowStartAt(s.MonthlyWindowStart, 30*24*time.Hour, now)
+	return windowStart
+}
+
+func (s *UserSubscription) displayWindowStartAt(windowStart *time.Time, windowSize time.Duration, now time.Time) (*time.Time, bool) {
+	if windowStart == nil || windowSize <= 0 {
+		return nil, false
+	}
+
+	start := *windowStart
+	if windowSize == 24*time.Hour && s.HasOneTimeDailyQuota() {
+		if !s.StartsAt.IsZero() {
+			start = s.StartsAt
+		}
+		return &start, false
+	}
+
+	if isLegacyMidnightWindow(s.StartsAt, start) {
+		start = s.StartsAt
+	}
+	if now.Before(start.Add(windowSize)) {
+		return &start, false
+	}
+
+	rolled := rollingWindowStart(start, windowSize, now)
+	return &rolled, true
+}
+
+func isLegacyMidnightWindow(startsAt, windowStart time.Time) bool {
+	if startsAt.IsZero() || windowStart.IsZero() {
+		return false
+	}
+	return windowStart.Equal(startOfDay(startsAt)) && !startsAt.Equal(startOfDay(startsAt))
+}
+
+func rollingWindowStart(windowStart time.Time, windowSize time.Duration, now time.Time) time.Time {
+	if windowSize <= 0 || windowStart.IsZero() || now.Before(windowStart.Add(windowSize)) {
+		return windowStart
+	}
+	elapsedWindows := int64(now.Sub(windowStart) / windowSize)
+	if elapsedWindows < 1 {
+		elapsedWindows = 1
+	}
+	return windowStart.Add(time.Duration(elapsedWindows) * windowSize)
 }
 
 func (s *UserSubscription) CheckDailyLimit(group *Group, additionalCost float64) bool {
