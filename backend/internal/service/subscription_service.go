@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand/v2"
@@ -228,7 +229,10 @@ func (s *SubscriptionService) assignOrExtendSubscription(ctx context.Context, in
 	// 查询是否已有订阅
 	existingSub, err := s.userSubRepo.GetByUserIDAndGroupID(ctx, input.UserID, input.GroupID)
 	if err != nil {
-		// 不存在记录是正常情况，其他错误需要返回
+		if !errors.Is(err, ErrSubscriptionNotFound) {
+			return nil, false, err
+		}
+		// 不存在记录是正常情况，继续创建新订阅
 		existingSub = nil
 	}
 
