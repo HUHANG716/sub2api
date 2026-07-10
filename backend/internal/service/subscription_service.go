@@ -411,17 +411,21 @@ func (s *SubscriptionService) createSubscription(ctx context.Context, input *Ass
 	if expiresAt.After(MaxExpiresAt) {
 		expiresAt = MaxExpiresAt
 	}
+	windowStart := now
 
 	sub := &UserSubscription{
-		UserID:     input.UserID,
-		GroupID:    input.GroupID,
-		StartsAt:   now,
-		ExpiresAt:  expiresAt,
-		Status:     SubscriptionStatusActive,
-		AssignedAt: now,
-		Notes:      input.Notes,
-		CreatedAt:  now,
-		UpdatedAt:  now,
+		UserID:             input.UserID,
+		GroupID:            input.GroupID,
+		StartsAt:           now,
+		ExpiresAt:          expiresAt,
+		Status:             SubscriptionStatusActive,
+		DailyWindowStart:   &windowStart,
+		WeeklyWindowStart:  &windowStart,
+		MonthlyWindowStart: &windowStart,
+		AssignedAt:         now,
+		Notes:              input.Notes,
+		CreatedAt:          now,
+		UpdatedAt:          now,
 	}
 	// 只有当 AssignedBy > 0 时才设置（0 表示系统分配，如兑换码）
 	if input.AssignedBy > 0 {
@@ -788,21 +792,22 @@ func (s *SubscriptionService) List(ctx context.Context, page, pageSize int, user
 // normalizeExpiredWindows 将已过期窗口的数据清零（仅影响返回数据，不影响数据库）
 // 这确保前端显示正确的当前窗口状态，而不是过期窗口的历史数据
 func normalizeExpiredWindows(subs []UserSubscription) {
+	now := time.Now()
 	for i := range subs {
 		sub := &subs[i]
 		// 日窗口过期：清零展示数据
-		if sub.NeedsDailyReset() {
-			sub.DailyWindowStart = nil
+		if windowStart, stale := sub.displayWindowStartAt(sub.DailyWindowStart, 24*time.Hour, now); stale {
+			sub.DailyWindowStart = windowStart
 			sub.DailyUsageUSD = 0
 		}
 		// 周窗口过期：清零展示数据
-		if sub.NeedsWeeklyReset() {
-			sub.WeeklyWindowStart = nil
+		if windowStart, stale := sub.displayWindowStartAt(sub.WeeklyWindowStart, 7*24*time.Hour, now); stale {
+			sub.WeeklyWindowStart = windowStart
 			sub.WeeklyUsageUSD = 0
 		}
 		// 月窗口过期：清零展示数据
-		if sub.NeedsMonthlyReset() {
-			sub.MonthlyWindowStart = nil
+		if windowStart, stale := sub.displayWindowStartAt(sub.MonthlyWindowStart, 30*24*time.Hour, now); stale {
+			sub.MonthlyWindowStart = windowStart
 			sub.MonthlyUsageUSD = 0
 		}
 	}
@@ -1097,7 +1102,8 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	}
 
 	// 日进度
-	if group.HasDailyLimit() && sub.DailyWindowStart != nil {
+	if group.HasDailyLimit() && (sub.DailyWindowStart != nil || (sub.DailyUsageUSD > 0 && !sub.StartsAt.IsZero())) {
+		ensureWindowStartForUsage(&sub.DailyWindowStart, sub.StartsAt, sub.DailyUsageUSD)
 		limit := *group.DailyLimitUSD
 		windowStart, stale := sub.displayWindowStartAt(sub.DailyWindowStart, 24*time.Hour, now)
 		usedUSD := sub.DailyUsageUSD
@@ -1126,7 +1132,8 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	}
 
 	// 周进度
-	if group.HasWeeklyLimit() && sub.WeeklyWindowStart != nil {
+	if group.HasWeeklyLimit() && (sub.WeeklyWindowStart != nil || (sub.WeeklyUsageUSD > 0 && !sub.StartsAt.IsZero())) {
+		ensureWindowStartForUsage(&sub.WeeklyWindowStart, sub.StartsAt, sub.WeeklyUsageUSD)
 		limit := *group.WeeklyLimitUSD
 		windowStart, stale := sub.displayWindowStartAt(sub.WeeklyWindowStart, 7*24*time.Hour, now)
 		usedUSD := sub.WeeklyUsageUSD
@@ -1155,7 +1162,8 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	}
 
 	// 月进度
-	if group.HasMonthlyLimit() && sub.MonthlyWindowStart != nil {
+	if group.HasMonthlyLimit() && (sub.MonthlyWindowStart != nil || (sub.MonthlyUsageUSD > 0 && !sub.StartsAt.IsZero())) {
+		ensureWindowStartForUsage(&sub.MonthlyWindowStart, sub.StartsAt, sub.MonthlyUsageUSD)
 		limit := *group.MonthlyLimitUSD
 		windowStart, stale := sub.displayWindowStartAt(sub.MonthlyWindowStart, 30*24*time.Hour, now)
 		usedUSD := sub.MonthlyUsageUSD
@@ -1184,6 +1192,14 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	}
 
 	return progress
+}
+
+func ensureWindowStartForUsage(windowStart **time.Time, startsAt time.Time, usedUSD float64) {
+	if *windowStart != nil || usedUSD <= 0 || startsAt.IsZero() {
+		return
+	}
+	start := startsAt
+	*windowStart = &start
 }
 
 func capResetAt(resetAt, expiresAt time.Time) time.Time {
