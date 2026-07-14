@@ -952,6 +952,7 @@ func (s *GatewayService) buildRecordUsageLog(
 		usageLog.ActualCost = cost.ActualCost
 		usageLog.DiscountAmount = cost.DiscountAmount
 		usageLog.DiscountRate = cost.DiscountRate
+		usageLog.LongContextBillingApplied = cost.LongContextBillingApplied
 	}
 
 	return usageLog

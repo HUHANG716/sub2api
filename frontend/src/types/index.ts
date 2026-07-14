@@ -1353,6 +1353,7 @@ export interface UsageLog {
   discount_amount: number
   discount_rate: number
   rate_multiplier: number
+  long_context_billing_applied: boolean
   billing_type: number
 
   request_type?: UsageRequestType

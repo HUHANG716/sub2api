@@ -610,6 +610,7 @@ func TestAPIContracts(t *testing.T) {
 						"discount_amount": 0,
 						"discount_rate": 0,
 						"rate_multiplier": 1,
+						"long_context_billing_applied": false,
 						"billing_type": 0,
 							"stream": true,
 							"duration_ms": 100,

@@ -30,7 +30,7 @@ func TestRecordPaymentEventsInsertsWhitelistedEvent(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = db.Close() })
 
-	h := NewPaymentHandler(nil, nil, nil, db)
+	h := NewPaymentHandler(nil, nil, db)
 	router := newPaymentEventsTestRouter(t, h)
 
 	mock.ExpectBegin()
@@ -69,7 +69,7 @@ func TestRecordPaymentEventsRejectsUnknownEvent(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = db.Close() })
 
-	h := NewPaymentHandler(nil, nil, nil, db)
+	h := NewPaymentHandler(nil, nil, db)
 	router := newPaymentEventsTestRouter(t, h)
 
 	mock.ExpectBegin()
@@ -90,7 +90,7 @@ func TestRecordPaymentEventsAcceptsSelectionMetadata(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = db.Close() })
 
-	h := NewPaymentHandler(nil, nil, nil, db)
+	h := NewPaymentHandler(nil, nil, db)
 	router := newPaymentEventsTestRouter(t, h)
 
 	mock.ExpectBegin()

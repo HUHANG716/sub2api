@@ -179,6 +179,11 @@
                     {{ t('usage.paidAmount') }} ${{ row.actual_cost?.toFixed(6) || '0.000000' }}
                   </span>
                   <span
+                    v-if="row.long_context_billing_applied"
+                    data-testid="long-context-billing-marker"
+                    class="inline-flex items-center rounded px-1 py-px text-[10px] font-semibold leading-tight bg-amber-100 text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:ring-amber-500/30"
+                  >x2</span>
+                  <span
                     v-if="hasUsageDiscount(row)"
                     class="rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
                   >
