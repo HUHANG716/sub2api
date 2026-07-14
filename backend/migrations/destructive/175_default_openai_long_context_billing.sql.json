@@ -1,0 +1,8 @@
+{
+  "migration": "175_default_openai_long_context_billing.sql",
+  "phase": "review",
+  "reason": "Normalizes the OpenAI long-context billing flag, enforces boolean values, and keeps Spark shadow accounts synchronized with their parent accounts.",
+  "risk": "The backfill updates matching accounts and can hold row locks while trigger propagation writes scheduler outbox events for changed shadow accounts.",
+  "mitigation": "Updates are limited to OpenAI accounts requiring normalization, use idempotent value comparisons, and are covered by migration integration tests for parent and shadow account behavior.",
+  "approved_by": "hang"
+}

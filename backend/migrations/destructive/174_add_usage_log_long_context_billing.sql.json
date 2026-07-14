@@ -1,0 +1,8 @@
+{
+  "migration": "174_add_usage_log_long_context_billing.sql",
+  "phase": "review",
+  "reason": "Adds a persisted flag indicating whether long-context pricing changed the charge recorded for a usage log.",
+  "risk": "Adding a NOT NULL column with a default can briefly acquire an exclusive lock on usage_logs during deployment.",
+  "mitigation": "The column is additive, uses a constant false default for existing rows, and older application versions can continue operating without reading or writing it.",
+  "approved_by": "hang"
+}
