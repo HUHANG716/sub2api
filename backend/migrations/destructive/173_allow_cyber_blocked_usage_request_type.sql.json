@@ -1,0 +1,9 @@
+{
+  "migration": "173_allow_cyber_blocked_usage_request_type.sql",
+  "phase": "cleanup",
+  "safe_after_commit": "d8b5f5a338107b0724352228e7ad09f59e166acb",
+  "reason": "Expands the usage_logs request_type check constraint to allow cyber-policy blocked requests to be recorded as type 4.",
+  "risk": "Dropping and recreating the check constraint can briefly lock usage_logs and leaves the replacement constraint unvalidated for historical rows.",
+  "mitigation": "The replacement only broadens the accepted values, is added NOT VALID to avoid a blocking historical scan, and the currently deployed code remains compatible because it writes only the previously accepted request types.",
+  "approved_by": "hang"
+}
