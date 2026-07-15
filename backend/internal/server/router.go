@@ -59,6 +59,7 @@ func SetupRouter(
 		}
 		return nil
 	}))
+	r.Use(middleware2.ServerTiming(cfg.Server.EnableServerTiming))
 
 	r.Use(web.ServeFrontend(settingService, func(invalidateFrontendCache func()) {
 		settingService.SetOnUpdateCallback(func() {
