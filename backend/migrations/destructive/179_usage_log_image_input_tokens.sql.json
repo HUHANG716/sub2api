@@ -1,0 +1,8 @@
+{
+  "migration": "179_usage_log_image_input_tokens.sql",
+  "phase": "review",
+  "reason": "Adds separate image input token and cost fields to usage logs for image editing and image-to-image billing reconciliation.",
+  "risk": "The migration adds two NOT NULL columns with defaults to the high-volume usage_logs table and can briefly block concurrent reads or writes while PostgreSQL acquires the required table lock.",
+  "mitigation": "Both changes are additive and idempotent, use constant zero defaults that modern PostgreSQL can apply as metadata-only defaults, and preserve all existing billing totals. Deploy during the normal low-traffic window and retain health monitoring.",
+  "approved_by": "hang"
+}
