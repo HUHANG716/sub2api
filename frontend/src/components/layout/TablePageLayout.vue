@@ -116,10 +116,6 @@ onUnmounted(() => {
   @apply flex-none min-h-fit;
 }
 
-.table-page-layout.mobile-mode .table-scroll-container :deep(.table-wrapper) {
-  @apply overflow-visible;
-}
-
 .table-page-layout.mobile-mode .table-scroll-container :deep(.flex.min-h-0.flex-1.flex-col.overflow-hidden) {
   @apply flex-none overflow-visible;
 }
@@ -142,10 +138,6 @@ onUnmounted(() => {
 
   .layout-section-scrollable {
     @apply flex-none min-h-fit;
-  }
-
-  .table-scroll-container :deep(.table-wrapper) {
-    @apply overflow-visible;
   }
 
   .table-scroll-container :deep(.flex.min-h-0.flex-1.flex-col.overflow-hidden) {

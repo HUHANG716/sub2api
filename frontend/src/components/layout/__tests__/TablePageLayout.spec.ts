@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const source = readFileSync(
-  resolve(process.cwd(), 'src/components/layout/TablePageLayout.vue'),
-  'utf-8'
-)
+import { describe, expect, it } from 'vitest'
+
+const componentPath = resolve(dirname(fileURLToPath(import.meta.url)), '../TablePageLayout.vue')
+const source = readFileSync(componentPath, 'utf8')
 
 describe('TablePageLayout', () => {
   it('lets mobile table pages use natural document height for page scrolling', () => {
@@ -27,5 +27,21 @@ describe('TablePageLayout', () => {
     expect(mobileMediaBlock).not.toBeNull()
     expect(mobileMediaBlock ?? '').toContain('height: auto')
     expect(mobileMediaBlock ?? '').toContain('min-height: 0')
+  })
+
+  it('does not disable the table horizontal scroll container in mobile mode', () => {
+    const tableWrapperBlocks = Array.from(
+      source.matchAll(/([^{}]*:deep\(\.table-wrapper\)[^{}]*)\{([^{}]*)\}/g)
+    )
+
+    expect(tableWrapperBlocks.length).toBeGreaterThan(0)
+
+    const baseBlock = tableWrapperBlocks.find(([selector]) => !selector.includes('.mobile-mode'))
+    const mobileBlocks = tableWrapperBlocks.filter(([selector]) => selector.includes('.mobile-mode'))
+
+    expect(baseBlock?.[2]).toContain('overflow-x-auto')
+    expect(mobileBlocks.every(([, , declarations]) => !declarations.includes('overflow-visible'))).toBe(
+      true
+    )
   })
 })
