@@ -23,10 +23,10 @@
           <p v-if="plan.description" class="mt-0.5 text-xs leading-relaxed text-gray-500 dark:text-dark-400 line-clamp-2">
             {{ plan.description }}
           </p>
-        </div>
-        <div class="shrink-0 text-right">
-          <div class="flex items-baseline justify-end gap-1">
-            <span :class="['text-2xl font-semibold tracking-normal', textClass]">{{ formatPrice(plan.price) }}</span>
+          </div>
+          <div class="shrink-0 text-right">
+            <div class="flex items-baseline justify-end gap-1">
+              <span :class="['text-2xl font-semibold tracking-normal', textClass]">{{ formatPrice(plan.price) }}</span>
             <span v-if="plan.currency" class="text-xs font-medium text-gray-400 dark:text-dark-500">{{ plan.currency }}</span>
           </div>
           <span class="text-[11px] text-gray-400 dark:text-dark-500">/ {{ validitySuffix }}</span>
@@ -105,6 +105,7 @@ import type { SubscriptionPlan } from '@/types/payment'
 import type { UserSubscription } from '@/types'
 import { useAppStore } from '@/stores/app'
 import { hasPeakRate as groupHasPeakRate, formatPeakRateWindow, serverTimezoneLabel } from '@/utils/peak-rate'
+import { planValiditySuffix } from './validity'
 import {
   platformAccentBarClass,
   platformBadgeLightClass,
@@ -155,7 +156,7 @@ const rateDisplay = computed(() => {
 })
 
 function formatPrice(value: number): string {
-  return formatPaymentAmount(value, normalizePaymentCurrency(props.plan.currency || props.currency), locale.value)
+  return formatPaymentAmount(value, normalizePaymentCurrency(props.plan.currency || props.currency || 'USD'), locale.value)
 }
 
 const appStore = useAppStore()
@@ -179,12 +180,7 @@ const modelScopeLabels = computed(() => {
   return scopes.map(s => MODEL_SCOPE_LABELS[s] || s)
 })
 
-const validitySuffix = computed(() => {
-  const u = props.plan.validity_unit || 'day'
-  if (u === 'month') return t('payment.perMonth')
-  if (u === 'year') return t('payment.perYear')
-  return `${props.plan.validity_days}${t('payment.days')}`
-})
+const validitySuffix = computed(() => planValiditySuffix(props.plan, t))
 </script>
 
 <style scoped>

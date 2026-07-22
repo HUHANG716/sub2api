@@ -3,12 +3,18 @@
     <header class="glass relative z-20 border-b border-gray-200/50 dark:border-slate-500/20">
       <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <RouterLink to="/home" class="flex min-w-0 items-center gap-3">
-          <span class="brand-surface flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl shadow-sm">
-            <img :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain" />
-          </span>
-          <span class="truncate text-base font-semibold text-gray-950 dark:text-white">
-            {{ siteName }}
-          </span>
+          <template v-if="settings">
+            <span class="brand-surface flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl shadow-sm">
+              <img :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain" />
+            </span>
+            <span class="truncate text-base font-semibold text-gray-950 dark:text-white">
+              {{ siteName }}
+            </span>
+          </template>
+          <template v-else>
+            <span class="h-10 w-10 flex-shrink-0 animate-pulse rounded-xl bg-gray-200 dark:bg-dark-700" aria-hidden="true"></span>
+            <span class="h-5 w-28 animate-pulse rounded bg-gray-200 dark:bg-dark-700" aria-hidden="true"></span>
+          </template>
         </RouterLink>
         <RouterLink
           to="/login"
@@ -90,16 +96,20 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
-import { getPublicSettings } from '@/api/auth'
+import { getLocale } from '@/i18n'
 import { sanitizeUrl } from '@/utils/url'
-import type { LoginAgreementDocument, PublicSettings } from '@/types'
+import { useAppStore } from '@/stores/app'
+import type { LoginAgreementDocument } from '@/types'
+import zhAdminCompliance from '../../../../docs/legal/admin-compliance.zh.md?raw'
+import enAdminCompliance from '../../../../docs/legal/admin-compliance.en.md?raw'
 
 type LegalDocumentIcon = 'document' | 'shield' | 'globe' | 'cog'
 
 const route = useRoute()
 const { t } = useI18n()
-const settings = ref<PublicSettings | null>(null)
-const loading = ref(true)
+const appStore = useAppStore()
+const settings = computed(() => appStore.cachedPublicSettings)
+const loading = ref(!settings.value)
 const loadError = ref(false)
 
 marked.setOptions({
@@ -108,16 +118,28 @@ marked.setOptions({
 })
 
 const documentId = computed(() => String(route.params.documentId || ''))
+const isAdminComplianceDocument = computed(() => documentId.value === 'admin-compliance')
 const documents = computed(() => settings.value?.login_agreement_documents ?? [])
 const siteName = computed(() => settings.value?.site_name || 'Hahacode')
 const siteLogo = computed(() => sanitizeUrl(settings.value?.site_logo || '', {
   allowRelative: true,
   allowDataUrl: true,
 }))
-const updatedAt = computed(() => settings.value?.login_agreement_updated_at || '')
-const documentTypeLabel = computed(() => t('legal.loginAgreement'))
+const updatedAt = computed(() =>
+  isAdminComplianceDocument.value ? '' : settings.value?.login_agreement_updated_at || ''
+)
+const documentTypeLabel = computed(() =>
+  isAdminComplianceDocument.value ? t('legal.adminCompliance') : t('legal.loginAgreement')
+)
 
 const currentDocument = computed<LoginAgreementDocument | null>(() => {
+  if (isAdminComplianceDocument.value) {
+    return {
+      id: 'admin-compliance',
+      title: t('adminCompliance.title'),
+      content_md: getLocale() === 'zh' ? zhAdminCompliance : enAdminCompliance
+    }
+  }
   const id = documentId.value
   if (!id) {
     return null
@@ -151,15 +173,12 @@ const documentIcon = computed<LegalDocumentIcon>(() => {
 })
 
 onMounted(async () => {
-  loading.value = true
   loadError.value = false
-  try {
-    settings.value = await getPublicSettings()
-  } catch {
+  const loadedSettings = await appStore.fetchPublicSettings()
+  if (!loadedSettings) {
     loadError.value = true
-  } finally {
-    loading.value = false
   }
+  loading.value = false
 })
 </script>
 
