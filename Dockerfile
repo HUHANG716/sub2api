@@ -36,6 +36,7 @@ RUN --mount=type=cache,id=sub2api-pnpm-store,target=/root/.local/share/pnpm/stor
 
 # Copy frontend source and build.
 COPY frontend/ ./
+COPY docs/legal/ /app/docs/legal/
 COPY third_party/gpt_image_playground /app/third_party/gpt_image_playground
 RUN pnpm run build
 
