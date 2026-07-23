@@ -1,0 +1,8 @@
+{
+  "migration": "181_group_duplicate_operation_id.sql",
+  "phase": "review",
+  "reason": "Adds an internal operation identifier used to recover safely from ambiguous group-duplication responses.",
+  "risk": "Building the non-concurrent partial unique index can briefly block writes to the groups table.",
+  "mitigation": "The new column is nullable and all existing rows start with NULL, so the initial partial index is empty; retain normal deployment health monitoring.",
+  "approved_by": "hang"
+}
