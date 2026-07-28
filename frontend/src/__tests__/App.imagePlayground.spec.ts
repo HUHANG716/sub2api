@@ -11,6 +11,7 @@ const { routeRef, routerAfterEach, imagePlaygroundUnmounts } = vi.hoisted(() => 
     current: null as null | {
       name: string
       path: string
+      params: Record<string, unknown>
       meta: Record<string, unknown>
     }
   },
@@ -25,6 +26,7 @@ vi.mock('vue-router', async () => {
   routeRef.current ??= vue.reactive({
     name: 'Dashboard',
     path: '/dashboard',
+    params: {},
     meta: {
       title: 'Dashboard'
     }
@@ -114,7 +116,8 @@ vi.mock('@/stores', () => ({
   useAppStore: () => appStore,
   useAuthStore: () => authStore,
   useSubscriptionStore: () => subscriptionStore,
-  useAnnouncementStore: () => announcementStore
+  useAnnouncementStore: () => announcementStore,
+  useAdminSettingsStore: () => ({ customMenuItems: [] })
 }))
 
 describe('App image playground route persistence', () => {
@@ -122,6 +125,7 @@ describe('App image playground route persistence', () => {
     if (!routeRef.current) throw new Error('route mock was not initialized')
     routeRef.current.name = 'Dashboard'
     routeRef.current.path = '/dashboard'
+    routeRef.current.params = {}
     routeRef.current.meta = { title: 'Dashboard' }
     imagePlaygroundUnmounts.count = 0
     routerAfterEach.mockClear()

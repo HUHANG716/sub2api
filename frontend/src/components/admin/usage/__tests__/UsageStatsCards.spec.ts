@@ -44,6 +44,23 @@ const stats = {
 }
 
 describe('UsageStatsCards', () => {
+  it('keeps the cache breakdown above later stat cards', () => {
+    const wrapper = mount(UsageStatsCards, {
+      props: {
+        stats,
+      },
+      global: {
+        stubs: {
+          Icon: true,
+        },
+      },
+    })
+
+    const cacheCard = wrapper.findAll('.card')[1]
+    expect(cacheCard.classes()).toContain('relative')
+    expect(cacheCard.classes()).toContain('z-10')
+  })
+
   it('shows cache token breakdown values', () => {
     const wrapper = mount(UsageStatsCards, {
       props: {

@@ -145,14 +145,14 @@ export default {
         listLabel: '用户评价列表'
       },
       reviews: {
-        one: { quote: '接入之后，团队里的 AI 编程流程终于统一了。', name: '周予', role: '研发团队负责人 @ SaaS 公司' },
-        two: { quote: '我最喜欢的是稳定性和可观测性。', name: 'Mia Chen', role: '全栈工程师 @ 出海团队' },
+        one: { quote: '接入之后，团队里的 AI 编程流程终于统一了。', name: '周予', role: "研发团队负责人 {'@'} SaaS 公司" },
+        two: { quote: '我最喜欢的是稳定性和可观测性。', name: 'Mia Chen', role: "全栈工程师 {'@'} 出海团队" },
         three: { quote: '对独立开发者很友好。', name: '林川', role: '独立开发者' },
-        four: { quote: '团队成员的使用情况变得可见。', name: 'Eva Liu', role: 'AI 产品经理 @ 科技公司' },
-        five: { quote: '客服和技术支持响应很快。', name: '何工', role: '前端架构师 @ 本地生活平台' },
-        six: { quote: '团队协作成本下降很多。', name: 'Kevin Zhao', role: '后端工程师 @ 电商平台' },
-        seven: { quote: '高峰期也能保持稳定。', name: '吴可', role: '研发总监 @ 金融科技公司' },
-        eight: { quote: '新同事上手速度快了很多。', name: 'Sarah Lin', role: '移动端负责人 @ 创业公司' }
+        four: { quote: '团队成员的使用情况变得可见。', name: 'Eva Liu', role: "AI 产品经理 {'@'} 科技公司" },
+        five: { quote: '客服和技术支持响应很快。', name: '何工', role: "前端架构师 {'@'} 本地生活平台" },
+        six: { quote: '团队协作成本下降很多。', name: 'Kevin Zhao', role: "后端工程师 {'@'} 电商平台" },
+        seven: { quote: '高峰期也能保持稳定。', name: '吴可', role: "研发总监 {'@'} 金融科技公司" },
+        eight: { quote: '新同事上手速度快了很多。', name: 'Sarah Lin', role: "移动端负责人 {'@'} 创业公司" }
       },
       faq: {
         title: '有疑问？我们来解答',

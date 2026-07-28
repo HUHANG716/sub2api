@@ -110,6 +110,10 @@ export default {
     }
   },
 
+  adminCompliance: {
+    title: '部署与运营合规确认'
+  },
+
   legal: {
     loadFailed: '文档加载失败',
     retryLater: '请稍后刷新页面重试。',
@@ -118,6 +122,7 @@ export default {
     updatedAt: '更新日期：{date}',
     empty: '暂无正文内容',
     loginAgreement: '登录条款',
+    adminCompliance: '部署与运营合规承诺',
     loginAgreementPrompt: {
       checkboxPrefix: '我已阅读并同意',
       documentSeparator: '、',

@@ -80,7 +80,7 @@
             ></div>
             <div
               v-else
-              class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950/30"
+              class="payment-qr-panel payment-qr-panel-alipay flex h-12 w-12 items-center justify-center rounded-full"
             >
               <Icon name="checkCircle" size="lg" class="text-[#00AEEF]" />
             </div>

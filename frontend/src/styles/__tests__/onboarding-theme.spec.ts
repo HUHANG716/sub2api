@@ -4,8 +4,8 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const onboardingCss = readFileSync(resolve(__dirname, '../onboarding.css'), 'utf8')
-const zhLocale = readFileSync(resolve(__dirname, '../../i18n/locales/zh.ts'), 'utf8')
-const enLocale = readFileSync(resolve(__dirname, '../../i18n/locales/en.ts'), 'utf8')
+const zhLocale = readFileSync(resolve(__dirname, '../../i18n/locales/zh/misc.ts'), 'utf8')
+const enLocale = readFileSync(resolve(__dirname, '../../i18n/locales/en/misc.ts'), 'utf8')
 
 describe('onboarding tour theme styles', () => {
   it('uses shared theme tokens for the popover shell', () => {

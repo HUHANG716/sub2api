@@ -141,7 +141,7 @@ const activeRateLabel = computed(() => {
 const discountedRateLabel = computed(() => {
   const rate = activeRate.value
   if (rate === undefined || !hasGlobalDiscount.value) return ''
-  return `${formatRate(rate)}x -> ${formatRate(rate * (props.globalDiscountRate as number))}x`
+  return `${formatRate(rate)}x → ${formatRate(rate * (props.globalDiscountRate as number))}x`
 })
 
 const showDiscountRateLayout = computed(() => {

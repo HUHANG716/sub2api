@@ -95,8 +95,8 @@ function methodLabel(method: PaymentMethodOption): string {
 }
 
 function methodSelectedClass(type: string): string {
-  if (type.includes('alipay')) return 'payment-method-button-active payment-method-alipay'
-  if (type.includes('wxpay')) return 'payment-method-button-active payment-method-wxpay'
+  if (isBuiltInAlipayMethod(type)) return 'payment-method-button-active payment-method-alipay'
+  if (isBuiltInWxpayMethod(type)) return 'payment-method-button-active payment-method-wxpay'
   if (type === 'stripe') return 'payment-method-button-active payment-method-stripe'
   if (type === 'airwallex') return 'payment-method-button-active payment-method-airwallex'
   return 'payment-method-button-active'

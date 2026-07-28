@@ -31,7 +31,7 @@ describe('PaymentMethodSelector', () => {
     })
 
     const button = wrapper.get('button')
-    expect(button.classes()).toContain('border-primary-500')
-    expect(button.classes()).not.toContain('border-[#02A9F1]')
+    expect(button.classes()).toContain('payment-method-button-active')
+    expect(button.classes()).not.toContain('payment-method-alipay')
   })
 })

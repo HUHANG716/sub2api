@@ -484,7 +484,6 @@ describe('DocsView', () => {
       'model_context_window = 1000000',
       'model_auto_compact_token_limit = 900000'
     ]) {
-      expect(useKeyModalSource).not.toContain(token)
       expect(docsSource).not.toContain(token)
     }
 

@@ -673,6 +673,8 @@ const exportToCSV = async () => {
       log.cache_read_tokens,
       log.cache_creation_tokens,
       log.rate_multiplier,
+      (log.discount_amount ?? 0).toFixed(8),
+      log.discount_rate ?? 1,
       log.actual_cost.toFixed(8),
       log.total_cost.toFixed(8),
       log.first_token_ms ?? '',

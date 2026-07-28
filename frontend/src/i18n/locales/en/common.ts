@@ -110,6 +110,10 @@ export default {
     }
   },
 
+  adminCompliance: {
+    title: 'Deployment and Operation Compliance Acknowledgment'
+  },
+
   legal: {
     loadFailed: 'Failed to load document',
     retryLater: 'Refresh the page and try again later.',
@@ -118,6 +122,7 @@ export default {
     updatedAt: 'Updated: {date}',
     empty: 'No content',
     loginAgreement: 'Login Agreement',
+    adminCompliance: 'Deployment and Operation Compliance Commitment',
     loginAgreementPrompt: {
       checkboxPrefix: 'I have read and agree to ',
       documentSeparator: ', ',
