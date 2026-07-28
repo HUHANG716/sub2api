@@ -1,8 +1,12 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import GroupOptionItem from '../GroupOptionItem.vue'
+
+vi.mock('@/stores/app', () => ({
+  useAppStore: () => ({ cachedPublicSettings: null }),
+}))
 
 function createTestI18n(locale = 'zh') {
   const params = (ctx: any, key: string) => ctx.named(key)
@@ -11,6 +15,11 @@ function createTestI18n(locale = 'zh') {
     locale,
     messages: {
       en: {
+        admin: {
+          groups: {
+            rateLabel: () => 'rate',
+          },
+        },
         keys: {
           globalDiscountRateLabel: (ctx: any) => `Global ${params(ctx, 'discount')}x discount`,
           globalDiscountPercentOffLabel: (ctx: any) => `Global ${params(ctx, 'percent')}% off`,
@@ -18,6 +27,11 @@ function createTestI18n(locale = 'zh') {
         },
       },
       zh: {
+        admin: {
+          groups: {
+            rateLabel: () => '倍率',
+          },
+        },
         keys: {
           globalDiscountRateLabel: (ctx: any) => `全局 ${params(ctx, 'discount')} 折`,
           globalDiscountPercentOffLabel: (ctx: any) => `全局优惠 ${params(ctx, 'percent')}%`,
@@ -77,5 +91,21 @@ describe('GroupOptionItem global discount rate display', () => {
     const wrapper = mountOption({ rateMultiplier: 1, globalDiscountRate: 0.8 }, 'en')
 
     expect(wrapper.text()).toContain('Global 20% off')
+  })
+})
+
+describe('GroupOptionItem description layout', () => {
+  it('applies multiline and overflow-safe text styles', () => {
+    const description = 'First section\nvery-long-unbroken-description-value-that-must-not-overflow'
+    const wrapper = mountOption({ description })
+    const descriptionElement = wrapper
+      .findAll('span')
+      .find((element) => element.text() === description)
+
+    expect(descriptionElement).toBeDefined()
+    expect(descriptionElement?.classes()).toContain('whitespace-pre-line')
+    expect(descriptionElement?.classes()).toContain('[overflow-wrap:anywhere]')
+    expect(descriptionElement?.classes()).toContain('line-clamp-3')
+    expect(wrapper.find('[title]').attributes('title')).toBe(description)
   })
 })
