@@ -1,0 +1,8 @@
+{
+  "migration": "172_composite_model_routes.sql",
+  "phase": "review",
+  "reason": "Creates the composite model route registry and its active-route uniqueness and lookup indexes.",
+  "risk": "The three indexes are created without CONCURRENTLY and therefore take table locks while they build.",
+  "mitigation": "All three indexes target the new composite_model_routes table immediately after it is created, before it can contain production rows, so build time and lock impact are expected to be minimal.",
+  "approved_by": "hang"
+}
