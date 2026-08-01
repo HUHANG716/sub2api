@@ -2,51 +2,24 @@ diff --git a/third_party/gpt_image_playground/src/components/SettingsModal.tsx b
 index 160290729..474eb4ac8 100644
 --- a/third_party/gpt_image_playground/src/components/SettingsModal.tsx
 +++ b/third_party/gpt_image_playground/src/components/SettingsModal.tsx
-@@ -22,6 +22,7 @@ import {
-   normalizeSettings,
-   normalizeStreamPartialImages,
-   switchApiProfileProvider,
+@@ -24,0 +25 @@ import {
 +  toggleApiProfileStreaming,
- } from '../lib/apiProfiles'
- import { copyTextToClipboard, getClipboardFailureMessage } from '../lib/clipboard'
- import { requestBrowserNotificationPermission, type BrowserNotificationPermissionResult } from '../lib/browserNotification'
-@@ -1438,7 +1439,7 @@ export default function SettingsModal() {
-               <div className="space-y-4">
-                 {apiConfigReadOnly && (
-                   <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-3 text-xs leading-relaxed text-blue-700 dark:border-blue-500/15 dark:bg-blue-500/10 dark:text-blue-300">
+@@ -1441 +1442 @@ export default function SettingsModal() {
 -                    当前 API 配置由 Hahacode 自动下发，仅供查看，不能在工作台内修改。
 +                    当前 API 连接配置由 Hahacode 自动下发；仅可调整流式传输。
-                   </div>
-                 )}
-                 <div>
-@@ -1822,9 +1823,8 @@ export default function SettingsModal() {
-                       <span className="block text-sm text-gray-600 dark:text-gray-300">流式传输</span>
-                       <button
-                         type="button"
+@@ -1825,3 +1826,2 @@ export default function SettingsModal() {
 -                        onClick={() => updateActiveProfile({ streamImages: !activeProfile.streamImages }, true)}
 -                        disabled={apiConfigReadOnly}
 -                        className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${activeProfile.streamImages ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'} ${apiConfigReadOnly ? 'cursor-not-allowed opacity-70' : ''}`}
 +                        onClick={() => commitSettings(toggleApiProfileStreaming(draft, activeProfile.id))}
 +                        className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${activeProfile.streamImages ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`}
-                         role="switch"
-                         aria-checked={!!activeProfile.streamImages}
-                         aria-label="流式传输"
 diff --git a/third_party/gpt_image_playground/src/lib/apiProfiles.test.ts b/third_party/gpt_image_playground/src/lib/apiProfiles.test.ts
 index 30cb58e11..95a4b59dd 100644
 --- a/third_party/gpt_image_playground/src/lib/apiProfiles.test.ts
 +++ b/third_party/gpt_image_playground/src/lib/apiProfiles.test.ts
-@@ -13,6 +13,7 @@ import {
-   mergeImportedSettings,
-   normalizeSettings,
-   switchApiProfileProvider,
+@@ -15,0 +16 @@ import {
 +  toggleApiProfileStreaming,
-   validateApiProfile,
- } from './apiProfiles'
- 
-@@ -582,6 +583,27 @@ describe('custom providers', () => {
-     expect(clamped.profiles[0].streamPartialImages).toBe(3)
-   })
- 
+@@ -584,0 +586,21 @@ describe('custom providers', () => {
 +  it('toggles streaming for only the selected API profile', () => {
 +    const current = normalizeSettings({
 +      profiles: [
@@ -68,17 +41,11 @@ index 30cb58e11..95a4b59dd 100644
 +    })
 +  })
 +
-   it('enables Agent submit auto scroll by default', () => {
-     expect(DEFAULT_SETTINGS.agentScrollToBottomAfterSubmit).toBe(true)
-     expect(normalizeSettings({}).agentScrollToBottomAfterSubmit).toBe(true)
 diff --git a/third_party/gpt_image_playground/src/lib/apiProfiles.ts b/third_party/gpt_image_playground/src/lib/apiProfiles.ts
 index a05762e18..b7df698d4 100644
 --- a/third_party/gpt_image_playground/src/lib/apiProfiles.ts
 +++ b/third_party/gpt_image_playground/src/lib/apiProfiles.ts
-@@ -599,6 +599,15 @@ export function getActiveApiProfile(settings: Partial<AppSettings> | unknown): A
-   }
- }
- 
+@@ -601,0 +602,9 @@ export function getActiveApiProfile(settings: Partial<AppSettings> | unknown): A
 +export function toggleApiProfileStreaming(settings: AppSettings, profileId: string): AppSettings {
 +  return normalizeSettings({
 +    ...settings,
@@ -88,17 +55,11 @@ index a05762e18..b7df698d4 100644
 +  })
 +}
 +
- export function validateApiProfile(profile: ApiProfile): string | null {
-   if (!profile.name.trim()) return '缺少名称'
-   if (profile.provider !== 'fal' && !profile.baseUrl.trim() && !shouldUseApiProxy(profile.apiProxy)) return '缺少 API URL'
 diff --git a/third_party/gpt_image_playground/src/lib/urlSettings.test.ts b/third_party/gpt_image_playground/src/lib/urlSettings.test.ts
 index 772266fee..f025ed8dc 100644
 --- a/third_party/gpt_image_playground/src/lib/urlSettings.test.ts
 +++ b/third_party/gpt_image_playground/src/lib/urlSettings.test.ts
-@@ -62,6 +62,92 @@ describe('URL settings params', () => {
-     })
-   })
- 
+@@ -64,0 +65,86 @@ describe('URL settings params', () => {
 +  it('preserves product embed streaming preferences by profile ID only', () => {
 +    const sessionValues = new Map<string, string>()
 +    vi.stubGlobal('window', {
@@ -185,17 +146,11 @@ index 772266fee..f025ed8dc 100644
 +    expect(next.profiles[0]).toMatchObject({ id: 'hahacode-images', streamImages: true })
 +  })
 +
-   it('keeps product embed mode after URL params are cleared', () => {
-     const sessionValues = new Map<string, string>()
-     vi.stubGlobal('window', {
 diff --git a/third_party/gpt_image_playground/src/lib/urlSettings.ts b/third_party/gpt_image_playground/src/lib/urlSettings.ts
 index 3defc5298..745da3fbd 100644
 --- a/third_party/gpt_image_playground/src/lib/urlSettings.ts
 +++ b/third_party/gpt_image_playground/src/lib/urlSettings.ts
-@@ -71,6 +71,29 @@ function getProductEmbedSettingsPayload(searchParams: URLSearchParams): unknown
-   }
- }
- 
+@@ -73,0 +74,23 @@ function getProductEmbedSettingsPayload(searchParams: URLSearchParams): unknown
 +function preserveProductEmbedStreamImages(currentSettings: Partial<AppSettings> | unknown, settings: AppSettings): AppSettings {
 +  if (!currentSettings || typeof currentSettings !== 'object' || Array.isArray(currentSettings)) return settings
 +  const profiles = (currentSettings as { profiles?: unknown }).profiles
@@ -219,18 +174,9 @@ index 3defc5298..745da3fbd 100644
 +  })
 +}
 +
- function activateFirstImportedProfile(settings: AppSettings, importedSettings: unknown): AppSettings {
-   if (!importedSettings || typeof importedSettings !== 'object' || Array.isArray(importedSettings)) return settings
- 
-@@ -118,7 +141,10 @@ export function buildSettingsFromUrlParams(currentSettings: Partial<AppSettings>
-   const settings = importedSettings == null
-     ? normalizeSettings(currentSettings)
-     : productEmbedSettings != null
+@@ -121 +144,4 @@ export function buildSettingsFromUrlParams(currentSettings: Partial<AppSettings>
 -      ? activateFirstImportedProfile(normalizeSettings(importedSettings), importedSettings)
 +      ? preserveProductEmbedStreamImages(
 +          currentSettings,
 +          activateFirstImportedProfile(normalizeSettings(importedSettings), importedSettings),
 +        )
-       : activateFirstImportedProfile(mergeImportedSettings(currentSettings, importedSettings), importedSettings)
- 
-   if (productEmbedSettings != null) {
