@@ -599,6 +599,15 @@ export function getActiveApiProfile(settings: Partial<AppSettings> | unknown): A
   }
 }
 
+export function toggleApiProfileStreaming(settings: AppSettings, profileId: string): AppSettings {
+  return normalizeSettings({
+    ...settings,
+    profiles: settings.profiles.map((profile) =>
+      profile.id === profileId ? { ...profile, streamImages: !profile.streamImages } : profile,
+    ),
+  })
+}
+
 export function validateApiProfile(profile: ApiProfile): string | null {
   if (!profile.name.trim()) return '缺少名称'
   if (profile.provider !== 'fal' && !profile.baseUrl.trim() && !shouldUseApiProxy(profile.apiProxy)) return '缺少 API URL'
