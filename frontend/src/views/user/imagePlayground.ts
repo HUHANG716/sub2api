@@ -65,7 +65,7 @@ export function buildImagePlaygroundUrl(options: {
         apiMode: 'images',
         codexCli: false,
         apiProxy: false,
-        streamImages: true,
+        streamImages: false,
         streamPartialImages: 3
       },
       {
@@ -79,7 +79,7 @@ export function buildImagePlaygroundUrl(options: {
         apiMode: 'responses',
         codexCli: false,
         apiProxy: false,
-        streamImages: true,
+        streamImages: false,
         streamPartialImages: 3
       }
     ],

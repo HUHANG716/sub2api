@@ -205,7 +205,7 @@ describe('image playground helpers', () => {
         apiKey: 'sk-url',
         model: IMAGE_PLAYGROUND_MODEL,
         apiMode: 'images',
-        streamImages: true,
+        streamImages: false,
         streamPartialImages: 3
       }),
       expect.objectContaining({
@@ -216,7 +216,7 @@ describe('image playground helpers', () => {
         apiKey: 'sk-responses-url',
         model: IMAGE_PLAYGROUND_AGENT_MODEL,
         apiMode: 'responses',
-        streamImages: true,
+        streamImages: false,
         streamPartialImages: 3
       })
     ])
