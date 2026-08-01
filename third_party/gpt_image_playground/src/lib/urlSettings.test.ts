@@ -62,6 +62,92 @@ describe('URL settings params', () => {
     })
   })
 
+  it('preserves product embed streaming preferences by profile ID only', () => {
+    const sessionValues = new Map<string, string>()
+    vi.stubGlobal('window', {
+      sessionStorage: {
+        getItem: (key: string) => sessionValues.get(key) ?? null,
+        setItem: (key: string, value: string) => sessionValues.set(key, value),
+      },
+    })
+    window.sessionStorage.setItem(PRODUCT_EMBED_SETTINGS_STORAGE_KEY, JSON.stringify({
+      profiles: [
+        createDefaultOpenAIProfile({
+          id: 'hahacode-images',
+          baseUrl: 'https://fresh.example.com/v1',
+          apiKey: 'sk-fresh-images',
+          apiMode: 'images',
+          streamImages: true,
+        }),
+        createDefaultOpenAIProfile({
+          id: 'hahacode-agent',
+          baseUrl: 'https://fresh.example.com/v1',
+          apiKey: 'sk-fresh-agent',
+          apiMode: 'responses',
+          streamImages: true,
+        }),
+      ],
+    }))
+    const current = normalizeSettings({
+      ...DEFAULT_SETTINGS,
+      profiles: [
+        createDefaultOpenAIProfile({
+          id: 'hahacode-images',
+          baseUrl: 'https://stale.example.com/v1',
+          apiKey: 'sk-stale-images',
+          streamImages: false,
+        }),
+        createDefaultOpenAIProfile({
+          id: 'hahacode-agent',
+          apiMode: 'responses',
+          streamImages: true,
+        }),
+      ],
+      activeProfileId: 'hahacode-images',
+    })
+
+    const next = normalizeSettings({
+      ...current,
+      ...buildSettingsFromUrlParams(current, new URLSearchParams('embed=product')),
+    })
+
+    expect(next.profiles.find(({ id }) => id === 'hahacode-images')).toMatchObject({
+      baseUrl: 'https://fresh.example.com/v1',
+      apiKey: 'sk-fresh-images',
+      streamImages: false,
+    })
+    expect(next.profiles.find(({ id }) => id === 'hahacode-agent')).toMatchObject({
+      apiKey: 'sk-fresh-agent',
+      streamImages: true,
+    })
+  })
+
+  it('keeps the supplied stream default for invalid or unmatched saved values', () => {
+    const sessionValues = new Map<string, string>()
+    vi.stubGlobal('window', {
+      sessionStorage: {
+        getItem: (key: string) => sessionValues.get(key) ?? null,
+        setItem: (key: string, value: string) => sessionValues.set(key, value),
+      },
+    })
+    window.sessionStorage.setItem(PRODUCT_EMBED_SETTINGS_STORAGE_KEY, JSON.stringify({
+      profiles: [createDefaultOpenAIProfile({ id: 'hahacode-images', streamImages: true })],
+    }))
+    const current = {
+      profiles: [
+        { id: 'hahacode-images', streamImages: 'false' },
+        { id: 'unknown-profile', streamImages: false },
+      ],
+    }
+
+    const next = normalizeSettings({
+      ...DEFAULT_SETTINGS,
+      ...buildSettingsFromUrlParams(current, new URLSearchParams('embed=product')),
+    })
+
+    expect(next.profiles[0]).toMatchObject({ id: 'hahacode-images', streamImages: true })
+  })
+
   it('keeps product embed mode after URL params are cleared', () => {
     const sessionValues = new Map<string, string>()
     vi.stubGlobal('window', {
