@@ -33,6 +33,7 @@ export const useAppStore = defineStore('app', () => {
   const apiBaseUrl = ref<string>('')
   const docUrl = ref<string>('')
   const cachedPublicSettings = ref<PublicSettings | null>(null)
+  let publicSettingsRequest: Promise<PublicSettings | null> | null = null
 
   // Version cache state
   const versionLoaded = ref<boolean>(false)
@@ -306,19 +307,25 @@ export const useAppStore = defineStore('app', () => {
    * Fetch public settings (uses cache unless force=true)
    * @param force - Force refresh from API
    */
-  async function fetchPublicSettings(force = false): Promise<PublicSettings | null> {
+  function fetchPublicSettings(force = false): Promise<PublicSettings | null> {
+    // An active request always wins over cache/force semantics so every caller observes
+    // the same refresh result and no older request can overwrite a newer one.
+    if (publicSettingsRequest) {
+      return publicSettingsRequest
+    }
+
     // Check for injected config from server (eliminates flash)
     if (!publicSettingsLoaded.value && !force && window.__APP_CONFIG__) {
       applySettings(window.__APP_CONFIG__)
-      return window.__APP_CONFIG__
+      return Promise.resolve(window.__APP_CONFIG__)
     }
 
     // Return cached data if available and not forcing refresh
     if (publicSettingsLoaded.value && !force) {
       if (cachedPublicSettings.value) {
-        return { ...cachedPublicSettings.value }
+        return Promise.resolve({ ...cachedPublicSettings.value })
       }
-      return {
+      return Promise.resolve({
         registration_enabled: false,
         email_verify_enabled: false,
         force_email_on_third_party_signup: false,
@@ -335,6 +342,7 @@ export const useAppStore = defineStore('app', () => {
         contact_info: contactInfo.value,
         doc_url: docUrl.value,
         home_content: '',
+        compact_home_enabled: false,
         hide_ccs_import_button: false,
         payment_enabled: false,
         table_default_page_size: 20,
@@ -351,6 +359,7 @@ export const useAppStore = defineStore('app', () => {
         github_oauth_enabled: false,
         google_oauth_enabled: false,
         backend_mode_enabled: false,
+        passkey_enabled: false,
         version: siteVersion.value,
         balance_low_notify_enabled: false,
         account_quota_notify_enabled: false,
@@ -358,6 +367,8 @@ export const useAppStore = defineStore('app', () => {
         channel_monitor_enabled: true,
         channel_monitor_default_interval_seconds: 60,
         available_channels_enabled: false,
+        model_plaza_enabled: false,
+        model_plaza_require_auth: false,
         risk_control_enabled: false,
         service_quota_enabled: false,
         affiliate_enabled: false,
@@ -365,25 +376,37 @@ export const useAppStore = defineStore('app', () => {
         image_playground_responses_group_id: 0,
         global_discount: null,
         allow_user_view_error_requests: false,
-      }
-    }
-
-    // Prevent duplicate requests
-    if (publicSettingsLoading.value) {
-      return null
+      })
     }
 
     publicSettingsLoading.value = true
+    let apiRequest: Promise<PublicSettings>
     try {
-      const data = await fetchPublicSettingsAPI()
-      applySettings(data)
-      return data
+      apiRequest = fetchPublicSettingsAPI()
     } catch (error) {
       console.error('Failed to fetch public settings:', error)
-      return null
-    } finally {
       publicSettingsLoading.value = false
+      return Promise.resolve(null)
     }
+
+    const request = apiRequest
+      .then((data) => {
+        applySettings(data)
+        return data
+      })
+      .catch((error) => {
+        console.error('Failed to fetch public settings:', error)
+        return null
+      })
+      .finally(() => {
+        if (publicSettingsRequest === request) {
+          publicSettingsRequest = null
+          publicSettingsLoading.value = false
+        }
+      })
+
+    publicSettingsRequest = request
+    return request
   }
 
   /**

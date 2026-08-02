@@ -2,6 +2,8 @@ package service
 
 import "time"
 
+const subscriptionDayDuration = 24 * time.Hour
+
 type UserSubscription struct {
 	ID      int64
 	UserID  int64
@@ -45,14 +47,31 @@ func (s *UserSubscription) IsExpiredAt(now time.Time) bool {
 }
 
 func (s *UserSubscription) DaysRemaining() int {
-	if s.IsExpired() {
+	return s.daysRemainingAt(time.Now())
+}
+
+func (s *UserSubscription) daysRemainingAt(now time.Time) int {
+	remaining := s.ExpiresAt.Sub(now)
+	if remaining <= 0 {
 		return 0
 	}
-	return int(time.Until(s.ExpiresAt).Hours() / 24)
+
+	days := int(remaining / subscriptionDayDuration)
+	if remaining%subscriptionDayDuration != 0 {
+		days++
+	}
+	return days
 }
 
 func (s *UserSubscription) IsWindowActivated() bool {
 	return s.DailyWindowStart != nil || s.WeeklyWindowStart != nil || s.MonthlyWindowStart != nil
+}
+
+func (s *UserSubscription) HasOneTimeDailyQuota() bool {
+	if s == nil || s.StartsAt.IsZero() || s.ExpiresAt.IsZero() {
+		return false
+	}
+	return !s.ExpiresAt.After(s.StartsAt.AddDate(0, 0, 1))
 }
 
 func (s *UserSubscription) NeedsDailyReset() bool {
@@ -98,6 +117,47 @@ func (s *UserSubscription) needsMonthlyResetAt(now time.Time, windowStart *time.
 		return false
 	}
 	return !now.Before(windowStart.Add(30 * 24 * time.Hour))
+}
+
+func (s *UserSubscription) canAutomaticallyResetDailyAt(now time.Time) bool {
+	_, ok := s.automaticWindowStartAt(s.DailyWindowStart, 24*time.Hour, now)
+	return !s.HasOneTimeDailyQuota() && ok
+}
+
+func (s *UserSubscription) canAutomaticallyResetWeeklyAt(now time.Time) bool {
+	_, ok := s.automaticWindowStartAt(s.WeeklyWindowStart, 7*24*time.Hour, now)
+	return ok
+}
+
+func (s *UserSubscription) canAutomaticallyResetMonthlyAt(now time.Time) bool {
+	_, ok := s.automaticWindowStartAt(s.MonthlyWindowStart, 30*24*time.Hour, now)
+	return ok
+}
+
+func (s *UserSubscription) automaticWindowStartAt(previous *time.Time, period time.Duration, now time.Time) (time.Time, bool) {
+	if previous == nil {
+		return time.Time{}, false
+	}
+
+	anchor := *previous
+	// Older subscriptions initialized their first windows at midnight on their
+	// start date. Only that initial value is unambiguous; later midnight anchors
+	// may be manual resets and must remain authoritative.
+	legacyAnchor := startOfDay(s.StartsAt)
+	if legacyAnchor.Before(s.StartsAt) && anchor.Equal(legacyAnchor) {
+		anchor = s.StartsAt
+	}
+	next := anchor.Add(period)
+	if now.Before(next) || !next.Before(s.ExpiresAt) {
+		return time.Time{}, false
+	}
+
+	periods := now.Sub(anchor) / period
+	lastPeriodBeforeExpiry := (s.ExpiresAt.Sub(anchor) - 1) / period
+	if periods > lastPeriodBeforeExpiry {
+		periods = lastPeriodBeforeExpiry
+	}
+	return anchor.Add(periods * period), true
 }
 
 func (s *UserSubscription) DailyResetTime() *time.Time {

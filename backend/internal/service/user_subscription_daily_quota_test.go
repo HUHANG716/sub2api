@@ -21,19 +21,19 @@ type dailyResetTrackingUserSubRepo struct {
 	monthlyWindowStart time.Time
 }
 
-func (r *dailyResetTrackingUserSubRepo) ResetDailyUsage(_ context.Context, _ int64, windowStart time.Time) error {
+func (r *dailyResetTrackingUserSubRepo) ResetDailyUsage(_ context.Context, _ int64, _ *time.Time, windowStart time.Time) error {
 	r.resetDailyCalled = true
 	r.dailyWindowStart = windowStart
 	return nil
 }
 
-func (r *dailyResetTrackingUserSubRepo) ResetWeeklyUsage(_ context.Context, _ int64, windowStart time.Time) error {
+func (r *dailyResetTrackingUserSubRepo) ResetWeeklyUsage(_ context.Context, _ int64, _ *time.Time, windowStart time.Time) error {
 	r.resetWeeklyCalled = true
 	r.weeklyWindowStart = windowStart
 	return nil
 }
 
-func (r *dailyResetTrackingUserSubRepo) ResetMonthlyUsage(_ context.Context, _ int64, windowStart time.Time) error {
+func (r *dailyResetTrackingUserSubRepo) ResetMonthlyUsage(_ context.Context, _ int64, _ *time.Time, windowStart time.Time) error {
 	r.resetMonthlyCalled = true
 	r.monthlyWindowStart = windowStart
 	return nil
@@ -126,7 +126,36 @@ func TestExtendSubscription_ExpiredSubscriptionAnchorsWindowsAtReactivationTime(
 	require.Equal(t, "old", renewed.Notes)
 }
 
-func TestUserSubscriptionNeedsDailyReset_DailyCardUsesSameRelativeWindow(t *testing.T) {
+func TestAssignOrExtendSubscription_ExpiredSubscriptionAppendsMatchingNotes(t *testing.T) {
+	groupRepo := &subscriptionGroupRepoStub{
+		group: &Group{ID: 1, SubscriptionType: SubscriptionTypeSubscription},
+	}
+	subRepo := newSubscriptionUserSubRepoStub()
+	oldStart := time.Now().AddDate(0, 0, -3)
+	subRepo.seed(&UserSubscription{
+		ID:        101,
+		UserID:    201,
+		GroupID:   1,
+		StartsAt:  oldStart,
+		ExpiresAt: oldStart.AddDate(0, 0, 1),
+		Status:    SubscriptionStatusExpired,
+		Notes:     "same",
+	})
+	svc := NewSubscriptionService(groupRepo, subRepo, nil, nil, nil)
+
+	renewed, reused, err := svc.AssignOrExtendSubscription(context.Background(), &AssignSubscriptionInput{
+		UserID:       201,
+		GroupID:      1,
+		ValidityDays: 1,
+		Notes:        "same",
+	})
+
+	require.NoError(t, err)
+	require.True(t, reused)
+	require.Equal(t, "same\nsame", renewed.Notes)
+}
+
+func TestUserSubscriptionNeedsDailyReset_DailyCardKeepsOneTimeQuota(t *testing.T) {
 	start := time.Date(2026, 5, 18, 12, 0, 0, 0, time.UTC)
 	dailyWindowStart := start
 	sub := &UserSubscription{
@@ -196,17 +225,18 @@ func TestValidateAndCheckLimits_DailyCardExpiredBeforeSecondDailyWindow(t *testi
 }
 
 func TestCheckAndResetWindows_MultiDaySubscriptionStillResetsDailyUsage(t *testing.T) {
-	now := time.Now()
+	now := time.Date(2026, 7, 29, 12, 0, 0, 0, time.UTC)
 	startsAt := now.Add(-48 * time.Hour)
 	dailyWindowStart := now.Add(-25 * time.Hour)
 	repo := &dailyResetTrackingUserSubRepo{}
 	svc := NewSubscriptionService(groupRepoNoop{}, repo, nil, nil, nil)
+	svc.now = func() time.Time { return now }
 	sub := &UserSubscription{
 		ID:               1,
 		UserID:           10,
 		GroupID:          20,
 		StartsAt:         startsAt,
-		ExpiresAt:        startsAt.AddDate(0, 0, 2),
+		ExpiresAt:        startsAt.AddDate(0, 0, 4),
 		DailyUsageUSD:    10,
 		DailyWindowStart: &dailyWindowStart,
 	}

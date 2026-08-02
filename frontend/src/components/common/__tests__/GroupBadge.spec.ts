@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
+import { createPinia } from 'pinia'
 
 import GroupBadge from '../GroupBadge.vue'
 
@@ -42,7 +43,7 @@ function mountBadge(props: Partial<InstanceType<typeof GroupBadge>['$props']> = 
       ...props,
     },
     global: {
-      plugins: [createTestI18n(locale)],
+      plugins: [createPinia(), createTestI18n(locale)],
       stubs: {
         PlatformIcon: true,
       },

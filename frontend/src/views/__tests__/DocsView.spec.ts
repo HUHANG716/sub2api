@@ -480,11 +480,13 @@ describe('DocsView', () => {
     expect(docsSource).not.toContain('"model":"gpt-5.4"')
     expect(OPENAI_CC_SWITCH_CODEX_MODEL).toBe('gpt-5.5')
 
+    expect(useKeyModalSource).toContain('model_context_window = 1000000')
+    expect(useKeyModalSource).not.toContain('model_auto_compact_token_limit = 900000')
+
     for (const token of [
       'model_context_window = 1000000',
       'model_auto_compact_token_limit = 900000'
     ]) {
-      expect(useKeyModalSource).not.toContain(token)
       expect(docsSource).not.toContain(token)
     }
 

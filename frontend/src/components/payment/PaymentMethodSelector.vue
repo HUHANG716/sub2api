@@ -3,14 +3,18 @@
     <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
       {{ t('payment.paymentMethod') }}
     </label>
-    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:flex">
+    <div
+      data-testid="payment-method-grid"
+      class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+    >
       <button
         v-for="method in sortedMethods"
         :key="method.type"
         type="button"
+        :title="methodLabel(method)"
         :disabled="!method.available"
         :class="[
-          'payment-method-button',
+          'payment-method-button min-w-0',
           !method.available
             ? 'payment-method-button-disabled'
             : selected === method.type
@@ -19,12 +23,14 @@
         ]"
         @click="method.available && emit('select', method.type)"
       >
-        <span class="flex w-full items-center gap-3">
+        <span class="flex w-full min-w-0 items-center justify-center gap-2">
           <span class="payment-method-icon">
             <img :src="methodIcon(method.type)" :alt="methodLabel(method)" class="h-6 w-6 object-contain" />
           </span>
-          <span class="flex flex-col items-start leading-none">
-            <span class="text-base font-semibold">{{ methodLabel(method) }}</span>
+          <span class="flex min-w-0 flex-col items-start leading-none">
+            <span data-testid="payment-method-label" class="block w-full truncate text-base font-semibold">
+              {{ methodLabel(method) }}
+            </span>
             <span
               v-if="method.fee_rate > 0"
               class="text-[10px] text-gray-500 dark:text-dark-400"
@@ -95,8 +101,8 @@ function methodLabel(method: PaymentMethodOption): string {
 }
 
 function methodSelectedClass(type: string): string {
-  if (type.includes('alipay')) return 'payment-method-button-active payment-method-alipay'
-  if (type.includes('wxpay')) return 'payment-method-button-active payment-method-wxpay'
+  if (isBuiltInAlipayMethod(type)) return 'payment-method-button-active payment-method-alipay'
+  if (isBuiltInWxpayMethod(type)) return 'payment-method-button-active payment-method-wxpay'
   if (type === 'stripe') return 'payment-method-button-active payment-method-stripe'
   if (type === 'airwallex') return 'payment-method-button-active payment-method-airwallex'
   return 'payment-method-button-active'

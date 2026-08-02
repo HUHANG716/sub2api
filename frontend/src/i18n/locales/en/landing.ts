@@ -126,6 +126,11 @@ export default {
         subtitle: 'OpenAI-compatible access to Claude, GPT, Gemini, and more.',
         description: 'Connect Claude Code, Codex, Gemini CLI, and other developer tools with one API key, with keys, usage, and billing managed in one place.'
       },
+      console: {
+        lines: {
+          report: "{'{'} \"content\": \"Hello!\" {'}'}"
+        }
+      },
       stats: {
         developers: 'Developers',
         uptime: 'Service Stability',
@@ -145,14 +150,14 @@ export default {
         listLabel: 'Testimonial list'
       },
       reviews: {
-        one: { quote: 'Our AI coding workflow finally has one shared entry point.', name: 'Zhou Yu', role: 'Engineering Lead @ SaaS Company' },
-        two: { quote: 'The best part is the stability and observability.', name: 'Mia Chen', role: 'Full-stack Engineer @ Global Team' },
+        one: { quote: 'Our AI coding workflow finally has one shared entry point.', name: 'Zhou Yu', role: "Engineering Lead {'@'} SaaS Company" },
+        two: { quote: 'The best part is the stability and observability.', name: 'Mia Chen', role: "Full-stack Engineer {'@'} Global Team" },
         three: { quote: 'It is friendly for independent developers.', name: 'Lin Chuan', role: 'Independent Developer' },
-        four: { quote: 'Team usage is finally visible.', name: 'Eva Liu', role: 'AI Product Manager @ Tech Company' },
-        five: { quote: 'Support responds quickly and understands engineering details.', name: 'He', role: 'Frontend Architect @ Local Services Platform' },
-        six: { quote: 'Team collaboration cost dropped a lot.', name: 'Kevin Zhao', role: 'Backend Engineer @ Ecommerce Platform' },
-        seven: { quote: 'It stays stable even during peak hours.', name: 'Wu Ke', role: 'R&D Director @ Fintech Company' },
-        eight: { quote: 'New teammates ramp up much faster.', name: 'Sarah Lin', role: 'Mobile Lead @ Startup' }
+        four: { quote: 'Team usage is finally visible.', name: 'Eva Liu', role: "AI Product Manager {'@'} Tech Company" },
+        five: { quote: 'Support responds quickly and understands engineering details.', name: 'He', role: "Frontend Architect {'@'} Local Services Platform" },
+        six: { quote: 'Team collaboration cost dropped a lot.', name: 'Kevin Zhao', role: "Backend Engineer {'@'} Ecommerce Platform" },
+        seven: { quote: 'It stays stable even during peak hours.', name: 'Wu Ke', role: "R&D Director {'@'} Fintech Company" },
+        eight: { quote: 'New teammates ramp up much faster.', name: 'Sarah Lin', role: "Mobile Lead {'@'} Startup" }
       },
       faq: {
         title: 'Questions? We have answers',
@@ -302,8 +307,10 @@ export default {
       description: 'Connect to your Redis server',
       host: 'Host',
       port: 'Port',
+      username: 'Username (optional)',
       password: 'Password (optional)',
       database: 'Database',
+      usernamePlaceholder: 'Leave empty for default user',
       passwordPlaceholder: 'Password',
       enableTls: 'Enable TLS',
       enableTlsHint: 'Use TLS when connecting to Redis (public CA certs)'

@@ -122,6 +122,38 @@ describe('admin UsageTable tooltip', () => {
     } as DOMRect)
   })
 
+  it('marks only usage rows that actually applied long-context billing', () => {
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [
+          {
+            ...baseImageRow,
+            request_id: 'req-long-context-enabled',
+            long_context_billing_applied: true,
+          },
+          {
+            ...baseImageRow,
+            request_id: 'req-long-context-disabled',
+            long_context_billing_applied: false,
+          },
+        ],
+        loading: false,
+        columns: [],
+      },
+      global: {
+        stubs: {
+          DataTable: DataTableStub,
+          EmptyState: true,
+          Icon: true,
+          Teleport: true,
+        },
+      },
+    })
+
+    expect(wrapper.findAll('[data-testid="long-context-billing-marker"]')).toHaveLength(1)
+    expect(wrapper.get('[data-testid="long-context-billing-marker"]').text()).toBe('x2')
+  })
+
   it('shows service tier and billing breakdown in cost tooltip', async () => {
     const row = {
       request_id: 'req-admin-1',
@@ -206,14 +238,14 @@ describe('admin UsageTable tooltip', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('Actual rate 0.26x')
+    expect(wrapper.text()).toContain('Actual rate 0.261x')
 
     const tooltipTriggers = wrapper.findAll('.group.relative')
     await tooltipTriggers[tooltipTriggers.length - 1].trigger('mouseenter')
     await nextTick()
 
     expect(wrapper.text()).toContain('Actual rate')
-    expect(wrapper.text()).toContain('0.26x')
+    expect(wrapper.text()).toContain('0.261x')
   })
 
   it('shows requested and upstream models separately for admin rows', () => {

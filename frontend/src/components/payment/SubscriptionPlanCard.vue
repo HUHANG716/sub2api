@@ -14,21 +14,29 @@
       <!-- Header: name + badge + price -->
       <div class="mb-4 flex items-start justify-between gap-4">
         <div class="min-w-0 flex-1">
-          <div class="flex flex-wrap items-center gap-2">
-            <h3 class="truncate text-base font-semibold text-gray-900 dark:text-white">{{ plan.name }}</h3>
-            <span :class="['shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold', badgeLightClass]">
-              {{ pLabel }}
-            </span>
-          </div>
+          <h3
+            :title="plan.name"
+            class="h-12 min-w-0 break-words [overflow-wrap:anywhere] text-base font-bold leading-6 text-gray-900 dark:text-white line-clamp-2"
+          >
+            {{ plan.name }}
+          </h3>
           <p v-if="plan.description" class="mt-0.5 text-xs leading-relaxed text-gray-500 dark:text-dark-400 line-clamp-2">
             {{ plan.description }}
           </p>
         </div>
         <div class="shrink-0 text-right">
-          <div :class="['text-2xl font-semibold tracking-normal', textClass]">{{ formatPrice(plan.price) }}</div>
-          <span class="text-[11px] text-gray-400 dark:text-dark-500">/ {{ validitySuffix }}</span>
+          <div class="flex items-baseline justify-end gap-1">
+            <span :class="['text-2xl font-semibold tracking-normal', textClass]">{{ formatPrice(plan.price) }}</span>
+            <span v-if="plan.currency" class="text-xs font-medium text-gray-400 dark:text-dark-500">{{ plan.currency }}</span>
+          </div>
+          <div class="flex items-center justify-end gap-1">
+            <span :class="['inline-flex shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium', badgeLightClass]">
+              {{ pLabel }}
+            </span>
+            <span class="text-[11px] text-gray-400 dark:text-dark-500">/ {{ validitySuffix }}</span>
+          </div>
           <div v-if="plan.original_price" class="mt-0.5 flex items-center justify-end gap-1.5">
-            <span class="text-xs text-gray-400 line-through dark:text-dark-500">{{ formatPrice(plan.original_price) }}</span>
+            <span class="text-xs text-gray-400 line-through dark:text-dark-500">{{ formatPrice(plan.original_price) }}<template v-if="plan.currency"> {{ plan.currency }}</template></span>
             <span :class="['rounded px-1 py-0.5 text-[10px] font-semibold', discountClass]">{{ discountText }}</span>
           </div>
         </div>
@@ -102,6 +110,7 @@ import type { SubscriptionPlan } from '@/types/payment'
 import type { UserSubscription } from '@/types'
 import { useAppStore } from '@/stores/app'
 import { hasPeakRate as groupHasPeakRate, formatPeakRateWindow, serverTimezoneLabel } from '@/utils/peak-rate'
+import { planValiditySuffix } from './validity'
 import {
   platformAccentBarClass,
   platformBadgeLightClass,
@@ -152,7 +161,11 @@ const rateDisplay = computed(() => {
 })
 
 function formatPrice(value: number): string {
-  return formatPaymentAmount(value, normalizePaymentCurrency(props.currency), locale.value)
+  return formatPaymentAmount(
+    value,
+    normalizePaymentCurrency(props.plan.currency || props.currency || 'USD'),
+    locale.value
+  )
 }
 
 const appStore = useAppStore()
@@ -176,12 +189,7 @@ const modelScopeLabels = computed(() => {
   return scopes.map(s => MODEL_SCOPE_LABELS[s] || s)
 })
 
-const validitySuffix = computed(() => {
-  const u = props.plan.validity_unit || 'day'
-  if (u === 'month') return t('payment.perMonth')
-  if (u === 'year') return t('payment.perYear')
-  return `${props.plan.validity_days}${t('payment.days')}`
-})
+const validitySuffix = computed(() => planValiditySuffix(props.plan, t))
 </script>
 
 <style scoped>

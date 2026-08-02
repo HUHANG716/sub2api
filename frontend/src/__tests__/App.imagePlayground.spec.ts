@@ -11,6 +11,7 @@ const { routeRef, routerAfterEach, imagePlaygroundUnmounts } = vi.hoisted(() => 
     current: null as null | {
       name: string
       path: string
+      params: Record<string, string>
       meta: Record<string, unknown>
     }
   },
@@ -25,6 +26,7 @@ vi.mock('vue-router', async () => {
   routeRef.current ??= vue.reactive({
     name: 'Dashboard',
     path: '/dashboard',
+    params: {},
     meta: {
       title: 'Dashboard'
     }
@@ -110,11 +112,16 @@ const announcementStore = {
   reset: vi.fn()
 }
 
+const adminSettingsStore = {
+  customMenuItems: []
+}
+
 vi.mock('@/stores', () => ({
   useAppStore: () => appStore,
   useAuthStore: () => authStore,
   useSubscriptionStore: () => subscriptionStore,
-  useAnnouncementStore: () => announcementStore
+  useAnnouncementStore: () => announcementStore,
+  useAdminSettingsStore: () => adminSettingsStore
 }))
 
 describe('App image playground route persistence', () => {

@@ -1046,7 +1046,7 @@ function handleToolbarRefresh() {
                   </div>
                 </div>
 
-                <div class="mt-3 border-t border-gray-100 pt-2 text-[10px] text-gray-400 dark:border-gray-700">
+                <div class="mt-3 border-t border-gray-100 pt-2 text-[10px] text-gray-400 dark:border-dark-700">
                   {{ t('admin.ops.diagnosis.footer') }}
                 </div>
               </div>

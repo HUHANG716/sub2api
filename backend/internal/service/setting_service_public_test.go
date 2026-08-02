@@ -46,7 +46,13 @@ func (s *settingPublicRepoStub) GetMultiple(ctx context.Context, keys []string) 
 }
 
 func (s *settingPublicRepoStub) SetMultiple(ctx context.Context, settings map[string]string) error {
-	panic("unexpected SetMultiple call")
+	if s.values == nil {
+		s.values = map[string]string{}
+	}
+	for key, value := range settings {
+		s.values[key] = value
+	}
+	return nil
 }
 
 func (s *settingPublicRepoStub) GetAll(ctx context.Context) (map[string]string, error) {
@@ -85,6 +91,25 @@ func TestSettingService_GetPublicSettings_ExposesTablePreferences(t *testing.T) 
 	require.NoError(t, err)
 	require.Equal(t, 50, settings.TableDefaultPageSize)
 	require.Equal(t, []int{20, 50, 100}, settings.TablePageSizeOptions)
+}
+
+func TestSettingService_GetPublicSettings_ExposesCompactHomeEnabled(t *testing.T) {
+	repo := &settingPublicRepoStub{
+		values: map[string]string{
+			SettingKeyCompactHomeEnabled: "true",
+		},
+	}
+	svc := NewSettingService(repo, &config.Config{})
+
+	settings, err := svc.GetPublicSettings(context.Background())
+
+	require.NoError(t, err)
+	require.True(t, settings.CompactHomeEnabled)
+
+	missingSettings, err := NewSettingService(&settingPublicRepoStub{values: map[string]string{}}, &config.Config{}).
+		GetPublicSettings(context.Background())
+	require.NoError(t, err)
+	require.False(t, missingSettings.CompactHomeEnabled)
 }
 
 func TestSettingService_GetPublicSettings_ExposesForceEmailOnThirdPartySignup(t *testing.T) {

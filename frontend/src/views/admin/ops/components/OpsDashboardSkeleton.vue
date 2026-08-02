@@ -15,7 +15,7 @@ const props = withDefaults(defineProps<Props>(), {
       <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 pb-4 dark:border-dark-700">
         <div class="space-y-2">
           <div class="skeleton h-6 w-44"></div>
-          <div class="skeleton h-3 w-80"></div>
+          <div class="skeleton h-3 w-80 max-w-full"></div>
         </div>
         <div v-if="!props.fullscreen" class="flex flex-wrap items-center gap-3">
           <div class="skeleton h-9 w-[140px] rounded-xl"></div>
@@ -92,7 +92,7 @@ const props = withDefaults(defineProps<Props>(), {
         <div v-for="i in 6" :key="i" class="ops-inner-card flex items-center justify-between gap-4 rounded-2xl p-4">
           <div class="flex-1 space-y-2">
             <div class="skeleton h-3 w-56"></div>
-            <div class="skeleton h-3 w-80"></div>
+            <div class="skeleton h-3 w-80 max-w-full"></div>
           </div>
           <div class="skeleton h-7 w-20 rounded-xl"></div>
         </div>

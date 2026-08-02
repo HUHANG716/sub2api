@@ -23,6 +23,7 @@ export default {
       lastRun: 'last_run:',
       lastSuccess: 'last_success:',
       lastError: 'last_error:',
+      result: 'Result',
       noData: 'No data.',
       loadingText: 'loading',
       ready: 'ready',
@@ -49,6 +50,7 @@ export default {
         timeRange: 'Time range',
         startTime: 'Start time (optional)',
         endTime: 'End time (optional)',
+        host: 'Host',
         component: 'Component',
         componentPlaceholder: 'e.g. http.access',
         keyId: 'KEY ID',
@@ -70,6 +72,7 @@ export default {
         runtimeConfigResetFailed: 'Failed to reset log configuration',
         cleanupConfirm: 'Clean up system logs matching the current filters? This cannot be undone.',
         cleanupSuccess: 'Cleanup complete. Deleted {count} log entries.',
+        cleanupFilterRequired: 'Cleanup requires at least one filter condition (start/end time or another field)',
         cleanupFailed: 'Failed to clean up system logs'
       },
       requestsTotal: 'Requests (total)',
@@ -144,7 +147,11 @@ export default {
         '24h': 'Last 24 hours',
         '7d': 'Last 7 days',
         '30d': 'Last 30 days',
-        custom: 'Custom'
+        custom: 'Custom Range'
+      },
+      customTimeRange: {
+        startTime: 'Start Time',
+        endTime: 'End Time'
       },
       openaiTokenStats: {
         title: 'OpenAI Token Request Stats',
@@ -169,11 +176,6 @@ export default {
       fullscreen: {
         enter: 'Enter Fullscreen'
       },
-      customTimeRange: {
-        startTime: 'Start Time',
-        endTime: 'End Time'
-      },
-      result: 'Result',
       diagnosis: {
         title: 'Smart Diagnosis',
         footer: 'Automated diagnostic suggestions based on current metrics',
@@ -265,6 +267,7 @@ export default {
         typeUpstream: 'Upstream',
         typeRequest: 'Request',
         typeAuth: 'Auth',
+        typeAccountAuth: 'Account Auth',
         typeRouting: 'Routing',
         typeInternal: 'Internal',
         endpoint: 'Endpoint',
@@ -290,6 +293,7 @@ export default {
         phase: {
           request: 'Request',
           auth: 'Auth',
+          account_auth: 'Account Auth',
           routing: 'Routing',
           upstream: 'Upstream',
           network: 'Network',
@@ -378,8 +382,6 @@ export default {
         suggestPlatform: 'Platform error: prioritize investigation and fix',
         suggestGeneric: 'See details for more context',
         apiKeyPrefix: 'Key Prefix',
-        attemptedKeyPrefix: 'Attempted Key Prefix',
-        deletedKeyOwner: 'Deleted Key Owner',
         keyDeletedBadge: 'Key Deleted'
       },
       requestDetails: {
@@ -719,8 +721,6 @@ export default {
         ignoreContextCanceledHint: 'When enabled, client disconnect (context canceled) errors will not be written to the error log.',
         ignoreNoAvailableAccounts: 'Ignore no available accounts errors',
         ignoreNoAvailableAccountsHint: 'When enabled, "No available accounts" errors will not be written to the error log (not recommended; usually a config issue).',
-        ignoreInvalidApiKeyErrors: 'Ignore invalid API key errors',
-        ignoreInvalidApiKeyErrorsHint: 'When enabled, invalid or missing API key errors (INVALID_API_KEY, API_KEY_REQUIRED) will not be written to the error log.',
         ignoreInsufficientBalanceErrors: 'Ignore Insufficient Balance Errors',
         ignoreInsufficientBalanceErrorsHint: 'When enabled, insufficient account balance errors will not be written to the error log.',
         autoRefresh: 'Auto Refresh',

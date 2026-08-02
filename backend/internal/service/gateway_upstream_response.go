@@ -356,7 +356,15 @@ func (s *GatewayService) readUpstreamErrorBody(resp *http.Response) ([]byte, err
 }
 
 func (s *GatewayService) handleErrorResponse(ctx context.Context, resp *http.Response, c *gin.Context, account *Account, requestedModel ...string) (*ForwardResult, error) {
-	body, _ := s.readUpstreamErrorBody(resp)
+	// Upstream returned a non-success HTTP status; count Ollama Cloud activity.
+	scheduleOllamaCloudUsageActivity(s.deferredService, account)
+	body, readErr := s.readUpstreamErrorBody(resp)
+	if readErr != nil {
+		// 读取失败时 body 可能被截断，错误分类会基于不完整数据；记录日志以便排查，
+		// 避免静默吞掉导致误判。
+		logger.LegacyPrintf("service.gateway", "[Forward] Failed to fully read upstream error body: Account=%d(%s) Status=%d err=%v",
+			account.ID, account.Name, resp.StatusCode, readErr)
+	}
 
 	// 调试日志：打印上游错误响应
 	logger.LegacyPrintf("service.gateway", "[Forward] Upstream error (non-retryable): Account=%d(%s) Status=%d RequestID=%s Body=%s",
@@ -637,6 +645,44 @@ type streamingResult struct {
 	usage            *ClaudeUsage
 	firstTokenMs     *int
 	clientDisconnect bool // 客户端是否在流式传输过程中断开
+}
+
+// hasObservedTokens 报告流式过程中是否已观测到任何上游计量的 token。
+func (u *ClaudeUsage) hasObservedTokens() bool {
+	if u == nil {
+		return false
+	}
+	return u.InputTokens > 0 || u.OutputTokens > 0 ||
+		u.CacheCreationInputTokens > 0 || u.CacheReadInputTokens > 0 ||
+		u.CacheCreation5mTokens > 0 || u.CacheCreation1hTokens > 0 ||
+		u.ImageOutputTokens > 0
+}
+
+// partialStreamUsageResult 在流式转发中途出错时，把已观测到 usage 的部分结果包装为
+// ForwardResult（与错误一起返回给 handler 记录）。上游一旦下发过 message_start，
+// input/cache token 就已计量，直接丢弃会让请求完全漏记漏计费（issue #5148）。
+// 无已观测 usage 时返回 nil。
+//
+// 不变式：UpstreamFailoverError 必须保持 result=nil——failover 重试成功后按成功请求
+// 计费，若同时返回部分 usage 会造成双重计费，此处显式拦截兜底。
+func partialStreamUsageResult(resp *http.Response, streamResult *streamingResult, model, upstreamModel string, startTime time.Time, err error) *ForwardResult {
+	if streamResult == nil || !streamResult.usage.hasObservedTokens() {
+		return nil
+	}
+	var failoverErr *UpstreamFailoverError
+	if errors.As(err, &failoverErr) {
+		return nil
+	}
+	return &ForwardResult{
+		RequestID:        resp.Header.Get("x-request-id"),
+		Usage:            *streamResult.usage,
+		Model:            model,
+		UpstreamModel:    upstreamModel,
+		Stream:           true,
+		Duration:         time.Since(startTime),
+		FirstTokenMs:     streamResult.firstTokenMs,
+		ClientDisconnect: streamResult.clientDisconnect,
+	}
 }
 
 func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http.Response, c *gin.Context, account *Account, startTime time.Time, originalModel, mappedModel string, mimicClaudeCode bool) (*streamingResult, error) {
@@ -1023,11 +1069,14 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 						if _, werr := fmt.Fprint(w, string(restored)); werr != nil {
 							clientDisconnected = true
 							logger.LegacyPrintf("service.gateway", "Client disconnected during streaming, continuing to drain upstream for billing")
-							break
+							// 不 break：客户端断开后仍需继续合并本事件及后续事件的 usage，
+							// 否则会漏计当前事件携带的 usage 导致少计费。后续写入由
+							// clientDisconnected 守卫跳过。
+						} else {
+							flusher.Flush()
+							lastDataAt = time.Now()
+							resetKeepaliveTimer()
 						}
-						flusher.Flush()
-						lastDataAt = time.Now()
-						resetKeepaliveTimer()
 					}
 					if data != "" {
 						if firstTokenMs == nil && data != "[DONE]" {

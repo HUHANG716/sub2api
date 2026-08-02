@@ -605,6 +605,9 @@ func (r *usageLogRepository) GetUserBreakdownStats(ctx context.Context, startTim
 			COALESCE(ul.user_id, 0) as user_id,
 			COALESCE(u.email, '') as email,
 			COUNT(*) as requests,
+			COALESCE(SUM(ul.input_tokens), 0) as input_tokens,
+			COALESCE(SUM(ul.output_tokens), 0) as output_tokens,
+			COALESCE(SUM(ul.cache_creation_tokens + ul.cache_read_tokens), 0) as cache_tokens,
 			COALESCE(SUM(ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens), 0) as total_tokens,
 			COALESCE(SUM(ul.total_cost), 0) as cost,
 			COALESCE(SUM(ul.actual_cost), 0) as actual_cost,
@@ -641,8 +644,9 @@ func (r *usageLogRepository) GetUserBreakdownStats(ctx context.Context, startTim
 		args = append(args, dim.AccountID)
 	}
 	if dim.RequestType != nil {
-		query += fmt.Sprintf(" AND ul.request_type = $%d", len(args)+1)
-		args = append(args, *dim.RequestType)
+		condition, conditionArgs := buildRequestTypeFilterConditionWithAlias(len(args)+1, *dim.RequestType, "ul")
+		query += " AND " + condition
+		args = append(args, conditionArgs...)
 	}
 	if dim.Stream != nil {
 		query += fmt.Sprintf(" AND ul.stream = $%d", len(args)+1)
@@ -653,7 +657,13 @@ func (r *usageLogRepository) GetUserBreakdownStats(ctx context.Context, startTim
 		args = append(args, *dim.BillingType)
 	}
 
-	query += " GROUP BY ul.user_id, u.email ORDER BY actual_cost DESC"
+	// ORDER BY 列来自固定 allowlist(非用户原样字符串),避免 SQL 注入。
+	orderBy := "actual_cost"
+	switch dim.SortBy {
+	case "total_tokens", "input_tokens", "output_tokens", "cache_tokens", "requests", "cost", "actual_cost":
+		orderBy = dim.SortBy
+	}
+	query += " GROUP BY ul.user_id, u.email ORDER BY " + orderBy + " DESC"
 	if limit > 0 {
 		query += fmt.Sprintf(" LIMIT %d", limit)
 	}
@@ -676,6 +686,9 @@ func (r *usageLogRepository) GetUserBreakdownStats(ctx context.Context, startTim
 			&row.UserID,
 			&row.Email,
 			&row.Requests,
+			&row.InputTokens,
+			&row.OutputTokens,
+			&row.CacheTokens,
 			&row.TotalTokens,
 			&row.Cost,
 			&row.ActualCost,
@@ -739,11 +752,12 @@ func resolveModelDimensionExpressionWithAlias(modelType, alias string) string {
 		return alias + "." + name
 	}
 	requestedExpr := fmt.Sprintf("COALESCE(NULLIF(TRIM(%s), ''), %s)", column("requested_model"), column("model"))
+	upstreamExpr := fmt.Sprintf("COALESCE(NULLIF(TRIM(%s), ''), %s)", column("upstream_model"), column("model"))
 	switch usagestats.NormalizeModelSource(modelType) {
 	case usagestats.ModelSourceUpstream:
-		return fmt.Sprintf("COALESCE(NULLIF(TRIM(%s), ''), %s)", column("upstream_model"), requestedExpr)
+		return upstreamExpr
 	case usagestats.ModelSourceMapping:
-		return fmt.Sprintf("(%s || ' -> ' || COALESCE(NULLIF(TRIM(%s), ''), %s))", requestedExpr, column("upstream_model"), requestedExpr)
+		return fmt.Sprintf("(%s || ' -> ' || %s)", requestedExpr, upstreamExpr)
 	default:
 		return requestedExpr
 	}
