@@ -71,6 +71,29 @@ function getProductEmbedSettingsPayload(searchParams: URLSearchParams): unknown 
   }
 }
 
+function preserveProductEmbedStreamImages(currentSettings: Partial<AppSettings> | unknown, settings: AppSettings): AppSettings {
+  if (!currentSettings || typeof currentSettings !== 'object' || Array.isArray(currentSettings)) return settings
+  const profiles = (currentSettings as { profiles?: unknown }).profiles
+  if (!Array.isArray(profiles)) return settings
+
+  const streamImagesById = new Map<string, boolean>()
+  for (const profile of profiles) {
+    if (!profile || typeof profile !== 'object' || Array.isArray(profile)) continue
+    const record = profile as Record<string, unknown>
+    if (typeof record.id === 'string' && typeof record.streamImages === 'boolean') {
+      streamImagesById.set(record.id, record.streamImages)
+    }
+  }
+
+  return normalizeSettings({
+    ...settings,
+    profiles: settings.profiles.map((profile) => {
+      const streamImages = streamImagesById.get(profile.id)
+      return typeof streamImages === 'boolean' ? { ...profile, streamImages } : profile
+    }),
+  })
+}
+
 function activateFirstImportedProfile(settings: AppSettings, importedSettings: unknown): AppSettings {
   if (!importedSettings || typeof importedSettings !== 'object' || Array.isArray(importedSettings)) return settings
 
@@ -118,7 +141,10 @@ export function buildSettingsFromUrlParams(currentSettings: Partial<AppSettings>
   const settings = importedSettings == null
     ? normalizeSettings(currentSettings)
     : productEmbedSettings != null
-      ? activateFirstImportedProfile(normalizeSettings(importedSettings), importedSettings)
+      ? preserveProductEmbedStreamImages(
+          currentSettings,
+          activateFirstImportedProfile(normalizeSettings(importedSettings), importedSettings),
+        )
       : activateFirstImportedProfile(mergeImportedSettings(currentSettings, importedSettings), importedSettings)
 
   if (productEmbedSettings != null) {

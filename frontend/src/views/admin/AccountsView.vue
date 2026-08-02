@@ -2216,7 +2216,7 @@ onUnmounted(() => {
   z-index: 9999;
   overflow: hidden;
   transform-origin: top right;
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   background: var(--theme-surface);
   border: 1px solid var(--theme-border);
   color: var(--theme-text);

@@ -13,6 +13,7 @@ import {
   mergeImportedSettings,
   normalizeSettings,
   switchApiProfileProvider,
+  toggleApiProfileStreaming,
   validateApiProfile,
 } from './apiProfiles'
 
@@ -580,6 +581,27 @@ describe('custom providers', () => {
     })
 
     expect(clamped.profiles[0].streamPartialImages).toBe(3)
+  })
+
+  it('toggles streaming for only the selected API profile', () => {
+    const current = normalizeSettings({
+      profiles: [
+        createDefaultOpenAIProfile({ id: 'hahacode-images', apiKey: 'sk-images', streamImages: true }),
+        createDefaultOpenAIProfile({ id: 'hahacode-agent', apiKey: 'sk-agent', apiMode: 'responses', streamImages: true }),
+      ],
+      activeProfileId: 'hahacode-images',
+    })
+
+    const next = toggleApiProfileStreaming(current, 'hahacode-images')
+
+    expect(next.profiles.find(({ id }) => id === 'hahacode-images')).toMatchObject({
+      apiKey: 'sk-images',
+      streamImages: false,
+    })
+    expect(next.profiles.find(({ id }) => id === 'hahacode-agent')).toMatchObject({
+      apiKey: 'sk-agent',
+      streamImages: true,
+    })
   })
 
   it('enables Agent submit auto scroll by default', () => {

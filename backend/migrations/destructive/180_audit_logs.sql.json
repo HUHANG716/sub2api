@@ -1,0 +1,8 @@
+{
+  "migration": "180_audit_logs.sql",
+  "phase": "review",
+  "reason": "Creates the append-only audit log table and its lookup indexes for management-plane security events.",
+  "risk": "The migration builds four non-concurrent indexes, which can hold locks while each index is created.",
+  "mitigation": "All indexes target the newly created empty audit_logs table, so index creation cannot block writes to pre-existing production data.",
+  "approved_by": "hang"
+}

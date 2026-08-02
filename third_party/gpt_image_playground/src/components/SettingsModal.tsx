@@ -22,6 +22,7 @@ import {
   normalizeSettings,
   normalizeStreamPartialImages,
   switchApiProfileProvider,
+  toggleApiProfileStreaming,
 } from '../lib/apiProfiles'
 import { copyTextToClipboard, getClipboardFailureMessage } from '../lib/clipboard'
 import { requestBrowserNotificationPermission, type BrowserNotificationPermissionResult } from '../lib/browserNotification'
@@ -1438,7 +1439,7 @@ export default function SettingsModal() {
               <div className="space-y-4">
                 {apiConfigReadOnly && (
                   <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-3 text-xs leading-relaxed text-blue-700 dark:border-blue-500/15 dark:bg-blue-500/10 dark:text-blue-300">
-                    当前 API 配置由 Hahacode 自动下发，仅供查看，不能在工作台内修改。
+                    当前 API 连接配置由 Hahacode 自动下发；仅可调整流式传输。
                   </div>
                 )}
                 <div>
@@ -1822,9 +1823,8 @@ export default function SettingsModal() {
                       <span className="block text-sm text-gray-600 dark:text-gray-300">流式传输</span>
                       <button
                         type="button"
-                        onClick={() => updateActiveProfile({ streamImages: !activeProfile.streamImages }, true)}
-                        disabled={apiConfigReadOnly}
-                        className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${activeProfile.streamImages ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'} ${apiConfigReadOnly ? 'cursor-not-allowed opacity-70' : ''}`}
+                        onClick={() => commitSettings(toggleApiProfileStreaming(draft, activeProfile.id))}
+                        className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${activeProfile.streamImages ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`}
                         role="switch"
                         aria-checked={!!activeProfile.streamImages}
                         aria-label="流式传输"

@@ -4,12 +4,19 @@
     <template v-if="isAdmin">
       <button
         @click="toggleDropdown"
-        class="version-badge-trigger flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs transition-colors"
-        :class="{ 'version-badge-trigger-update': hasUpdate }"
+        class="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs transition-colors"
+        :class="[
+          hasUpdate
+            ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-dark-800 dark:text-dark-400 dark:hover:bg-dark-700'
+        ]"
         :title="hasUpdate ? t('version.updateAvailable') : t('version.upToDate')"
       >
         <span v-if="currentVersion" class="font-medium">v{{ currentVersion }}</span>
-        <span v-else class="version-badge-placeholder h-3 w-12 animate-pulse rounded font-medium"></span>
+        <span
+          v-else
+          class="h-3 w-12 animate-pulse rounded bg-gray-200 font-medium dark:bg-dark-600"
+        ></span>
         <!-- Update indicator -->
         <span v-if="hasUpdate" class="relative flex h-2 w-2">
           <span
@@ -24,17 +31,19 @@
         <div
           v-if="dropdownOpen"
           ref="dropdownRef"
-          class="version-dropdown absolute left-0 z-50 mt-2 overflow-hidden whitespace-normal rounded-xl"
+          class="version-dropdown absolute left-0 z-50 mt-2 overflow-hidden whitespace-normal rounded-xl transition-all duration-200"
           :class="rollbackPanelOpen && isReleaseBuild ? 'w-80' : 'w-64'"
         >
           <!-- Header with refresh button -->
-          <div class="version-dropdown-header flex items-center justify-between px-4 py-3">
-            <span class="version-dropdown-title text-sm font-medium">{{
+          <div
+            class="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-dark-700"
+          >
+            <span class="text-sm font-medium text-gray-700 dark:text-dark-300">{{
               t('version.currentVersion')
             }}</span>
             <button
               @click="refreshVersion(true)"
-              class="version-icon-button rounded-lg p-1.5 transition-colors"
+              class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700 dark:hover:text-dark-200"
               :disabled="loading"
               :title="t('version.refresh')"
             >
@@ -74,10 +83,10 @@
                 <div class="inline-flex items-center gap-2">
                   <span
                     v-if="currentVersion"
-                    class="version-number text-2xl font-bold"
+                    class="text-2xl font-bold text-gray-900 dark:text-white"
                     >v{{ currentVersion }}</span
                   >
-                  <span v-else class="version-placeholder text-2xl font-bold">--</span>
+                  <span v-else class="text-2xl font-bold text-gray-400 dark:text-dark-500">--</span>
                   <!-- Show check mark when up to date -->
                   <span
                     v-if="!hasUpdate"
@@ -96,7 +105,7 @@
                     </svg>
                   </span>
                 </div>
-                <p class="version-helper mt-1 text-xs">
+                <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">
                   {{
                     hasUpdate
                       ? t('version.latestVersion') + ': v' + latestVersion
@@ -339,7 +348,7 @@
                   :href="releaseInfo.html_url"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="version-link flex items-center justify-center gap-1 text-xs transition-colors"
+                  class="flex items-center justify-center gap-1 text-xs text-gray-500 transition-colors hover:text-gray-700 dark:text-dark-400 dark:hover:text-dark-200"
                 >
                   {{ t('version.viewChangelog') }}
                   <Icon name="externalLink" size="xs" :stroke-width="2" />
@@ -914,68 +923,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.version-badge-trigger {
-  background: var(--theme-surface-muted);
-  color: var(--theme-text-subtle);
-}
-
-.version-badge-trigger:hover {
-  background: color-mix(in srgb, var(--theme-surface-muted) 78%, var(--theme-accent-soft));
-  color: var(--theme-text-soft);
-}
-
-.version-badge-trigger-update {
-  background: color-mix(in srgb, #f59e0b 14%, var(--theme-surface));
-  color: #b45309;
-}
-
-.version-badge-trigger-update:hover {
-  background: color-mix(in srgb, #f59e0b 20%, var(--theme-surface));
-  color: #92400e;
-}
-
-:global(.dark) .version-badge-trigger-update {
-  background: color-mix(in srgb, #f59e0b 16%, var(--theme-surface));
-  color: #fbbf24;
-}
-
-:global(.dark) .version-badge-trigger-update:hover {
-  background: color-mix(in srgb, #f59e0b 22%, var(--theme-surface));
-  color: #fcd34d;
-}
-
-.version-badge-placeholder {
-  background: var(--theme-border-strong);
-}
-
 .version-dropdown {
   background: var(--theme-surface-strong);
   border: 1px solid var(--theme-border);
   box-shadow: var(--theme-shadow-hover), 0 18px 48px rgba(0, 0, 0, 0.18);
   color: var(--theme-text);
-}
-
-.version-dropdown-header {
-  background: var(--theme-surface-strong);
-  border-bottom: 1px solid var(--theme-border);
-}
-
-.version-dropdown-title,
-.version-number {
-  color: var(--theme-text-soft);
-}
-
-.version-helper,
-.version-link,
-.version-icon-button,
-.version-placeholder {
-  color: var(--theme-text-subtle);
-}
-
-.version-icon-button:hover,
-.version-link:hover {
-  background: var(--theme-surface-muted);
-  color: var(--theme-text-soft);
 }
 
 .dropdown-enter-active,

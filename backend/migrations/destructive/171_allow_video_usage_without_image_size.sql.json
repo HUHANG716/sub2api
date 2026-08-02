@@ -1,0 +1,9 @@
+{
+  "migration": "171_allow_video_usage_without_image_size.sql",
+  "phase": "cleanup",
+  "safe_after_commit": "00a47a1858053b11643b5ed64d22931b1bb87a06",
+  "reason": "Relaxes the usage_logs image-size check so Grok video usage can store billing_mode='video' without an image_size.",
+  "risk": "The migration drops and recreates a CHECK constraint on usage_logs, which can briefly lock the table and allows a broader set of rows for video billing.",
+  "mitigation": "The replacement constraint remains restrictive for image billing, is added NOT VALID to avoid validating historical rows during deploy, and only exempts rows explicitly marked billing_mode='video'.",
+  "approved_by": "hang"
+}

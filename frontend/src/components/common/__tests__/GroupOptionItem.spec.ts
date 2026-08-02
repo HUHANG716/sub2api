@@ -1,9 +1,13 @@
 import { createPinia } from 'pinia'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import GroupOptionItem from '../GroupOptionItem.vue'
+
+vi.mock('@/stores/app', () => ({
+  useAppStore: () => ({ cachedPublicSettings: null }),
+}))
 
 function createTestI18n(locale = 'zh') {
   const params = (ctx: any, key: string) => ctx.named(key)

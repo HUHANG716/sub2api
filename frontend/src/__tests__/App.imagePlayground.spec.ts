@@ -129,6 +129,7 @@ describe('App image playground route persistence', () => {
     if (!routeRef.current) throw new Error('route mock was not initialized')
     routeRef.current.name = 'Dashboard'
     routeRef.current.path = '/dashboard'
+    routeRef.current.params = {}
     routeRef.current.meta = { title: 'Dashboard' }
     imagePlaygroundUnmounts.count = 0
     routerAfterEach.mockClear()

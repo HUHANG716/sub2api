@@ -19,6 +19,10 @@ git subtree pull --prefix=third_party/gpt_image_playground https://github.com/Co
 
 If a local patch is unavoidable, store it under `tools/image-playground/patches/` and re-apply it after the subtree pull.
 
+```powershell
+git apply --unidiff-zero tools/image-playground/patches/allow-embedded-stream-toggle.patch
+```
+
 ## Verification
 
 ```powershell

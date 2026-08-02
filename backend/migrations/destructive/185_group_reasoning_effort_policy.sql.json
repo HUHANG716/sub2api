@@ -1,0 +1,8 @@
+{
+  "migration": "185_group_reasoning_effort_policy.sql",
+  "phase": "review",
+  "reason": "Adds per-group limits and mappings for explicit OpenAI and Codex reasoning-effort values.",
+  "risk": "Adding two NOT NULL columns with defaults can briefly lock the groups table.",
+  "mitigation": "Both columns use constant defaults that are metadata-only on supported PostgreSQL versions and preserve existing group behavior; retain normal deployment health monitoring.",
+  "approved_by": "hang"
+}

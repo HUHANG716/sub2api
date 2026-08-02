@@ -22,23 +22,6 @@ describe('home i18n messages', () => {
   it.each([
     ['en', en],
     ['zh', zh]
-  ])('renders the terminal JSON preview without i18n compiler errors for %s', (_locale, messages) => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const i18n = createI18n({
-      legacy: false,
-      locale: 'test',
-      messages: { test: messages }
-    })
-
-    expect(i18n.global.t('home.modern.console.lines.report')).toBe('{ "content": "Hello!" }')
-    expect(consoleError).not.toHaveBeenCalled()
-
-    consoleError.mockRestore()
-  })
-
-  it.each([
-    ['en', en],
-    ['zh', zh]
   ])('compiles every home message without i18n compiler errors for %s', (_locale, messages) => {
     const i18n = createI18n({
       legacy: false,

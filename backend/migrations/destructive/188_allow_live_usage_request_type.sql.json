@@ -1,0 +1,9 @@
+{
+  "migration": "188_allow_live_usage_request_type.sql",
+  "phase": "cleanup",
+  "safe_after_commit": "3102bf2bae48ba6ccc50674856a55596cd310b64",
+  "reason": "Expands the usage_logs request_type check constraint to allow OpenAI Live usage records as type 5.",
+  "risk": "Dropping and recreating the check constraint takes a strong lock on the high-volume usage_logs table, and the replacement remains unvalidated for existing rows until a later maintenance validation.",
+  "mitigation": "NOT VALID avoids scanning historical rows while PostgreSQL still enforces the expanded check for new and updated rows. The old constraint already guaranteed every existing row is in the 0..4 range, which is valid under the new 0..5 range. Run during a low-traffic deployment window and monitor migration duration and database locks.",
+  "approved_by": "hang"
+}

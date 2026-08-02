@@ -1,0 +1,8 @@
+{
+  "migration": "184_auth_cache_invalidation_outbox.sql",
+  "phase": "review",
+  "reason": "Creates the durable authentication-cache invalidation outbox, indexes, functions, and table triggers.",
+  "risk": "Non-concurrent index creation and trigger replacement can briefly acquire locks during deployment.",
+  "mitigation": "The indexes target a newly created empty outbox table, and trigger replacement changes no existing row data; retain normal deployment health monitoring.",
+  "approved_by": "hang"
+}

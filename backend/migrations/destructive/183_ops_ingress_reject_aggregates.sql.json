@@ -1,0 +1,8 @@
+{
+  "migration": "183_ops_ingress_reject_aggregates.sql",
+  "phase": "review",
+  "reason": "Creates the ingress-rejection aggregate table and lookup indexes used by operations monitoring.",
+  "risk": "The migration builds three non-concurrent indexes, which hold locks while each index is created.",
+  "mitigation": "All indexes target a table created earlier in the same migration, and explicit lock and statement timeouts bound the operation.",
+  "approved_by": "hang"
+}

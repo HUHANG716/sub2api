@@ -1,0 +1,9 @@
+{
+  "migration": "176_channel_monitor_grok_provider.sql",
+  "phase": "cleanup",
+  "safe_after_commit": "501c8e42982e11499197eefbb041f19b3de33c3d",
+  "reason": "Expands channel monitor and request template provider constraints to allow Grok alongside the existing providers.",
+  "risk": "Dropping and recreating the provider check constraints can briefly lock the two channel monitor tables while existing rows are validated.",
+  "mitigation": "The migration only broadens accepted provider values, runs conditionally when Grok is absent, and targets small configuration tables whose existing provider values already satisfy the replacement constraints.",
+  "approved_by": "hang"
+}

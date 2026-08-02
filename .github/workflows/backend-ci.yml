@@ -101,6 +101,16 @@ jobs:
           python3 -m py_compile .github/ci/check-destructive-migrations.py .github/ci/check-destructive-migrations.test.py
           python3 .github/ci/check-destructive-migrations.test.py
 
+  shell:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check deployment scripts
+        run: |
+          /bin/bash -n deploy/apple-container.sh
+          /bin/bash deploy/tests/apple-container-test.sh
+          /bin/sh deploy/test-caddyfile-cache.sh
+
   migration-safety:
     name: Migration Safety
     if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}

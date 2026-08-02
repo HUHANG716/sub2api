@@ -1,0 +1,8 @@
+{
+  "migration": "181_prompt_audit.sql",
+  "phase": "review",
+  "reason": "Creates prompt-audit job and event tables with the indexes needed for processing and administrative lookup.",
+  "risk": "The migration builds multiple non-concurrent indexes, which hold locks while each index is created.",
+  "mitigation": "Every index targets a table created earlier in the same migration, so index creation cannot block writes to pre-existing production data.",
+  "approved_by": "hang"
+}

@@ -1,0 +1,182 @@
+diff --git a/third_party/gpt_image_playground/src/components/SettingsModal.tsx b/third_party/gpt_image_playground/src/components/SettingsModal.tsx
+index 160290729..474eb4ac8 100644
+--- a/third_party/gpt_image_playground/src/components/SettingsModal.tsx
++++ b/third_party/gpt_image_playground/src/components/SettingsModal.tsx
+@@ -24,0 +25 @@ import {
++  toggleApiProfileStreaming,
+@@ -1441 +1442 @@ export default function SettingsModal() {
+-                    当前 API 配置由 Hahacode 自动下发，仅供查看，不能在工作台内修改。
++                    当前 API 连接配置由 Hahacode 自动下发；仅可调整流式传输。
+@@ -1825,3 +1826,2 @@ export default function SettingsModal() {
+-                        onClick={() => updateActiveProfile({ streamImages: !activeProfile.streamImages }, true)}
+-                        disabled={apiConfigReadOnly}
+-                        className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${activeProfile.streamImages ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'} ${apiConfigReadOnly ? 'cursor-not-allowed opacity-70' : ''}`}
++                        onClick={() => commitSettings(toggleApiProfileStreaming(draft, activeProfile.id))}
++                        className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${activeProfile.streamImages ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+diff --git a/third_party/gpt_image_playground/src/lib/apiProfiles.test.ts b/third_party/gpt_image_playground/src/lib/apiProfiles.test.ts
+index 30cb58e11..95a4b59dd 100644
+--- a/third_party/gpt_image_playground/src/lib/apiProfiles.test.ts
++++ b/third_party/gpt_image_playground/src/lib/apiProfiles.test.ts
+@@ -15,0 +16 @@ import {
++  toggleApiProfileStreaming,
+@@ -584,0 +586,21 @@ describe('custom providers', () => {
++  it('toggles streaming for only the selected API profile', () => {
++    const current = normalizeSettings({
++      profiles: [
++        createDefaultOpenAIProfile({ id: 'hahacode-images', apiKey: 'sk-images', streamImages: true }),
++        createDefaultOpenAIProfile({ id: 'hahacode-agent', apiKey: 'sk-agent', apiMode: 'responses', streamImages: true }),
++      ],
++      activeProfileId: 'hahacode-images',
++    })
++
++    const next = toggleApiProfileStreaming(current, 'hahacode-images')
++
++    expect(next.profiles.find(({ id }) => id === 'hahacode-images')).toMatchObject({
++      apiKey: 'sk-images',
++      streamImages: false,
++    })
++    expect(next.profiles.find(({ id }) => id === 'hahacode-agent')).toMatchObject({
++      apiKey: 'sk-agent',
++      streamImages: true,
++    })
++  })
++
+diff --git a/third_party/gpt_image_playground/src/lib/apiProfiles.ts b/third_party/gpt_image_playground/src/lib/apiProfiles.ts
+index a05762e18..b7df698d4 100644
+--- a/third_party/gpt_image_playground/src/lib/apiProfiles.ts
++++ b/third_party/gpt_image_playground/src/lib/apiProfiles.ts
+@@ -601,0 +602,9 @@ export function getActiveApiProfile(settings: Partial<AppSettings> | unknown): A
++export function toggleApiProfileStreaming(settings: AppSettings, profileId: string): AppSettings {
++  return normalizeSettings({
++    ...settings,
++    profiles: settings.profiles.map((profile) =>
++      profile.id === profileId ? { ...profile, streamImages: !profile.streamImages } : profile,
++    ),
++  })
++}
++
+diff --git a/third_party/gpt_image_playground/src/lib/urlSettings.test.ts b/third_party/gpt_image_playground/src/lib/urlSettings.test.ts
+index 772266fee..f025ed8dc 100644
+--- a/third_party/gpt_image_playground/src/lib/urlSettings.test.ts
++++ b/third_party/gpt_image_playground/src/lib/urlSettings.test.ts
+@@ -64,0 +65,86 @@ describe('URL settings params', () => {
++  it('preserves product embed streaming preferences by profile ID only', () => {
++    const sessionValues = new Map<string, string>()
++    vi.stubGlobal('window', {
++      sessionStorage: {
++        getItem: (key: string) => sessionValues.get(key) ?? null,
++        setItem: (key: string, value: string) => sessionValues.set(key, value),
++      },
++    })
++    window.sessionStorage.setItem(PRODUCT_EMBED_SETTINGS_STORAGE_KEY, JSON.stringify({
++      profiles: [
++        createDefaultOpenAIProfile({
++          id: 'hahacode-images',
++          baseUrl: 'https://fresh.example.com/v1',
++          apiKey: 'sk-fresh-images',
++          apiMode: 'images',
++          streamImages: true,
++        }),
++        createDefaultOpenAIProfile({
++          id: 'hahacode-agent',
++          baseUrl: 'https://fresh.example.com/v1',
++          apiKey: 'sk-fresh-agent',
++          apiMode: 'responses',
++          streamImages: true,
++        }),
++      ],
++    }))
++    const current = normalizeSettings({
++      ...DEFAULT_SETTINGS,
++      profiles: [
++        createDefaultOpenAIProfile({
++          id: 'hahacode-images',
++          baseUrl: 'https://stale.example.com/v1',
++          apiKey: 'sk-stale-images',
++          streamImages: false,
++        }),
++        createDefaultOpenAIProfile({
++          id: 'hahacode-agent',
++          apiMode: 'responses',
++          streamImages: true,
++        }),
++      ],
++      activeProfileId: 'hahacode-images',
++    })
++
++    const next = normalizeSettings({
++      ...current,
++      ...buildSettingsFromUrlParams(current, new URLSearchParams('embed=product')),
++    })
++
++    expect(next.profiles.find(({ id }) => id === 'hahacode-images')).toMatchObject({
++      baseUrl: 'https://fresh.example.com/v1',
++      apiKey: 'sk-fresh-images',
++      streamImages: false,
++    })
++    expect(next.profiles.find(({ id }) => id === 'hahacode-agent')).toMatchObject({
++      apiKey: 'sk-fresh-agent',
++      streamImages: true,
++    })
++  })
++
++  it('keeps the supplied stream default for invalid or unmatched saved values', () => {
++    const sessionValues = new Map<string, string>()
++    vi.stubGlobal('window', {
++      sessionStorage: {
++        getItem: (key: string) => sessionValues.get(key) ?? null,
++        setItem: (key: string, value: string) => sessionValues.set(key, value),
++      },
++    })
++    window.sessionStorage.setItem(PRODUCT_EMBED_SETTINGS_STORAGE_KEY, JSON.stringify({
++      profiles: [createDefaultOpenAIProfile({ id: 'hahacode-images', streamImages: true })],
++    }))
++    const current = {
++      profiles: [
++        { id: 'hahacode-images', streamImages: 'false' },
++        { id: 'unknown-profile', streamImages: false },
++      ],
++    }
++
++    const next = normalizeSettings({
++      ...DEFAULT_SETTINGS,
++      ...buildSettingsFromUrlParams(current, new URLSearchParams('embed=product')),
++    })
++
++    expect(next.profiles[0]).toMatchObject({ id: 'hahacode-images', streamImages: true })
++  })
++
+diff --git a/third_party/gpt_image_playground/src/lib/urlSettings.ts b/third_party/gpt_image_playground/src/lib/urlSettings.ts
+index 3defc5298..745da3fbd 100644
+--- a/third_party/gpt_image_playground/src/lib/urlSettings.ts
++++ b/third_party/gpt_image_playground/src/lib/urlSettings.ts
+@@ -73,0 +74,23 @@ function getProductEmbedSettingsPayload(searchParams: URLSearchParams): unknown
++function preserveProductEmbedStreamImages(currentSettings: Partial<AppSettings> | unknown, settings: AppSettings): AppSettings {
++  if (!currentSettings || typeof currentSettings !== 'object' || Array.isArray(currentSettings)) return settings
++  const profiles = (currentSettings as { profiles?: unknown }).profiles
++  if (!Array.isArray(profiles)) return settings
++
++  const streamImagesById = new Map<string, boolean>()
++  for (const profile of profiles) {
++    if (!profile || typeof profile !== 'object' || Array.isArray(profile)) continue
++    const record = profile as Record<string, unknown>
++    if (typeof record.id === 'string' && typeof record.streamImages === 'boolean') {
++      streamImagesById.set(record.id, record.streamImages)
++    }
++  }
++
++  return normalizeSettings({
++    ...settings,
++    profiles: settings.profiles.map((profile) => {
++      const streamImages = streamImagesById.get(profile.id)
++      return typeof streamImages === 'boolean' ? { ...profile, streamImages } : profile
++    }),
++  })
++}
++
+@@ -121 +144,4 @@ export function buildSettingsFromUrlParams(currentSettings: Partial<AppSettings>
+-      ? activateFirstImportedProfile(normalizeSettings(importedSettings), importedSettings)
++      ? preserveProductEmbedStreamImages(
++          currentSettings,
++          activateFirstImportedProfile(normalizeSettings(importedSettings), importedSettings),
++        )

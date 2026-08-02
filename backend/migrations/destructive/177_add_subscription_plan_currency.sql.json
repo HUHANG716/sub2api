@@ -1,0 +1,8 @@
+{
+  "migration": "177_add_subscription_plan_currency.sql",
+  "phase": "review",
+  "reason": "Adds an optional display currency label to subscription plans so prices can identify the currency represented by ambiguous symbols.",
+  "risk": "The migration adds a NOT NULL column with a default to subscription_plans and can briefly take an exclusive table lock while PostgreSQL updates the table metadata.",
+  "mitigation": "The change is additive and idempotent, uses an empty-string default for existing rows, and targets the small subscription plan configuration table. Keep the normal deployment health checks in place.",
+  "approved_by": "hang"
+}

@@ -1,0 +1,9 @@
+{
+  "migration": "172_video_per_second_billing_metadata.sql",
+  "phase": "cleanup",
+  "safe_after_commit": "00a47a1858053b11643b5ed64d22931b1bb87a06",
+  "reason": "Adds Grok video billing metadata to usage_logs and relaxes the image-size check so video rows billed through token-mode channels are accepted.",
+  "risk": "The migration adds NOT NULL/defaulted usage_logs columns and drops/recreates the image-size CHECK constraint, which can briefly lock usage_logs during deployment.",
+  "mitigation": "The new columns are additive with defaults for older code, the replacement constraint remains restrictive for image billing, and it only exempts rows explicitly marked as video usage.",
+  "approved_by": "hang"
+}

@@ -1,0 +1,8 @@
+{
+  "migration": "182_prompt_audit_full_prompt.sql",
+  "phase": "review",
+  "reason": "Adds the full prompt field required for exact administrative review of prompt-audit findings.",
+  "risk": "Adding a NOT NULL column with a default can briefly lock prompt_audit_events.",
+  "mitigation": "The constant empty-string default is metadata-only on supported PostgreSQL versions and preserves all existing rows; retain normal deployment health monitoring.",
+  "approved_by": "hang"
+}

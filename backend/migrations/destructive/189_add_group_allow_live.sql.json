@@ -1,0 +1,8 @@
+{
+  "migration": "189_add_group_allow_live.sql",
+  "phase": "review",
+  "reason": "Adds the group-level gate that controls access to OpenAI Live sessions.",
+  "risk": "Adding a NOT NULL column with a default can briefly acquire an exclusive lock on the groups table and may rewrite it on older PostgreSQL versions.",
+  "mitigation": "The constant false default is metadata-only on supported PostgreSQL versions, preserves existing group behavior, and remains compatible with older application versions that do not read the new column.",
+  "approved_by": "hang"
+}

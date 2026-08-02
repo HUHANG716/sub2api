@@ -1,0 +1,8 @@
+{
+  "migration": "192_group_profit_control.sql",
+  "phase": "review",
+  "reason": "Adds per-group profit-control settings used to reject unprofitable account assignments during scheduling.",
+  "risk": "Adding three NOT NULL columns with defaults can briefly lock the groups table and may rewrite it on older PostgreSQL versions.",
+  "mitigation": "The constant false and zero defaults are metadata-only on supported PostgreSQL versions, preserve existing scheduling behavior, and remain compatible with older application versions that ignore the new columns.",
+  "approved_by": "hang"
+}

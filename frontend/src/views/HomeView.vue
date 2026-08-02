@@ -578,7 +578,9 @@ const footerGroups = computed<FooterGroup[]>(() => [
     items: [
       { label: t('home.modern.nav.features'), href: '#features' },
       { label: t('home.modern.nav.testimonials'), href: '#testimonials' },
-      { label: t('home.docs'), to: '/docs' }
+      docUrl.value
+        ? { label: t('home.docs'), href: docUrl.value }
+        : { label: t('home.docs'), to: '/docs' }
     ]
   },
   {
