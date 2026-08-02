@@ -927,13 +927,6 @@ func rollingWindowStart(windowStart time.Time, windowSize time.Duration, now tim
 	return windowStart
 }
 
-func subscriptionWindowAnchor(sub *UserSubscription, fallback time.Time) time.Time {
-	if sub != nil && !sub.StartsAt.IsZero() {
-		return sub.StartsAt
-	}
-	return fallback
-}
-
 func needsAnchoredWindowReset(anchor time.Time, windowStart *time.Time, windowSize time.Duration, now time.Time) (bool, time.Time) {
 	if windowStart == nil {
 		return false, time.Time{}
