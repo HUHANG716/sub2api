@@ -82,4 +82,49 @@ describe('subscription expiry timing', () => {
       days: 2
     })
   })
+
+  it('anchors a later midnight window when it follows the purchase cadence', () => {
+    const state = getWindowEndState(
+      '2026-05-25T00:00:00Z',
+      7 * 24,
+      undefined,
+      new Date('2026-05-30T03:00:00Z'),
+      '2026-05-18T14:22:32Z'
+    )
+
+    expect(state).toEqual({
+      type: 'reset',
+      parts: { days: 2, hours: 11, minutes: 22 }
+    })
+  })
+
+  it('anchors a previous cadence midnight window at the next purchase boundary', () => {
+    const state = getWindowEndState(
+      '2026-05-25T00:00:00Z',
+      7 * 24,
+      undefined,
+      new Date('2026-06-01T15:00:00Z'),
+      '2026-05-18T14:22:32Z'
+    )
+
+    expect(state).toEqual({
+      type: 'reset',
+      parts: { days: 6, hours: 23, minutes: 22 }
+    })
+  })
+
+  it('keeps a midnight window from an unrelated manual reset date', () => {
+    const state = getWindowEndState(
+      '2026-05-21T00:00:00Z',
+      7 * 24,
+      undefined,
+      new Date('2026-05-22T03:00:00Z'),
+      '2026-05-18T14:22:32Z'
+    )
+
+    expect(state).toEqual({
+      type: 'reset',
+      parts: { days: 5, hours: 21, minutes: 0 }
+    })
+  })
 })

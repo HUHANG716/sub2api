@@ -866,8 +866,8 @@ func effectiveWindowStart(anchor time.Time, windowStart *time.Time, windowSize t
 		return nil
 	}
 	effective := *windowStart
-	if isLegacyMidnightWindow(anchor, *windowStart, windowSize, now) {
-		effective = rollingWindowStart(anchor, windowSize, now)
+	if canonical, _, matched := reanchoredMidnightWindowStart(anchor, *windowStart, windowSize, now); matched {
+		effective = canonical
 	}
 	return &effective
 }
@@ -931,12 +931,8 @@ func needsAnchoredWindowReset(anchor time.Time, windowStart *time.Time, windowSi
 	if windowStart == nil {
 		return false, time.Time{}
 	}
-	if isLegacyMidnightWindow(anchor, *windowStart, windowSize, now) {
-		currentAnchorWindow := rollingWindowStart(anchor, windowSize, now)
-		if currentAnchorWindow.After(windowStart.Add(windowSize)) {
-			return true, currentAnchorWindow
-		}
-		return false, time.Time{}
+	if canonical, stale, matched := reanchoredMidnightWindowStart(anchor, *windowStart, windowSize, now); matched {
+		return stale, canonical
 	}
 	if now.Before(windowStart.Add(windowSize)) {
 		return false, time.Time{}
@@ -944,15 +940,34 @@ func needsAnchoredWindowReset(anchor time.Time, windowStart *time.Time, windowSi
 	return true, rollingWindowStart(*windowStart, windowSize, now)
 }
 
-func isLegacyMidnightWindow(anchor, windowStart time.Time, windowSize time.Duration, now time.Time) bool {
-	if anchor.IsZero() || windowSize <= 0 || windowStart.IsZero() || isStartOfDay(anchor) || !isStartOfDay(windowStart) {
-		return false
+// reanchoredMidnightWindowStart recognizes midnight values introduced by the
+// regression without reinterpreting unrelated midnight manual resets. The
+// canonical purchase-time window is returned together with whether the stored
+// value is stale and must be persisted.
+func reanchoredMidnightWindowStart(startsAt, windowStart time.Time, windowSize time.Duration, now time.Time) (time.Time, bool, bool) {
+	if startsAt.IsZero() || windowStart.IsZero() || windowSize <= 0 || isStartOfDay(startsAt) || !isStartOfDay(windowStart) {
+		return time.Time{}, false, false
 	}
-	currentAnchorWindow := rollingWindowStart(anchor, windowSize, now)
-	previousAnchorWindow := currentAnchorWindow.Add(-windowSize)
-	return windowStart.Equal(startOfDay(currentAnchorWindow)) ||
-		windowStart.Equal(startOfDay(previousAnchorWindow)) ||
-		windowStart.Before(startOfDay(previousAnchorWindow))
+
+	current := rollingWindowStart(startsAt, windowSize, now)
+	if windowStart.Equal(startOfDay(startsAt)) {
+		return current, !current.Equal(startsAt), true
+	}
+	if windowStart.Equal(startOfDay(current)) {
+		return current, false, true
+	}
+
+	previous := current.Add(-windowSize)
+	if windowStart.Equal(startOfDay(previous)) {
+		return current, true, true
+	}
+
+	next := current.Add(windowSize)
+	if now.Before(next) && windowStart.Equal(startOfDay(next)) {
+		return current, false, true
+	}
+
+	return time.Time{}, false, false
 }
 
 func isStartOfDay(t time.Time) bool {

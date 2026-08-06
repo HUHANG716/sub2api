@@ -178,7 +178,67 @@ func TestUserSubscriptionNeedsDailyReset_MultiDaySubscriptionStillRefreshes(t *t
 		DailyWindowStart: &dailyWindowStart,
 	}
 
-	require.True(t, sub.NeedsDailyResetAt(dailyWindowStart.Add(24*time.Hour)), "多日订阅仍应按 24 小时日窗口刷新")
+	require.False(t, sub.HasOneTimeDailyQuota())
+	require.False(t, sub.NeedsDailyResetAt(start.Add(24*time.Hour-time.Minute)), "购买时刻前不应因旧午夜窗口提前刷新")
+	require.True(t, sub.NeedsDailyResetAt(start.Add(24*time.Hour)), "多日订阅应从购买时刻开始按 24 小时窗口刷新")
+}
+
+func TestUserSubscriptionNeedsWeeklyReset_LegacyMidnightWindowWaitsForPurchaseTime(t *testing.T) {
+	start := time.Date(2026, 5, 18, 10, 29, 0, 0, time.UTC)
+	legacyWindowStart := startOfDay(start)
+	sub := &UserSubscription{
+		StartsAt:         start,
+		ExpiresAt:        start.AddDate(0, 0, 28),
+		WeeklyWindowStart: &legacyWindowStart,
+	}
+
+	require.False(t, sub.NeedsWeeklyResetAt(start.Add(7*24*time.Hour-time.Minute)), "旧午夜周窗口不应在购买时刻前提前刷新")
+	require.True(t, sub.NeedsWeeklyResetAt(start.Add(7*24*time.Hour)), "周窗口应在购买时刻满 7 天后刷新")
+}
+
+func TestUserSubscriptionNeedsWeeklyReset_CurrentMidnightWindowWaitsForNextPurchaseBoundary(t *testing.T) {
+	start := time.Date(2026, 5, 18, 10, 29, 0, 0, time.UTC)
+	currentWindowStart := startOfDay(start.Add(7 * 24 * time.Hour))
+	sub := &UserSubscription{
+		StartsAt:         start,
+		ExpiresAt:        start.AddDate(0, 0, 28),
+		WeeklyWindowStart: &currentWindowStart,
+	}
+
+	require.False(t, sub.NeedsWeeklyResetAt(start.Add(7*24*time.Hour+time.Hour)), "当前周期被错误写成午夜时，不应在下一个购买边界前提前重置")
+	require.True(t, sub.NeedsWeeklyResetAt(start.Add(14*24*time.Hour)), "上一个周期的午夜窗口应在下一次真实购买边界重锚")
+}
+
+func TestUserSubscriptionNeedsWeeklyReset_UpcomingMidnightWindowWaitsForPurchaseBoundary(t *testing.T) {
+	start := time.Date(2026, 5, 18, 10, 29, 0, 0, time.UTC)
+	upcomingWindowStart := startOfDay(start.Add(14 * 24 * time.Hour))
+	sub := &UserSubscription{
+		StartsAt:         start,
+		ExpiresAt:        start.AddDate(0, 0, 28),
+		WeeklyWindowStart: &upcomingWindowStart,
+	}
+
+	now := start.Add(14*24*time.Hour - time.Minute)
+	windowStart := effectiveWindowStart(start, &upcomingWindowStart, 7*24*time.Hour, now)
+
+	require.False(t, sub.NeedsWeeklyResetAt(now), "被提前写入下一个午夜窗口时，购买时刻前不应再次重置")
+	require.NotNil(t, windowStart)
+	require.Equal(t, start.Add(7*24*time.Hour), *windowStart, "展示应保留当前购买周期的窗口")
+}
+
+func TestUserSubscriptionKeepsManualMidnightWindowOnUnrelatedDate(t *testing.T) {
+	start := time.Date(2026, 5, 18, 10, 29, 0, 0, time.UTC)
+	manualWindowStart := time.Date(2026, 5, 21, 0, 0, 0, 0, time.UTC)
+	sub := &UserSubscription{
+		StartsAt:         start,
+		ExpiresAt:        start.AddDate(0, 0, 28),
+		WeeklyWindowStart: &manualWindowStart,
+	}
+
+	windowStart := effectiveWindowStart(start, &manualWindowStart, 7*24*time.Hour, time.Date(2026, 5, 22, 12, 0, 0, 0, time.UTC))
+
+	require.NotNil(t, windowStart)
+	require.Equal(t, manualWindowStart, *windowStart, "与购买周期无关的午夜手动重置不应被重锚")
 }
 
 func TestUserSubscriptionDailyResetTime_UsesWindowStartPlus24Hours(t *testing.T) {
@@ -246,6 +306,30 @@ func TestCheckAndResetWindows_MultiDaySubscriptionStillResetsDailyUsage(t *testi
 	require.NoError(t, err)
 	require.True(t, repo.resetDailyCalled, "多日订阅仍应重置过期 daily window")
 	require.Equal(t, 0.0, sub.DailyUsageUSD)
+}
+
+func TestCheckAndResetWindows_CurrentMidnightWeeklyWindowWaitsForNextPurchaseBoundary(t *testing.T) {
+	startsAt := time.Date(2026, 5, 18, 10, 29, 0, 0, time.UTC)
+	now := startsAt.Add(7*24*time.Hour + time.Hour)
+	currentMidnightWindowStart := startOfDay(startsAt.Add(7 * 24 * time.Hour))
+	repo := &dailyResetTrackingUserSubRepo{}
+	svc := NewSubscriptionService(groupRepoNoop{}, repo, nil, nil, nil)
+	sub := &UserSubscription{
+		ID:                1,
+		UserID:            10,
+		GroupID:           20,
+		StartsAt:          startsAt,
+		ExpiresAt:         startsAt.AddDate(0, 0, 28),
+		WeeklyUsageUSD:    200,
+		WeeklyWindowStart: &currentMidnightWindowStart,
+	}
+
+	err := svc.checkAndResetWindowsAt(context.Background(), sub, now)
+
+	require.NoError(t, err)
+	require.False(t, repo.resetWeeklyCalled, "错误写成当前周午夜的窗口不应提前清零")
+	require.Equal(t, 200.0, sub.WeeklyUsageUSD)
+	require.Equal(t, currentMidnightWindowStart, *sub.WeeklyWindowStart)
 }
 
 func TestCheckAndResetWindows_AdvancesFromPurchaseAnchoredWindow(t *testing.T) {

@@ -238,15 +238,15 @@ func TestAutomaticWindowPreservesPersistedManualAnchorAndAdvancesWholePeriods(t 
 	require.Equal(t, manualAnchor.Add(60*24*time.Hour), resetAt)
 }
 
-func TestAutomaticWindowPreservesPeriodAlignedLaterMidnightManualAnchor(t *testing.T) {
+func TestAutomaticWindowReanchorsPeriodAlignedLaterMidnightWindow(t *testing.T) {
 	startsAt := time.Date(2026, 1, 1, 10, 0, 0, 0, time.UTC)
-	manualAnchor := startOfDay(startsAt).Add(30 * 24 * time.Hour)
+	legacyAnchor := startOfDay(startsAt).Add(30 * 24 * time.Hour)
 	sub := &UserSubscription{StartsAt: startsAt, ExpiresAt: startsAt.Add(100 * 24 * time.Hour)}
 
-	resetAt, ok := sub.automaticWindowStartAt(&manualAnchor, 30*24*time.Hour, startsAt.Add(60*24*time.Hour))
+	resetAt, ok := sub.automaticWindowStartAt(&legacyAnchor, 30*24*time.Hour, startsAt.Add(60*24*time.Hour))
 
 	require.True(t, ok)
-	require.Equal(t, manualAnchor.Add(30*24*time.Hour), resetAt)
+	require.Equal(t, startsAt.Add(60*24*time.Hour), resetAt)
 }
 
 func TestAutomaticWindowPreservesExactMidnightManualAnchor(t *testing.T) {

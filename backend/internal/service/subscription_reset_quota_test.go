@@ -21,10 +21,10 @@ type resetQuotaUserSubRepoStub struct {
 	resetDailyCalled   bool
 	resetWeeklyCalled  bool
 	resetMonthlyCalled bool
+	windowStart        time.Time
 	resetDailyErr      error
 	resetWeeklyErr     error
 	resetMonthlyErr    error
-	windowStart        time.Time
 }
 
 func (r *resetQuotaUserSubRepoStub) GetByID(_ context.Context, id int64) (*UserSubscription, error) {
@@ -108,6 +108,21 @@ func TestAdminResetQuota_ResetBoth(t *testing.T) {
 	require.Equal(t, resetAt, stub.windowStart)
 	require.Equal(t, resetAt, *result.DailyWindowStart)
 	require.Equal(t, resetAt, *result.WeeklyWindowStart)
+}
+
+func TestAdminResetQuota_AnchorsWindowAtResetTime(t *testing.T) {
+	stub := &resetQuotaUserSubRepoStub{
+		sub: &UserSubscription{ID: 10, UserID: 10, GroupID: 20},
+	}
+	svc := newResetQuotaSvc(stub)
+	before := time.Now()
+
+	_, err := svc.AdminResetQuota(context.Background(), 10, true, true, true)
+
+	after := time.Now()
+	require.NoError(t, err)
+	require.False(t, stub.windowStart.Before(before), "重置窗口不应早于重置操作")
+	require.False(t, stub.windowStart.After(after), "重置窗口不应晚于重置操作")
 }
 
 func TestAdminResetQuota_ResetDailyOnly(t *testing.T) {

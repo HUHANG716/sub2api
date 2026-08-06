@@ -1,0 +1,8 @@
+{
+  "migration": "194_reanchor_active_subscription_usage_windows.sql",
+  "phase": "review",
+  "reason": "Repairs active subscription usage windows that were persisted at midnight by the regression, restoring the purchase-time cadence.",
+  "risk": "The bulk update can briefly lock matching user_subscriptions rows while it normalizes their quota windows. A historical administrator reset made exactly at midnight cannot be distinguished from the regression's persisted midnight value.",
+  "mitigation": "It is limited to non-deleted, active, unexpired subscriptions. Each window is reanchored to the existing starts_at cadence, and usage is cleared only when that canonical window has already elapsed; current-window usage is preserved. New code writes manual resets at the operation time and only auto-corrects midnight values that align with the initial, current, previous, or next purchase cadence.",
+  "approved_by": "user-requested"
+}

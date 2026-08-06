@@ -89,15 +89,24 @@ function effectiveWindowStart(
 
   const windowDate = new Date(windowStart)
   const anchorDate = new Date(anchorStart)
-  const isLegacyMidnightWindow = isLocalMidnight(windowDate) || isUTCMidnight(windowDate)
+  const windowMs = windowHours * 60 * 60 * 1000
+  if (windowMs <= 0) return startTime
+
+  const canonicalStart = now.getTime() < anchorTime
+    ? anchorTime
+    : anchorTime + Math.floor((now.getTime() - anchorTime) / windowMs) * windowMs
+  const canonicalDate = new Date(canonicalStart)
+  const previousCanonicalDate = new Date(canonicalStart - windowMs)
+  const nextCanonicalDate = new Date(canonicalStart + windowMs)
+  const isInitialLegacyMidnightWindow = isSameMidnightDay(windowDate, anchorDate)
+  const isRegressionMidnightWindow = isSameMidnightDay(windowDate, canonicalDate)
+    || isSameMidnightDay(windowDate, previousCanonicalDate)
+    || (now.getTime() < canonicalStart + windowMs && isSameMidnightDay(windowDate, nextCanonicalDate))
   const anchorHasTimeOfDay = !isLocalMidnight(anchorDate) && !isUTCMidnight(anchorDate)
 
-  if (!isLegacyMidnightWindow || !anchorHasTimeOfDay) return startTime
+  if ((!isInitialLegacyMidnightWindow && !isRegressionMidnightWindow) || !anchorHasTimeOfDay) return startTime
 
-  const windowMs = windowHours * 60 * 60 * 1000
-  if (windowMs <= 0 || now.getTime() < anchorTime + windowMs) return anchorTime
-
-  return anchorTime + Math.floor((now.getTime() - anchorTime) / windowMs) * windowMs
+  return canonicalStart
 }
 
 function isLocalMidnight(date: Date): boolean {
@@ -155,4 +164,16 @@ export function getRemainingExpiryDuration(
     hours: Math.floor(totalMinutes / 60),
     minutes: totalMinutes % 60
   }
+}
+
+function isSameMidnightDay(left: Date, right: Date): boolean {
+  const sameLocalDay = left.getFullYear() === right.getFullYear()
+    && left.getMonth() === right.getMonth()
+    && left.getDate() === right.getDate()
+  const sameUTCDay = left.getUTCFullYear() === right.getUTCFullYear()
+    && left.getUTCMonth() === right.getUTCMonth()
+    && left.getUTCDate() === right.getUTCDate()
+
+  return (isLocalMidnight(left) && sameLocalDay)
+    || (isUTCMidnight(left) && sameUTCDay)
 }

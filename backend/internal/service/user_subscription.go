@@ -79,14 +79,7 @@ func (s *UserSubscription) NeedsDailyReset() bool {
 }
 
 func (s *UserSubscription) NeedsDailyResetAt(now time.Time) bool {
-	return s.needsDailyResetAt(now, s.DailyWindowStart)
-}
-
-func (s *UserSubscription) needsDailyResetAt(now time.Time, windowStart *time.Time) bool {
-	if windowStart == nil {
-		return false
-	}
-	return !now.Before(windowStart.Add(24 * time.Hour))
+	return s.needsWindowResetAt(s.DailyWindowStart, 24*time.Hour, now)
 }
 
 func (s *UserSubscription) NeedsWeeklyReset() bool {
@@ -94,14 +87,7 @@ func (s *UserSubscription) NeedsWeeklyReset() bool {
 }
 
 func (s *UserSubscription) NeedsWeeklyResetAt(now time.Time) bool {
-	return s.needsWeeklyResetAt(now, s.WeeklyWindowStart)
-}
-
-func (s *UserSubscription) needsWeeklyResetAt(now time.Time, windowStart *time.Time) bool {
-	if windowStart == nil {
-		return false
-	}
-	return !now.Before(windowStart.Add(7 * 24 * time.Hour))
+	return s.needsWindowResetAt(s.WeeklyWindowStart, 7*24*time.Hour, now)
 }
 
 func (s *UserSubscription) NeedsMonthlyReset() bool {
@@ -109,14 +95,17 @@ func (s *UserSubscription) NeedsMonthlyReset() bool {
 }
 
 func (s *UserSubscription) NeedsMonthlyResetAt(now time.Time) bool {
-	return s.needsMonthlyResetAt(now, s.MonthlyWindowStart)
+	return s.needsWindowResetAt(s.MonthlyWindowStart, 30*24*time.Hour, now)
 }
 
-func (s *UserSubscription) needsMonthlyResetAt(now time.Time, windowStart *time.Time) bool {
+func (s *UserSubscription) needsWindowResetAt(windowStart *time.Time, windowSize time.Duration, now time.Time) bool {
 	if windowStart == nil {
 		return false
 	}
-	return !now.Before(windowStart.Add(30 * 24 * time.Hour))
+	if _, stale, matched := reanchoredMidnightWindowStart(s.StartsAt, *windowStart, windowSize, now); matched {
+		return stale
+	}
+	return !now.Before(windowStart.Add(windowSize))
 }
 
 func (s *UserSubscription) canAutomaticallyResetDailyAt(now time.Time) bool {
@@ -138,15 +127,14 @@ func (s *UserSubscription) automaticWindowStartAt(previous *time.Time, period ti
 	if previous == nil {
 		return time.Time{}, false
 	}
+	if canonical, stale, matched := reanchoredMidnightWindowStart(s.StartsAt, *previous, period, now); matched {
+		if !stale || !canonical.Before(s.ExpiresAt) {
+			return time.Time{}, false
+		}
+		return canonical, true
+	}
 
 	anchor := *previous
-	// Older subscriptions initialized their first windows at midnight on their
-	// start date. Only that initial value is unambiguous; later midnight anchors
-	// may be manual resets and must remain authoritative.
-	legacyAnchor := startOfDay(s.StartsAt)
-	if legacyAnchor.Before(s.StartsAt) && anchor.Equal(legacyAnchor) {
-		anchor = s.StartsAt
-	}
 	next := anchor.Add(period)
 	if now.Before(next) || !next.Before(s.ExpiresAt) {
 		return time.Time{}, false
