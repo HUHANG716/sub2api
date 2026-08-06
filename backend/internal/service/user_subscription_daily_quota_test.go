@@ -229,12 +229,6 @@ func TestUserSubscriptionNeedsWeeklyReset_UpcomingMidnightWindowWaitsForPurchase
 func TestUserSubscriptionKeepsManualMidnightWindowOnUnrelatedDate(t *testing.T) {
 	start := time.Date(2026, 5, 18, 10, 29, 0, 0, time.UTC)
 	manualWindowStart := time.Date(2026, 5, 21, 0, 0, 0, 0, time.UTC)
-	sub := &UserSubscription{
-		StartsAt:         start,
-		ExpiresAt:        start.AddDate(0, 0, 28),
-		WeeklyWindowStart: &manualWindowStart,
-	}
-
 	windowStart := effectiveWindowStart(start, &manualWindowStart, 7*24*time.Hour, time.Date(2026, 5, 22, 12, 0, 0, 0, time.UTC))
 
 	require.NotNil(t, windowStart)
