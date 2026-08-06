@@ -187,8 +187,8 @@ func TestUserSubscriptionNeedsWeeklyReset_LegacyMidnightWindowWaitsForPurchaseTi
 	start := time.Date(2026, 5, 18, 10, 29, 0, 0, time.UTC)
 	legacyWindowStart := startOfDay(start)
 	sub := &UserSubscription{
-		StartsAt:         start,
-		ExpiresAt:        start.AddDate(0, 0, 28),
+		StartsAt:          start,
+		ExpiresAt:         start.AddDate(0, 0, 28),
 		WeeklyWindowStart: &legacyWindowStart,
 	}
 
@@ -200,8 +200,8 @@ func TestUserSubscriptionNeedsWeeklyReset_CurrentMidnightWindowWaitsForNextPurch
 	start := time.Date(2026, 5, 18, 10, 29, 0, 0, time.UTC)
 	currentWindowStart := startOfDay(start.Add(7 * 24 * time.Hour))
 	sub := &UserSubscription{
-		StartsAt:         start,
-		ExpiresAt:        start.AddDate(0, 0, 28),
+		StartsAt:          start,
+		ExpiresAt:         start.AddDate(0, 0, 28),
 		WeeklyWindowStart: &currentWindowStart,
 	}
 
@@ -213,8 +213,8 @@ func TestUserSubscriptionNeedsWeeklyReset_UpcomingMidnightWindowWaitsForPurchase
 	start := time.Date(2026, 5, 18, 10, 29, 0, 0, time.UTC)
 	upcomingWindowStart := startOfDay(start.Add(14 * 24 * time.Hour))
 	sub := &UserSubscription{
-		StartsAt:         start,
-		ExpiresAt:        start.AddDate(0, 0, 28),
+		StartsAt:          start,
+		ExpiresAt:         start.AddDate(0, 0, 28),
 		WeeklyWindowStart: &upcomingWindowStart,
 	}
 
