@@ -1,6 +1,8 @@
 package service
 
-import "time"
+import (
+	"time"
+)
 
 const subscriptionDayDuration = 24 * time.Hour
 
@@ -123,6 +125,9 @@ func (s *UserSubscription) canAutomaticallyResetMonthlyAt(now time.Time) bool {
 	return ok
 }
 
+// automaticWindowStartAt 计算期限对齐滚动窗口的当前窗口起点。
+// 窗口从锚点按整数个 period 步进，且不越过订阅到期时间，避免最后一个不完整
+// 周期重复发放额度（issue #5051）。
 func (s *UserSubscription) automaticWindowStartAt(previous *time.Time, period time.Duration, now time.Time) (time.Time, bool) {
 	if previous == nil {
 		return time.Time{}, false

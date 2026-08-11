@@ -248,24 +248,7 @@ func (s *SubscriptionService) assignOrExtendSubscription(ctx context.Context, in
 
 	// 已有订阅，执行续期（在事务中完成所有更新）
 	if existingSub != nil {
-		now := time.Now()
-		var newExpiresAt time.Time
-
-		isExpired := !existingSub.ExpiresAt.After(now)
-		if !isExpired {
-			// 未过期：从当前过期时间累加
-			newExpiresAt = existingSub.ExpiresAt.AddDate(0, 0, validityDays)
-		} else {
-			// 已过期：从当前时间开始计算
-			newExpiresAt = now.AddDate(0, 0, validityDays)
-		}
-
-		// 确保不超过最大过期时间
-		if newExpiresAt.After(MaxExpiresAt) {
-			newExpiresAt = MaxExpiresAt
-		}
-
-		if err := s.updateExistingSubscriptionTerm(ctx, existingSub, input.Notes, now, newExpiresAt, isExpired); err != nil {
+		if err := s.updateExistingSubscriptionTerm(ctx, existingSub.ID, validityDays, input.Notes, false); err != nil {
 			return nil, false, err
 		}
 
@@ -309,15 +292,42 @@ func (s *SubscriptionService) maybeInvalidateAssignmentCaches(userID, groupID in
 
 func (s *SubscriptionService) updateExistingSubscriptionTerm(
 	ctx context.Context,
-	existingSub *UserSubscription,
+	subscriptionID int64,
+	validityDays int,
 	notes string,
-	startsAt time.Time,
-	newExpiresAt time.Time,
-	isExpired bool,
+	assignmentSemantics bool,
 ) error {
 	return s.withSubscriptionUpdateTx(ctx, func(txCtx context.Context) error {
+		existingSub, err := s.userSubRepo.GetByIDForUpdate(txCtx, subscriptionID)
+		if err != nil {
+			return fmt.Errorf("lock subscription for renewal: %w", err)
+		}
+		if assignmentSemantics && existingSub.Status == SubscriptionStatusSuspended {
+			return nil
+		}
+
+		now := time.Now()
+		if s.now != nil {
+			now = s.now()
+		}
+		isExpired := !existingSub.ExpiresAt.After(now)
+		if assignmentSemantics {
+			isExpired = existingSub.Status == SubscriptionStatusExpired ||
+				(existingSub.Status != SubscriptionStatusSuspended && !existingSub.ExpiresAt.After(now))
+		}
+		newExpiresAt := existingSub.ExpiresAt.AddDate(0, 0, validityDays)
 		if isExpired {
-			renewed := renewedSubscriptionTerm(existingSub, notes, startsAt, newExpiresAt)
+			newExpiresAt = now.AddDate(0, 0, validityDays)
+		}
+		if newExpiresAt.After(MaxExpiresAt) {
+			newExpiresAt = MaxExpiresAt
+		}
+		if assignmentSemantics && strings.TrimSpace(existingSub.Notes) == strings.TrimSpace(notes) {
+			notes = ""
+		}
+
+		if isExpired {
+			renewed := renewedSubscriptionTerm(existingSub, notes, now, newExpiresAt)
 			if err := s.userSubRepo.Update(txCtx, renewed); err != nil {
 				return fmt.Errorf("renew expired subscription: %w", err)
 			}
@@ -522,15 +532,7 @@ func (s *SubscriptionService) assignSubscriptionWithReuse(ctx context.Context, i
 		if sub.Status == SubscriptionStatusExpired ||
 			(sub.Status != SubscriptionStatusSuspended && !sub.ExpiresAt.After(now)) {
 			validityDays := normalizeAssignValidityDays(input.ValidityDays)
-			newExpiresAt := now.AddDate(0, 0, validityDays)
-			if newExpiresAt.After(MaxExpiresAt) {
-				newExpiresAt = MaxExpiresAt
-			}
-			renewalNotes := input.Notes
-			if strings.TrimSpace(sub.Notes) == strings.TrimSpace(input.Notes) {
-				renewalNotes = ""
-			}
-			if err := s.updateExistingSubscriptionTerm(ctx, sub, renewalNotes, now, newExpiresAt, true); err != nil {
+			if err := s.updateExistingSubscriptionTerm(ctx, sub.ID, validityDays, input.Notes, true); err != nil {
 				return nil, false, err
 			}
 			s.maybeInvalidateAssignmentCaches(input.UserID, input.GroupID, false)
@@ -988,7 +990,8 @@ func (s *SubscriptionService) checkAndActivateWindowAt(ctx context.Context, sub 
 		return nil
 	}
 
-	return s.userSubRepo.ActivateWindows(ctx, sub.ID, now)
+	// 三类窗口都锚定首次使用时刻；服务层仍使用拆分参数接口，以兼容仓储实现。
+	return s.userSubRepo.ActivateWindows(ctx, sub.ID, now, now)
 }
 
 // AdminResetQuota manually resets the daily, weekly, and/or monthly usage windows.
@@ -1000,8 +1003,9 @@ func (s *SubscriptionService) AdminResetQuota(ctx context.Context, subscriptionI
 	if err != nil {
 		return nil, err
 	}
-	windowStart := s.now()
-	if err := s.userSubRepo.ResetUsageWindows(ctx, sub.ID, resetDaily, resetWeekly, resetMonthly, windowStart); err != nil {
+	now := s.now()
+	// 手动重置后，所选窗口都从重置时刻重新开始滚动。
+	if err := s.userSubRepo.ResetUsageWindows(ctx, sub.ID, resetDaily, resetWeekly, resetMonthly, now, now); err != nil {
 		return nil, err
 	}
 	// Invalidate L1 ristretto cache. Ristretto's Del() is asynchronous by design,
@@ -1023,7 +1027,7 @@ func (s *SubscriptionService) CheckAndResetWindows(ctx context.Context, sub *Use
 func (s *SubscriptionService) checkAndResetWindowsAt(ctx context.Context, sub *UserSubscription, now time.Time) error {
 	needsInvalidateCache := false
 
-	// 日窗口重置（24小时）
+	// 日窗口重置（从购买或上次重置时刻起滚动 24 小时）
 	if windowStart, ok := sub.automaticWindowStartAt(sub.DailyWindowStart, 24*time.Hour, now); !sub.HasOneTimeDailyQuota() && ok {
 		expectedWindowStart := sub.DailyWindowStart
 		if err := s.userSubRepo.ResetDailyUsage(ctx, sub.ID, expectedWindowStart, windowStart); err != nil {

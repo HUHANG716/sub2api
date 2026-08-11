@@ -21,10 +21,11 @@ type resetQuotaUserSubRepoStub struct {
 	resetDailyCalled   bool
 	resetWeeklyCalled  bool
 	resetMonthlyCalled bool
-	windowStart        time.Time
 	resetDailyErr      error
 	resetWeeklyErr     error
 	resetMonthlyErr    error
+	dailyStart         time.Time
+	periodicStart      time.Time
 }
 
 func (r *resetQuotaUserSubRepoStub) GetByID(_ context.Context, id int64) (*UserSubscription, error) {
@@ -35,11 +36,12 @@ func (r *resetQuotaUserSubRepoStub) GetByID(_ context.Context, id int64) (*UserS
 	return &cp, nil
 }
 
-func (r *resetQuotaUserSubRepoStub) ResetUsageWindows(_ context.Context, _ int64, resetDaily, resetWeekly, resetMonthly bool, windowStart time.Time) error {
+func (r *resetQuotaUserSubRepoStub) ResetUsageWindows(_ context.Context, _ int64, resetDaily, resetWeekly, resetMonthly bool, dailyStart, periodicStart time.Time) error {
 	r.resetDailyCalled = resetDaily
 	r.resetWeeklyCalled = resetWeekly
 	r.resetMonthlyCalled = resetMonthly
-	r.windowStart = windowStart
+	r.dailyStart = dailyStart
+	r.periodicStart = periodicStart
 	if resetDaily && r.resetDailyErr != nil {
 		return r.resetDailyErr
 	}
@@ -54,15 +56,15 @@ func (r *resetQuotaUserSubRepoStub) ResetUsageWindows(_ context.Context, _ int64
 	}
 	if resetDaily {
 		r.sub.DailyUsageUSD = 0
-		r.sub.DailyWindowStart = &windowStart
+		r.sub.DailyWindowStart = &dailyStart
 	}
 	if resetWeekly {
 		r.sub.WeeklyUsageUSD = 0
-		r.sub.WeeklyWindowStart = &windowStart
+		r.sub.WeeklyWindowStart = &periodicStart
 	}
 	if resetMonthly {
 		r.sub.MonthlyUsageUSD = 0
-		r.sub.MonthlyWindowStart = &windowStart
+		r.sub.MonthlyWindowStart = &periodicStart
 	}
 	return nil
 }
@@ -105,7 +107,9 @@ func TestAdminResetQuota_ResetBoth(t *testing.T) {
 	require.True(t, stub.resetDailyCalled, "应调用 ResetDailyUsage")
 	require.True(t, stub.resetWeeklyCalled, "应调用 ResetWeeklyUsage")
 	require.False(t, stub.resetMonthlyCalled, "不应调用 ResetMonthlyUsage")
-	require.Equal(t, resetAt, stub.windowStart)
+	// 手动重置后，日/周窗口都锚定重置时刻。
+	require.Equal(t, resetAt, stub.dailyStart)
+	require.Equal(t, resetAt, stub.periodicStart)
 	require.Equal(t, resetAt, *result.DailyWindowStart)
 	require.Equal(t, resetAt, *result.WeeklyWindowStart)
 }
@@ -121,8 +125,9 @@ func TestAdminResetQuota_AnchorsWindowAtResetTime(t *testing.T) {
 
 	after := time.Now()
 	require.NoError(t, err)
-	require.False(t, stub.windowStart.Before(before), "重置窗口不应早于重置操作")
-	require.False(t, stub.windowStart.After(after), "重置窗口不应晚于重置操作")
+	require.False(t, stub.dailyStart.Before(before), "日窗口不应早于重置操作")
+	require.False(t, stub.dailyStart.After(after), "日窗口不应晚于重置操作")
+	require.Equal(t, stub.dailyStart, stub.periodicStart)
 }
 
 func TestAdminResetQuota_ResetDailyOnly(t *testing.T) {

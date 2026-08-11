@@ -48,6 +48,8 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 			log.Model,
 			log.RequestedModel,
 			sqlmock.AnyArg(), // upstream_model
+			sqlmock.AnyArg(), // upstream_response_model
+			sqlmock.AnyArg(), // upstream_model_mismatch
 			sqlmock.AnyArg(), // group_id
 			sqlmock.AnyArg(), // subscription_id
 			log.InputTokens,
@@ -139,9 +141,11 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 			log.RequestID,
 			log.Model,
 			log.RequestedModel,
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
+			sqlmock.AnyArg(), // upstream_model
+			sqlmock.AnyArg(), // upstream_response_model
+			sqlmock.AnyArg(), // upstream_model_mismatch
+			sqlmock.AnyArg(), // group_id
+			sqlmock.AnyArg(), // subscription_id
 			log.InputTokens,
 			log.OutputTokens,
 			log.CacheCreationTokens,
@@ -215,8 +219,8 @@ func TestBuildUsageLogBestEffortInsertQuery_IncludesRequestedModelColumn(t *test
 	query, args := buildUsageLogBestEffortInsertQuery([]usageLogInsertPrepared{prepared})
 
 	require.Contains(t, query, "INSERT INTO usage_logs (")
-	require.Contains(t, query, "\n\t\t\tmodel,\n\t\t\trequested_model,\n\t\t\tupstream_model,")
-	require.Contains(t, query, "\n\t\t\trequest_id,\n\t\t\tmodel,\n\t\t\trequested_model,\n\t\t\tupstream_model,")
+	require.Contains(t, query, "\n\t\t\tmodel,\n\t\t\trequested_model,\n\t\t\tupstream_model,\n\t\t\tupstream_response_model,\n\t\t\tupstream_model_mismatch,")
+	require.Contains(t, query, "\n\t\t\trequest_id,\n\t\t\tmodel,\n\t\t\trequested_model,\n\t\t\tupstream_model,\n\t\t\tupstream_response_model,\n\t\t\tupstream_model_mismatch,")
 	require.Len(t, args, len(prepared.args))
 	require.Equal(t, prepared.args[5], args[5])
 }
@@ -277,11 +281,11 @@ func TestPrepareUsageLogInsert_PersistsImageSizeMetadata(t *testing.T) {
 		CreatedAt:          time.Date(2025, 1, 6, 12, 0, 0, 0, time.UTC),
 	})
 
-	require.Equal(t, sql.NullString{String: imageSize, Valid: true}, prepared.args[38])
-	require.Equal(t, sql.NullString{String: inputSize, Valid: true}, prepared.args[39])
-	require.Equal(t, sql.NullString{String: outputSize, Valid: true}, prepared.args[40])
-	require.Equal(t, sql.NullString{String: source, Valid: true}, prepared.args[41])
-	breakdownJSON, ok := prepared.args[42].(string)
+	require.Equal(t, sql.NullString{String: imageSize, Valid: true}, prepared.args[40])
+	require.Equal(t, sql.NullString{String: inputSize, Valid: true}, prepared.args[41])
+	require.Equal(t, sql.NullString{String: outputSize, Valid: true}, prepared.args[42])
+	require.Equal(t, sql.NullString{String: source, Valid: true}, prepared.args[43])
+	breakdownJSON, ok := prepared.args[44].(string)
 	require.True(t, ok)
 	require.JSONEq(t, `{"1K":1,"4K":1}`, breakdownJSON)
 }
@@ -719,10 +723,10 @@ func TestUsageLogRepositoryGetUserSpendingRanking(t *testing.T) {
 	start := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	end := start.Add(24 * time.Hour)
 
-	rows := sqlmock.NewRows([]string{"user_id", "email", "actual_cost", "requests", "tokens", "total_actual_cost", "total_requests", "total_tokens"}).
-		AddRow(int64(2), "beta@example.com", 12.5, int64(9), int64(900), 40.0, int64(30), int64(2600)).
-		AddRow(int64(1), "alpha@example.com", 12.5, int64(8), int64(800), 40.0, int64(30), int64(2600)).
-		AddRow(int64(3), "gamma@example.com", 4.25, int64(5), int64(300), 40.0, int64(30), int64(2600))
+	rows := sqlmock.NewRows([]string{"user_id", "email", "username", "actual_cost", "requests", "tokens", "total_actual_cost", "total_requests", "total_tokens"}).
+		AddRow(int64(2), "beta@example.com", "beta", 12.5, int64(9), int64(900), 40.0, int64(30), int64(2600)).
+		AddRow(int64(1), "alpha@example.com", "alpha", 12.5, int64(8), int64(800), 40.0, int64(30), int64(2600)).
+		AddRow(int64(3), "gamma@example.com", "", 4.25, int64(5), int64(300), 40.0, int64(30), int64(2600))
 
 	mock.ExpectQuery("WITH user_spend AS \\(").
 		WithArgs(start, end, "", 12).
@@ -732,8 +736,8 @@ func TestUsageLogRepositoryGetUserSpendingRanking(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, &usagestats.UserSpendingRankingResponse{
 		Ranking: []usagestats.UserSpendingRankingItem{
-			{UserID: 2, Email: "beta@example.com", ActualCost: 12.5, Requests: 9, Tokens: 900},
-			{UserID: 1, Email: "alpha@example.com", ActualCost: 12.5, Requests: 8, Tokens: 800},
+			{UserID: 2, Email: "beta@example.com", Username: "beta", ActualCost: 12.5, Requests: 9, Tokens: 900},
+			{UserID: 1, Email: "alpha@example.com", Username: "alpha", ActualCost: 12.5, Requests: 8, Tokens: 800},
 			{UserID: 3, Email: "gamma@example.com", ActualCost: 4.25, Requests: 5, Tokens: 300},
 		},
 		TotalActualCost: 40.0,
@@ -750,8 +754,8 @@ func TestUsageLogRepositoryGetUserSpendingRankingUserRoleFilter(t *testing.T) {
 	start := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	end := start.Add(24 * time.Hour)
 
-	rows := sqlmock.NewRows([]string{"user_id", "email", "actual_cost", "requests", "tokens", "total_actual_cost", "total_requests", "total_tokens"}).
-		AddRow(int64(9), "admin@example.com", 21.0, int64(4), int64(500), 21.0, int64(4), int64(500))
+	rows := sqlmock.NewRows([]string{"user_id", "email", "username", "actual_cost", "requests", "tokens", "total_actual_cost", "total_requests", "total_tokens"}).
+		AddRow(int64(9), "admin@example.com", "admin", 21.0, int64(4), int64(500), 21.0, int64(4), int64(500))
 
 	mock.ExpectQuery("us\\.role = \\$3").
 		WithArgs(start, end, service.RoleAdmin, 5).
@@ -760,7 +764,7 @@ func TestUsageLogRepositoryGetUserSpendingRankingUserRoleFilter(t *testing.T) {
 	got, err := repo.GetUserSpendingRanking(context.Background(), start, end, 5, service.RoleAdmin)
 	require.NoError(t, err)
 	require.Equal(t, []usagestats.UserSpendingRankingItem{
-		{UserID: 9, Email: "admin@example.com", ActualCost: 21.0, Requests: 4, Tokens: 500},
+		{UserID: 9, Email: "admin@example.com", Username: "admin", ActualCost: 21.0, Requests: 4, Tokens: 500},
 	}, got.Ranking)
 	require.Equal(t, 21.0, got.TotalActualCost)
 	require.NoError(t, mock.ExpectationsWereMet())
@@ -838,6 +842,8 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			"gpt-image-2",
 			sql.NullString{Valid: true, String: "gpt-image-2"},
 			sql.NullString{},
+			sql.NullString{},
+			sql.NullBool{},
 			sql.NullInt64{},
 			sql.NullInt64{},
 			0, 0, 0, 0, 0, 0,
@@ -901,6 +907,8 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			"gpt-5", // model
 			sql.NullString{Valid: true, String: "gpt-5"}, // requested_model
 			sql.NullString{},  // upstream_model
+			sql.NullString{},  // upstream_response_model
+			sql.NullBool{},    // upstream_model_mismatch
 			sql.NullInt64{},   // group_id
 			sql.NullInt64{},   // subscription_id
 			1,                 // input_tokens
@@ -973,6 +981,8 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			"gpt-5",
 			sql.NullString{Valid: true, String: "gpt-5"},
 			sql.NullString{},
+			sql.NullString{},
+			sql.NullBool{},
 			sql.NullInt64{},
 			sql.NullInt64{},
 			1, 2, 3, 4, 5, 6,
@@ -1031,6 +1041,8 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			"gpt-5.4",
 			sql.NullString{Valid: true, String: "gpt-5.4"},
 			sql.NullString{},
+			sql.NullString{},
+			sql.NullBool{},
 			sql.NullInt64{},
 			sql.NullInt64{},
 			1, 2, 3, 4, 5, 6,
