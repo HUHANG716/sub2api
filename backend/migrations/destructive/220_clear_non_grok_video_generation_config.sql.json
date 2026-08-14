@@ -1,0 +1,8 @@
+{
+  "migration": "220_clear_non_grok_video_generation_config.sql",
+  "phase": "review",
+  "reason": "Clears stale video pricing from non-Grok and non-composite groups because video generation is routed only through Grok or xAI-capable paths.",
+  "risk": "The migration scans and updates matching groups, clears operator pricing fields, and can take row or table locks while the backup and UPDATE run.",
+  "mitigation": "Before clearing values it creates the idempotent groups_video_price_backup_220 snapshot containing every affected price field. Grok and composite groups are excluded, and the migration comment documents the restore UPDATE for rollback.",
+  "approved_by": "hang"
+}

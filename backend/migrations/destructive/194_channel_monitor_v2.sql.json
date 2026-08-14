@@ -1,0 +1,8 @@
+{
+  "migration": "194_channel_monitor_v2.sql",
+  "phase": "review",
+  "reason": "Creates the passive channel monitor V2 configuration and one-minute rollup tables, plus the indexes used by its bounded background aggregation and query paths.",
+  "risk": "The migration creates normal indexes without CONCURRENTLY. If the target tables already exist and contain data from a partial or manual rollout, PostgreSQL can scan and briefly lock those tables while building the missing indexes.",
+  "mitigation": "On the normal rollout path the tables are newly created and empty, all DDL is idempotent, and historical backfill is handled separately by a bounded worker. Keep the existing deployment health checks in place and investigate any pre-existing channel_monitor_v2 tables before retrying a partially applied migration.",
+  "approved_by": "hang"
+}

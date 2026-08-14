@@ -1,0 +1,8 @@
+{
+  "migration": "221_group_model_pricing.sql",
+  "phase": "review",
+  "reason": "Adds per-model group pricing and an explicit long-context pricing switch while preserving the existing enabled behavior by default.",
+  "risk": "Adding a NOT NULL column with a default can briefly lock or rewrite the groups table, and the follow-up UPDATE scans existing groups to normalize the flag to true.",
+  "mitigation": "The change is additive and idempotent, TRUE preserves prior long-context billing semantics, the UPDATE only touches rows that differ, and model_pricing remains nullable until an operator configures overrides.",
+  "approved_by": "hang"
+}

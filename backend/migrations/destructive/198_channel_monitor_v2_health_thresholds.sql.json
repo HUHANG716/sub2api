@@ -1,0 +1,8 @@
+{
+  "migration": "198_channel_monitor_v2_health_thresholds.sql",
+  "phase": "review",
+  "reason": "Adds configurable Channel Monitor V2 health thresholds and merges tolerant factory defaults into the singleton configuration row.",
+  "risk": "Adding a NOT NULL JSONB column with a default can briefly lock the configuration table, and the follow-up UPDATE rewrites its singleton row.",
+  "mitigation": "The table contains only one configuration row, the DDL is idempotent, and the JSON merge places existing threshold values on the right so operator-provided keys override the factory defaults.",
+  "approved_by": "hang"
+}

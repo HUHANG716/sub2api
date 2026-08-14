@@ -1,0 +1,8 @@
+{
+  "migration": "203_channel_monitor_v2_default_ignore_and_cache.sql",
+  "phase": "review",
+  "reason": "Applies Channel Monitor V2 factory presets for ignored client or policy errors and cache-rate health thresholds.",
+  "risk": "The migration updates configuration values that still equal the earlier factory defaults; an operator who intentionally chose the same empty or zero values would receive the new presets.",
+  "mitigation": "Both updates are limited to the singleton row and only match empty ignored categories or zero cache thresholds. Later migration 205 safely corrects the temporary cache thresholds, and all settings remain operator-editable.",
+  "approved_by": "hang"
+}

@@ -1,0 +1,8 @@
+{
+  "migration": "199_channel_monitor_v2_fixed_rollups.sql",
+  "phase": "review",
+  "reason": "Creates fixed-size Channel Monitor V2 rollup tables and indexes for the 24-hour, 7-day, and 30-day dashboard views.",
+  "risk": "The migration creates normal indexes without CONCURRENTLY. If the rollup tables already contain data from a partial or manual rollout, index creation can scan and briefly lock them.",
+  "mitigation": "On the normal rollout path all rollup tables are newly created and empty, all DDL is idempotent, and the bounded aggregator populates them only after migrations complete. Investigate pre-existing rollup tables before retrying a partial deployment.",
+  "approved_by": "hang"
+}

@@ -1,0 +1,8 @@
+{
+  "migration": "201_channel_monitor_v2_refresh_5m.sql",
+  "phase": "review",
+  "reason": "Changes the untouched Channel Monitor V2 factory refresh interval from 60 seconds to 300 seconds to match fixed dashboard buckets.",
+  "risk": "The migration updates the singleton configuration row and changes aggregation cadence for installations that still match the original factory state.",
+  "mitigation": "The predicate requires id=1, version=1, no updater identity, and the exact 60-second value, so any operator-managed configuration is preserved. The setting remains editable after deployment.",
+  "approved_by": "hang"
+}

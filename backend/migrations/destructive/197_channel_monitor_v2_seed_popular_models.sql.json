@@ -1,0 +1,8 @@
+{
+  "migration": "197_channel_monitor_v2_seed_popular_models.sql",
+  "phase": "review",
+  "reason": "Seeds the Channel Monitor V2 factory configuration with popular-model allow-lists so unlisted models can be grouped as other in the presentation layer.",
+  "risk": "The migration performs a bulk-style UPDATE of the singleton configuration row and could replace a configuration that still exactly matches the original factory JSON.",
+  "mitigation": "The WHERE clause requires the exact migration-194 factory value, so any operator change to platform order, enabled state, model lists, or platform membership prevents the update. The version is incremented for auditability.",
+  "approved_by": "hang"
+}

@@ -1,0 +1,8 @@
+{
+  "migration": "196_channel_monitor_v2_ignored_error_categories.sql",
+  "phase": "review",
+  "reason": "Adds the ignored error category list used to exclude selected categories from Channel Monitor V2 health scoring while retaining them in breakdowns.",
+  "risk": "Adding a NOT NULL array column with a default can briefly lock channel_monitor_v2_config while PostgreSQL updates table metadata and validates the default.",
+  "mitigation": "The configuration table contains only the singleton settings row, the change is additive and idempotent, and existing installations receive a safe empty list until later factory-default migrations run.",
+  "approved_by": "hang"
+}

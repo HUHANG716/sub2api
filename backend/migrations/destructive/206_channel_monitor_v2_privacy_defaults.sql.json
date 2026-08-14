@@ -1,0 +1,8 @@
+{
+  "migration": "206_channel_monitor_v2_privacy_defaults.sql",
+  "phase": "review",
+  "reason": "Corrects the Channel Monitor throughput-visibility setting to the privacy-preserving hidden-by-default value for existing installations.",
+  "risk": "The migration updates every recognized false representation for this exact setting key, including an explicit operator choice to expose throughput.",
+  "mitigation": "The update is restricted to channel_monitor_hide_throughput and known false values, is idempotent, and the setting can be switched back through the normal admin configuration after deployment.",
+  "approved_by": "hang"
+}

@@ -1,0 +1,8 @@
+{
+  "migration": "205_channel_monitor_v2_reset_factory_cache_thresholds.sql",
+  "phase": "review",
+  "reason": "Resets the temporary Channel Monitor V2 factory cache-rate thresholds introduced by migration 203 back to tolerant zero values.",
+  "risk": "The migration rewrites the singleton configuration row and could replace an operator choice that independently matches the exact 0.85 and 0.60 threshold pair.",
+  "mitigation": "The predicate requires the exact temporary pair, version=1, and no updater identity, which preserves normally customized rows. The thresholds remain editable after deployment.",
+  "approved_by": "hang"
+}
