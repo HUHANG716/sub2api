@@ -67,6 +67,11 @@
     @apply scroll-smooth antialiased;
     scrollbar-color: var(--theme-scrollbar-thumb) var(--theme-scrollbar-track);
     scrollbar-width: thin;
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
   }
 
   body {
