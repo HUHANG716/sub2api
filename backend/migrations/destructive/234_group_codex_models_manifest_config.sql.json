@@ -1,0 +1,8 @@
+{
+  "migration": "234_group_codex_models_manifest_config.sql",
+  "phase": "expand",
+  "reason": "Adds a JSONB configuration column for pinned Codex model manifest accounts with a constant empty-object default.",
+  "risk": "Adding a NOT NULL column briefly locks the groups table. Existing and old-image inserts must remain valid while the two application versions overlap.",
+  "mitigation": "The constant '{}' default satisfies NOT NULL for existing rows and old-image inserts. The configuration is disabled by default, preserves normal model discovery, and does not rewrite existing application fields. Run through the deployment migration gate before switching traffic.",
+  "approved_by": "Codex automated review for upstream update requested by hang"
+}
