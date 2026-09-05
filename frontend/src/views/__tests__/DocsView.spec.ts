@@ -454,15 +454,12 @@ describe('DocsView', () => {
     vi.unstubAllGlobals()
   })
 
-  it('uses the same Codex and Gemini fields as the product use-key modal', async () => {
+  it('keeps generic examples compatible with the catalog-driven use-key modal', async () => {
     const docsSource = readFileSync(docsViewSourcePath, 'utf8')
     const useKeyModalSource = readFileSync(path.resolve(process.cwd(), 'src/components/keys/UseKeyModal.vue'), 'utf8')
     const ccswitchImportSource = readFileSync(ccswitchImportSourcePath, 'utf8')
 
     for (const token of [
-      'model_reasoning_effort = "xhigh"',
-      'model = "gpt-5.5"',
-      'review_model = "gpt-5.5"',
       'disable_response_storage = true',
       'wire_api = "responses"',
       'supports_websockets = true',
@@ -475,12 +472,22 @@ describe('DocsView', () => {
       expect(docsSource).toContain(token)
     }
 
+    for (const token of [
+      'model_reasoning_effort = "xhigh"',
+      'model = "gpt-5.5"',
+      'review_model = "gpt-5.5"'
+    ]) {
+      expect(docsSource).toContain(token)
+    }
+    expect(useKeyModalSource).toContain("selectCodexCatalogModel('gpt-5.5')")
+    expect(useKeyModalSource).toContain('codexReasoningEffortTomlLine(model)')
+
     expect(docsSource).not.toContain('model = "gpt-5.4"')
     expect(docsSource).not.toContain('review_model = "gpt-5.4"')
     expect(docsSource).not.toContain('"model":"gpt-5.4"')
     expect(OPENAI_CC_SWITCH_CODEX_MODEL).toBe('gpt-5.5')
 
-    expect(useKeyModalSource).toContain('model_context_window = 1000000')
+    expect(useKeyModalSource).not.toContain('model_context_window = 1000000')
     expect(useKeyModalSource).not.toContain('model_auto_compact_token_limit = 900000')
 
     for (const token of [

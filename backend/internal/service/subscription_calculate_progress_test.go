@@ -441,3 +441,27 @@ func TestCalculateProgress_ResetsInSeconds_NotNegative(t *testing.T) {
 	assert.GreaterOrEqual(t, progress.Daily.ResetsInSeconds, int64(0),
 		"ResetsInSeconds 不应为负数")
 }
+
+func TestCalculateProgress_WeeklyResetsAt_LegacyMidnightAnchor(t *testing.T) {
+	svc := newTestSubscriptionService()
+	startsAt := time.Now().Add(-48 * time.Hour).Truncate(time.Second)
+	weeklyStart := time.Date(startsAt.Year(), startsAt.Month(), startsAt.Day(), 0, 0, 0, 0, startsAt.Location())
+
+	sub := &UserSubscription{
+		ID:                1,
+		StartsAt:          startsAt,
+		ExpiresAt:         startsAt.AddDate(0, 0, 30),
+		WeeklyUsageUSD:    2000.18,
+		WeeklyWindowStart: ptrTime(weeklyStart),
+	}
+	group := &Group{
+		Name:           "Pro",
+		WeeklyLimitUSD: ptrFloat64(2000.0),
+	}
+
+	progress := svc.calculateProgress(sub, group)
+
+	require.NotNil(t, progress.Weekly)
+	assert.True(t, startsAt.Add(7*24*time.Hour).Equal(progress.Weekly.ResetsAt),
+		"legacy 午夜锚点的周窗口 ResetsAt 应为 StartsAt+7d，与实际推进时间一致")
+}
