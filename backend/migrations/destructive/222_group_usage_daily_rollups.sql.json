@@ -1,0 +1,8 @@
+{
+  "migration": "222_group_usage_daily_rollups.sql",
+  "phase": "expand",
+  "reason": "Adds derived daily group-usage tables and invalidation triggers; source usage rows remain intact.",
+  "risk": "Trigger creation takes table locks, and invalidation serializes updates of the single rollup-state row.",
+  "mitigation": "Apply in a low-traffic window. History is backfilled by the background worker; the UPDATE statements affect only the derived publication watermark.",
+  "approved_by": "Codex automated review for upstream merge requested by hang"
+}

@@ -1,0 +1,9 @@
+{
+  "migration": "224_user_platform_quotas_add_cn_providers.sql",
+  "phase": "cleanup",
+  "reason": "Replaces the platform CHECK with a superset that also accepts Kimi, Zhipu and DeepSeek. No columns or data are removed.",
+  "risk": "Replacing and validating the CHECK takes table locks. Older code must not create the new provider values before upgrading.",
+  "mitigation": "The pre-merge release still writes the original five allowed platforms, all accepted by the new CHECK. Keep DROP and ADD in the migration transaction and ship this SQL separately from application changes.",
+  "approved_by": "Codex automated review for upstream merge requested by hang",
+  "safe_after_commit": "60ee79edb99d00fbf965ef1b6c37eb3463ae235a"
+}

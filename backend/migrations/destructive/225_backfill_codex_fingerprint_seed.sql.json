@@ -1,0 +1,8 @@
+{
+  "migration": "225_backfill_codex_fingerprint_seed.sql",
+  "phase": "review",
+  "reason": "Fills missing or invalid system-managed UUID seeds on enabled OpenAI OAuth fingerprint accounts.",
+  "risk": "Updates matching account JSON and takes row locks; invalid seed values are replaced.",
+  "mitigation": "Only non-deleted OpenAI OAuth accounts using device/session/full mode qualify. Valid nonzero canonical seeds are preserved, so reruns are idempotent; retain a database backup before applying.",
+  "approved_by": "Codex automated review for upstream merge requested by hang"
+}

@@ -1,0 +1,8 @@
+{
+  "migration": "231_user_restrict_public_groups.sql",
+  "phase": "expand",
+  "reason": "Adds opt-in user restrictions for binding public groups.",
+  "risk": "ALTER TABLE users requires a lock and adds a required column.",
+  "mitigation": "The constant FALSE default preserves existing user access and old INSERT statements. Restrictions only take effect when explicitly enabled by the new code.",
+  "approved_by": "Codex automated review for upstream merge requested by hang"
+}

@@ -1,0 +1,8 @@
+{
+  "migration": "223_group_usage_rollup_timezone.sql",
+  "phase": "expand",
+  "reason": "Makes derived usage rollups follow the configured timezone while marking existing buckets as Asia/Shanghai.",
+  "risk": "Adds a required column and replaces trigger functions; timezone changes cause derived buckets to rebuild.",
+  "mitigation": "The constant default preserves the meaning of existing buckets. Run after migration 222 and monitor rollup backfill and write latency.",
+  "approved_by": "Codex automated review for upstream merge requested by hang"
+}

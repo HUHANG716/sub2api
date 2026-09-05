@@ -1,0 +1,8 @@
+{
+  "migration": "232_group_force_openai_fast.sql",
+  "phase": "expand",
+  "reason": "Adds an opt-in per-group flag forcing priority service tier.",
+  "risk": "ALTER TABLE groups takes a lock; enabling the flag later can affect upstream request cost.",
+  "mitigation": "The constant FALSE default leaves existing groups and old INSERT statements unchanged. This migration does not enable priority routing.",
+  "approved_by": "Codex automated review for upstream merge requested by hang"
+}

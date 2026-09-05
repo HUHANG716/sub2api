@@ -1,0 +1,8 @@
+{
+  "migration": "228_channel_pricing_multipliers.sql",
+  "phase": "expand",
+  "reason": "Adds optional Fast/Flex and per-token interval multipliers with positive-value constraints.",
+  "risk": "ALTER TABLE and CHECK validation can block concurrent pricing edits.",
+  "mitigation": "All new columns are nullable and every CHECK accepts NULL, preserving existing prices. Conditional constraint creation supports safe replay; apply during low pricing-edit traffic.",
+  "approved_by": "Codex automated review for upstream merge requested by hang"
+}

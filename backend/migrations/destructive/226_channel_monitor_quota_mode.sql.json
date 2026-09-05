@@ -1,0 +1,9 @@
+{
+  "migration": "226_channel_monitor_quota_mode.sql",
+  "phase": "cleanup",
+  "reason": "Widens monitor and template provider CHECKs and adds optional quota monitoring. Existing probes remain probes.",
+  "risk": "CHECK replacement and validation, a required column and a nonconcurrent account index take table locks.",
+  "mitigation": "All original provider values remain allowed. New check_mode defaults to probe, account_id and quota are nullable, and public quota display defaults off. The pre-merge code can continue using the old columns. Apply transactionally in a low-traffic window, separately from application changes.",
+  "approved_by": "Codex automated review for upstream merge requested by hang",
+  "safe_after_commit": "60ee79edb99d00fbf965ef1b6c37eb3463ae235a"
+}
