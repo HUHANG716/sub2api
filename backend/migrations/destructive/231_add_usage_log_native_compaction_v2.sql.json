@@ -1,0 +1,8 @@
+{
+  "migration": "231_add_usage_log_native_compaction_v2.sql",
+  "phase": "expand",
+  "reason": "Adds the runtime native-compaction marker to usage logs.",
+  "risk": "ALTER TABLE on the potentially large usage_logs table requires a lock.",
+  "mitigation": "The constant FALSE default preserves all existing rows and old INSERT statements. Apply with normal migration locking in a low-traffic window.",
+  "approved_by": "Codex automated review for upstream merge requested by hang"
+}

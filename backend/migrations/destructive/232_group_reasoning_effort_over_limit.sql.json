@@ -1,0 +1,8 @@
+{
+  "migration": "232_group_reasoning_effort_over_limit.sql",
+  "phase": "expand",
+  "reason": "Adds per-group handling for reasoning effort above the configured ceiling.",
+  "risk": "ALTER TABLE groups requires a lock and adds a required text column.",
+  "mitigation": "The constant downgrade default preserves current ceiling behavior and old INSERT statements; new rejection behavior remains an explicit configuration choice.",
+  "approved_by": "Codex automated review for upstream merge requested by hang"
+}

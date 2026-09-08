@@ -1,0 +1,9 @@
+{
+  "migration": "234_channel_max_reasoning_effort_multiplier.sql",
+  "phase": "cleanup",
+  "safe_after_commit": "cbd7e5907138d60e9f563a782d9bd5b5ab460c95",
+  "reason": "Imports upstream's nullable max reasoning effort billing multiplier and replaces only its new positive-value check constraint. The deployed compatibility release neither reads this column nor depends on this constraint.",
+  "risk": "ALTER TABLE and validation of the new check acquire locks on channel_model_pricing. A pre-existing non-positive value from a partial manual application would fail validation; no application column or data is dropped.",
+  "mitigation": "Ship the original upstream migration separately from application code. Existing rows receive NULL and satisfy the check; NULL remains valid for writes by the old image during the deployment overlap. Verify active-image ancestry and migration success before switching traffic.",
+  "approved_by": "Codex automated review for upstream update requested by hang"
+}

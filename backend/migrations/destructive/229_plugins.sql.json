@@ -1,0 +1,8 @@
+{
+  "migration": "229_plugins.sql",
+  "phase": "expand",
+  "reason": "Creates namespaced plugin installation and binding tables, initially disabled.",
+  "risk": "Nonconcurrent indexes can block writes to the new binding table; schema names could collide with a preexisting custom table.",
+  "mitigation": "Only new sub2api_plugin tables are indexed, with IF NOT EXISTS. Plugins and bindings default disabled. Verify no incompatible custom tables use these names before applying.",
+  "approved_by": "Codex automated review for upstream merge requested by hang"
+}

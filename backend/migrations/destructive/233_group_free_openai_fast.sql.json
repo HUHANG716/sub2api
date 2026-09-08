@@ -1,0 +1,8 @@
+{
+  "migration": "233_group_free_openai_fast.sql",
+  "phase": "expand",
+  "reason": "Adds an opt-in flag for billing priority requests at standard rates.",
+  "risk": "ALTER TABLE groups requires a lock; opting in later affects operator margin.",
+  "mitigation": "The constant FALSE default preserves current billing and old INSERT statements. This migration does not activate discounted priority billing.",
+  "approved_by": "Codex automated review for upstream merge requested by hang"
+}
