@@ -1,0 +1,8 @@
+{
+  "migration": "235_group_model_allowlist.sql",
+  "phase": "expand",
+  "reason": "Adds model_allowlist alongside the legacy models_list_config column before the new application image starts reading it.",
+  "risk": "Adding a NOT NULL JSONB column briefly locks groups while PostgreSQL installs its constant default.",
+  "mitigation": "The legacy column remains available to the active image, the constant empty-object default keeps old inserts valid, and migration 236 backfills and synchronizes both columns before traffic switches.",
+  "approved_by": "hang"
+}

@@ -1,0 +1,8 @@
+{
+  "migration": "236_group_model_allowlist_repair.sql",
+  "phase": "compatible",
+  "reason": "Backfills model_allowlist from the legacy column and installs bidirectional synchronization for old/new image overlap and rollback.",
+  "risk": "The targeted backfill locks rows whose two column values differ, and the temporary trigger adds a small cost to group writes.",
+  "mitigation": "Only divergent rows are updated, an existing non-empty model_allowlist wins unless it is still the empty default, and the trigger keeps both schemas writable until a later cleanup release removes the legacy column.",
+  "approved_by": "hang"
+}
