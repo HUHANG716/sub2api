@@ -761,6 +761,7 @@ const creditCompositionText = computed(() => {
   return `$${baseCreditedAmount.value.toFixed(2)}`
 })
 const rechargeRateText = computed(() => t('payment.rechargeRatePreview', {
+  currency: selectedCurrency.value,
   usd: balanceRechargeMultiplier.value.toFixed(2),
 }))
 const hasRechargeBonusCampaign = computed(() => {

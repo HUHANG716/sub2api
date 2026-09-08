@@ -38,6 +38,10 @@ vi.mock('@/stores', () => ({
   useAppStore: () => appState
 }))
 
+vi.mock('@/stores/app', () => ({
+  useAppStore: () => appState
+}))
+
 vi.mock('vue-i18n', async (importOriginal) => {
   const actual = await importOriginal<typeof import('vue-i18n')>()
   return {

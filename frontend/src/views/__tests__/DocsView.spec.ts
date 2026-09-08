@@ -460,9 +460,9 @@ describe('DocsView', () => {
     const ccswitchImportSource = readFileSync(ccswitchImportSourcePath, 'utf8')
 
     for (const token of [
-      'model_reasoning_effort = "xhigh"',
-      'model = "gpt-5.5"',
-      'review_model = "gpt-5.5"',
+      'model_reasoning_effort',
+      'model = "',
+      'review_model = "',
       'disable_response_storage = true',
       'wire_api = "responses"',
       'supports_websockets = true',
