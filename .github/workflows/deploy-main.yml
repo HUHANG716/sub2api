@@ -342,6 +342,36 @@ jobs:
             --applied-list /tmp/sub2api-main-migrations.applied \
             --active-image "$active_image"
 
+          comm -23 /tmp/sub2api-main-migrations.expected /tmp/sub2api-main-migrations.applied > /tmp/sub2api-main-migrations.pending
+          if grep -Fxq '239_channel_reasoning_effort_multipliers.sql' /tmp/sub2api-main-migrations.pending; then
+            legacy_group_prices="$(docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" -Atc "
+              SELECT count(*) FROM groups g
+              CROSS JOIN LATERAL jsonb_array_elements(
+                CASE WHEN jsonb_typeof(g.model_pricing) = 'array' THEN g.model_pricing ELSE '[]'::jsonb END
+              ) entry
+              WHERE jsonb_typeof(entry->'max_reasoning_effort_multiplier') = 'number'
+            " < /dev/null)"
+            if [ "$legacy_group_prices" != "0" ]; then
+              echo "Refusing blue/green migration 239: ${legacy_group_prices} legacy group prices require an old-image compatibility release first." >&2
+              exit 1
+            fi
+            echo "Migration 239 preflight: no legacy group multipliers need overlap compatibility."
+          fi
+          if grep -Eq '^(238_purge_unlimited_user_platform_quotas|239_channel_reasoning_effort_multipliers)\.sql$' /tmp/sub2api-main-migrations.pending; then
+            backup_dir="$RUNTIME_DIR/backups"
+            install -d -m 700 "$backup_dir"
+            backup_file="$backup_dir/pre-migration-238-239-${SHORT_SHA}-$(date -u +%Y%m%dT%H%M%SZ).dump"
+            (
+              umask 077
+              docker compose exec -T postgres pg_dump -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" \
+                --format=custom --table=public.user_platform_quotas --table=public.groups --table=public.channel_model_pricing \
+                < /dev/null > "${backup_file}.partial"
+            )
+            docker compose exec -T postgres pg_restore --list < "${backup_file}.partial" > /dev/null
+            mv "${backup_file}.partial" "$backup_file"
+            echo "Quota and pricing backup verified: $backup_file"
+          fi
+
           CADDYFILE=/etc/caddy/Caddyfile \
           CADDY_SITE_HOST=code.hahacode.top \
           PUBLIC_HEALTH_URL=https://code.hahacode.top/health \
