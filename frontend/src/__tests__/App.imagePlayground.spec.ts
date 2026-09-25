@@ -80,7 +80,8 @@ vi.mock('@/components/common/AnnouncementPopup.vue', () => ({
 }))
 
 vi.mock('@/router/title', () => ({
-  resolveDocumentTitle: vi.fn(() => 'Hahacode')
+  resolveDocumentTitle: vi.fn(() => 'Hahacode'),
+  resolveRouteMetaKeys: vi.fn((route: { meta: { titleKey?: string } }) => ({ titleKey: route.meta.titleKey }))
 }))
 
 vi.mock('@/api/setup', () => ({
