@@ -1,0 +1,9 @@
+{
+  "migration": "237_add_minimax_platform.sql",
+  "phase": "cleanup",
+  "safe_after_commit": "c8e68b0c22b5610538e2c0603d1452ba6a41c59d",
+  "reason": "Widens four platform/provider CHECK constraints to accept MiniMax while preserving every value accepted by the deployed 0.2.3 release. No columns or rows are removed.",
+  "risk": "Replacing and validating CHECK constraints locks quota, route, monitor and template tables. The gate classifies DROP CONSTRAINT as cleanup even though each replacement is a superset.",
+  "mitigation": "Keep each DROP and ADD in the existing migration transaction so validation failure rolls back the replacement. Require the deployed compatibility commit through the active-image ancestry gate and verify candidate health before switching traffic. This follow-up records the review of the upstream SQL already merged into main; the original failed CI must not be used as deployment evidence.",
+  "approved_by": "Codex automated review for production deployment requested by hang"
+}

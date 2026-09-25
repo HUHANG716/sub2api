@@ -1,0 +1,9 @@
+{
+  "migration": "238_opencode_go_platform.sql",
+  "phase": "cleanup",
+  "safe_after_commit": "c8e68b0c22b5610538e2c0603d1452ba6a41c59d",
+  "reason": "Widens the four platform/provider CHECK constraints again to accept OpenCode GO, retaining MiniMax and every value used by the deployed compatibility release.",
+  "risk": "CHECK replacement and validation acquire table locks. Old application versions do not support configuring the newly accepted platforms.",
+  "mitigation": "Apply after migration 237 within the normal migration transaction, verify active-image ancestry, and switch traffic only after the new image is healthy. Existing rows and old-image writes remain valid. This metadata-only follow-up reviews the upstream SQL already present in the failed release without altering its checksum.",
+  "approved_by": "Codex automated review for production deployment requested by hang"
+}

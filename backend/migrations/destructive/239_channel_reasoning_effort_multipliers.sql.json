@@ -1,0 +1,8 @@
+{
+  "migration": "239_channel_reasoning_effort_multipliers.sql",
+  "phase": "review",
+  "reason": "Adds generic reasoning-effort pricing maps and backfills explicitly configured legacy max multipliers. The legacy channel pricing column remains available to the old image.",
+  "risk": "Column additions acquire locks and the backfill updates pricing rows. Group JSON conversion removes the legacy max key, so an old image would lose an explicitly configured group multiplier during overlap or rollback.",
+  "mitigation": "Before this migration is pending, reject a blue/green deploy if group pricing contains numeric legacy max multipliers. Such installations need a compatibility release or a separate maintenance migration. Back up groups and channel_model_pricing on the server before deployment. Preserve the SQL's existing-map precedence and one-time column backfill; avoid pricing edits during the deployment overlap and restore compatible pricing before rolling back after new pricing configuration changes.",
+  "approved_by": "Codex automated review for production deployment requested by hang"
+}

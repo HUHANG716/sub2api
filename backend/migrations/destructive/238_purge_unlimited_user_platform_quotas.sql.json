@@ -1,0 +1,8 @@
+{
+  "migration": "238_purge_unlimited_user_platform_quotas.sql",
+  "phase": "review",
+  "reason": "Removes quota rows whose daily, weekly and monthly limits are all NULL; a missing row represents unlimited access in both application versions.",
+  "risk": "The DELETE locks matching rows and permanently removes their window usage counters, including soft-deleted unlimited rows. Any non-NULL limit, including zero, is preserved.",
+  "mitigation": "Save a server-local custom-format backup of user_platform_quotas before applying pending migrations. The exact three-NULL predicate is covered by the migration test, and execution remains transactional. Historical billed usage in usage_logs is unaffected; restore quota rows from the backup if their otherwise unused counters are needed.",
+  "approved_by": "Codex automated review for production deployment requested by hang"
+}

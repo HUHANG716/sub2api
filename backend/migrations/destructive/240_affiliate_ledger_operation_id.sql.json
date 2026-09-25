@@ -1,0 +1,8 @@
+{
+  "migration": "240_affiliate_ledger_operation_id.sql",
+  "phase": "expand",
+  "reason": "Adds a nullable idempotency identifier and partial unique index for offline affiliate withdrawals.",
+  "risk": "Adding the column briefly locks the ledger; the nonconcurrent index build can block ledger writes while scanning existing rows.",
+  "mitigation": "Existing rows and old-image inserts receive NULL and are excluded from the unique index. Run through the bounded transactional migration runner and verify candidate health before switching traffic; an index-build failure rolls back the migration rather than publishing a partially initialized release.",
+  "approved_by": "Codex automated review for production deployment requested by hang"
+}
