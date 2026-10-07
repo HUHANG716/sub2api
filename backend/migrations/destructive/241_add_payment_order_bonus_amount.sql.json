@@ -1,0 +1,8 @@
+{
+  "migration": "241_add_payment_order_bonus_amount.sql",
+  "phase": "expand",
+  "reason": "Adds bonus_amount with a constant zero default. Existing payment rows and old-image writes retain their previous amounts; older code does not reference the new column.",
+  "risk": "ADD COLUMN takes a brief table lock. No existing payment amount or row is changed.",
+  "mitigation": "Use transaction-local 1s lock and 5s statement timeouts. Verify a server-local custom-format backup of payment_orders before applying pending 241 migrations. Keep the old image serving until the new image passes health checks; code rollback may leave this additive column in place.",
+  "approved_by": "Codex automated review for upstream merge and production deployment requested by hang on 2026-10-07"
+}
