@@ -14,7 +14,7 @@ jobs:
   changes:
     name: Detect Changes
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
@@ -49,7 +49,7 @@ jobs:
     needs: changes
     if: ${{ github.event_name == 'schedule' || needs.changes.outputs.backend == 'true' }}
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     steps:
       - uses: actions/checkout@v6
       - name: Set up Go
@@ -71,7 +71,7 @@ jobs:
     needs: changes
     if: ${{ github.event_name == 'schedule' || needs.changes.outputs.frontend == 'true' }}
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     steps:
       - uses: actions/checkout@v6
       - name: Set up pnpm

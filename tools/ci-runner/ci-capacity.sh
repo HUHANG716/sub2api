@@ -34,7 +34,7 @@ env -u RUNNER_TRACKING_ID nohup bash -c '
   while [[ -f "$1" ]] && kill -0 "$2" 2>/dev/null; do sleep 1; done
 ' -- "$ci_ready" "$ci_worker" </dev/null >"$ci_state/$ci_worker.log" 2>&1 &
 ci_holder=$!
-ci_deadline=$((SECONDS + 3600))
+ci_deadline=$((SECONDS + 21600))
 while [[ ! -f "$ci_ready" ]]; do
   if ! kill -0 "$ci_holder" 2>/dev/null; then
     printf 'The CI capacity lock could not be acquired.\n' >&2
