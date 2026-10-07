@@ -16,20 +16,24 @@ The runner container is privileged for nested Docker; it is for trusted code.
 - Host: Baole, Ubuntu 22.04, x86_64.
 - Container and service: `sub2api-ci-linux`.
 - State: `/opt/sub2api-ci/storage`, a bounded 8 GiB ext4 loop filesystem.
-- Limits: 2 CPUs, 2 GiB RAM, no swap allowance, low CPU shares.
-- Go: two concurrent build processes, `GOMAXPROCS=2`, `GOMEMLIMIT=1200MiB`.
-- Node: 1 GiB maximum V8 heap.
+- Limits: 2 CPUs, 5 GiB RAM, no swap allowance, low CPU shares.
+- Go: one concurrent build process, `GOMAXPROCS=2`, `GOMEMLIMIT=2560MiB`.
+- Node: 2 GiB maximum V8 heap.
 
 Runner registration, work, tool caches, home and nested Docker storage are
 separate from Todoee and production. The host Docker socket is not mounted and
 the CI container publishes no ports. OS image layers can be shared with the
-existing Todoee CI image; no credentials or writable state are shared.
+existing Todoee CI image; only the host capacity lock is shared. No credentials or application caches are shared.
 
 The completion hook deletes deployment SSH keys and bounds this runner's
 unused build cache. Under disk pressure it removes unused CI images and old Go
 build cache entries. It never prunes production Docker images or volumes.
 GitHub artifacts remain in use for releases and cross-workflow deployment;
 artifact storage limits still apply independently of runner execution.
+
+The two Linux runners acquire a host lock before each job. Jobs run in sequence
+so a large Go scan can use its memory limit while the other runner is idle.
+The lock is released after cleanup, worker death or container shutdown.
 
 ## Installation and operation
 

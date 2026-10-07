@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Prefer ending a CI process over production if the host runs out of memory.
+printf '500\n' > /proc/self/oom_score_adj
+
 mkdir -p /opt/runner/_work /opt/runner/_tool
 dockerd --host=unix:///var/run/docker.sock \
   --bip=172.28.0.1/24 --default-address-pool=base=172.29.0.0/16,size=24 \
