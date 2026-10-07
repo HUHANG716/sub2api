@@ -911,6 +911,45 @@ describe('PaymentView recharge bonus preview', () => {
     expect(wrapper.text()).toContain('$50.00')
   })
 
+  it.each([
+    { mode: 'bonus', amount: 100, percent: 20, credit: 16.8, pay: 100, discount: false },
+    { mode: 'bonus', amount: 50, percent: 20, credit: 7, pay: 50, discount: false },
+    { mode: 'discount', amount: 100, percent: 10, credit: 14, pay: 90, discount: true },
+  ])('previews the configured $mode campaign at $amount without stacking fixed bonuses', async (scenario) => {
+    getCheckoutInfo.mockReset().mockResolvedValue(checkoutInfoFixture({
+      balance_recharge_multiplier: 0.14,
+      balance_recharge_bonus_tiers: [{ min_amount: 20, bonus_amount: 2 }],
+      recharge_bonus_tiers: [{ min_amount: 100, bonus_percent: scenario.percent }],
+      recharge_bonus_mode: scenario.mode as 'bonus' | 'discount',
+    }))
+
+    const wrapper = shallowMount(PaymentView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          Teleport: true,
+          Transition: false,
+          AmountInput: defineComponent({
+            emits: ['update:modelValue'],
+            setup(_, { emit }) {
+              return () => h('button', {
+                class: 'amount-input-stub',
+                onClick: () => emit('update:modelValue', scenario.amount),
+              }, 'set amount')
+            },
+          }),
+        },
+      },
+    })
+    await flushPromises()
+    await wrapper.get('.amount-input-stub').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('.payment-credit-result strong').text()).toBe(`$${scenario.credit.toFixed(2)}`)
+    expect(wrapper.get('.payment-summary-total strong').text()).toBe(formatPaymentAmount(scenario.pay))
+    expect(wrapper.find('[data-testid="recharge-discount-row"]').exists()).toBe(scenario.discount)
+  })
+
   it('uses the highest matched recharge threshold instead of the largest bonus amount', async () => {
     getCheckoutInfo.mockReset().mockResolvedValue({
       data: {

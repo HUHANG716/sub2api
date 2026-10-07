@@ -343,6 +343,31 @@ jobs:
             --active-image "$active_image"
 
           comm -23 /tmp/sub2api-main-migrations.expected /tmp/sub2api-main-migrations.applied > /tmp/sub2api-main-migrations.pending
+          if grep -Eq '^241_add_(payment_order_bonus_amount|typesafe_platform)\.sql$' /tmp/sub2api-main-migrations.pending; then
+            backup_dir="$RUNTIME_DIR/backups"
+            install -d -m 700 "$backup_dir"
+            available_bytes="$(df --output=avail -B1 "$backup_dir" | tail -1 | tr -d ' ')"
+            if [ "$available_bytes" -lt $((7 * 1024 * 1024 * 1024)) ]; then
+              echo "Refusing migration backup: keep at least 6 GiB free plus a 1 GiB backup budget." >&2
+              exit 1
+            fi
+            backup_file="$backup_dir/pre-upstream-241-${SHORT_SHA}-$(date -u +%Y%m%dT%H%M%SZ).dump"
+            if ! (
+              umask 077
+              ulimit -f 1048576
+              timeout 180s docker compose exec -T postgres pg_dump -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" \
+                --format=custom --lock-wait-timeout=1s \
+                --table=public.payment_orders --table=public.user_platform_quotas --table=public.composite_model_routes \
+                < /dev/null > "${backup_file}.partial"
+            ); then
+              rm -f "${backup_file}.partial"
+              echo "Migration 241 backup failed; leaving the active production image in place." >&2
+              exit 1
+            fi
+            docker compose exec -T postgres pg_restore --file=/dev/null < "${backup_file}.partial"
+            mv "${backup_file}.partial" "$backup_file"
+            echo "Migration 241 table backup verified: $backup_file"
+          fi
           if grep -Fxq '239_channel_reasoning_effort_multipliers.sql' /tmp/sub2api-main-migrations.pending; then
             legacy_group_prices="$(docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER:-sub2api}" -d "${POSTGRES_DB:-sub2api}" -Atc "
               SELECT count(*) FROM groups g
