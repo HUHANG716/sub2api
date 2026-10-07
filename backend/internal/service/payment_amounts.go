@@ -25,7 +25,11 @@ func normalizeSubscriptionUSDToCNYRate(rate float64) float64 {
 	return rate
 }
 
-func calculateCreditedBalance(paymentAmount, multiplier float64, bonusTiers []BalanceRechargeBonusTier) float64 {
+func calculateCreditedBalance(paymentAmount, multiplier float64, bonusTierSets ...[]BalanceRechargeBonusTier) float64 {
+	var bonusTiers []BalanceRechargeBonusTier
+	if len(bonusTierSets) > 0 {
+		bonusTiers = bonusTierSets[0]
+	}
 	credited := decimal.NewFromFloat(paymentAmount).
 		Mul(decimal.NewFromFloat(normalizeBalanceRechargeMultiplier(multiplier)))
 	if bonus := selectBalanceRechargeBonus(paymentAmount, bonusTiers); bonus > 0 {

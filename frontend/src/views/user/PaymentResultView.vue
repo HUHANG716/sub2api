@@ -55,7 +55,11 @@
               <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.payAmount') }}</span>
               <span class="font-bold text-primary-600 dark:text-primary-400">{{ formatGatewayAmount(paymentOrder.pay_amount) }}</span>
             </div>
-            <div v-if="paymentOrder && paymentOrder.amount !== paymentOrder.pay_amount" class="flex justify-between">
+            <div v-if="paymentOrder && orderBonusAmount(paymentOrder) > 0" class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.bonusAmount') }}</span>
+              <span class="font-medium text-amber-600 dark:text-amber-400">+${{ orderBonusAmount(paymentOrder).toFixed(2) }}</span>
+            </div>
+            <div v-if="paymentOrder && (paymentOrder.amount !== paymentOrder.pay_amount || orderBonusAmount(paymentOrder) > 0)" class="flex justify-between">
               <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.creditedAmount') }}</span>
               <span class="font-medium text-gray-900 dark:text-white">{{ paymentOrder.order_type === 'balance' ? '$' + paymentOrder.amount.toFixed(2) : formatGatewayAmount(paymentOrder.amount) }}</span>
             </div>
@@ -255,6 +259,12 @@ function refreshUserBalanceForSuccessfulOrder(nextOrder: ResolvedOrder | null): 
   void authStore.refreshUser().catch(() => {
     // The order result remains authoritative even if refreshing profile data fails.
   })
+}
+
+/** 充值赠送额度（USD）；老接口/订阅订单没有该字段时视为 0 */
+function orderBonusAmount(target: unknown): number {
+  const value = (target as { bonus_amount?: unknown } | null | undefined)?.bonus_amount
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0
 }
 
 function normalizeOrderStatus(status: string | null | undefined): string {
