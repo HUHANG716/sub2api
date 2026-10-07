@@ -28,7 +28,8 @@ permissions:
 jobs:
   # Update VERSION file with tag version
   update-version:
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -52,7 +53,8 @@ jobs:
           retention-days: 1
 
   build-frontend:
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -86,7 +88,8 @@ jobs:
 
   release:
     needs: [update-version, build-frontend]
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -275,7 +278,8 @@ jobs:
   sync-version-file:
     needs: [release]
     if: ${{ needs.release.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     steps:
       - name: Checkout default branch
         uses: actions/checkout@v6
