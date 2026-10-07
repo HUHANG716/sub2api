@@ -1,0 +1,7 @@
+{
+  "os": "linux",
+  "architecture": "x64",
+  "filename": "actions-runner-linux-x64-2.337.0.tar.gz",
+  "download_url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-x64-2.337.0.tar.gz",
+  "sha256_checksum": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613"
+}

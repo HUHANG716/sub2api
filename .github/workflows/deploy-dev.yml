@@ -28,8 +28,8 @@ jobs:
   deploy:
     name: Deploy to code.hahacode.work
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'dev' && !contains(github.event.workflow_run.head_commit.message, '[skip deploy]')) }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     environment:
       name: dev
       url: https://code.hahacode.work
