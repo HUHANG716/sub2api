@@ -15,7 +15,7 @@ The runner container is privileged for nested Docker; it is for trusted code.
 
 - Host: Baole, Ubuntu 22.04, x86_64.
 - Container and service: `sub2api-ci-linux`.
-- State: `/opt/sub2api-ci/storage`, a bounded 8 GiB ext4 loop filesystem.
+- State: `/opt/sub2api-ci/storage`, a bounded 12 GiB ext4 loop filesystem.
 - Limits: 2 CPUs, 5 GiB RAM, no swap allowance, low CPU shares.
 - Go: one concurrent build process, `GOMAXPROCS=2`, `GOMEMLIMIT=2560MiB`.
 - Node: 2 GiB maximum V8 heap.
