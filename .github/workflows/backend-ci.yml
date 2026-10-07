@@ -29,7 +29,8 @@ concurrency:
 jobs:
   changes:
     name: Detect Changes
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 60
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       ci: ${{ steps.filter.outputs.ci }}
@@ -77,7 +78,8 @@ jobs:
     name: Deploy Plan Tests
     needs: changes
     if: ${{ needs.changes.outputs.ci == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -92,7 +94,8 @@ jobs:
   migration-safety:
     name: Migration Safety
     if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -109,7 +112,8 @@ jobs:
     name: Backend
     needs: changes
     if: ${{ needs.changes.outputs.backend == 'true' || (github.event_name == 'workflow_dispatch' && inputs.force_backend_image) }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -138,7 +142,8 @@ jobs:
     name: Frontend
     needs: changes
     if: ${{ needs.changes.outputs.frontend == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -186,7 +191,8 @@ jobs:
     name: Go Lint
     needs: changes
     if: ${{ needs.changes.outputs.backend == 'true' || (github.event_name == 'workflow_dispatch' && inputs.force_backend_image) }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -218,7 +224,8 @@ jobs:
       - golangci-lint
       - migration-safety
     if: ${{ always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && (needs.changes.outputs.backend == 'true' || inputs.force_backend_image) && needs.backend.result == 'success' && needs.golangci-lint.result == 'success' && (needs.migration-safety.result == 'success' || needs.migration-safety.result == 'skipped') }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v6
