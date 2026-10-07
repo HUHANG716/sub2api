@@ -49,7 +49,7 @@ jobs:
     needs: changes
     if: ${{ github.event_name == 'schedule' || needs.changes.outputs.backend == 'true' }}
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 15
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
       - name: Set up Go

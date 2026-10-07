@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 [[ -f /.dockerenv && -f /opt/runner/.ci-ready ]] || exit 0
+trap '/opt/runner-hooks/ci-capacity.sh release || true' EXIT
 
 # Deployment credentials must not survive a job on a persistent runner.
 rm -f /root/.ssh/id_deploy /root/.ssh/id_seoul /root/.ssh/known_hosts
