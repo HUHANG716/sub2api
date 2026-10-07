@@ -1,0 +1,9 @@
+{
+  "migration": "241_add_typesafe_platform.sql",
+  "phase": "cleanup",
+  "safe_after_commit": "2f38fd3c405530b6ccba5ee1a1384be2ced90e0c",
+  "reason": "Replaces two CHECK constraints with supersets of every value accepted by the active 0.2.8 compatibility image, adding typesafe. The cleanup classification is required by the DROP CONSTRAINT gate; no table, column or row is removed.",
+  "risk": "CHECK replacement and validation take table locks. Older code cannot configure the newly added platform, but every existing row and old-image write remains valid.",
+  "mitigation": "Preserve all existing platform values, execute replacement atomically, and use transaction-local 1s lock and 5s statement timeouts. Verify backups of user_platform_quotas and composite_model_routes before applying pending 241 migrations. Enforce active-image ancestry, switch traffic only after new-image readiness, and retain the previous image for rollback.",
+  "approved_by": "Codex automated review for upstream merge and production deployment requested by hang on 2026-10-07"
+}
