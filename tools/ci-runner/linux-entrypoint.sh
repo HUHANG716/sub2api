@@ -3,6 +3,8 @@ set -euo pipefail
 
 # Prefer ending a CI process over production if the host runs out of memory.
 printf '500\n' > /proc/self/oom_score_adj
+renice --priority 10 --pid "$$" >/dev/null
+ionice --class 3 --pid "$$"
 
 mkdir -p /opt/runner/_work /opt/runner/_tool
 dockerd --host=unix:///var/run/docker.sock \
