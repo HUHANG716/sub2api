@@ -18,6 +18,9 @@ RUN if ! command -v docker >/dev/null || ! command -v gh >/dev/null; then \
       && rm -rf /var/lib/apt/lists/*; \
     fi
 
+# Match the Python command provided by GitHub's Ubuntu runner image.
+RUN ln -sf /usr/bin/python3 /usr/local/bin/python
+
 COPY linux-entrypoint.sh /usr/local/bin/sub2api-ci-start
 RUN chmod +x /usr/local/bin/sub2api-ci-start
 WORKDIR /opt/runner
