@@ -19,6 +19,7 @@ The runner container is privileged for nested Docker; it is for trusted code.
 - Limits: 2 CPUs, 5 GiB RAM, no swap allowance, low CPU shares.
 - Go: one concurrent build process, `GOMAXPROCS=2`, `GOMEMLIMIT=2560MiB`.
 - Node: 2 GiB maximum V8 heap.
+- Scheduling: CPU nice 10 and idle I/O priority, inherited by CI processes.
 
 Runner registration, work, tool caches, home and nested Docker storage are
 separate from Todoee and production. The host Docker socket is not mounted and
