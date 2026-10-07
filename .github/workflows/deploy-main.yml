@@ -37,7 +37,7 @@ jobs:
     name: Deploy to Baoleyun prod
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && !contains(github.event.workflow_run.head_commit.message, '[skip deploy]')) }}
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 30
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     environment:
       name: prod
       url: https://code.hahacode.top

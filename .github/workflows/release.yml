@@ -35,7 +35,7 @@ env:
 jobs:
   prepare:
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 90
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     outputs:
       sha: ${{ steps.plan.outputs.sha }}
       owner_lower: ${{ steps.plan.outputs.owner_lower }}
@@ -84,7 +84,7 @@ jobs:
   build-frontend:
     needs: prepare
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 90
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     steps:
       - uses: actions/checkout@v6
         with:
@@ -110,7 +110,7 @@ jobs:
   build-binaries:
     needs: [prepare, build-frontend]
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 90
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
@@ -196,7 +196,7 @@ jobs:
   release:
     needs: [prepare, build-binaries]
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 90
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     permissions:
       contents: write
       packages: write
@@ -383,7 +383,7 @@ jobs:
     needs: [prepare, release]
     if: ${{ needs.release.result == 'success' && needs.prepare.outputs.dry_run != 'true' }}
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 90
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     permissions:
       contents: write
     env:

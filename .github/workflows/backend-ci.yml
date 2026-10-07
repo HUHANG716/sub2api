@@ -43,7 +43,7 @@ jobs:
   changes:
     name: Detect Changes
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       ci: ${{ steps.filter.outputs.ci }}
@@ -92,7 +92,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.ci == 'true' }}
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -108,7 +108,7 @@ jobs:
     name: Migration Safety
     if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -126,7 +126,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.backend == 'true' || (github.event_name == 'workflow_dispatch' && inputs.force_backend_image) }}
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -158,7 +158,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.frontend == 'true' }}
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -207,7 +207,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.backend == 'true' || (github.event_name == 'workflow_dispatch' && inputs.force_backend_image) }}
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -239,7 +239,7 @@ jobs:
       - migration-safety
     if: ${{ always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && (needs.changes.outputs.backend == 'true' || inputs.force_backend_image) && needs.backend.result == 'success' && needs.golangci-lint.result == 'success' && (needs.migration-safety.result == 'success' || needs.migration-safety.result == 'skipped') }}
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -283,7 +283,7 @@ jobs:
             DATE=${{ github.event.head_commit.timestamp }}
   release-helpers:
     runs-on: ${{ github.repository == 'HUHANG716/sub2api' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","Linux","X64","sub2api-linux"]') || 'ubuntu-latest' }}
-    timeout-minutes: 60
+    timeout-minutes: 360 # Includes waiting for shared Linux CI capacity.
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
